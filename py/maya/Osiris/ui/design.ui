@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>OsirisRigBuilder</class>
+ <widget class="QMainWindow" name="OsirisRigBuilder">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>495</width>
+    <height>458</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Osiris Rig Builder</string>
+  </property>
+  <property name="documentMode">
+   <bool>true</bool>
+  </property>
+  <property name="dockNestingEnabled">
+   <bool>false</bool>
+  </property>
+  <property name="dockOptions">
+   <set>QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks</set>
+  </property>
+  <property name="unifiedTitleAndToolBarOnMac">
+   <bool>false</bool>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout_2">
+    <item row="1" column="1">
+     <layout class="QVBoxLayout" name="buildListContainer">
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+     </layout>
+    </item>
+    <item row="0" column="0" colspan="2">
+     <layout class="QHBoxLayout" name="charInfo" stretch="0,0,0,0">
+      <item>
+       <widget class="QComboBox" name="projectName"/>
+      </item>
+      <item>
+       <widget class="QComboBox" name="assetType">
+        <property name="minimumSize">
+         <size>
+          <width>85</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::StrongFocus</enum>
+        </property>
+        <property name="frame">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="assetName"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="loadCharacter">
+        <property name="text">
+         <string>Load Character</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="1" column="0">
+     <layout class="QVBoxLayout" name="moduleListContainer">
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+     </layout>
+    </item>
+    <item row="2" column="0" colspan="2">
+     <layout class="QVBoxLayout" name="attributeLayoutContainer" stretch=""/>
+    </item>
+    <item row="3" column="0">
+     <spacer name="verticalSpacer">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>495</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionNew"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionLoad"/>
+    <addaction name="separator"/>
+   </widget>
+   <widget class="QMenu" name="menuAsset">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="title">
+     <string>Asset</string>
+    </property>
+    <widget class="QMenu" name="menuCVS">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>CVs</string>
+     </property>
+     <addaction name="actionSaveCVS"/>
+     <addaction name="actionLoadCVS"/>
+     <addaction name="actionMirrorCVS"/>
+    </widget>
+    <widget class="QMenu" name="menuWeights">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>Weights</string>
+     </property>
+     <addaction name="actionSaveWeights"/>
+     <addaction name="actionLoadWeights"/>
+    </widget>
+    <widget class="QMenu" name="menuSkeleton">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>Skeleton</string>
+     </property>
+     <addaction name="actionSaveSkeleton"/>
+     <addaction name="actionLoadSkeleton"/>
+    </widget>
+    <widget class="QMenu" name="menuMesh">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>Mesh</string>
+     </property>
+     <addaction name="actionSaveMesh"/>
+     <addaction name="actionLoadMesh"/>
+    </widget>
+    <widget class="QMenu" name="menuAnimRig">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>AnimRig</string>
+     </property>
+     <addaction name="actionSaveAnimRig"/>
+     <addaction name="actionLoadAnimRig"/>
+    </widget>
+    <addaction name="menuSkeleton"/>
+    <addaction name="menuMesh"/>
+    <addaction name="menuCVS"/>
+    <addaction name="menuWeights"/>
+    <addaction name="menuAnimRig"/>
+    <addaction name="separator"/>
+    <addaction name="actionBuild"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuAsset"/>
+  </widget>
+  <action name="actionNew">
+   <property name="text">
+    <string>New</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionLoad">
+   <property name="text">
+    <string>Load</string>
+   </property>
+  </action>
+  <action name="actionNew_2">
+   <property name="text">
+    <string>New</string>
+   </property>
+  </action>
+  <action name="actionSaveCVS">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionLoadCVS">
+   <property name="text">
+    <string>Load</string>
+   </property>
+  </action>
+  <action name="actionMirrorCVS">
+   <property name="text">
+    <string>Mirror</string>
+   </property>
+  </action>
+  <action name="actionSaveWeights">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionLoadWeights">
+   <property name="text">
+    <string>Load</string>
+   </property>
+  </action>
+  <action name="actionMesh">
+   <property name="text">
+    <string>mesh</string>
+   </property>
+  </action>
+  <action name="actionSkeleton">
+   <property name="text">
+    <string>skeleton</string>
+   </property>
+  </action>
+  <action name="actionAnimRig">
+   <property name="text">
+    <string>animRig</string>
+   </property>
+  </action>
+  <action name="actionVersion_File">
+   <property name="text">
+    <string>Version File</string>
+   </property>
+  </action>
+  <action name="actionSaveSkeleton">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionLoadSkeleton">
+   <property name="text">
+    <string>Load</string>
+   </property>
+  </action>
+  <action name="actionSaveMesh">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionLoadMesh">
+   <property name="text">
+    <string>Load</string>
+   </property>
+  </action>
+  <action name="actionSaveAnimRig">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionLoadAnimRig">
+   <property name="text">
+    <string>Load</string>
+   </property>
+  </action>
+  <action name="actionBuild">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Build</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
