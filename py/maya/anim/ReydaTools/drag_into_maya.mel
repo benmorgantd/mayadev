@@ -1,0 +1,14 @@
+// concept by Rik
+
+global proc drag_into_maya()
+{    
+    string $whatIs = `whatIs drag_into_maya`;
+    string $fullpath = `substitute "Mel procedure found in: " $whatIs ""`;
+    string $folderpath = `substitute "drag_into_maya.mel" $fullpath ""`;
+    print ($folderpath + "\n");
+    string $exec_cmd = "execfile(\"" + $folderpath + "\install.py\")";
+    print ($exec_cmd + "\n");
+    python($exec_cmd);
+}
+
+drag_into_maya();

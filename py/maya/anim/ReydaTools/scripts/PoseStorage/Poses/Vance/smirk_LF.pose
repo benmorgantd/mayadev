@@ -1,0 +1,134 @@
+{
+    "LF_loCheek01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.05360598670803394,
+        "translateY" : 0.2879953229301473,
+        "translateZ" : 0.24712727591533895
+    },
+    "LF_loCheek02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.046469002618117206,
+        "translateY" : 0.08427817014588324,
+        "translateZ" : 0.07885695870707986
+    },
+    "LF_loLip01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.19446159895163978,
+        "translateY" : -0.07332988173345233,
+        "translateZ" : -0.07304130264225733
+    },
+    "LF_loLip02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.36589647181274193,
+        "translateY" : -0.01140295363812488,
+        "translateZ" : 0.06476973398568615
+    },
+    "LF_loLip03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 1.349384648032095,
+        "translateY" : 0.5551587269160887,
+        "translateZ" : -0.4195251761530676
+    },
+    "LF_midCheek02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.10179666474358126,
+        "translateY" : 0.07648920856873709,
+        "translateZ" : 0.2755982563490595
+    },
+    "LF_midCheek03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.004898293510329029,
+        "translateY" : 0.11322162367928693,
+        "translateZ" : 0.0071167027758889286
+    },
+    "LF_nasolabial_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -0.12763057635128117,
+        "translateY" : 0.20679870972786,
+        "translateZ" : 0.12167141466190134
+    },
+    "LF_nostril_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -1.6835491334354913e-15,
+        "translateY" : 0.06449217356030588,
+        "translateZ" : 4.524158825347513e-15
+    },
+    "LF_upLip01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.19004107153219038,
+        "translateY" : -0.03293689208978645,
+        "translateZ" : -0.10642917449605169
+    },
+    "LF_upLip02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.3481449691559657,
+        "translateY" : 0.12487872016999133,
+        "translateZ" : -0.03749346046124722
+    },
+    "LF_upLip03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 1.3593410913456188,
+        "translateY" : 0.5892743005062867,
+        "translateZ" : -0.3316460613126402
+    }
+}
