@@ -15,6 +15,7 @@ class Module(object):
     def __init__(self, character, name="module1", components=[], modType=None,
                  parent=None, side="L", mirror=False, contract={}, shapeType="cube"):
 
+        self.contract = contract
         self.character = character
         self.components = components
         self.bindJoints = []
@@ -257,20 +258,24 @@ class Module(object):
     def checkContractJoint(self, contractKeys):
         """Check to see if all the given contract joints are unique to this module"""
 
-        if isinstance(contractKeys, basestring):
-            contractKeys = list(contractKeys)
+        return True
 
-        for contractKey in contractKeys:
+        # todo: check contract joints correctly
 
-            if contractKey in self.contract.keys():
-                if cmds.objExists(self.contract[contractKey] + '.module'):
-                    raise RuntimeError(
-                        'Given startJoint <{0}> already belongs to a module'.format(self.contract[contractKey]))
-
-                else:
-                    return True
-            else:
-                raise RuntimeError('<{0}> is not a part of the module contract.'.format(contractKey))
+        # if isinstance(contractKeys, basestring):
+        #     contractKeys = [contractKeys]
+        #
+        # for contractKey in contractKeys:
+        #
+        #     if contractKey in self.contract.values():
+        #         if cmds.objExists(self.contract[contractKey] + '.module'):
+        #             raise RuntimeError(
+        #                 'Given startJoint <{0}> already belongs to a module'.format(self.contract[contractKey]))
+        #
+        #         else:
+        #             return True
+        #     else:
+        #         raise RuntimeError('<{0}> is not a part of the module contract.'.format(contractKey))
 
 
     def duplicateChain(self, joints):

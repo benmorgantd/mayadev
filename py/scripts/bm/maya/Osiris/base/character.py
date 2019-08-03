@@ -55,7 +55,7 @@ class Character(asset.Asset):
             self.addModule(mod)
 
         # create the new class instance from the string
-        import Osiris.lib.rigMods as rigMods
+        from .. import rigMods
 
         for mod in self.modules:
             # access the modType attribute from the module's dictionary
@@ -112,7 +112,7 @@ class Character(asset.Asset):
             print ">>> Created character node >> {0} <<".format(self.node)
 
     def addNodeAttrs(self):
-        import Osiris.lib.base.module as module
+        from . import module
 
         if not self.node:
             raise RuntimeError("Character node doesn't exist yet for " + self.name)

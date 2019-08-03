@@ -38,4 +38,3 @@ def build(asset, standalone=True):
 
 
 
-# import Osiris.lib.base.creator as creator;creator.build("Helm", "dev", "prop");

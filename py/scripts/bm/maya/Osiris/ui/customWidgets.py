@@ -120,7 +120,7 @@ class BuildListItem(QtWidgets.QListWidgetItem):
         self.attributeLayout.build()
 
     def loadAttributeTemplates(self):
-        import Osiris.lib.rigMods as rigMods
+        from .. import rigMods
         reload(rigMods)
 
         attrData = rigMods._MODULE_ARGS[self.modType]

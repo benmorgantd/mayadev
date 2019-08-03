@@ -5,22 +5,23 @@ import sys
 dirname = os.path.dirname(os.path.abspath(__file__))
 
 __all__ = [mod[0:-3] for mod in os.listdir(
-    dirname) if mod.endswith('.py') and mod != '__init__.py']
+          dirname) if mod.endswith('.py') and mod != '__init__.py']
 
 _MODULE_CLASSES = {}
-_MODULE_ARGS = {} 
+_MODULE_ARGS = {}
 
 
 for modType in __all__:
 
-    exec('import Osiris.lib.rigMods.' + modType)
+    exec('import bm.maya.Osiris.rigMods.' + modType)
 
-    # find the class in that file
-    modClasses = inspect.getmembers(sys.modules['Osiris.lib.rigMods.' + modType], inspect.isclass)
+    # find the classes in that file
+    modClasses = inspect.getmembers(sys.modules['bm.maya.Osiris.rigMods.' + modType], inspect.isclass)
 
     ModClass = None
 
     for item in modClasses:
+        # we're using the convention where the filename is the class name
         if item[0] == modType:
             ModClass = item[1]
 
