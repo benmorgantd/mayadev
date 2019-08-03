@@ -3,14 +3,7 @@ import os
 import ast
 
 from lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
-
-import maya.cmds as cmds
-import maya.OpenMayaUI as omui
-
-import wrappers
-reload(wrappers)
-
-
+from . import wrappers
 
 class Table(QtWidgets.QTableWidget):
     def __init__(self):

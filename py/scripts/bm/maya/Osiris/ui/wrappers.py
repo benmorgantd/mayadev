@@ -1,6 +1,7 @@
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui
-from Qt import QtWidgets, QtCore, QtCompat
+
+from lib.Qt import QtWidgets, QtCore, QtCompat
 
 
 def Dock(Widget, width=385, height=735, show=True):

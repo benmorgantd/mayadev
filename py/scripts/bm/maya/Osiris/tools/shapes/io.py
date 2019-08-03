@@ -1,5 +1,4 @@
 import json
-import os
 
 import maya.OpenMaya as om
 import maya.cmds as cmds

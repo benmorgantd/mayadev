@@ -12,3 +12,5 @@ class Vector(object):
 
     def toList(self):
         return [self.vector.x, self.vector.y, self.vector.z]
+
+

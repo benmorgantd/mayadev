@@ -3,8 +3,8 @@ import json
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-import character
-import Osiris.lib.tools.shapes.lib as shapeLib
+from . import character
+from ..tools.shapes import lib as shapeLib
 
 from decorators import wrapBuild
 
@@ -260,21 +260,23 @@ class Module(object):
         if isinstance(contractKeys, basestring):
             contractKeys = list(contractKeys)
 
-        for contractKeys in contractKey
+        for contractKey in contractKeys:
 
-        if contractKey in self.contract.keys():
-            if cmds.objExists(self.contract[contractKey] + '.module'):
-                raise RuntimeError(
-                    'Given startJoint <{0}> already belongs to a module'.format(self.contract[contractKey]))
+            if contractKey in self.contract.keys():
+                if cmds.objExists(self.contract[contractKey] + '.module'):
+                    raise RuntimeError(
+                        'Given startJoint <{0}> already belongs to a module'.format(self.contract[contractKey]))
 
+                else:
+                    return True
             else:
-                return True
-        else:
-            raise RuntimeError('<{0}> is not a part of the module contract.'.format(contractKey))
+                raise RuntimeError('<{0}> is not a part of the module contract.'.format(contractKey))
 
 
     def duplicateChain(self, joints):
         """Duplicate the given input chain"""
+
+        return
         
         
         

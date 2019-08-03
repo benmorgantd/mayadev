@@ -1,8 +1,10 @@
 '''FkHierarchy'''
-import Osiris.lib.base.module as module
-import Osiris.lib.tools.shapes.lib as shapeLib
+
 import maya.cmds as cmds
-from Osiris.lib.base.decorators import wrapBuild
+
+from ..base import module
+from ..base.decorators import wrapBuild
+from ..tools.shapes import lib as shapeLib
 
 
 class FkHierarchy(module.Module):

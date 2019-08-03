@@ -1,4 +1,4 @@
-import Osiris.lib.tools.boundingBox as bbTools
+from bm.maya.utils import boundingBox
 
 import maya.cmds as cmds
 
@@ -86,7 +86,7 @@ class Shape(object):
             cmds.delete(cmds.parentConstraint(self.jnt, self.grp, mo=0))
 
     def setupBoundingBox(self):
-        sceneBoundingBox = bbTools.getSceneBoundingBox()
+        sceneBoundingBox = boundingBox.getSceneBoundingBox()
 
         cmds.xform(self.ctrl + ".cv[0:]",
                    scale=[sceneBoundingBox.width(),
@@ -94,5 +94,5 @@ class Shape(object):
                           sceneBoundingBox.depth()])
 
         cmds.xform(self.ctrl + ".cv[0:]",
-                   translation=bbTools.getBoundingBoxCenter(sceneBoundingBox),
+                   translation=boundingBox.getBoundingBoxCenter(sceneBoundingBox),
                    relative=True)

@@ -1,31 +1,15 @@
 import os
-import json
-
-
-from lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
-
-# try:
-#     from shiboken import wrapInstance
-# except:
-#     from shiboken2 import wrapInstance
 
 import maya.cmds as cmds
-import maya.OpenMayaUI as omui
 
-import Osiris.lib.base.asset as asset
+from . import base, customWidgets, wrappers
+
+from ..base import asset
 reload(asset)
-import Osiris.lib.base.creator as creator
+from ..base import creator
 reload(creator)
-
-import Osiris.lib.tools.build.io as buildIO
+from ..tools.build import io as buildIO
 reload(buildIO)
-import base
-reload(base)
-import customWidgets
-reload(customWidgets)
-
-import wrappers
-
 
 class RigBuilder(base.DockableWidget):
     label = 'Rig Builder'
@@ -279,5 +263,5 @@ class RigBuilder(base.DockableWidget):
 ##############
 
 def _show():
-    widget = wrappers.Dock(DesignerWidget, show=True)
+    widget = wrappers.Dock(RigBuilder, show=True)
 

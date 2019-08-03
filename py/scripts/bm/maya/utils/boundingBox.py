@@ -1,6 +1,5 @@
 import maya.OpenMaya as om
 
-
 def getSceneBoundingBox():
     """Returns the bounding box around the DAGs in the scene"""
 

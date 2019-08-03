@@ -6,7 +6,7 @@ import os
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-import Osiris.lib.tools.weights.utils as weightUtils
+from . import utils as weightUtils
 
 def save(weightsDir):
     # Saves each selected object to a file in the given directory

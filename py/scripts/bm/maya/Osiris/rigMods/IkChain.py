@@ -3,10 +3,9 @@
 
 import maya.cmds as cmds
 
-import Osiris.lib.tools.shapes.lib as shapeLib
-import Osiris.lib.base.module as module
-
-from Osiris.lib.base.decorators import wrapBuild
+from ..base import module
+from ..base.decorators import wrapBuild
+from ..tools.shapes import lib as shapeLib
 
 
 class IkChain(module.Module):

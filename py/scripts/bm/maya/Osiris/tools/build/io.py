@@ -1,8 +1,4 @@
 import json
-import os
-import inspect
-import sys
-
 
 def load(filepath):
     

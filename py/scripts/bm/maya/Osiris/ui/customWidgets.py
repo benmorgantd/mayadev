@@ -4,7 +4,7 @@ import ast
 
 from lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
-import base
+from . import base
 reload(base)
 
 

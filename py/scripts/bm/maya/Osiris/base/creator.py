@@ -1,11 +1,7 @@
 """Creator is used to initiate and build assets."""
 
-import os
-
-import character
-reload(character)
+from . import character
 from decorators import wrapStandalone
-
 
 __all__ = ['initiate', 'build']
 

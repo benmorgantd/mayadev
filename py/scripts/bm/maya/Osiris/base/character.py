@@ -2,15 +2,13 @@ import json
 import os
 
 import maya.cmds as cmds
-import maya.OpenMaya as om
-import maya.standalone
 
-import asset
-reload(asset)
-import Osiris.lib.tools.shapes.lib as shapeLib
-import Osiris.lib.tools.shapes.io as cvIO
-import Osiris.lib.tools.weights.io as weightIO
-import Osiris.lib.tools.build.io as buildIO
+from . import asset
+
+from ..tools.shapes import lib as shapeLib
+from ..tools.shapes import io as shapeIO
+from ..tools.weights import io as weightIO
+from ..tools.build import io as buildIO
 
 
 class Character(asset.Asset):
@@ -39,8 +37,6 @@ class Character(asset.Asset):
         self.modules.append(moduleDict)
 
     def build(self):
-        import sys
-        import inspect
 
         self.modules = []
         self.allControls = []
@@ -64,19 +60,6 @@ class Character(asset.Asset):
         for mod in self.modules:
             # access the modType attribute from the module's dictionary
             modType = mod["modType"]
-
-            # exec("import Osiris.lib.rigMods." + modType + " as ModClass")
-
-            # # find the class in that file
-            # modClasses = inspect.getmembers(sys.modules["Osiris.lib.rigMods." + modType], inspect.isclass)
-
-            # ModClass = None
-
-            # for item in modClasses:
-            #     if item[0] == modType:
-            #         ModClass = item[1]
-
-            # modInstance = ModClass(self)
 
             modInstance = rigMods._MODULE_CLASSES[modType].__new__(rigMods._MODULE_CLASSES[modType])
             modInstance.__init__(character=self)
@@ -112,7 +95,7 @@ class Character(asset.Asset):
             if cmds.objExists(mod["name"] + "_MOD"):
                 cmds.connectAttr(self.node + ".modules", mod["name"] + "_MOD.character")
 
-        cvIO.load(self.getComponentPath("cvs"))
+        shapeIO.load(self.getComponentPath("cvs"))
 
         weightRoot = os.path.join(self.getRootDir(), self.getComponentRoot("weights"))
 
