@@ -20,7 +20,7 @@ class Asset(object):
         self.components = ["mesh", "skeleton",
                            "weights", "cvs", "animRig", "build"]
 
-        self.templatesPath = os.path.abspath(os.path.join(__file__, "..","..", "templates"))
+        self.templatesPath = os.path.abspath(os.path.join(__file__, "..", "..", "templates"))
 
         self.initComponentFolders()
         self.initComponentFiles()

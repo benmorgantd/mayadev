@@ -12,14 +12,12 @@ class Root(module.Module):
                  name='Root',
                  shapeType='triangle'):
 
-        super(Root, self).__init__(
-            character,
-            modType='Root',
-            side='c',
-            mirror=False,
-            name=name,
-            shapeType=shapeType,
-            parent=None)
+        super(Root, self).__init__(character, modType='Root',
+                                   side='c',
+                                   mirror=False,
+                                   name=name,
+                                   shapeType=shapeType,
+                                   parent=None)
 
         self.components = []
         self.contract = {}
@@ -44,13 +42,13 @@ class Root(module.Module):
         self.makeCtrls()
 
     def makeRigSets(self):
-        self.character.masterSet = cmds.sets(empty=True, name='master_SET')
+        self.character.masterSet = cmds.sets(empty=True, name='MASTER_set')
 
         self.character.skeletonSet = cmds.sets(
-            cmds.ls(type='joint'), name='skeleton_SET')
+            cmds.ls(type='joint'), name='SKELETON_set')
 
         self.character.meshSet = cmds.sets([cmds.listRelatives(shp, parent=True)[0] for shp in cmds.ls(type='mesh')],
-                                           name='mesh_SET')
+                                           name='MESH_set')
 
         cmds.sets([self.character.skeletonSet, self.character.meshSet],
                   include=self.character.masterSet)
@@ -73,8 +71,8 @@ class Root(module.Module):
         for i in range(1, 4):
             if i > 1:
                 shp = shapeLib.Shape('layout0{0}'.format(
-                    i), self.shapeType, scale=(1 - ((i-1) * 0.15)))
-                cmds.parent(shp.grp, self.components[i-2].ctrl)
+                    i), self.shapeType, scale=(1 - ((i - 1) * 0.15)))
+                cmds.parent(shp.grp, self.components[i - 2].ctrl)
             else:
                 shp = shapeLib.Shape('layout0{0}'.format(i), self.shapeType)
                 cmds.parent(shp.grp, self.modGrp)

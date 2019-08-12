@@ -7,21 +7,14 @@ from ..tools.shapes import lib as shapeLib
 
 class SingleJoint(module.Module):
 
-    def __init__(self, character,
-                 side=None,
-                 mirror=False,
-                 shapeType='cube',
-                 contract={'startJoint': None},
-                 modType='SingleJoint',
-                 name='SingleJoint1'):
+    def __init__(self, character, side=None, mirror=False, shapeType='cube',
+                 contract={'startJoint': None}, name='SingleJoint1',
+                 alignWorld=False):
 
-        super(SingleJoint, self).__init__(
-            character,
-            modType='SingleJoint',
-            side=side,
-            mirror=mirror,
-            name=name,
-            shapeType=shapeType)
+        super(SingleJoint, self).__init__(character,modType='SingleJoint',
+                                          side=side, mirror=mirror, name=name,
+                                          shapeType=shapeType,
+                                          alignWorld=alignWorld)
 
         self.components = []
         self.contract = contract
@@ -33,8 +26,8 @@ class SingleJoint(module.Module):
 
         self.checkContractJoint('startJoint')
 
-        ctrl = shapeLib.Shape(
-            self.contract['startJoint'], self.shapeType, jnt=self.contract['startJoint'])
+        ctrl = shapeLib.Shape(self.contract['startJoint'], self.shapeType,
+                              jnt=self.contract['startJoint'])
 
         self.components.append(ctrl)
 

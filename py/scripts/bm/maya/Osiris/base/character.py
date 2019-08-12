@@ -79,13 +79,13 @@ class Character(asset.Asset):
 
 
             if mirrorInstance:
-                mirrorModules.append(mirrorInstance.asDict())
+                mirrorModules.append(mirrorInstance.dict())
                 self.allControls += [comp.ctrl for comp in mirrorInstance.components]
 
         self.modules += mirrorModules
         
-        self.componentSet = cmds.sets(self.allControls, name="ctrl_SET")
-        cmds.sets(self.componentSet, include="master_SET")
+        self.componentSet = cmds.sets(self.allControls, name="CTRL_set")
+        cmds.sets(self.componentSet, include="MASTER_set")
 
         self.skin()
 

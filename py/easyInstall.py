@@ -31,7 +31,7 @@ def easyInstall():
                                        caption="Browse to Scripts Folder")[0]
     except TypeError:
         # will happen if the user exits the file dialog
-        failMessage = "Install of the bmTools module failed.\n\nPlease drag the file back into Maya to install."
+        failMessage = "Install of the bm module failed.\n\nPlease drag the file back into Maya to install."
         print "\n" + failMessage
         cmds.confirmDialog(title="Error", message=failMessage)
         return
@@ -41,7 +41,7 @@ def easyInstall():
         os.makedirs(os.path.join(mayaAppDir, "modules"))
 
     # create our mod file in the user's maya modules directory
-    modFile = open(os.path.join(mayaAppDir, "modules", "bmTools.mod"), "w+")
+    modFile = open(os.path.join(mayaAppDir, "modules", "bm.mod"), "w+")
 
     writeString = modString.replace("MODULE_LOC", packageDir)
 

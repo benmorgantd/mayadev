@@ -2,7 +2,11 @@ import os
 
 import maya.cmds as cmds
 
-from . import base, customWidgets, wrappers
+from lib.Qt import QtWidgets
+from bm.maya.utils import mayaQt
+from . import base, customWidgets
+reload(base)
+reload(customWidgets)
 
 from ..base import asset
 reload(asset)
@@ -11,28 +15,26 @@ reload(creator)
 from ..tools.build import io as buildIO
 reload(buildIO)
 
-class RigBuilder(base.DockableWidget):
-    label = 'Rig Builder'
 
-    def __init__(self, parent=None):
-        super(RigBuilder, self).__init__(parent)
+class RigBuilder(base.DockableWidget):
+    def __init__(self, parent=None, designerFile=None, title='Rig Builder'):
+        super(RigBuilder, self).__init__(parent, designerFile, title)
+
+        self.parent = parent
 
         self.buildData = None
 
         self.setupUI()
         self.setupButtons()
         self.loadModules()
-        # self.setupFileMenu()
-        # self.setupAssetMenu()
         self.loadProjects()
         self.loadAssetTypes()
-
-        self.widget.componentWidget.setVisible(False)
 
 
     def setupUI(self):
 
-        self.moduleList = customWidgets.ModuleList(attributeContainer=self.widget.attributeLayoutContainer)
+        self.moduleList = customWidgets.ModuleList(
+            attributeContainer=self.widget.attributeLayoutContainer)
         self.buildList = customWidgets.BuildList()
 
         self.widget.moduleListContainer.addWidget(
@@ -46,20 +48,30 @@ class RigBuilder(base.DockableWidget):
 
         self.assetInstance = None
 
+        self.setupMenu()
+
+    def setupMenu(self):
+
+        menu = QtWidgets.QMenuBar()
+        fileMenu = menu.addMenu('File')
+        newAssetAction = fileMenu.addAction('New Asset')
+        newAssetAction.triggered.connect(lambda: self.launchAssetWidget())
+        self.widget.menuLayout.addWidget(menu)
+
+    def launchAssetWidget(self):
+
+        assetBuilderUI = assetBuilder.AssetBuilder(
+            parent=mayaQt.getMayaMainWindow())
+
+        assetBuilderUI.show()
+
+
     def setupButtons(self):
         self.widget.loadCharacter.clicked.connect(lambda: self.initiateAsset())
-        self.widget.collapseAsset.clicked.connect(lambda: self.toggleVisibility('asset'))
-        self.widget.collapseComponents.clicked.connect(lambda: self.toggleVisibility('components'))
         self.widget.loadComponent.clicked.connect(lambda: self.loadComponent())
         self.widget.saveComponent.clicked.connect(lambda: self.saveComponent())
         self.widget.build.clicked.connect(lambda: self.buildCharacter())
 
-
-    def toggleVisibility(self, widgetType):
-        if widgetType == 'asset':
-            self.widget.assetWidget.setVisible(not self.widget.assetWidget.isVisible())
-        elif widgetType == 'components':
-            self.widget.componentWidget.setVisible(not self.widget.componentWidget.isVisible())
 
     def loadProjects(self):
         projects = os.listdir(asset._PROJECT_ROOT)
@@ -177,7 +189,6 @@ class RigBuilder(base.DockableWidget):
                 self.assetInstance = creator.initiate(name, project, assetType, standalone=False)
                 self.loadBuild(self.assetInstance.getComponentPath('build'))
 
-        self.widget.componentWidget.setVisible(True)
 
     def buildCharacter(self):
         if self.assetInstance:
@@ -262,6 +273,6 @@ class RigBuilder(base.DockableWidget):
 ##############
 ##############
 
-def _show():
-    widget = wrappers.Dock(RigBuilder, show=True)
-
+def run():
+    ui = RigBuilder(designerFile='widget.ui')
+    ui.dock()

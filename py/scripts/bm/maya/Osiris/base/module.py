@@ -12,8 +12,8 @@ from decorators import wrapBuild
 class Module(object):
     mirrorPairs = {"L": "R", "R": "L"}
 
-    def __init__(self, character, name="module1", components=[], modType=None,
-                 parent=None, side="L", mirror=False, contract={}, shapeType="cube"):
+    def __init__(self, character, contract=None, components=None, name="module1", modType=None,
+                 parent=None, side="L", mirror=False, shapeType="cube", alignWorld=False):
 
         self.contract = contract
         self.character = character
@@ -26,6 +26,11 @@ class Module(object):
         self.name = name
         self.node = None
         self.shapeType = shapeType
+        self.alignWorld = alignWorld
+
+    @property
+    def dict(self):
+        return {key: value for key, value in self.__dict__.items() if "__" not in key}
 
     def makeNode(self):
         # create the module node before anything gets built. 
@@ -93,7 +98,6 @@ class Module(object):
                 cmds.addAttr(self.node, ln=attr, at=attrType, keyable=False)
             else:
                 cmds.addAttr(self.node, ln=attr, at=attrType, dv=attrVal, keyable=False)
-
 
     def build(self):
         return
@@ -174,10 +178,6 @@ class Module(object):
 
             self.parentConstrain(moduleParent, self.modGrp)
 
-    def asDict(self):
-        modDict = {key: value for key, value in self.__dict__.items() if "__" not in key}
-        return modDict
-
     def parentConstrain(self, parent=None, childList=None, maintainOffset=True):
 
         if type(childList) in [str, unicode]:
@@ -254,7 +254,6 @@ class Module(object):
 
             itDag.next()
 
-
     def checkContractJoint(self, contractKeys):
         """Check to see if all the given contract joints are unique to this module"""
 
@@ -276,7 +275,6 @@ class Module(object):
         #             return True
         #     else:
         #         raise RuntimeError('<{0}> is not a part of the module contract.'.format(contractKey))
-
 
     def duplicateChain(self, joints):
         """Duplicate the given input chain"""

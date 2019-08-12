@@ -3,7 +3,33 @@ import os
 import ast
 
 from lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
-from . import wrappers
+
+import maya.cmds as cmds
+import maya.OpenMayaUI as omui
+
+
+class SimpleWidget(QtWidgets.QWidget):
+    def __init__(self, parent=None, designerFile=None, title='Simple Widget'):
+        super(SimpleWidget, self).__init__(parent=parent)
+
+        assert isinstance(title, basestring)
+        self.title = title
+
+        try:
+            cmds.deleteUI(self.title)
+        except RuntimeError:
+            pass
+
+        self.setWindowTitle(self.title)
+
+        if designerFile and isinstance(designerFile, basestring):
+            designPath = os.path.join(os.path.dirname(__file__), designerFile)
+            if os.path.exists(designPath):
+                self.widget = QtCompat.load_ui(designPath)
+                self.widget.setParent(self)
+            else:
+                raise RuntimeError('Given Qt Designer file not in folder.')
+
 
 class Table(QtWidgets.QTableWidget):
     def __init__(self):
@@ -51,20 +77,34 @@ class List(QtWidgets.QListWidget):
         self.setAcceptDrops(False)
 
 
-class DockableWidget(QtWidgets.QWidget):
-    label = 'Rig Builder'
+class DockableWidget(SimpleWidget):
+    def __init__(self, parent=None, designerFile=None, title='RigBuilder'):
+        super(DockableWidget, self).__init__(parent, designerFile, title)
 
-    def __init__(self, parent=None):
-        super(DockableWidget, self).__init__(parent)
 
-        self.setWindowTitle(self.label)
+    def dock(self, width=385, height=735):
 
-        designPath = os.path.join(os.path.dirname(__file__), 'widget.ui')
-        self.widget = QtCompat.load_ui(designPath)
-        self.widget.setParent(self)
+        dockControl = cmds.workspaceControl(
+            self.title,
+            tabToControl=["AttributeEditor", -1],
+            initialWidth=width,
+            minimumWidth=True,
+            initialHeight=height,
+            widthProperty="preferred",
+            label=self.title)
 
-    @classmethod
-    def show(cls):
-        wrappers.Dock(cls, show=True)
+        dockPtr = omui.MQtUtil.findControl(dockControl)
+        dockWidget = QtCompat.wrapInstance(long(dockPtr), QtWidgets.QWidget)
+        dockWidget.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+
+        dockWidget.layout().addWidget(self.widget)
+
+        cmds.evalDeferred(
+            lambda *args: cmds.workspaceControl(
+                dockControl,
+                edit=True,
+                restore=True
+            )
+        )
 
 
