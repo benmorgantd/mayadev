@@ -2,19 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="219e3806-7115-45c7-8016-0b1a0db1be49" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/assetCreator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/asset.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/asset.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/module.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/module.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/FkHierarchy.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/FkHierarchy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/IkChain.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/IkChain.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/Root.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/Root.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/SingleJoint.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/SingleJoint.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/templates/LayoutRig.json" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/templates/LayoutRig.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/assetBuilder.ui" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/assetCreator.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/customWidgets.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/customWidgets.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/rigBuilder.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/rigBuilder.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/test.ui" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/character.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/character.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/creator.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/creator.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -25,24 +14,12 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/asset.py">
+        <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/rigBuilder.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="220">
-              <caret line="10" column="68" selection-start-line="10" selection-start-column="68" selection-end-line="10" selection-end-column="68" />
+            <state relative-caret-position="308">
+              <caret line="14" column="14" selection-start-line="14" selection-start-column="7" selection-end-line="14" selection-end-column="14" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/character.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="396">
-              <caret line="53" column="26" lean-forward="true" selection-start-line="53" selection-start-column="26" selection-end-line="53" selection-end-column="26" />
-              <folding>
-                <element signature="e#0#11#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -51,29 +28,17 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/creator.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="176">
-              <caret line="9" column="4" selection-start-line="9" selection-start-column="4" selection-end-line="9" selection-end-column="4" />
-              <folding>
-                <element signature="e#53#76#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="-272">
+              <caret line="5" selection-start-line="5" selection-end-line="5" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/decorators.py">
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/character.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="220">
-              <caret line="10" column="31" selection-start-line="10" selection-start-column="31" selection-end-line="10" selection-end-column="31" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/module.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="374">
-              <caret line="17" column="51" selection-start-line="17" selection-start-column="51" selection-end-line="17" selection-end-column="51" />
+            <state relative-caret-position="388">
+              <caret line="186" lean-forward="true" selection-start-line="186" selection-end-line="186" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -82,60 +47,12 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/FkHierarchy.py">
+        <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/module.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="308">
-              <caret line="14" column="61" selection-start-line="14" selection-start-column="61" selection-end-line="14" selection-end-column="61" />
+            <state relative-caret-position="264">
+              <caret line="17" column="51" selection-start-line="17" selection-start-column="51" selection-end-line="17" selection-end-column="51" />
               <folding>
-                <element signature="e#19#43#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/IkChain.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="418">
-              <caret line="19" column="77" selection-start-line="19" selection-start-column="77" selection-end-line="19" selection-end-column="77" />
-              <folding>
-                <element signature="e#25#49#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/__init__.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="770">
-              <caret line="35" column="18" selection-start-line="35" selection-start-column="18" selection-end-line="35" selection-end-column="18" />
-              <folding>
-                <element signature="e#0#9#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/SingleJoint.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="352">
-              <caret line="22" column="20" selection-start-line="22" selection-start-column="20" selection-end-line="22" selection-end-column="20" />
-              <folding>
-                <element signature="e#0#24#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/Root.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="242">
-              <caret line="11" column="65" selection-start-line="11" selection-start-column="65" selection-end-line="11" selection-end-column="65" />
-              <folding>
-                <element signature="e#0#24#0" expanded="true" />
+                <element signature="e#0#11#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -152,14 +69,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>setPArent</find>
-      <find>_getMa</find>
-      <find>wrappers.</find>
-      <find>_get</find>
-      <find>parne</find>
-      <find>getMayaMain</find>
-      <find>getMaya</find>
-      <find>show()</find>
       <find>show*)</find>
       <find>label</find>
       <find>contract</find>
@@ -182,6 +91,14 @@
       <find>components</find>
       <find>self.contract['startJoint']</find>
       <find>bindJ</find>
+      <find>mesh</find>
+      <find>meshSEt</find>
+      <find>o</find>
+      <find>cmds.sets</find>
+      <find>build</find>
+      <find>meshSet</find>
+      <find>sets</find>
+      <find>MESH</find>
     </findStrings>
     <replaceStrings>
       <replace>mayaAppDir</replace>
@@ -195,9 +112,9 @@
     </replaceStrings>
     <dirStrings>
       <dir>D:\mayadev\py\scripts\bm\maya\Osiris</dir>
-      <dir>D:\mayadev\py\scripts\bm\maya\Osiris\base</dir>
       <dir>D:\mayadev\py\scripts\bm\maya\utils</dir>
       <dir>D:\mayadev\py\scripts\bm\maya\Osiris\ui</dir>
+      <dir>D:\mayadev\py\scripts\bm\maya\Osiris\base</dir>
     </dirStrings>
   </component>
   <component name="Git.Settings">
@@ -215,11 +132,9 @@
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/decorators.py" />
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/tools/shapes/lib.py" />
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/utils/__init__.py" />
-        <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/creator.py" />
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/utils/boundingBox.py" />
         <option value="$PROJECT_DIR$/py/easyInstall.py" />
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/wrappers.py" />
-        <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/character.py" />
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/__init__.py" />
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/__init__.py" />
         <option value="$PROJECT_DIR$/py/scripts/bm/qt/utils.py" />
@@ -240,6 +155,8 @@
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/Root.py" />
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/SingleJoint.py" />
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/module.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/creator.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/character.py" />
       </list>
     </option>
   </component>
@@ -666,16 +583,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/rigBuilder.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-180">
-          <caret line="57" column="33" selection-start-line="57" selection-start-column="33" selection-end-line="57" selection-end-column="33" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/customWidgets.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-2336">
@@ -693,26 +600,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/asset.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="220">
-          <caret line="10" column="68" selection-start-line="10" selection-start-column="68" selection-end-line="10" selection-end-column="68" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/creator.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="176">
-          <caret line="9" column="4" selection-start-line="9" selection-start-column="4" selection-end-line="9" selection-end-column="4" />
-          <folding>
-            <element signature="e#53#76#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/decorators.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="220">
@@ -726,16 +613,6 @@
           <caret line="35" column="18" selection-start-line="35" selection-start-column="18" selection-end-line="35" selection-end-column="18" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/module.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="374">
-          <caret line="17" column="51" selection-start-line="17" selection-start-column="51" selection-end-line="17" selection-end-column="51" />
-          <folding>
-            <element signature="e#0#11#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -760,16 +637,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/Root.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="242">
-          <caret line="11" column="65" selection-start-line="11" selection-start-column="65" selection-end-line="11" selection-end-column="65" />
-          <folding>
-            <element signature="e#0#24#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/SingleJoint.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="352">
@@ -780,10 +647,57 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/rigMods/Root.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="260">
+          <caret line="40" column="57" selection-start-line="40" selection-start-column="49" selection-end-line="40" selection-end-column="57" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/module.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="264">
+          <caret line="17" column="51" selection-start-line="17" selection-start-column="51" selection-end-line="17" selection-end-column="51" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/asset.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2406">
+          <caret line="91" column="88" selection-start-line="91" selection-start-column="83" selection-end-line="91" selection-end-column="89" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/rigBuilder.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="308">
+          <caret line="14" column="14" selection-start-line="14" selection-start-column="7" selection-end-line="14" selection-end-column="14" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/creator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-272">
+          <caret line="5" selection-start-line="5" selection-end-line="5" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/character.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="396">
-          <caret line="53" column="26" lean-forward="true" selection-start-line="53" selection-start-column="26" selection-end-line="53" selection-end-column="26" />
+        <state relative-caret-position="388">
+          <caret line="186" lean-forward="true" selection-start-line="186" selection-end-line="186" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
           </folding>

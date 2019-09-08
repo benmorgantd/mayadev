@@ -77,7 +77,6 @@ class Character(asset.Asset):
 
             cmds.refresh(currentView=True)
 
-
             if mirrorInstance:
                 mirrorModules.append(mirrorInstance.dict())
                 self.allControls += [comp.ctrl for comp in mirrorInstance.components]
@@ -101,6 +100,9 @@ class Character(asset.Asset):
 
         for weightPath in self.getFiles(self.getComponentPath("weights")):
             weightIO.load(os.path.join(weightRoot, os.path.basename(weightPath)))
+
+        # set all meshes to reference
+        self.setMeshReference(True)
 
         cmds.file(rename=self.getComponentPath("animRig"))
         cmds.file(save=True, type="mayaAscii", force=True)
@@ -180,5 +182,11 @@ class Character(asset.Asset):
                                                       bindMethod=1,
                                                       weightDistribution=1,
                                                       normalizeWeights=2)[0])
+
+    def setMeshReference(self, value):
+
+        for mesh in cmds.sets(self.meshSet, query=True):
+            cmds.setAttr(mesh + '.overrideEnabled', value)
+            cmds.setAttr(mesh + '.overrideDisplayType', 2 * value)
 
 # import Osiris.lib.base.character as character;helm = character.Character("Helm","dev","prop");helm.build();
