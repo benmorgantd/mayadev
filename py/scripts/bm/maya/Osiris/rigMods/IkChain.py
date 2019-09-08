@@ -9,29 +9,20 @@ from ..tools.shapes import lib as shapeLib
 
 
 class IkChain(module.Module):
+
     solverTypes = ['ikSCsolver', 'ikRPsolver']
 
-    def __init__(self, character,
-                 side=None,
-                 mirror=False,
-                 shapeType='cube',
-                 contract={'startJoint': None, 'endJoint': None},
-                 exclude=[],
-                 modType='IkChain',
-                 name='IkChain1',
-                 solverType='singleChain'):
+    def __init__(self, startJoint=None, endJoint=None, exclude=[],
+                 name='ikChain1', solverType='singleChain',
+                 shapeType='cube', character=None):
 
-        super(IkChain, self).__init__(
-            character,
-            modType='IkChain',
-            side=side,
-            mirror=mirror,
-            name=name,
-            shapeType=shapeType)
+        super(IkChain, self).__init__(name=name, modType='IkChain',
+                                      shapeType=shapeType,character=character)
 
-        self.components = []
-        self.contract = contract
-        self.shapeType = shapeType
+        self.startJoint = startJoint
+        self.endJoint = endJoint
+        self.exclude = exclude
+        self.solverType = solverType
 
     @wrapBuild
     def build(self):
@@ -40,16 +31,16 @@ class IkChain(module.Module):
         self.getContainedJoints()
 
 
-        # ikctrl = shapeLib.Shape(
-        #     self.contract['startJoint'], self.shapeType, jnt=self.contract['startJoint'])
+        ikctrl = shapeLib.Shape(
+            self.startJoint, self.shapeType, jnt=self.startJoint)
 
-        # self.components.append(ctrl)
+        self.components.append(ikctrl)
 
-        # self.bindJoints.append(self.contract['startJoint'])
+        self.bindJoints.append(self.startJoint)
 
-        # # binds the joint to the control
-        # self.parentConstrain(
-        #     ctrl.ctrl, self.contract['startJoint'], maintainOffset=True)
+        # binds the joint to the control
+        self.parentConstrain(
+            ctrl.ctrl, self.startJoint, maintainOffset=True)
 
-        # cmds.parent(ctrl.grp, self.modGrp)
+        cmds.parent(ctrl.grp, self.modGrp)
 

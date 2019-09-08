@@ -7,20 +7,10 @@ from ..tools.shapes import lib as shapeLib
 
 class Root(module.Module):
 
-    def __init__(self, character,
-                 modType='Root',
-                 name='Root',
-                 shapeType='triangle'):
+    def __init__(self, name='Root', character=None):
+        super(Root, self).__init__(modType='Root', shapeType='triangle',
+                                   name=name, character=character)
 
-        super(Root, self).__init__(character, modType='Root',
-                                   side='c',
-                                   mirror=False,
-                                   name=name,
-                                   shapeType=shapeType,
-                                   parent=None)
-
-        self.components = []
-        self.contract = {}
 
     @wrapBuild
     def build(self):

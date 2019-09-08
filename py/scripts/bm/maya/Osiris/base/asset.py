@@ -8,7 +8,7 @@ import maya.cmds as cmds
 try:
     _PROJECT_ROOT = os.environ['OSIRIS_ROOT']
 except KeyError:
-    raise RuntimeError('OSIRIS_ROOT environment variable is not set. Please do so.')
+    raise RuntimeError('OSIRIS_ROOT environment variable is not set.')
     
 
 class Asset(object):

@@ -6,19 +6,18 @@ from ..tools.shapes import lib as shapeLib
 
 
 class SingleJoint(module.Module):
+    defaultArgs = {'startJoint': None,
+                   'modType': 'SingleJoint',
+                   'name': 'singleJoint1',
+                   'shapeType':'cube',
+                   'alignWorld':False}
 
-    def __init__(self, character, side=None, mirror=False, shapeType='cube',
-                 contract={'startJoint': None}, name='SingleJoint1',
-                 alignWorld=False):
 
-        super(SingleJoint, self).__init__(character,modType='SingleJoint',
-                                          side=side, mirror=mirror, name=name,
-                                          shapeType=shapeType,
-                                          alignWorld=alignWorld)
+    def __init__(self, startJoint=None, name='singleJoint1', character=None):
+        super(SingleJoint, self).__init__(modType='SingleJoint',
+                                          name=name, character=character)
 
-        self.components = []
-        self.contract = contract
-        self.shapeType = shapeType
+        self.startJoint = startJoint
 
     @wrapBuild
     def build(self):
@@ -26,15 +25,15 @@ class SingleJoint(module.Module):
 
         self.checkContractJoint('startJoint')
 
-        ctrl = shapeLib.Shape(self.contract['startJoint'], self.shapeType,
-                              jnt=self.contract['startJoint'])
+        ctrl = shapeLib.Shape(self.startJoint, self.shapeType,
+                              jnt=self.startJoint)
 
         self.components.append(ctrl)
 
-        self.bindJoints.append(self.contract['startJoint'])
+        self.bindJoints.append(self.startJoint)
 
         # binds the joint to the control
         self.parentConstrain(
-            ctrl.ctrl, self.contract['startJoint'], maintainOffset=True)
+            ctrl.ctrl, self.startJoint, maintainOffset=True)
 
         cmds.parent(ctrl.grp, self.modGrp)

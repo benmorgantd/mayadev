@@ -129,8 +129,6 @@ class BuildListItem(QtWidgets.QListWidgetItem):
 
     def getValues(self):
 
-        attrLayout = self.attributeLayout.layout
-
         attrValues = {}
 
         for row in self.attributeLayout.rows:

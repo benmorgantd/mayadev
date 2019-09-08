@@ -2,11 +2,12 @@ import os
 
 import maya.cmds as cmds
 
-from lib.Qt import QtWidgets
+from lib.Qt import QtWidgets, QtCore
 from bm.maya.utils import mayaQt
-from . import base, customWidgets
+from . import base, customWidgets, assetCreator
 reload(base)
 reload(customWidgets)
+reload(assetCreator)
 
 from ..base import asset
 reload(asset)
@@ -29,6 +30,8 @@ class RigBuilder(base.DockableWidget):
         self.loadModules()
         self.loadProjects()
         self.loadAssetTypes()
+
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
 
 
     def setupUI(self):
@@ -60,10 +63,13 @@ class RigBuilder(base.DockableWidget):
 
     def launchAssetWidget(self):
 
-        assetBuilderUI = assetBuilder.AssetBuilder(
-            parent=mayaQt.getMayaMainWindow())
+        assetCreatorUI = assetCreator.AssetCreator(
+                                            parent=mayaQt.getMayaMainWindow(),
+                                            rigBuilder=self,
+                                            designerFile='assetCreator.ui')
 
-        assetBuilderUI.show()
+        assetCreatorUI.show()
+        assetCreatorUI.activateWindow()
 
 
     def setupButtons(self):

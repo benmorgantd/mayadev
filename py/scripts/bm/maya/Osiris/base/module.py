@@ -10,23 +10,27 @@ from decorators import wrapBuild
 
 
 class Module(object):
+
     mirrorPairs = {"L": "R", "R": "L"}
 
-    def __init__(self, character, contract=None, components=None, name="module1", modType=None,
-                 parent=None, side="L", mirror=False, shapeType="cube", alignWorld=False):
+    def __init__(self, character=None, name='module1',
+                 modType='Module', parent=None, side='L', mirror=False,
+                 shapeType='cube', alignWorld=False):
 
-        self.contract = contract
         self.character = character
-        self.components = components
-        self.bindJoints = []
-        self.side = side
-        self.modType = modType
-        self.mirror = mirror
-        self.parent = parent
+        self.components = []
         self.name = name
-        self.node = None
+        self.modType = modType
+        self.parent = parent
+        self.side = side
+        self.mirror = mirror
         self.shapeType = shapeType
         self.alignWorld = alignWorld
+
+        self.bindJoints = []
+        self.startJoint = None
+        self.endJoint = None
+        self.exclude = []
 
     @property
     def dict(self):
@@ -103,41 +107,44 @@ class Module(object):
         return
 
     def doMirror(self):
-        if self.mirror:
-            print ">>> Mirroring " + self.name
 
-            mirrorSide = Module.mirrorPairs[self.side]
+        return None
 
-            # create a new instance of this class with mirrored attributes
-
-            mirrorContract = {}
-            
-            for key in self.contract:
-                value = self.contract[key]
-
-                if isinstance(value, basestring):
-                    mirrorContract[key] = self.findMirror(value)
-
-                elif type(value) is list:
-                    mirrorList = []
-                    for j in value:
-                        mirrorList.append(self.findMirror(j))
-
-                    mirrorContract[key] = mirrorList
-
-            # the mirror contract isn't getting set correctly
-
-
-            mirrorSelf = self.__class__(character=self.character,
-                                        contract=mirrorContract,
-                                        side=mirrorSide,
-                                        modType=self.modType,
-                                        mirror=False,
-                                        name=self.name.replace(self.side + "_", mirrorSide + "_"))
-
-            mirrorSelf.build()
-
-            return mirrorSelf
+        # if self.mirror:
+        #     print ">>> Mirroring " + self.name
+        #
+        #     mirrorSide = Module.mirrorPairs[self.side]
+        #
+        #     # create a new instance of this class with mirrored attributes
+        #
+        #     mirrorContract = {}
+        #
+        #     for key in self.contract:
+        #         value = self.contract[key]
+        #
+        #         if isinstance(value, basestring):
+        #             mirrorContract[key] = self.findMirror(value)
+        #
+        #         elif type(value) is list:
+        #             mirrorList = []
+        #             for j in value:
+        #                 mirrorList.append(self.findMirror(j))
+        #
+        #             mirrorContract[key] = mirrorList
+        #
+        #     # the mirror contract isn't getting set correctly
+        #
+        #
+        #     mirrorSelf = self.__class__(character=self.character,
+        #                                 side=mirrorSide,
+        #                                 modType=self.modType,
+        #                                 mirror=False,
+        #                                 name=self.name.replace(self.side + "_",
+        #                                                        mirrorSide + "_"))
+        #
+        #     mirrorSelf.build()
+        #
+        #     return mirrorSelf
 
     def findMirror(self, node):
         """Returns the mirrored node of the same type if it's in the scene.
@@ -164,9 +171,12 @@ class Module(object):
 
         cmds.parent(self.modGrp, self.character.modulesGrp)
 
-        if "startJoint" in self.contract.keys():
-            startJoint = self.contract["startJoint"]
-            parentJoint = cmds.listRelatives(startJoint, parent=True, type="joint")
+        # if "startJoint" in self.contract.keys():
+        #     startJoint = self.contract["startJoint"]
+
+        if self.startJoint:
+            parentJoint = cmds.listRelatives(
+                self.startJoint, parent=True, type="joint")
 
             if parentJoint:
                 moduleParent = parentJoint[0]
@@ -201,12 +211,14 @@ class Module(object):
                                   lock=True, keyable=False, channelBox=False)
 
     def checkContract(self):
-        for key in self.contract:
-            if self.contract[key] == None:
-                raise RuntimeError("Contract is not yet fulfilled")
-
-        print ">>> Contract for {0} fulfilled".format(self.modType)
         return True
+
+        # for key in self.contract:
+        #     if self.contract[key] == None:
+        #         raise RuntimeError("Contract is not yet fulfilled")
+        #
+        # print ">>> Contract for {0} fulfilled".format(self.modType)
+        # return True
 
     def connectComponents(self):
         for ctrl in self.components:
@@ -228,10 +240,12 @@ class Module(object):
 
     def getContainedJoints(self):
 
-
         sel = om.MSelectionList()
-        print self.contract['startJoint']
-        sel.add(self.contract['startJoint'])
+
+        if not self.startJoint:
+            raise RuntimeError('Need a start joint.')
+
+        sel.add(self.startJoint)
         dag = om.MDagPath()
         sel.getDagPath(0, dag)
 
@@ -243,7 +257,7 @@ class Module(object):
         while not itDag.isDone():
             jnt = itDag.partialPathName()
 
-            if jnt not in self.contract['exclude']:
+            if jnt not in self.exclude:
 
                 self.bindJoints.append(jnt)
 

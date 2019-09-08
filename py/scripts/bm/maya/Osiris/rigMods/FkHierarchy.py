@@ -9,25 +9,13 @@ from ..tools.shapes import lib as shapeLib
 
 class FkHierarchy(module.Module):
 
-    def __init__(self, character,
-                 side='l',
-                 mirror=False,
-                 shapeType='cube',
-                 contract={'startJoint': None, 'exclude': []},
-                 modType='FkHierarchy',
-                 name='fkHierarchy1'):
+    def __init__(self, startJoint=None, exclude=[], name='fkHierarchy1',
+                 character=None):
+        super(FkHierarchy, self).__init__(name=name, modType='FkHierarchy',
+                                          character=character)
 
-        super(FkHierarchy, self).__init__(
-            character,
-            modType='FkHierarchy',
-            side=side,
-            mirror=mirror,
-            name=name,
-            shapeType=shapeType)
-
-        self.components = []
-        self.contract = contract
-        self.shapeType = shapeType
+        self.startJoint = startJoint
+        self.exclude = exclude
 
     @wrapBuild
     def build(self):
