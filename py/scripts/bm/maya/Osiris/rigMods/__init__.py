@@ -39,9 +39,12 @@ for modType in __all__:
     j = 1
 
     for i in range(numDefaults - 1, startIndex, -1):
+        print args[numArgs - j], defaults[i]
         if args[numArgs - j] not in ['name', 'modType', 'self', 'character']:
             classArgs[args[numArgs - j]] = defaults[i]
         j += 1
+
+    print classArgs
 
     _MODULE_ARGS[modType] = classArgs
     _MODULE_CLASSES[modType] = ModClass

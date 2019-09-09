@@ -180,11 +180,11 @@ class AttributeLayoutValue(object):
                 widget.setCurrentIndex(widget.findText(self.defaultValue))
 
             elif self.attribute == 'shapeType':
-                import Osiris.lib.tools.shapes.lib as shapeLib
+                from ..tools.shapes import lib
 
                 widget = QtWidgets.QComboBox()
 
-                for shapeType in shapeLib.Shape.types.keys():
+                for shapeType in lib.Shape.types.keys():
                     widget.addItem(shapeType)
 
                 widget.setCurrentIndex(widget.findText(self.defaultValue))

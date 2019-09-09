@@ -10,10 +10,11 @@ from ..tools.shapes import lib as shapeLib
 class FkHierarchy(module.Module):
 
     def __init__(self, startJoint=None, exclude=[], name='fkHierarchy1',
-                 character=None):
+                 character=None, parent=None):
         super(FkHierarchy, self).__init__(name=name, modType='FkHierarchy',
                                           character=character)
 
+        self.parent = parent
         self.startJoint = startJoint
         self.exclude = exclude
 
@@ -22,7 +23,8 @@ class FkHierarchy(module.Module):
 
         self.checkContractJoint(['startJoint'])
 
-        # fills self.joints to contain the non-excluded joints inbetween start and end joint
+        # fills self.joints to contain the non-excluded joints 
+        # inbetween start and end joint
         self.getContainedJoints()
 
         rootJnt = True
@@ -49,3 +51,7 @@ class FkHierarchy(module.Module):
             cmds.connectAttr(ctrl.ctrl + '.bindJoint', jnt + '.ctrl')
 
             rootJnt = False
+
+        # parent the startJoint control to the module's parent
+        cmds.parentConstraint(self.parent, self.components[0].grp,
+                              maintainOffset=True)

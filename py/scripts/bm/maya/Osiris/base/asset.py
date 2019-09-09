@@ -214,7 +214,7 @@ class Asset(object):
     def exists(cls, project, name, assetType):
         """Checks if the given asset exists"""
 
-        rootDir = os.path.abspath(os.path.join("D:", "projects",
+        rootDir = os.path.abspath(os.path.join(_PROJECT_ROOT,
                                                 project, assetType, name))
 
         if os.path.exists(rootDir):

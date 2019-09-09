@@ -31,7 +31,13 @@ class RigBuilder(base.DockableWidget):
         self.loadProjects()
         self.loadAssetTypes()
 
+        self.widget.loadComponent.setEnabled(False)
+        self.widget.saveComponent.setEnabled(False)
+        self.widget.build.setEnabled(False)
+
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+
+        
 
 
     def setupUI(self):
@@ -150,10 +156,10 @@ class RigBuilder(base.DockableWidget):
             cmds.file(rename=self.assetInstance.getComponentPath(componentType))
             cmds.file(save=True, type="mayaAscii", force=True)
         elif componentType == 'cvs':
-            import Osiris.lib.tools.shapes.io as shapeIO
+            from bm.maya.Osiris.tools.shapes import io as shapeIO
             shapeIO.save(self.assetInstance.getComponentPath(componentType))
         elif componentType == 'weights':
-            import Osiris.lib.tools.weights.io as weightIO
+            from bm.maya.Osiris.tools.weights import io as weightIO
             reload(weightIO)
             weightIO.save(self.assetInstance.getComponentPath(componentType))
 
@@ -163,10 +169,10 @@ class RigBuilder(base.DockableWidget):
         if componentType in ['skeleton', 'mesh', 'animRig']:
             self.assetInstance.openFile(self.assetInstance.getComponentPath(componentType))
         elif componentType == 'cvs':
-            import Osiris.lib.tools.shapes.io as shapeIO
+            from bm.maya.Osirs.tools.shapes import io as shapeIO
             shapeIO.load(self.assetInstance.getComponentPath(componentType))
         elif componentType == 'weights':
-            import Osiris.lib.tools.weights.io as weightIO
+            from bm.maya.Osiris.tools.weights import io as weightIO
             weightIO.load(self.assetInstance.getComponentPath(componentType))
         elif componentType == 'build':
             self.loadBuild()
@@ -183,6 +189,10 @@ class RigBuilder(base.DockableWidget):
             self.assetInstance = creator.initiate(name, project, assetType, standalone=False)
             self.loadBuild(self.assetInstance.getComponentPath('build'))
 
+            self.widget.loadComponent.setEnabled(True)
+            self.widget.saveComponent.setEnabled(True)
+            self.widget.build.setEnabled(True)
+
         else:
             result = cmds.confirmDialog(title='Error Loading Character',
                 message='Asset <{0}> \nType <{1}>\nProject <{2}>\ndoes not exist.'.format(name, assetType, project),
@@ -194,6 +204,9 @@ class RigBuilder(base.DockableWidget):
             if result == "Create Asset":
                 self.assetInstance = creator.initiate(name, project, assetType, standalone=False)
                 self.loadBuild(self.assetInstance.getComponentPath('build'))
+                self.widget.loadComponent.setEnabled(True)
+                self.widget.saveComponent.setEnabled(True)
+                self.widget.build.setEnabled(True)
 
 
     def buildCharacter(self):

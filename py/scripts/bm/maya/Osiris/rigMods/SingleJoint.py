@@ -6,17 +6,13 @@ from ..tools.shapes import lib as shapeLib
 
 
 class SingleJoint(module.Module):
-    defaultArgs = {'startJoint': None,
-                   'modType': 'SingleJoint',
-                   'name': 'singleJoint1',
-                   'shapeType':'cube',
-                   'alignWorld':False}
 
-
-    def __init__(self, startJoint=None, name='singleJoint1', character=None):
+    def __init__(self, startJoint=None, name='singleJoint1', character=None,
+                parent=None):
         super(SingleJoint, self).__init__(modType='SingleJoint',
                                           name=name, character=character)
 
+        self.parent = parent
         self.startJoint = startJoint
 
     @wrapBuild
@@ -37,3 +33,6 @@ class SingleJoint(module.Module):
             ctrl.ctrl, self.startJoint, maintainOffset=True)
 
         cmds.parent(ctrl.grp, self.modGrp)
+
+        cmds.parentConstraint(self.parent, self.components[0].grp,
+                              maintainOffset=True)

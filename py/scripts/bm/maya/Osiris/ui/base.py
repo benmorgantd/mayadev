@@ -20,6 +20,8 @@ class SimpleWidget(QtWidgets.QWidget):
         except RuntimeError:
             pass
 
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+
         self.setWindowTitle(self.title)
 
         if designerFile and isinstance(designerFile, basestring):

@@ -14,11 +14,12 @@ class IkChain(module.Module):
 
     def __init__(self, startJoint=None, endJoint=None, exclude=[],
                  name='ikChain1', solverType='singleChain',
-                 shapeType='cube', character=None):
+                 shapeType='cube', character=None, parent=None):
 
         super(IkChain, self).__init__(name=name, modType='IkChain',
                                       shapeType=shapeType,character=character)
 
+        self.parent = parent
         self.startJoint = startJoint
         self.endJoint = endJoint
         self.exclude = exclude

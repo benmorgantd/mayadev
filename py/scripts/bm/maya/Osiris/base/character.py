@@ -86,6 +86,8 @@ class Character(asset.Asset):
         self.componentSet = cmds.sets(self.allControls, name="CTRL_set")
         cmds.sets(self.componentSet, include="MASTER_set")
 
+        # parent modules without a parent to the Root module
+
         self.skin()
 
         self.addNodeAttrs()
