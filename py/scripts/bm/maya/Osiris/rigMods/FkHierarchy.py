@@ -10,9 +10,9 @@ from ..tools.shapes import lib as shapeLib
 class FkHierarchy(module.Module):
 
     def __init__(self, startJoint=None, exclude=[], name='fkHierarchy1',
-                 character=None, parent=None):
+                 character=None, parent=None, shapeType='cube'):
         super(FkHierarchy, self).__init__(name=name, modType='FkHierarchy',
-                                          character=character)
+                                          character=character, shapeType=shapeType)
 
         self.parent = parent
         self.startJoint = startJoint
@@ -53,5 +53,5 @@ class FkHierarchy(module.Module):
             rootJnt = False
 
         # parent the startJoint control to the module's parent
-        cmds.parentConstraint(self.parent, self.components[0].grp,
-                              maintainOffset=True)
+        if self.parent:
+            self.parentConstrain(self.parent, self.components[0].grp, maintainOffset=True)

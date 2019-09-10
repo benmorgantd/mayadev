@@ -49,6 +49,7 @@ class AssetCreator(QtWidgets.QMainWindow):
 
             if self.rigBuilder:
                 self.rigBuilder.loadBuild(assetInstance.getComponentPath('build'))
+                # TODO: refresh ui here
 
             return assetInstance
 

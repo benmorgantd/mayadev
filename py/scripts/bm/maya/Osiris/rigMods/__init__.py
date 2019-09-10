@@ -7,8 +7,8 @@ dirname = os.path.dirname(os.path.abspath(__file__))
 __all__ = [mod[0:-3] for mod in os.listdir(
           dirname) if mod.endswith('.py') and mod != '__init__.py']
 
-_MODULE_CLASSES = {}
-_MODULE_ARGS = {}
+MODULE_CLASSES = {}
+MODULE_ARGS = {}
 
 
 for modType in __all__:
@@ -39,12 +39,9 @@ for modType in __all__:
     j = 1
 
     for i in range(numDefaults - 1, startIndex, -1):
-        print args[numArgs - j], defaults[i]
         if args[numArgs - j] not in ['name', 'modType', 'self', 'character']:
             classArgs[args[numArgs - j]] = defaults[i]
         j += 1
 
-    print classArgs
-
-    _MODULE_ARGS[modType] = classArgs
-    _MODULE_CLASSES[modType] = ModClass
+    MODULE_ARGS[modType] = classArgs
+    MODULE_CLASSES[modType] = ModClass

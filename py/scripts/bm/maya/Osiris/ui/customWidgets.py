@@ -35,9 +35,6 @@ class ModuleList(base.List):
             self.buildList.addItem(newMod)
 
 
-###########################
-
-
 class BuildList(base.List):
     def __init__(self):
         super(BuildList, self).__init__()
@@ -123,7 +120,7 @@ class BuildListItem(QtWidgets.QListWidgetItem):
         from .. import rigMods
         reload(rigMods)
 
-        attrData = rigMods._MODULE_ARGS[self.modType]
+        attrData = rigMods.MODULE_ARGS[self.modType]
 
         return attrData
 
@@ -146,9 +143,6 @@ class BuildListItem(QtWidgets.QListWidgetItem):
         return attrValues
 
         # get the values of all the widgets in the attribute layout
-
-
-###########################
 
 
 class AttributeLayoutValue(object):

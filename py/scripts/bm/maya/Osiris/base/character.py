@@ -61,7 +61,7 @@ class Character(asset.Asset):
             # access the modType attribute from the module's dictionary
             modType = mod["modType"]
 
-            modInstance = rigMods._MODULE_CLASSES[modType].__new__(rigMods._MODULE_CLASSES[modType])
+            modInstance = rigMods.MODULE_CLASSES[modType].__new__(rigMods.MODULE_CLASSES[modType])
             modInstance.__init__(character=self)
 
             for key, value in mod.items():
@@ -86,8 +86,6 @@ class Character(asset.Asset):
         self.componentSet = cmds.sets(self.allControls, name="CTRL_set")
         cmds.sets(self.componentSet, include="MASTER_set")
 
-        # parent modules without a parent to the Root module
-
         self.skin()
 
         self.addNodeAttrs()
@@ -103,8 +101,11 @@ class Character(asset.Asset):
         for weightPath in self.getFiles(self.getComponentPath("weights")):
             weightIO.load(os.path.join(weightRoot, os.path.basename(weightPath)))
 
+        # scene cleanup:
         # set all meshes to reference
         self.setMeshReference(True)
+        cmds.setAttr('SKELETON.visibility', 0)
+
 
         cmds.file(rename=self.getComponentPath("animRig"))
         cmds.file(save=True, type="mayaAscii", force=True)

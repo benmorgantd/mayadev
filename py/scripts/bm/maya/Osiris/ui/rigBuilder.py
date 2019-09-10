@@ -65,7 +65,13 @@ class RigBuilder(base.DockableWidget):
         fileMenu = menu.addMenu('File')
         newAssetAction = fileMenu.addAction('New Asset')
         newAssetAction.triggered.connect(lambda: self.launchAssetWidget())
+
+        actionSave = fileMenu.addAction('Save Build')
+        actionSave.triggered.connect(lambda: self.saveBuild())
+
         self.widget.menuLayout.addWidget(menu)
+
+        
 
     def launchAssetWidget(self):
 
@@ -122,10 +128,6 @@ class RigBuilder(base.DockableWidget):
             if mod.endswith('.py') and mod != '__init__.py':
                 self.moduleList.addItem(mod[0:-3])
 
-    def setupFileMenu(self):
-        self.widget.actionLoad.triggered.connect(lambda: self.loadBuild())
-        self.widget.actionSave.triggered.connect(lambda: self.saveBuild())
-
     def setupAssetMenu(self):
 
         self.widget.actionSaveSkeleton.triggered.connect(lambda: self.saveComponent('skeleton'))
@@ -174,8 +176,6 @@ class RigBuilder(base.DockableWidget):
         elif componentType == 'weights':
             from bm.maya.Osiris.tools.weights import io as weightIO
             weightIO.load(self.assetInstance.getComponentPath(componentType))
-        elif componentType == 'build':
-            self.loadBuild()
 
     def initiateAsset(self):
         project = self.widget.projectName.currentText()
@@ -186,7 +186,8 @@ class RigBuilder(base.DockableWidget):
 
         if self.assetPath:
             self.setWindowTitle('Osiris Rig Builder: ' + self.assetPath)
-            self.assetInstance = creator.initiate(name, project, assetType, standalone=False)
+            self.assetInstance = creator.initiate(name, project, assetType, 
+            standalone=False)
             self.loadBuild(self.assetInstance.getComponentPath('build'))
 
             self.widget.loadComponent.setEnabled(True)

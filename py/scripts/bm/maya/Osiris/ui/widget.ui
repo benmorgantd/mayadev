@@ -137,17 +137,12 @@ font: 75 8pt &quot;MS Shell Dlg 2&quot;;</string>
             </item>
             <item>
              <property name="text">
-              <string>cvs</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
               <string>weights</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>build</string>
+              <string>cvs</string>
              </property>
             </item>
             <item>

@@ -1,7 +1,6 @@
 import os
 import shutil
 import json
-from string import Template
 
 import maya.cmds as cmds
 
@@ -46,7 +45,6 @@ class Asset(object):
         cvsfile = self.getComponentPath("cvs")
         buildfile = self.getComponentPath("build")
 
-
         if not os.path.exists(meshfile) or not os.path.exists(skeletonfile):
             if not os.path.exists(meshfile):
                 print ">> Creating mesh file."
@@ -80,20 +78,14 @@ class Asset(object):
         if not os.path.exists(buildfile):
             print ">> Creating build file."
             # give it a LayoutRig template
-            LayoutRigStr = ""
-            LayoutRigPath = os.path.join(self.templatesPath, "LayoutRig.json")
+            layoutRigPath = os.path.join(self.templatesPath, "LayoutRig.json")
 
             with open(LayoutRigPath, "r") as f:
-                LayoutRigStr = Template(str(f.read()))
+                layoutRigData = f.read
 
-            # replace the strings in the file using Template.substitute()
-            LayoutRigStr = LayoutRigStr.substitute(PROJECT=self.project,
-                                                   ASSET_TYPE=self.assetType,
-                                                   MESH_PATH=self.getComponentPath("mesh"),
-                                                   SKELETON_PATH=self.getComponentPath("skeleton"))
-
+            # copy the contents to this asset's build file
             with open(buildfile, "w") as f:
-                f.write(LayoutRigStr.replace("\\", "\\\\"))
+                f.write(layoutRigData)
 
             self.versionFile(buildfile)
 

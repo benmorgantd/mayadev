@@ -171,22 +171,17 @@ class Module(object):
 
         cmds.parent(self.modGrp, self.character.modulesGrp)
 
-        # if "startJoint" in self.contract.keys():
-        #     startJoint = self.contract["startJoint"]
-
         if self.startJoint:
-            parentJoint = cmds.listRelatives(
-                self.startJoint, parent=True, type="joint")
+            parentJoint = cmds.listRelatives(self.startJoint, parent=True, type="joint")
 
             if parentJoint:
                 moduleParent = parentJoint[0]
                 # todo: this is where you could add a followSwitch option
-            
             else:
-                # parent to layout group
+                # parent to layout group control
                 moduleParent = "layout03_ctrl"
 
-            self.parentConstrain(moduleParent, self.modGrp)
+            self.parentConstrain(moduleParent, self.modGrp, maintainOffset=True)
 
     def parentConstrain(self, parent=None, childList=None, maintainOffset=True):
 

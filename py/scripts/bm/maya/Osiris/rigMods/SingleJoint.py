@@ -8,9 +8,9 @@ from ..tools.shapes import lib as shapeLib
 class SingleJoint(module.Module):
 
     def __init__(self, startJoint=None, name='singleJoint1', character=None,
-                parent=None):
+                parent=None, shapeType='cube'):
         super(SingleJoint, self).__init__(modType='SingleJoint',
-                                          name=name, character=character)
+                                          name=name, character=character, shapeType=shapeType)
 
         self.parent = parent
         self.startJoint = startJoint
@@ -34,5 +34,6 @@ class SingleJoint(module.Module):
 
         cmds.parent(ctrl.grp, self.modGrp)
 
-        cmds.parentConstraint(self.parent, self.components[0].grp,
-                              maintainOffset=True)
+        if self.parent:
+            self.parentConstrain(self.parent, self.components[0].grp,
+                                maintainOffset=True)

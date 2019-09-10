@@ -45,3 +45,6 @@ class IkChain(module.Module):
 
         cmds.parent(ctrl.grp, self.modGrp)
 
+        # if self.parent:
+            # self.parentConstrain(self.parent, self.compon)
+
