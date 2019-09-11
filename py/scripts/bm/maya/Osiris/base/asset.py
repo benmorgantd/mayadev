@@ -80,8 +80,8 @@ class Asset(object):
             # give it a LayoutRig template
             layoutRigPath = os.path.join(self.templatesPath, "LayoutRig.json")
 
-            with open(LayoutRigPath, "r") as f:
-                layoutRigData = f.read
+            with open(layoutRigPath, "r") as f:
+                layoutRigData = f.read()
 
             # copy the contents to this asset's build file
             with open(buildfile, "w") as f:

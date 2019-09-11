@@ -69,17 +69,19 @@ class BuildList(base.List):
 
         return attrData
 
-
-    def mousePressEvent(self, event):
-        QtWidgets.QListWidget.mousePressEvent(self, event)
-
-
-        listItem = self.item(self.currentRow())
+    def hideAttrLayouts(self):
 
         for i in range(self.count()):
             itemAtRow = self.item(i)
             if itemAtRow.attributeLayout:
                 itemAtRow.attributeLayout.setVisible(False)
+
+    def mousePressEvent(self, event):
+        QtWidgets.QListWidget.mousePressEvent(self, event)
+
+        listItem = self.item(self.currentRow())
+
+        self.hideAttrLayouts()
 
         listItem.attributeLayout.setVisible(True)
 
@@ -90,6 +92,7 @@ class BuildList(base.List):
 
         self.editItem(currentItem)
 
+    
 
 class BuildListItem(QtWidgets.QListWidgetItem):
     def __init__(self, modType, customAttrs=None, attributeContainer=None):

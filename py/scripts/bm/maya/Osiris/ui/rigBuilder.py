@@ -84,6 +84,7 @@ class RigBuilder(base.DockableWidget):
         assetCreatorUI.activateWindow()
 
 
+
     def setupButtons(self):
         self.widget.loadCharacter.clicked.connect(lambda: self.initiateAsset())
         self.widget.loadComponent.clicked.connect(lambda: self.loadComponent())
@@ -188,26 +189,29 @@ class RigBuilder(base.DockableWidget):
             self.setWindowTitle('Osiris Rig Builder: ' + self.assetPath)
             self.assetInstance = creator.initiate(name, project, assetType, 
             standalone=False)
+
+            self.buildList.reset()
+
             self.loadBuild(self.assetInstance.getComponentPath('build'))
 
             self.widget.loadComponent.setEnabled(True)
             self.widget.saveComponent.setEnabled(True)
             self.widget.build.setEnabled(True)
 
-        else:
-            result = cmds.confirmDialog(title='Error Loading Character',
-                message='Asset <{0}> \nType <{1}>\nProject <{2}>\ndoes not exist.'.format(name, assetType, project),
-                button=['Create Asset', 'No'],
-                icon='warning',
-                cancelButton='No',
-                dismissString='No')
+        # else:
+        #     result = cmds.confirmDialog(title='Error Loading Character',
+        #         message='Asset <{0}> \nType <{1}>\nProject <{2}>\ndoes not exist.'.format(name, assetType, project),
+        #         button=['Create Asset', 'No'],
+        #         icon='warning',
+        #         cancelButton='No',
+        #         dismissString='No')
 
-            if result == "Create Asset":
-                self.assetInstance = creator.initiate(name, project, assetType, standalone=False)
-                self.loadBuild(self.assetInstance.getComponentPath('build'))
-                self.widget.loadComponent.setEnabled(True)
-                self.widget.saveComponent.setEnabled(True)
-                self.widget.build.setEnabled(True)
+        #     if result == "Create Asset":
+        #         self.assetInstance = creator.initiate(name, project, assetType, standalone=False)
+        #         self.loadBuild(self.assetInstance.getComponentPath('build'))
+        #         self.widget.loadComponent.setEnabled(True)
+        #         self.widget.saveComponent.setEnabled(True)
+        #         self.widget.build.setEnabled(True)
 
 
     def buildCharacter(self):
@@ -288,6 +292,22 @@ class RigBuilder(base.DockableWidget):
                                                    customAttrs=customAttrs)
             listItem.setText(str(modName))
             self.buildList.addItem(listItem)
+
+    def resetAssetBoxes(self):
+
+        self.widget.projectName.clear()
+        self.widget.assetType.clear()
+        self.widget.assetName.clear()
+
+        self.loadProjects()
+        self.loadAssetTypes()
+        self.loadAssets()
+
+    def resetBuildList(self):
+        
+        self.buildList.cellData = {}
+        self.buildList.hideAttrLayouts()
+        self.buildList.clear()
 
 
 ##############
