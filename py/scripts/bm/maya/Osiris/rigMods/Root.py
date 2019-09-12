@@ -45,8 +45,11 @@ class Root(module.Module):
 
     def makeRigGroups(self):
         self.character.rigGrp = cmds.group(empty=True, name='RIG')
-        self.character.meshGrp = cmds.group(
-            self.character.meshSet, name='MESH')
+        try:
+            self.character.meshGrp = cmds.group(
+                self.character.meshSet, name='MESH')
+        except RuntimeError:
+            self.character.meshGrp = cmds.group(empty=True, name='MESH')
         self.character.skeletonGrp = cmds.group('root', name='SKELETON')
         self.character.modulesGrp = cmds.group(empty=True, name='MODULES')
 

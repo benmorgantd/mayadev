@@ -34,6 +34,18 @@ class ModuleList(base.List):
             newMod = BuildListItem(modType=selectedModType, attributeContainer=self.attributeContainer)
             self.buildList.addItem(newMod)
 
+class BuildListContextMenu(QtWidgets.QMenu):
+    def __init__(self, buildList):
+        super(BuildListContextMenu, self).__init__()
+
+        deleteAction = self.addAction('Delete')
+        deleteAction.triggered.connect(lambda: buildList.deleteItem())
+
+        self.addSeparator()
+
+        duplicateAction = self.addAction('Duplicate')
+        duplicateAction.triggered.connect(lambda: buildList.duplicateItem())
+
 
 class BuildList(base.List):
     def __init__(self):
@@ -47,6 +59,28 @@ class BuildList(base.List):
         self.setDragDropOverwriteMode(False)
         self.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
 
+        self.contextMenu = BuildListContextMenu(buildList=self)
+        self.contextMenu.hide()
+
+    def loadList(self, buildData, attributeLayoutContainer):
+
+        self.clear()
+
+        for mod in buildData:
+
+            modType = mod['modType']
+            modName = mod['name']
+
+            customAttrs = mod
+            customAttrs.pop('character')
+            customAttrs.pop('modType')
+            customAttrs.pop('name')
+
+            listItem = BuildListItem(modType=modType, 
+                                    attributeContainer=attributeLayoutContainer,
+                                    customAttrs=customAttrs)
+            listItem.setText(str(modName))
+            self.addItem(listItem)
         
     def getAllValues(self):
 
@@ -70,7 +104,6 @@ class BuildList(base.List):
         return attrData
 
     def hideAttrLayouts(self):
-
         for i in range(self.count()):
             itemAtRow = self.item(i)
             if itemAtRow.attributeLayout:
@@ -78,6 +111,12 @@ class BuildList(base.List):
 
     def mousePressEvent(self, event):
         QtWidgets.QListWidget.mousePressEvent(self, event)
+
+        # check if it's a right click
+        if event.button() == QtCore.Qt.RightButton:
+            globalCursorPos = QtGui.QCursor().pos()
+            self.contextMenu.move(globalCursorPos)
+            self.contextMenu.show()
 
         listItem = self.item(self.currentRow())
 
@@ -92,8 +131,28 @@ class BuildList(base.List):
 
         self.editItem(currentItem)
 
-    
+    def deleteItem(self):
+        # delete the currently selected item
+        currentItemRow = self.currentRow()
+        currentItem = self.item(currentItemRow)
+        currentItem.attributeLayout.setVisible(False)
+        self.takeItem(currentItemRow)
 
+        self.contextMenu.hide()
+
+    def duplicateItem(self):
+        
+        # get the selection
+        currentObject = self.item(self.currentRow())
+
+        # create a new list item of the same type as the selection
+        listItem = BuildListItem(modType=currentObject.modType, 
+                                  attributeContainer=currentObject.attributeContainer)
+        listItem.setText(str(currentObject.modType))
+        self.addItem(listItem)
+
+        # TODO: copy the attributes from the selection
+        
 class BuildListItem(QtWidgets.QListWidgetItem):
     def __init__(self, modType, customAttrs=None, attributeContainer=None):
         super(BuildListItem, self).__init__()
@@ -106,7 +165,7 @@ class BuildListItem(QtWidgets.QListWidgetItem):
         self.setFlags(self.flags() | QtCore.Qt.ItemIsEditable)
         self.setSizeHint(QtCore.QSize(50,25))
 
-        # Put attribute data inside of the build layout item! 
+        # Put attribute data inside of the build layout item
         self.customAttrs = customAttrs
         self.defaultAttrs = self.loadAttributeTemplates()
 
@@ -144,9 +203,6 @@ class BuildListItem(QtWidgets.QListWidgetItem):
         attrValues['modType'] = self.modType
 
         return attrValues
-
-        # get the values of all the widgets in the attribute layout
-
 
 class AttributeLayoutValue(object):
 

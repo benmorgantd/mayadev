@@ -5,7 +5,7 @@ import json
 import maya.cmds as cmds
 
 try:
-    _PROJECT_ROOT = os.environ['OSIRIS_ROOT']
+    PROJECT_ROOT = os.environ['OSIRIS_ROOT']
 except KeyError:
     raise RuntimeError('OSIRIS_ROOT environment variable is not set.')
     
@@ -90,7 +90,7 @@ class Asset(object):
             self.versionFile(buildfile)
 
     def getRootDir(self):
-        self.rootDir = os.path.abspath(os.path.join(_PROJECT_ROOT,
+        self.rootDir = os.path.abspath(os.path.join(PROJECT_ROOT,
                                                     self.project, self.assetType, self.name))
 
         if os.path.exists(self.rootDir):
@@ -206,7 +206,7 @@ class Asset(object):
     def exists(cls, project, name, assetType):
         """Checks if the given asset exists"""
 
-        rootDir = os.path.abspath(os.path.join(_PROJECT_ROOT,
+        rootDir = os.path.abspath(os.path.join(PROJECT_ROOT,
                                                 project, assetType, name))
 
         if os.path.exists(rootDir):

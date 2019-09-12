@@ -28,17 +28,18 @@ class RigBuilder(base.DockableWidget):
         self.setupUI()
         self.setupButtons()
         self.loadModules()
+
         self.loadProjects()
         self.loadAssetTypes()
+        self.loadAssets()
 
         self.widget.loadComponent.setEnabled(False)
         self.widget.saveComponent.setEnabled(False)
         self.widget.build.setEnabled(False)
 
+        self.newAsset = None
+
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
-
-        
-
 
     def setupUI(self):
 
@@ -66,23 +67,31 @@ class RigBuilder(base.DockableWidget):
         newAssetAction = fileMenu.addAction('New Asset')
         newAssetAction.triggered.connect(lambda: self.launchAssetWidget())
 
+        fileMenu.addSeparator()
+
         actionSave = fileMenu.addAction('Save Build')
         actionSave.triggered.connect(lambda: self.saveBuild())
 
+        fileMenu.addSeparator()
+
+        self.actionOpenInExplorer = fileMenu.addAction('Open In Explorer')
+        self.actionOpenInExplorer.triggered.connect(lambda: self.openAssetInExplorer())
+
         self.widget.menuLayout.addWidget(menu)
 
-        
+    def openAssetInExplorer(self):
+        self.assetInstance.openInExplorer(os.path.split(
+            self.assetInstance.getComponentPath('animRig'))[0])
+
 
     def launchAssetWidget(self):
 
-        assetCreatorUI = assetCreator.AssetCreator(
-                                            parent=mayaQt.getMayaMainWindow(),
-                                            rigBuilder=self,
-                                            designerFile='assetCreator.ui')
+        assetCreatorUI = assetCreator.AssetCreator(parent=mayaQt.getMayaMainWindow(),
+                                                    rigBuilder=self,
+                                                    designerFile='assetCreator.ui')
 
         assetCreatorUI.show()
         assetCreatorUI.activateWindow()
-
 
 
     def setupButtons(self):
@@ -93,12 +102,12 @@ class RigBuilder(base.DockableWidget):
 
 
     def loadProjects(self):
-        projects = os.listdir(asset._PROJECT_ROOT)
+        projects = os.listdir(asset.PROJECT_ROOT)
         for project in projects:
             self.widget.projectName.addItem(project)
 
     def loadAssetTypes(self):
-        assetTypes = os.listdir(os.path.join(asset._PROJECT_ROOT,
+        assetTypes = os.listdir(os.path.join(asset.PROJECT_ROOT,
                                 self.widget.projectName.currentText()))
 
         self.widget.assetType.clear()
@@ -106,10 +115,8 @@ class RigBuilder(base.DockableWidget):
         for assetType in assetTypes:
             self.widget.assetType.addItem(assetType)
 
-        self.loadAssets()
-
     def loadAssets(self):
-        assets = os.listdir(os.path.join(asset._PROJECT_ROOT,
+        assets = os.listdir(os.path.join(asset.PROJECT_ROOT,
                             self.widget.projectName.currentText(),
                             self.widget.assetType.currentText()))
 
@@ -129,23 +136,6 @@ class RigBuilder(base.DockableWidget):
             if mod.endswith('.py') and mod != '__init__.py':
                 self.moduleList.addItem(mod[0:-3])
 
-    def setupAssetMenu(self):
-
-        self.widget.actionSaveSkeleton.triggered.connect(lambda: self.saveComponent('skeleton'))
-        self.widget.actionLoadSkeleton.triggered.connect(lambda: self.loadComponent('skeleton'))
-
-        self.widget.actionSaveMesh.triggered.connect(lambda: self.saveComponent('mesh'))
-        self.widget.actionLoadMesh.triggered.connect(lambda: self.loadComponent('mesh'))
-
-        self.widget.actionSaveCVS.triggered.connect(lambda: self.saveComponent('cvs'))
-        self.widget.actionLoadCVS.triggered.connect(lambda: self.loadComponent('cvs'))
-
-        self.widget.actionSaveWeights.triggered.connect(lambda: self.saveComponent('weights'))
-        self.widget.actionLoadWeights.triggered.connect(lambda: self.loadComponent('weights'))
-
-        self.widget.actionSaveAnimRig.triggered.connect(lambda: self.saveComponent('animRig'))
-        self.widget.actionLoadAnimRig.triggered.connect(lambda: self.loadComponent('animRig'))
-
     def saveComponent(self):
         componentType = self.widget.componentType.currentText()
 
@@ -155,6 +145,7 @@ class RigBuilder(base.DockableWidget):
             return
 
         if componentType in ['skeleton', 'mesh', 'animRig']:
+            print 'saving ' + componentType
             self.assetInstance.versionFile(self.assetInstance.getComponentPath(componentType))
             cmds.file(rename=self.assetInstance.getComponentPath(componentType))
             cmds.file(save=True, type="mayaAscii", force=True)
@@ -198,22 +189,6 @@ class RigBuilder(base.DockableWidget):
             self.widget.saveComponent.setEnabled(True)
             self.widget.build.setEnabled(True)
 
-        # else:
-        #     result = cmds.confirmDialog(title='Error Loading Character',
-        #         message='Asset <{0}> \nType <{1}>\nProject <{2}>\ndoes not exist.'.format(name, assetType, project),
-        #         button=['Create Asset', 'No'],
-        #         icon='warning',
-        #         cancelButton='No',
-        #         dismissString='No')
-
-        #     if result == "Create Asset":
-        #         self.assetInstance = creator.initiate(name, project, assetType, standalone=False)
-        #         self.loadBuild(self.assetInstance.getComponentPath('build'))
-        #         self.widget.loadComponent.setEnabled(True)
-        #         self.widget.saveComponent.setEnabled(True)
-        #         self.widget.build.setEnabled(True)
-
-
     def buildCharacter(self):
         if self.assetInstance:
             # save and version the build first
@@ -232,7 +207,7 @@ class RigBuilder(base.DockableWidget):
             if self.assetInstance:
                 filepath = self.assetInstance.getComponentPath('build')
             else:
-                buildpath = asset._PROJECT_ROOT
+                buildpath = asset.PROJECT_ROOT
 
                 try:
                     # have the user navigate to the picker file
@@ -246,7 +221,8 @@ class RigBuilder(base.DockableWidget):
 
         self.buildData = buildIO.load(filepath)
 
-        self.loadBuildList()
+        self.buildList.loadList(self.buildData, 
+            attributeLayoutContainer=self.widget.attributeLayoutContainer)
 
         self.widget.build.setEnabled(True)
 
@@ -256,7 +232,7 @@ class RigBuilder(base.DockableWidget):
         if self.assetInstance:
             filepath = self.assetInstance.getComponentPath('build')
         else:
-            buildpath = asset._PROJECT_ROOT
+            buildpath = asset.PROJECT_ROOT
 
         if not filepath:
             try:
@@ -272,26 +248,6 @@ class RigBuilder(base.DockableWidget):
         self.assetInstance.versionFile(filepath)
 
         buildIO.save(filepath, jsonData)
-
-    def loadBuildList(self):
-
-        self.buildList.clear()
-
-        for mod in self.buildData:
-
-            modType = mod['modType']
-            modName = mod['name']
-
-            customAttrs = mod
-            customAttrs.pop('character')
-            customAttrs.pop('modType')
-            customAttrs.pop('name')
-
-            listItem = customWidgets.BuildListItem(modType=modType, 
-                                                   attributeContainer=self.widget.attributeLayoutContainer,
-                                                   customAttrs=customAttrs)
-            listItem.setText(str(modName))
-            self.buildList.addItem(listItem)
 
     def resetAssetBoxes(self):
 

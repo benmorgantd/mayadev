@@ -7,9 +7,9 @@ import maya.OpenMaya as om
 from lib.Qt import QtWidgets, QtCompat
 
 from ..base import creator
-# reload(creator)
+reload(creator)
 from ..base import asset
-# reload(asset)
+reload(asset)
 
 
 class AssetCreator(QtWidgets.QMainWindow):
@@ -33,16 +33,15 @@ class AssetCreator(QtWidgets.QMainWindow):
         self.resize(400, 150)
 
     def createAsset(self):
-        project = self.widget.projectName.text()
-        name = self.widget.assetName.text()
-        assetType = self.widget.assetType.text()
-
-        # todo: parse these values
+        project = self.widget.projectName.text().strip().lower()
+        assetType = self.widget.assetType.text().strip().lower()
+        name = self.widget.assetName.text().strip().lower()
 
         assetPath = asset.Asset.exists(project, name, assetType)
 
         if assetPath:
             om.MGlobal.displayInfo('An asset of this description already exists')
+            return
         else:
             assetInstance = creator.initiate(name, project, assetType,
                                              standalone=False)
@@ -51,9 +50,14 @@ class AssetCreator(QtWidgets.QMainWindow):
                 self.rigBuilder.loadBuild(assetInstance.getComponentPath('build'))
                 self.rigBuilder.resetAssetBoxes()
                 self.rigBuilder.buildList.reset()
+
+                projectindex = self.rigBuilder.widget.projectName.findText(project)
+                self.rigBuilder.widget.projectName.setCurrentIndex(projectindex)
+
+                typeindex = self.rigBuilder.widget.assetType.findText(assetType)
+                self.rigBuilder.widget.assetType.setCurrentIndex(typeindex)
+
+                nameindex = self.rigBuilder.widget.assetName.findText(name)
+                self.rigBuilder.widget.assetName.setCurrentIndex(nameindex)
             
             self.close()
-
-            return assetInstance
-
-        # todo: now refresh the dropdown lists in rigBuilder
