@@ -3,9 +3,11 @@ import os
 import maya.cmds as cmds
 
 from lib.Qt import QtWidgets, QtCore
+
+from bm.maya.base import qtbase
+reload(qtbase)
 from bm.maya.utils import mayaQt
-from . import base, customWidgets, assetCreator
-reload(base)
+from . import customWidgets, assetCreator
 reload(customWidgets)
 reload(assetCreator)
 
@@ -17,7 +19,7 @@ from ..tools.build import io as buildIO
 reload(buildIO)
 
 
-class RigBuilder(base.DockableWidget):
+class RigBuilder(qtbase.DockableWidget):
     def __init__(self, parent=None, designerFile=None, title='Rig Builder'):
         super(RigBuilder, self).__init__(parent, designerFile, title)
 
@@ -88,7 +90,8 @@ class RigBuilder(base.DockableWidget):
 
         assetCreatorUI = assetCreator.AssetCreator(parent=mayaQt.getMayaMainWindow(),
                                                     rigBuilder=self,
-                                                    designerFile='assetCreator.ui')
+                                                    designerFile=os.path.join(
+                                                        os.path.dirname(__file__),'assetCreator.ui'))
 
         assetCreatorUI.show()
         assetCreatorUI.activateWindow()
@@ -270,5 +273,5 @@ class RigBuilder(base.DockableWidget):
 ##############
 
 def run():
-    ui = RigBuilder(designerFile='widget.ui')
+    ui = RigBuilder(designerFile=os.path.join(os.path.dirname(__file__), 'widget.ui'))
     ui.dock()

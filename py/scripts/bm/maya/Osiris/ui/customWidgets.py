@@ -4,11 +4,11 @@ import ast
 
 from lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
-from . import base
-reload(base)
+from bm.maya.base import qtbase
+reload(qtbase)
 
 
-class ModuleList(base.List):
+class ModuleList(qtbase.List):
     def __init__(self, attributeContainer=None):
         super(ModuleList, self).__init__()
 
@@ -34,20 +34,8 @@ class ModuleList(base.List):
             newMod = BuildListItem(modType=selectedModType, attributeContainer=self.attributeContainer)
             self.buildList.addItem(newMod)
 
-class BuildListContextMenu(QtWidgets.QMenu):
-    def __init__(self, buildList):
-        super(BuildListContextMenu, self).__init__()
 
-        deleteAction = self.addAction('Delete')
-        deleteAction.triggered.connect(lambda: buildList.deleteItem())
-
-        self.addSeparator()
-
-        duplicateAction = self.addAction('Duplicate')
-        duplicateAction.triggered.connect(lambda: buildList.duplicateItem())
-
-
-class BuildList(base.List):
+class BuildList(qtbase.List):
     def __init__(self):
         super(BuildList, self).__init__()
 
@@ -79,6 +67,7 @@ class BuildList(base.List):
             listItem = BuildListItem(modType=modType, 
                                     attributeContainer=attributeLayoutContainer,
                                     customAttrs=customAttrs)
+
             listItem.setText(str(modName))
             self.addItem(listItem)
         
@@ -145,13 +134,21 @@ class BuildList(base.List):
         # get the selection
         currentObject = self.item(self.currentRow())
 
+        # copy the attributes over
+        customAttrs = currentObject.getValues()
+
+        customAttrs.pop('character')
+        customAttrs.pop('modType')
+        customAttrs.pop('name')
+
         # create a new list item of the same type as the selection
         listItem = BuildListItem(modType=currentObject.modType, 
-                                  attributeContainer=currentObject.attributeContainer)
-        listItem.setText(str(currentObject.modType))
+                                  attributeContainer=currentObject.attributeContainer,
+                                  customAttrs=customAttrs)
+
+        listItem.setText(str(currentObject.modType) + '1')
         self.addItem(listItem)
 
-        # TODO: copy the attributes from the selection
         
 class BuildListItem(QtWidgets.QListWidgetItem):
     def __init__(self, modType, customAttrs=None, attributeContainer=None):
@@ -203,6 +200,20 @@ class BuildListItem(QtWidgets.QListWidgetItem):
         attrValues['modType'] = self.modType
 
         return attrValues
+
+
+class BuildListContextMenu(QtWidgets.QMenu):
+    def __init__(self, buildList):
+        super(BuildListContextMenu, self).__init__()
+
+        deleteAction = self.addAction('Delete')
+        deleteAction.triggered.connect(lambda: buildList.deleteItem())
+
+        self.addSeparator()
+
+        duplicateAction = self.addAction('Duplicate')
+        duplicateAction.triggered.connect(lambda: buildList.duplicateItem())
+
 
 class AttributeLayoutValue(object):
 
@@ -286,7 +297,6 @@ class AttributeLayoutValue(object):
 
         elif isinstance(self.widget, QtWidgets.QCheckBox):
             return self.translateToType(self.widget.isChecked())
-
 
 
 class AttributeLayout(QtWidgets.QWidget):
