@@ -4,6 +4,7 @@ import os
 import maya.cmds as cmds
 
 from bmaya.asset import Asset
+from bmaya.components import *
 
 from bmaya.tools.shapes import shapelib, shapeio
 from bmaya.tools.weights import weightio
@@ -119,6 +120,7 @@ class Character(Asset):
 
     def addNodeAttrs(self):
         from . import module
+        
 
         if not self.node:
             raise RuntimeError('Character node does not exist yet for ' + self.name)
@@ -167,18 +169,20 @@ class Character(Asset):
                 attrType = 'string'
                 attrVal = json.dumps(cleanDict)
 
-            elif attrType == bool:
+            elif attrType is bool:
                 attrType = 'bool'
                 attrVal = attrVal
 
+            elif attrType in [animRig.AnimRig, build.Build, cvs.Cvs, mesh.Mesh, skeleton.Skeleton, weights.Weights]:
+                attrType = 'string'
+                attrVal = self.componentPathFromType(attr)
+                attr += 'Path'
             else:
                 attrType = 'string'
                 try:
                     attrVal = attr.fullPath
                 except AttributeError:
-                    print attr, attrType
                     continue
-
 
             if attrType == 'string':
                 cmds.addAttr(self.node, ln=attr, dt='string', keyable=False)

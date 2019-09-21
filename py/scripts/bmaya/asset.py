@@ -6,7 +6,7 @@ import json
 
 import maya.cmds as cmds
 
-from components import animRig, build, cvs, mesh, skeleton, weights
+from components import *
 
 try:
     PROJECT_ROOT = os.environ['OSIRIS_ROOT']
