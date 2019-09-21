@@ -1,0 +1,1667 @@
+{
+    "LF_armIK_cc" : {
+        "Auto_Twist" : 0,
+        "Twist" : 0.0,
+        "followWorld" : 1,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : -1.4210854715202004e-14
+    },
+    "LF_armPv_cc" : {
+        "followHand" : 0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_arm_ikSwitch_cc" : {
+        "ikFk" : 1.0
+    },
+    "LF_brow01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_brow02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_brow03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_brow_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_browbone01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_browbone02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_browbone03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_clavicle_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_ear_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_eyeAim_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0,
+        "visibility" : true
+    },
+    "LF_foot_fk_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_handCup_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_heel_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_index_1_cc" : {
+        "joint1" : 0.0,
+        "joint2" : 0.0,
+        "joint3" : 0.0,
+        "joint4" : 0.0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_index_2_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_index_3_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_index_4_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_legIK_cc" : {
+        "_" : 0,
+        "__" : 0,
+        "___" : 0,
+        "ankleBreak" : 0.0,
+        "ankleTwist" : 0.0,
+        "ballRoll" : 0.0,
+        "ballSwivel" : 0.0,
+        "followWorld" : 1,
+        "footBank" : 0.0,
+        "heelRoll" : 0.0,
+        "heelSwivel" : 0.0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "toeBend" : 0.0,
+        "toeRoll" : 0.0,
+        "toeSwivel" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_legPv_cc" : {
+        "followFoot" : 1,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_leg_ikSwitch_cc" : {
+        "ikFk" : 0.0
+    },
+    "LF_lidCorner_in_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_lidCorner_out_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_loArm_fk_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_loCheek01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_loCheek02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_loLeg_fk_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_loLid01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_loLid02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_loLid03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_loLid_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_loLip01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_loLip02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_loLip03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_mantle01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_mantle02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_mantle03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_midCheek01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_midCheek02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_midCheek03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_mid_1_cc" : {
+        "joint1" : 0.0,
+        "joint2" : 0.0,
+        "joint3" : 0.0,
+        "joint4" : 0.0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_mid_2_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_mid_3_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_mid_4_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_nasolabial_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_nostril_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_outSkirtFront01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_outSkirtFront02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_outSkirtFront03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_outSkirtFront04_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_outSkirtFront05_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_outSkirtMid01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_outSkirtMid02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_outSkirtMid03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_outSkirtMid04_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_pinkie_1_cc" : {
+        "joint1" : 0.0,
+        "joint2" : 0.0,
+        "joint3" : 0.0,
+        "joint4" : 0.0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_pinkie_2_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_pinkie_3_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_pinkie_4_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_ring_1_cc" : {
+        "joint1" : 0.0,
+        "joint2" : 0.0,
+        "joint3" : 0.0,
+        "joint4" : 0.0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_ring_2_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_ring_3_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_ring_4_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_skirtFlap_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_thumb_1_cc" : {
+        "joint1" : 0.0,
+        "joint2" : 0.0,
+        "joint3" : 0.0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_thumb_2_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_thumb_3_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_toeTip_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_toe_fk_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_upArm_fk_cc" : {
+        "followWorld" : 1,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : -2.842170943040401e-14,
+        "translateY" : -8.881784197001252e-16,
+        "translateZ" : -1.4210854715202004e-14
+    },
+    "LF_upCheek01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_upCheek02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_upCheek03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_upLeg_fk_cc" : {
+        "followWorld" : 0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 2.220446049250313e-16,
+        "translateZ" : 1.7763568394002505e-15
+    },
+    "LF_upLid01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_upLid02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_upLid03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_upLid_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_upLip01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_upLip02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_upLip03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_wrist_fk_cc" : {
+        "Auto_Twist" : 0,
+        "Twist" : 0.0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_armIK_cc" : {
+        "Auto_Twist" : 0,
+        "Twist" : 0.0,
+        "followWorld" : 1,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : -7.105427357601002e-15,
+        "translateY" : 3.552713678800501e-15,
+        "translateZ" : -1.4210854715202004e-14
+    },
+    "RT_armPv_cc" : {
+        "followHand" : 0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_arm_ikSwitch_cc" : {
+        "ikFk" : 1.0
+    },
+    "RT_brow01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_brow02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_brow03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_brow_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_browbone01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_browbone02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_browbone03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_clavicle_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_ear_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_eyeAim_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0,
+        "visibility" : true
+    },
+    "RT_foot_fk_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_handCup_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_heel_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_index_1_cc" : {
+        "joint1" : 0.0,
+        "joint2" : 0.0,
+        "joint3" : 0.0,
+        "joint4" : 0.0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_index_2_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_index_3_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_index_4_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_legIK_cc" : {
+        "_" : 0,
+        "__" : 0,
+        "___" : 0,
+        "ankleBreak" : 0.0,
+        "ankleTwist" : 0.0,
+        "ballRoll" : 0.0,
+        "ballSwivel" : 0.0,
+        "followWorld" : 1,
+        "footBank" : 0.0,
+        "heelRoll" : 0.0,
+        "heelSwivel" : 0.0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "toeBend" : 0.0,
+        "toeRoll" : 0.0,
+        "toeSwivel" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_legPv_cc" : {
+        "followFoot" : 1,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_leg_ikSwitch_cc" : {
+        "ikFk" : 0.0
+    },
+    "RT_lidCorner_in_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_lidCorner_out_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_loArm_fk_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_loCheek01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_loCheek02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_loLeg_fk_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_loLid01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_loLid02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_loLid03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_loLid_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_loLip01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_loLip02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_loLip03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_mantle01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_mantle02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_mantle03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_midCheek01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_midCheek02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_midCheek03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_mid_1_cc" : {
+        "joint1" : 0.0,
+        "joint2" : 0.0,
+        "joint3" : 0.0,
+        "joint4" : 0.0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_mid_2_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_mid_3_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_mid_4_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_nasolabial_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_nostril_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_outSkirtFront01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_outSkirtFront02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_outSkirtFront03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_outSkirtFront04_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_outSkirtFront05_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_outSkirtMid01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_outSkirtMid02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_outSkirtMid03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_outSkirtMid04_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_pinkie_1_cc" : {
+        "joint1" : 0.0,
+        "joint2" : 0.0,
+        "joint3" : 0.0,
+        "joint4" : 0.0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_pinkie_2_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_pinkie_3_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_pinkie_4_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_ring_1_cc" : {
+        "joint1" : 0.0,
+        "joint2" : 0.0,
+        "joint3" : 0.0,
+        "joint4" : 0.0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_ring_2_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_ring_3_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_ring_4_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_skirtFlap_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_thumb_1_cc" : {
+        "joint1" : 0.0,
+        "joint2" : 0.0,
+        "joint3" : 0.0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_thumb_2_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_thumb_3_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_toeTip_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_toe_fk_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_upArm_fk_cc" : {
+        "followWorld" : 1,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : -8.881784197001252e-16,
+        "translateZ" : -2.842170943040401e-14
+    },
+    "RT_upCheek01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_upCheek02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_upCheek03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_upLeg_fk_cc" : {
+        "followWorld" : 0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : -1.4210854715202004e-14,
+        "translateY" : 0.0,
+        "translateZ" : -1.7763568394002505e-15
+    },
+    "RT_upLid01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_upLid02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_upLid03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_upLid_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_upLip01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_upLip02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_upLip03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "RT_wrist_fk_cc" : {
+        "Auto_Twist" : 0,
+        "Twist" : 0.0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "browMid_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "chest_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "chin_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "clothFlap_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "cog_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "ctr_mantle_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "eyes_cc" : {
+        "Follow" : 0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "head_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "jaw_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "layout_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "loLipMid_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "loLip_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "neck_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "nose_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "peltFlap_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "pelvis_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "pistol_cc" : {
+        "follow" : 0,
+        "rotateX" : 0.0,
+        "rotateY" : -7.951386703658792e-16,
+        "rotateZ" : 1.2424041724466863e-15,
+        "translateX" : 1.4210854715202004e-14,
+        "translateY" : -1.4210854715202004e-14,
+        "translateZ" : 0.0
+    },
+    "root_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "sheath_cc" : {
+        "follow" : 0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : -6.3611093629270335e-15,
+        "translateX" : -2.842170943040401e-14,
+        "translateY" : -7.105427357601002e-15,
+        "translateZ" : 7.105427357601002e-15
+    },
+    "spine1_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "spine2_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "striker_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "swordAttach_cc" : {
+        "follow" : 0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "showSword" : 1,
+        "translateX" : -1.4210854715202004e-14,
+        "translateY" : -7.105427357601002e-15,
+        "translateZ" : 0.0
+    },
+    "swordStrap01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "swordStrap02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "swordStrap03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "sword_cc" : {
+        "follow" : 0,
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : -6.3611093629270335e-15,
+        "translateX" : -1.4210854715202004e-14,
+        "translateY" : -1.4210854715202004e-14,
+        "translateZ" : 0.0
+    },
+    "tongue_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "trigger_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "upHead_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "upLipMid_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "upLip_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "wheel_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    }
+}

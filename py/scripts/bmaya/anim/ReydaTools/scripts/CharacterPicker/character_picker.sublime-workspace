@@ -1,0 +1,1093 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"width",
+				"widthInput"
+			],
+			[
+				"pixmap",
+				"pixmap_path"
+			],
+			[
+				"current_",
+				"current_scene"
+			],
+			[
+				"driver",
+				"driver_translation"
+			],
+			[
+				"target_",
+				"target_fnTrans"
+			],
+			[
+				"sel",
+				"selection"
+			],
+			[
+				"new_",
+				"new_maya_selection"
+			],
+			[
+				"button_",
+				"button_name"
+			],
+			[
+				"sce",
+				"scene_items"
+			],
+			[
+				"selected_",
+				"selected_button_names"
+			],
+			[
+				"selec",
+				"selected_button_names"
+			],
+			[
+				"contorl",
+				"control_pressed"
+			],
+			[
+				"group",
+				"group_selection_objects"
+			],
+			[
+				"previous",
+				"previous_object_selection"
+			],
+			[
+				"butotn",
+				"button_object"
+			],
+			[
+				"selection",
+				"selection_type"
+			],
+			[
+				"control",
+				"control_pressed"
+			],
+			[
+				"previou",
+				"previous_object_selection"
+			],
+			[
+				"selection_",
+				"selection_list"
+			],
+			[
+				"selectio",
+				"selection_brush"
+			],
+			[
+				"prev",
+				"previous_selection"
+			],
+			[
+				"ik_",
+				"ik_switch_cc"
+			],
+			[
+				"nurbs",
+				"nurbs_vis"
+			],
+			[
+				"click",
+				"click_pos"
+			],
+			[
+				"setR",
+				"setRgbF"
+			],
+			[
+				"CustomG",
+				"CustomGraphicsScene"
+			],
+			[
+				"this_",
+				"this_vertex_num_influences"
+			],
+			[
+				"zoom",
+				"zoom_delta"
+			],
+			[
+				"con",
+				"connect_to_twist_joints"
+			],
+			[
+				"scale",
+				"scale_connection"
+			],
+			[
+				"startJoint",
+				"startJoint"
+			],
+			[
+				"num",
+				"num_bind_joints"
+			],
+			[
+				"name",
+				"name_prefix"
+			],
+			[
+				"ribbon",
+				"ribbon_node"
+			],
+			[
+				"info_",
+				"info_node"
+			],
+			[
+				"drive",
+				"drive_jnt_grp"
+			],
+			[
+				"ribbo",
+				"ribbon_node"
+			],
+			[
+				"custom",
+				"custom_plane"
+			],
+			[
+				"decomp",
+				"decompose_matrix"
+			],
+			[
+				"matrix",
+				"matrix_4x4"
+			],
+			[
+				"rib",
+				"ribbon_node"
+			],
+			[
+				"file",
+				"filename"
+			],
+			[
+				"ex",
+				"export_weights"
+			],
+			[
+				"finger",
+				"finger_node"
+			],
+			[
+				"attr",
+				"attr_name"
+			],
+			[
+				"conne",
+				"connectAttr"
+			],
+			[
+				"dis",
+				"displayGeometry"
+			],
+			[
+				"modul",
+				"module_name"
+			],
+			[
+				"rever",
+				"reverse_joints"
+			],
+			[
+				"m",
+				"module_name"
+			],
+			[
+				"ikFkL",
+				"ikFkLeg_node"
+			],
+			[
+				"toe_ik",
+				"toeEnd_ik"
+			],
+			[
+				"get",
+				"get_leg_node_attr"
+			],
+			[
+				"bank",
+				"bank_in"
+			],
+			[
+				"reverse",
+				"reverse_hierarchy_names"
+			],
+			[
+				"twist",
+				"twist_extract"
+			],
+			[
+				"desto",
+				"destroy_controls"
+			],
+			[
+				"startJ",
+				"startJoint_parent_component"
+			],
+			[
+				"bind",
+				"bind_joint"
+			],
+			[
+				"singl",
+				"singleJoint_node"
+			],
+			[
+				"Rey",
+				"Reyda_charNode"
+			],
+			[
+				"destro",
+				"destroy_controls"
+			],
+			[
+				"single",
+				"single_joint"
+			],
+			[
+				"quat_",
+				"quat_to_euler_node"
+			],
+			[
+				"fkChain",
+				"fkChain_node"
+			],
+			[
+				"mesh_",
+				"mesh_name"
+			],
+			[
+				"skin_cl",
+				"skin_cluster_obj"
+			],
+			[
+				"skin_",
+				"skin_cluster"
+			],
+			[
+				"MSelectionList",
+				"MSelectionList"
+			],
+			[
+				"sclae",
+				"scale_destination"
+			],
+			[
+				"vtx_",
+				"vtx_object"
+			],
+			[
+				"mesh",
+				"mesh_dag"
+			],
+			[
+				"skinC",
+				"skinCluster_obj"
+			],
+			[
+				"start",
+				"startJoint_parent_comp"
+			],
+			[
+				"IkFk",
+				"ikFkArm_node"
+			],
+			[
+				"wrist",
+				"wrist_cc"
+			],
+			[
+				"dri",
+				"drive_jnt"
+			],
+			[
+				"pv_",
+				"pv_cc_grp"
+			],
+			[
+				"mid",
+				"midJoint"
+			],
+			[
+				"scale_",
+				"scale_blend_colors"
+			],
+			[
+				"swit",
+				"switch_cc"
+			],
+			[
+				"scal",
+				"SCALE_CONSTANT"
+			],
+			[
+				"ikFkAr",
+				"ikFkArm_node"
+			],
+			[
+				"ikFkA",
+				"ikFkArm_node"
+			],
+			[
+				"loA",
+				"loArm_cc"
+			],
+			[
+				"upArm",
+				"upArm_cc"
+			],
+			[
+				"make",
+				"make_contract"
+			],
+			[
+				"mkae_",
+				"make_ik_system"
+			],
+			[
+				"node",
+				"ikFkArm_node"
+			],
+			[
+				"end",
+				"endJoint_ik"
+			],
+			[
+				"ikFk",
+				"ikFkArm_node"
+			],
+			[
+				"make_",
+				"make_joint_chains"
+			],
+			[
+				"ikFK",
+				"ikFkArm_node"
+			],
+			[
+				"list",
+				"listConnections"
+			],
+			[
+				"ik",
+				"ikFkArm_node"
+			],
+			[
+				"undo",
+				"undo_decorator"
+			],
+			[
+				"un",
+				"undo_decorator"
+			],
+			[
+				"ei",
+				"existing_pose_dict"
+			],
+			[
+				"existing",
+				"existing_pose_dict"
+			],
+			[
+				"existin",
+				"existing_pose_dict"
+			],
+			[
+				"exist",
+				"existing_pose_dict"
+			],
+			[
+				"exi",
+				"existing_pose_dict"
+			],
+			[
+				"sor",
+				"sorted_fkJoints"
+			],
+			[
+				"ju",
+				"joint_and_num_relatives"
+			],
+			[
+				"sorted",
+				"sorted_dict"
+			],
+			[
+				"build",
+				"build_controls"
+			],
+			[
+				"buil",
+				"build_controls"
+			],
+			[
+				"set",
+				"set_bind_joints"
+			],
+			[
+				"singleJoint",
+				"singleJoint_parent"
+			],
+			[
+				"singleJoi",
+				"singleJoint_parent"
+			],
+			[
+				"root_",
+				"root_cc"
+			],
+			[
+				"root",
+				"root_node"
+			],
+			[
+				"layout_cc",
+				"layout_cc_grp"
+			],
+			[
+				"orient",
+				"orient_const"
+			],
+			[
+				"discon",
+				"disconnect_bind_joints"
+			],
+			[
+				"Char",
+				"Character"
+			],
+			[
+				"char",
+				"char_node"
+			],
+			[
+				"connec",
+				"connect_to_char_node"
+			],
+			[
+				"add_",
+				"add_metadata"
+			],
+			[
+				"all",
+				"all_grp"
+			],
+			[
+				"class",
+				"classmethod"
+			],
+			[
+				"xf",
+				"xform_values"
+			],
+			[
+				"x",
+				"xform_values"
+			],
+			[
+				"joint",
+				"joint_pair"
+			],
+			[
+				"comp",
+				"component_transforms"
+			],
+			[
+				"conn",
+				"connect_bind_joints"
+			],
+			[
+				"binn",
+				"bindJoint"
+			],
+			[
+				"layout",
+				"layout_joint"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "modules/character_picker_model.py",
+			"settings":
+			{
+				"buffer_size": 18675,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "/D/Documents/Google Drive/Maya/bmTools/scripts/AnimTools/bm_translation_dynamics.py",
+			"settings":
+			{
+				"buffer_size": 3682,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "layouts/Reyda_Body.pkr",
+			"settings":
+			{
+				"buffer_size": 50990,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/D/Documents/Google Drive/Maya/bmTools/scripts/AnimTools/bm_dynamic_chain.py",
+			"settings":
+			{
+				"buffer_size": 3884,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Packages/C++/C++ Single File.sublime-build",
+					""
+				],
+				[
+					"Packages/C++/C++ Single File.sublime-build",
+					"Run"
+				]
+			],
+			[
+				"Packages/C++/C++ Single File.sublime-build",
+				"Run"
+			]
+		]
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"Snippet: ",
+				"Snippet: While Loop"
+			],
+			[
+				"py",
+				"Set Syntax: Python"
+			]
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 168.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/background_images",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/layouts",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/modules"
+	],
+	"file_history":
+	[
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Nodes/bm_simpleCollision.py",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/layouts/Reyda_Face.pkr",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/modules/character_picker_view.py",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/modules/custom_graphics_items.py",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/modules/character_picker_model.py",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/layouts/Reyda4.pkr",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/modules/bm_space_switcher.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/SkinTools/bm_copyWeights.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/SkinTools/bm_weight_io.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Tests/scratchPaper.py",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/modules/rig_tools.py",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/layouts/Reyda.pkr",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/layouts/Reyda7.pkr",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/modules/picker_io.py",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/layouts/Reyda5.pkr",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/layouts/Reyda3.pkr",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/SkinTools/bm_prune_weights.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/components/ik_leg.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/modules/ikfk_leg.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/components/ik_arm.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/modules/character.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/creator.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/library/ctrl_cv_data.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/modules/fk_chain.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/characters/Mothbitch.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/modules/module.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/GuiTools/CharacterPicker/character_picker_model.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/characters/Tortoise.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/library/shape_data.json",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/GuiTools/CharacterPicker/character_picker_view.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/modules/root.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/UnrealTools/bm_skelemesh_exporter.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/library/bm_skelemesh_exporter.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/GuiTools/TemplateUI/bm_template_ui.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/GuiTools/ReydaPicker/lib/Qt.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/GuiTools/ReydaPicker/reyda_picker_model.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/GuiTools/ReydaPicker/__init__.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/GuiTools/TemplateUI/__init__.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/modules/ikfk_arm.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/modules/foot.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/modules/scik.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/modules/finger.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/modules/single_joint.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/characters/Reyda.py",
+		"/D/Documents/GitHub/Website/conf.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/library/control_curves.py",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/Rig/skin_library/proxy/pSphere1.weights",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/modules/twist.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/modules/quat_twist.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/library/twist_extract.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/SkinTools/bm_exportWeights.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/SkinTools/__init__.py",
+		"/C/Users/Benjamin/Desktop/sphinx-master/setup.py",
+		"/D/Documents/Google Drive/Maya/docs/Gossamer/source/index.rst",
+		"/D/Documents/Google Drive/Maya/docs/Gossamer/source/conf.py",
+		"/D/Documents/Google Drive/Maya/docs/Gossamer/source/_content/_modules/modules.rst",
+		"/D/Documents/Google Drive/Maya/docs/Gossamer/source/_content/_components/components.rst",
+		"/D/Documents/Google Drive/Maya/docs/Gossamer/source/_content/_components/character.rst",
+		"/D/Documents/Google Drive/Maya/docs/Gossamer/source/_content/_components/module.rst",
+		"/D/Documents/Google Drive/Maya/docs/Gossamer/conf.py",
+		"/D/Documents/GitHub/Website/_content/contact.rst",
+		"/D/Documents/GitHub/Website/_content/about.rst",
+		"/D/Documents/GitHub/Website/index.rst",
+		"/D/Documents/GitHub/Website/_content/_projectDocs/_AnimTransfer/animTransferDocs.rst",
+		"/D/Documents/GitHub/Website/_content/docs.rst",
+		"/D/Documents/Google Drive/Maya/docs/Gossamer/source/module.rst",
+		"/D/Documents/Google Drive/Maya/docs/Gossamer/source/character.rst",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/components/drive_arm.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/components/drive_leg.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/old_components/back.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/old_components/arm.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/old_components/leg.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/components/fk_leg.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/components/fk_arm.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/library/ctrl_locs.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/characters/Reyda_05.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/GuiTools/SpaceSwitcher/bm_spaceSwitcher_ui.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/RigTools/bm_spaceSwitcher.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/GuiTools/SpaceSwitcher/bm_spaceSwitcher.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/modules/ribbon.py",
+		"/D/Documents/Google Drive/01 BFA/Modeling/01 Shoe/morBen_charTD_jobs.txt",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/ScriptsMenu/bm_shapeToolbox.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig3/control_curves.py",
+		"/D/Documents/GitHub/AutoRig3/control_curves.py",
+		"/D/Documents/maya/scripts/AutoRig3/control_curves.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/components/foot.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/old_components/finger.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig3/foot.py",
+		"/D/Documents/maya/scripts/GuiTools/rtposeLibrary/pose_storage.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/library/shape_data",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/old_components/char.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/characters/__init__.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/Gossamer/characters/Reyda_04.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/modules/twist.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/modules/single_joint.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/modules/root.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/modules/quat_twist.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/modules/module.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/modules/ikfk_leg.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/modules/ikfk_arm.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/modules/foot.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/modules/fk_chain.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/modules/character.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/components/ik_leg.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/components/ik_arm.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/components/fk_leg.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/components/fk_arm.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/components/drive_leg.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/components/drive_arm.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/characters/reyda_03.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/characters/reyda_02.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/characters/frida_01.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/creator.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/characters/Reyda_04.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/components/foot.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/components/foot.pyc",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/library/ctrl_locs.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/library/control_curves.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/old_components/foot.py",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/library/twist_extract.py",
+		"/D/Documents/Google Drive/01 BFA/Thesis Project Local Files/The Frída Project Meeting Notes.txt",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/userSetup.py",
+		"/D/Documents/c++/Hello World/hello_world.cpp",
+		"/C/Users/Benjamin/Desktop/hello_world.cpp",
+		"/C/Users/Benjamin/Desktop/test.cpp",
+		"/C/Users/Benjamin/AppData/Roaming/Sublime Text 3/Packages/MinGW-w64.sublime-build.txt",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/components/ik_arm.pyc",
+		"/D/Documents/Google Drive/Maya/bmTools/scripts/AutoRig4/ikfk_arm.py"
+	],
+	"find":
+	{
+		"height": 48.0
+	},
+	"find_in_files":
+	{
+		"height": 119.2,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": true,
+		"find_history":
+		[
+			"outSkirtFront01",
+			"heightInput.text()",
+			"widthInput.text()",
+			"load_picker_data",
+			"body_view",
+			"body_scene",
+			"current_tab = ",
+			"load_picker_data",
+			"load_picker_dag",
+			"self.view",
+			"spacebar",
+			"self.body_scene",
+			"self.tab_scenes[current_tab]",
+			"self.scene",
+			"self.end_frame",
+			"self.targets",
+			"self.selection",
+			"load_background",
+			"save",
+			"save_layout",
+			"load_background",
+			"self.scene.buttons",
+			"setKeyframe",
+			"setToolTip",
+			"tooltip",
+			"multi_mode",
+			"multi_moe",
+			"make_buttons_using_screenspace",
+			"print",
+			"button",
+			"button_selection_list",
+			"multi_mode",
+			"Incorrect",
+			"multi_mode",
+			"new_object_selection",
+			"previous_selection",
+			"new_selection",
+			"button_selection_list",
+			"selection_list",
+			"setTooltip",
+			"print",
+			"selection_list",
+			"group",
+			"control_pressed",
+			"multi_mode",
+			"print",
+			"button.setBrush",
+			"selection_list",
+			"selection_list=",
+			"selection_type\":group",
+			"selection_type:\":group",
+			"chest_cc",
+			"\"chest_cc\"",
+			"],",
+			"multi_mode",
+			"load_picker_data",
+			"load_picker",
+			"selection_list",
+			"selection_list=",
+			"type=\"single\"",
+			"button",
+			"group",
+			"rig_tools.",
+			"    ",
+			"change_button_color",
+			"mousePressE",
+			"QAction"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"heightInput.value()",
+			"widthInput.value()",
+			"view",
+			"scene",
+			"self.current_view()",
+			"self.current_scene()",
+			"self.body_scene",
+			"end_frame",
+			"targets",
+			"selection",
+			"scene_items[i]",
+			"new_selection",
+			"previous_object_selection",
+			"new_object_selection",
+			"",
+			"  "
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"folders":
+	[
+		{
+			"path": "D:\\Documents\\Google Drive\\01 BFA\\Thesis Project Local Files\\Tools\\ReydaTools\\scripts\\CharacterPicker"
+		}
+	],
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "modules/character_picker_model.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 18675,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3485,
+								3566
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 60.0,
+						"translation.y": 1856.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "/D/Documents/Google Drive/Maya/bmTools/scripts/AnimTools/bm_translation_dynamics.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3682,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3041,
+								3041
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1627.2,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "layouts/Reyda_Body.pkr",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 50990,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								496,
+								496
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 975.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/D/Documents/Google Drive/Maya/bmTools/scripts/AnimTools/bm_dynamic_chain.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3884,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								242,
+								242
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2340.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 34.0
+	},
+	"input":
+	{
+		"height": 45.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 158.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.unsaved_changes":
+	{
+		"height": 139.0
+	},
+	"pinned_build_system": "Packages/C++/C++ Single File.sublime-build",
+	"project": "",
+	"replace":
+	{
+		"height": 85.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"D:\\Documents\\Google Drive\\Maya\\bmTools\\scripts\\Gossamer\\Gossamer.sublime-project"
+			]
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 214.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

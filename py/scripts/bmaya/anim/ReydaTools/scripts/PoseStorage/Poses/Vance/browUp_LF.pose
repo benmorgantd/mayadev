@@ -1,0 +1,57 @@
+{
+    "LF_brow_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -0.006129588818796787,
+        "translateY" : 1.4944541202010604,
+        "translateZ" : 0.00027149407521280587
+    },
+    "LF_browbone01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.0074823338726649055,
+        "translateY" : 0.0022859995584583355,
+        "translateZ" : 0.1845092960708593
+    },
+    "LF_browbone02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.0074823338726649055,
+        "translateY" : 0.0022859995584583355,
+        "translateZ" : 0.1845092960708593
+    },
+    "LF_browbone03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -4.718447854656915e-16,
+        "translateY" : 0.0022859995584269717,
+        "translateZ" : 0.18450929607086142
+    },
+    "browMid_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -2.3071822230491534e-16,
+        "translateY" : 0.46701254085291743,
+        "translateZ" : 1.1907141939104804e-14
+    }
+}

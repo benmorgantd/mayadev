@@ -1,0 +1,90 @@
+{
+    "LF_browbone01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 2.5153490401663703e-16,
+        "translateY" : -0.10102545226998876,
+        "translateZ" : 0.012487721865146142
+    },
+    "LF_browbone02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 2.4216739724636227e-15,
+        "translateY" : -0.07962843024584951,
+        "translateZ" : 0.14659856649515426
+    },
+    "LF_browbone03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -4.111294638065033e-15,
+        "translateY" : -0.25871260797462475,
+        "translateZ" : 0.14917071352595057
+    },
+    "LF_loLid_cc" : {
+        "rotateX" : -8.268583570689886,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_upCheek01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -0.16513160806147825,
+        "translateY" : 0.26030810914448343,
+        "translateZ" : 1.0835082830951137e-14
+    },
+    "LF_upCheek02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -0.16513160806147825,
+        "translateY" : 0.26030810914448343,
+        "translateZ" : 1.0835082830951137e-14
+    },
+    "LF_upCheek03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.010865739155169857,
+        "translateY" : 0.2917482149988578,
+        "translateZ" : 8.997576989022704e-15
+    },
+    "LF_upLid_cc" : {
+        "rotateX" : 0.7543285101374895,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    }
+}

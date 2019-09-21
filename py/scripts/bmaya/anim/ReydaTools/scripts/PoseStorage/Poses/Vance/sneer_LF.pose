@@ -1,0 +1,79 @@
+{
+    "LF_midCheek01_cc" : {
+        "rotateX" : -0.0,
+        "rotateY" : -0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 1.1482134687490486e-14,
+        "translateY" : 0.2906019809739209,
+        "translateZ" : 0.2915058750668797
+    },
+    "LF_midCheek02_cc" : {
+        "rotateX" : -0.0,
+        "rotateY" : -0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -0.037409403686957915,
+        "translateY" : 0.06508077291076661,
+        "translateZ" : 0.15092578599883147
+    },
+    "LF_nasolabial_cc" : {
+        "rotateX" : -0.0,
+        "rotateY" : -0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -0.11075665236696415,
+        "translateY" : 0.11257237589536617,
+        "translateZ" : 0.0630104261006467
+    },
+    "LF_nostril_cc" : {
+        "rotateX" : 2.6014555938252744,
+        "rotateY" : -0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -1.8127860323957634e-16,
+        "translateY" : 0.41389847250924305,
+        "translateZ" : -6.591949208711867e-14
+    },
+    "LF_upCheek01_cc" : {
+        "rotateX" : -0.0,
+        "rotateY" : -0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -3.476927946943764e-15,
+        "translateY" : 0.06116666312070436,
+        "translateZ" : 0.2868146875392899
+    },
+    "LF_upCheek02_cc" : {
+        "rotateX" : -0.0,
+        "rotateY" : -0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 7.548649205713076e-15,
+        "translateY" : 0.011514501569621798,
+        "translateZ" : 0.16127881072290462
+    },
+    "LF_upCheek03_cc" : {
+        "rotateX" : -0.0,
+        "rotateY" : -0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -6.869504964868156e-16,
+        "translateY" : 0.06713962155870618,
+        "translateZ" : -9.124645483638005e-16
+    }
+}

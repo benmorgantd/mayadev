@@ -1,0 +1,101 @@
+{
+    "LF_browbone01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 2.8293339893181724e-15,
+        "translateY" : -0.060553632290576684,
+        "translateZ" : -1.5251688800788088e-14
+    },
+    "LF_browbone02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 2.8293339893181724e-15,
+        "translateY" : -0.060553632290576684,
+        "translateZ" : -1.5251688800788088e-14
+    },
+    "LF_browbone03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 2.8293339893181724e-15,
+        "translateY" : -0.060553632290576684,
+        "translateZ" : -1.5251688800788088e-14
+    },
+    "LF_loLid_cc" : {
+        "rotateX" : -4.657489080514601,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    },
+    "LF_midCheek02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 1.961972251329769e-15,
+        "translateY" : 0.04319383061719638,
+        "translateZ" : 2.13240883284449e-15
+    },
+    "LF_upCheek01_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -4.423544863740858e-16,
+        "translateY" : 0.051374906052304076,
+        "translateZ" : -1.9480944635219544e-15
+    },
+    "LF_upCheek02_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -4.423544863740858e-16,
+        "translateY" : 0.051374906052304076,
+        "translateZ" : -1.9480944635219544e-15
+    },
+    "LF_upCheek03_cc" : {
+        "rotateX" : 0.0,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : -4.423544863740858e-16,
+        "translateY" : 0.051374906052304076,
+        "translateZ" : -1.9480944635219544e-15
+    },
+    "LF_upLid_cc" : {
+        "rotateX" : 21.060708619545057,
+        "rotateY" : 0.0,
+        "rotateZ" : 0.0,
+        "scaleX" : 1.0,
+        "scaleY" : 1.0,
+        "scaleZ" : 1.0,
+        "translateX" : 0.0,
+        "translateY" : 0.0,
+        "translateZ" : 0.0
+    }
+}

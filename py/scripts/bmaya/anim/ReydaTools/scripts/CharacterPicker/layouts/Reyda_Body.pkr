@@ -1,0 +1,2649 @@
+{
+  "info": {
+    "Version": 0.8, 
+    "Author": "Ben Morgan"
+  }, 
+  "buttons": {
+    "button_119": {
+      "selection": [
+        "LF_outSkirtFront01_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.2, 
+        0.4470588235294118, 
+        0.9764705882352941, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        425.0822668672554, 
+        22.17870748068684
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_118": {
+      "selection": [
+        "RT_outSkirtMid04_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9764705882352941, 
+        0.2, 
+        0.2, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        369.20916903112055, 
+        85.49946006248234
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_111": {
+      "selection": [
+        "RT_outSkirtFront02_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9764705882352941, 
+        0.2, 
+        0.2, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        397.3454519533389, 
+        43.17870748068684
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_110": {
+      "selection": [
+        "RT_outSkirtFront01_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9764705882352941, 
+        0.2, 
+        0.2, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        397.3454519533389, 
+        21.762977156531505
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_113": {
+      "selection": [
+        "RT_outSkirtFront04_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9764705882352941, 
+        0.2, 
+        0.2, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        397.3454519533389, 
+        85.49946006248234
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_112": {
+      "selection": [
+        "RT_outSkirtFront03_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9764705882352941, 
+        0.2, 
+        0.2, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        397.3454519533389, 
+        65.14900423387498
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_115": {
+      "selection": [
+        "RT_outSkirtMid01_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9764705882352941, 
+        0.2, 
+        0.2, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        369.20916903112055, 
+        21.762977156531505
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_114": {
+      "selection": [
+        "RT_outSkirtFront05_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9764705882352941, 
+        0.2, 
+        0.2, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        397.3454519533389, 
+        105.79425942465922
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_117": {
+      "selection": [
+        "RT_outSkirtMid03_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9764705882352941, 
+        0.2, 
+        0.2, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        369.20916903112055, 
+        65.14900423387498
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_116": {
+      "selection": [
+        "RT_outSkirtMid02_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9764705882352941, 
+        0.2, 
+        0.2, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        369.20916903112055, 
+        43.17870748068684
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_20": {
+      "selection": [
+        "RT_leg_ikSwitch_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        149.49146411990213, 
+        605.6867680712007
+      ], 
+      "rect": [
+        20.0, 
+        10.0
+      ]
+    }, 
+    "button_21": {
+      "selection": [
+        "cog_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.11372549019607843, 
+        1.0, 
+        0.4666666666666667, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        207.2489054407988, 
+        236.53878466495405
+      ], 
+      "rect": [
+        90.0, 
+        50.0
+      ]
+    }, 
+    "button_22": {
+      "selection": [
+        "RT_thumb_2_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        9.187102078654917, 
+        378.1753023815914
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_23": {
+      "selection": [
+        "RT_upArm_fk_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        180.7742907890187, 
+        129.54182834724764
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_24": {
+      "selection": [
+        "RT_foot_fk_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        195.08814847819244, 
+        561.9361153586241
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_25": {
+      "selection": [
+        "RT_ring_4_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        79.27317397554015, 
+        435.1798465449552
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_26": {
+      "selection": [
+        "LF_mid_2_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        420.3951573717912, 
+        380.1905441350202
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_27": {
+      "selection": [
+        "LF_mid_4_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        420.3951573717912, 
+        428.5575281271174
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_28": {
+      "selection": [
+        "RT_armIK_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        -6.974686556643661, 
+        213.83622259553977
+      ], 
+      "rect": [
+        40.0, 
+        40.0
+      ]
+    }, 
+    "button_29": {
+      "selection": [
+        "chest_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        1.0, 
+        0.2784313725490196, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        227.4450587742914, 
+        134.53454765331136
+      ], 
+      "rect": [
+        50.0, 
+        35.0
+      ]
+    }, 
+    "button_182": {
+      "selection": [
+        "swordAttach_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9294117647058824, 
+        0.14901960784313725, 
+        0.3568627450980392, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        311.73810836139995, 
+        248.99492951524127
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_183": {
+      "selection": [
+        "sheath_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9294117647058824, 
+        0.14901960784313725, 
+        0.3568627450980392, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        311.7721382533824, 
+        276.28612536323
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_55": {
+      "selection": [
+        "LF_mid_1_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        420.3951573717912, 
+        355.6707570620333
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_54": {
+      "selection": [
+        "RT_ring_1_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        79.64805065234162, 
+        351.6031746169729
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_57": {
+      "selection": [
+        "LF_index_4_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        446.7599327924161, 
+        428.5575281271174
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_56": {
+      "selection": [
+        "RT_legIK_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        135.11853441339665, 
+        560.1925161208837
+      ], 
+      "rect": [
+        40.0, 
+        40.0
+      ]
+    }, 
+    "button_51": {
+      "selection": [
+        "spine2_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        1.0, 
+        0.2784313725490196, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        243.2425344347888, 
+        178.48043028392163
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_50": {
+      "selection": [
+        "spine1_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        1.0, 
+        0.2784313725490196, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        243.24253443478887, 
+        207.76390900025592
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_53": {
+      "selection": [
+        "layout_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.11372549019607843, 
+        1.0, 
+        0.4666666666666667, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        428.2456611117785, 
+        519.9221728175523
+      ], 
+      "rect": [
+        60.0, 
+        40.0
+      ]
+    }, 
+    "button_52": {
+      "selection": [
+        "LF_armPv_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        391.6089831416082, 
+        168.76441161754866
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_59": {
+      "selection": [
+        "RT_toe_fk_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        195.08814847819244, 
+        599.1703031651615
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_58": {
+      "selection": [
+        "LF_legIK_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        321.16780637906464, 
+        560.6054878178971
+      ], 
+      "rect": [
+        40.0, 
+        40.0
+      ]
+    }, 
+    "button_193": {
+      "selection": [
+        "pistol_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9490196078431372, 
+        0.15294117647058825, 
+        0.36470588235294116, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        21.0, 
+        504.83932676541633
+      ], 
+      "rect": [
+        20.0, 
+        50.0
+      ]
+    }, 
+    "button_194": {
+      "selection": [
+        "trigger_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9490196078431372, 
+        0.15294117647058825, 
+        0.36470588235294116, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        49.22687332146097, 
+        530.0
+      ], 
+      "rect": [
+        10.0, 
+        20.0
+      ]
+    }, 
+    "button_46": {
+      "selection": [
+        "LF_legPv_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        324.2557680109036, 
+        451.1483127572018
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_47": {
+      "selection": [
+        "RT_mid_3_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        56.30963804580176, 
+        407.3804397641805
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_44": {
+      "selection": [
+        "LF_ring_3_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        394.4017346090448, 
+        403.474493053287
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_45": {
+      "selection": [
+        "LF_wrist_fk_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        425.26950483692315, 
+        271.70224561291997
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_42": {
+      "selection": [
+        "LF_ring_4_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        394.4017346090448, 
+        428.5575281271174
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_43": {
+      "selection": [
+        "RT_ring_2_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        79.64805065234162, 
+        378.1753023815914
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_40": {
+      "selection": [
+        "RT_index_1_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        33.791101906018355, 
+        351.6031746169729
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_41": {
+      "selection": [
+        "RT_wrist_fk_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        60.253456257673875, 
+        269.30224561291993
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_48": {
+      "selection": [
+        "RT_ring_3_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        79.64805065234162, 
+        407.3804397641805
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_49": {
+      "selection": [
+        "RT_index_3_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        33.791101906018355, 
+        407.3804397641805
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_79": {
+      "selection": [
+        "root_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.11372549019607843, 
+        1.0, 
+        0.4666666666666667, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        413.5127748686512, 
+        569.9959533966514
+      ], 
+      "rect": [
+        90.0, 
+        50.0
+      ]
+    }, 
+    "button_78": {
+      "selection": [
+        "LF_ring_2_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        394.4017346090448, 
+        380.1905441350202
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_73": {
+      "selection": [
+        "RT_mid_1_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        56.30963804580176, 
+        351.6031746169729
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_72": {
+      "selection": [
+        "RT_pinkie_2_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        103.03299517495748, 
+        378.1753023815914
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_71": {
+      "selection": [
+        "LF_thumb_1_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        470.73252821221956, 
+        356.4075113100368
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_70": {
+      "selection": [
+        "head_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        1.0, 
+        0.2784313725490196, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        231.41892068487311, 
+        30.873035378761088
+      ], 
+      "rect": [
+        40.0, 
+        40.0
+      ]
+    }, 
+    "button_77": {
+      "selection": [
+        "RT_thumb_3_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        9.187102078654917, 
+        407.3804397641805
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_76": {
+      "selection": [
+        "LF_toeTip_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        293.21974500459146, 
+        628.8450705522246
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_75": {
+      "selection": [
+        "RT_legPv_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        154.1411924646452, 
+        452.75710892038563
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_74": {
+      "selection": [
+        "RT_index_2_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        33.791101906018355, 
+        378.1753023815916
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_68": {
+      "selection": [
+        "LF_upLeg_fk_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        291.0524594114756, 
+        312.17800984618145
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_69": {
+      "selection": [
+        "LF_mid_3_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        420.3951573717912, 
+        403.474493053287
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_64": {
+      "selection": [
+        "LF_pinkie_2_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        368.27321310617555, 
+        380.1905441350202
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_65": {
+      "selection": [
+        "LF_index_2_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        446.7599327924161, 
+        380.1905441350202
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_66": {
+      "selection": [
+        "LF_index_3_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        446.7599327924161, 
+        403.474493053287
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_67": {
+      "selection": [
+        "RT_arm_ikSwitch_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        2.548611402274222, 
+        260.170347834865
+      ], 
+      "rect": [
+        20.0, 
+        10.0
+      ]
+    }, 
+    "button_60": {
+      "selection": [
+        "RT_toeTip_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        196.98452337216884, 
+        628.8450705522246
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_61": {
+      "selection": [
+        "LF_pinkie_4_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        368.27321310617555, 
+        428.5575281271174
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_62": {
+      "selection": [
+        "LF_handCup_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        337.44459329307074, 
+        386.953832193817
+      ], 
+      "rect": [
+        15.0, 
+        20.0
+      ]
+    }, 
+    "button_63": {
+      "selection": [
+        "LF_index_1_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        446.7599327924161, 
+        355.6707570620333
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_9": {
+      "selection": [
+        "sword_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9294117647058824, 
+        0.14901960784313725, 
+        0.3568627450980392, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        311.4262720943258, 
+        221.21352166868206
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_8": {
+      "selection": [
+        "LF_heel_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        259.5271057337183, 
+        628.8450705522246
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_0": {
+      "selection": [
+        "LF_toe_fk_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        291.0524594114756, 
+        599.1703031651615
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_3": {
+      "selection": [
+        "RT_mid_2_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        56.30963804580176, 
+        378.1753023815914
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_2": {
+      "selection": [
+        "LF_clavicle_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        268.03635178761493, 
+        108.15948105981109
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_4": {
+      "selection": [
+        "LF_loLeg_fk_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        291.0524594114756, 
+        438.8504654800148
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_7": {
+      "selection": [
+        "LF_thumb_2_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        470.73252821221956, 
+        380.9272983830239
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_93": {
+      "selection": [], 
+      "selection_type": "group", 
+      "color": [
+        0.6431372549019608, 
+        0.6705882352941176, 
+        0.6705882352941176, 
+        1.0
+      ], 
+      "button_selection_list": [
+        "button_68", 
+        "button_0", 
+        "button_4", 
+        "button_38"
+      ], 
+      "position": [
+        257.0, 
+        598.0
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_95": {
+      "selection": [], 
+      "selection_type": "group", 
+      "color": [
+        0.6431372549019608, 
+        0.6705882352941176, 
+        0.6705882352941176, 
+        1.0
+      ], 
+      "button_selection_list": [
+        "button_26", 
+        "button_27", 
+        "button_55", 
+        "button_57", 
+        "button_44", 
+        "button_42", 
+        "button_78", 
+        "button_71", 
+        "button_69", 
+        "button_64", 
+        "button_65", 
+        "button_66", 
+        "button_61", 
+        "button_62", 
+        "button_63", 
+        "button_7", 
+        "button_12", 
+        "button_84", 
+        "button_37", 
+        "button_36"
+      ], 
+      "position": [
+        334.0, 
+        356.0
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_94": {
+      "selection": [], 
+      "selection_type": "group", 
+      "color": [
+        0.6431372549019608, 
+        0.6705882352941176, 
+        0.6705882352941176, 
+        1.0
+      ], 
+      "button_selection_list": [
+        "button_52", 
+        "button_18"
+      ], 
+      "position": [
+        480.0, 
+        186.0
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_97": {
+      "selection": [], 
+      "selection_type": "group", 
+      "color": [
+        0.6431372549019608, 
+        0.6705882352941176, 
+        0.6705882352941176, 
+        1.0
+      ], 
+      "button_selection_list": [
+        "button_23", 
+        "button_41", 
+        "button_16"
+      ], 
+      "position": [
+        88.0, 
+        296.0
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_96": {
+      "selection": [], 
+      "selection_type": "group", 
+      "color": [
+        0.6431372549019608, 
+        0.6705882352941176, 
+        0.6705882352941176, 
+        1.0
+      ], 
+      "button_selection_list": [
+        "button_58", 
+        "button_46"
+      ], 
+      "position": [
+        332.0, 
+        531.0
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_99": {
+      "selection": [
+        "striker_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9490196078431372, 
+        0.15294117647058825, 
+        0.36470588235294116, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        49.22687332146097, 
+        504.83932676541633
+      ], 
+      "rect": [
+        15.0, 
+        20.0
+      ]
+    }, 
+    "button_98": {
+      "selection": [], 
+      "selection_type": "group", 
+      "color": [
+        0.6431372549019608, 
+        0.6705882352941176, 
+        0.6705882352941176, 
+        1.0
+      ], 
+      "button_selection_list": [
+        "button_45", 
+        "button_14", 
+        "button_83"
+      ], 
+      "position": [
+        391.0, 
+        300.0
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_19": {
+      "selection": [
+        "RT_handCup_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        128.7552587840974, 
+        384.5850297026214
+      ], 
+      "rect": [
+        15.0, 
+        20.0
+      ]
+    }, 
+    "button_18": {
+      "selection": [
+        "LF_armIK_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        470.4796062267801, 
+        213.83622259553977
+      ], 
+      "rect": [
+        40.0, 
+        40.0
+      ]
+    }, 
+    "button_11": {
+      "selection": [
+        "RT_thumb_1_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        9.187102078654917, 
+        351.6031746169729
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_10": {
+      "selection": [
+        "RT_pinkie_4_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        102.658118498156, 
+        435.1798465449552
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_13": {
+      "selection": [
+        "RT_pinkie_1_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        103.44484699273255, 
+        351.6031746169729
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_12": {
+      "selection": [
+        "LF_thumb_3_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        470.73252821221956, 
+        404.2112473012907
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_15": {
+      "selection": [
+        "pelvis_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        1.0, 
+        0.2784313725490196, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        233.20865593661472, 
+        295.10716967527276
+      ], 
+      "rect": [
+        40.0, 
+        40.0
+      ]
+    }, 
+    "button_14": {
+      "selection": [
+        "LF_loArm_fk_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        360.0238797116903, 
+        203.32423602087985
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_17": {
+      "selection": [
+        "LF_arm_ikSwitch_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        481.03040926665903, 
+        261.3522509440125
+      ], 
+      "rect": [
+        20.0, 
+        10.0
+      ]
+    }, 
+    "button_16": {
+      "selection": [
+        "RT_loArm_fk_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        126.25345625767385, 
+        203.32423602087985
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_82": {
+      "selection": [
+        "RT_pinkie_3_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        103.03299517495748, 
+        407.3804397641805
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_83": {
+      "selection": [
+        "LF_upArm_fk_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        309.2754466656337, 
+        129.54182834724764
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_80": {
+      "selection": [
+        "RT_loLeg_fk_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        195.08814847819244, 
+        438.8504654800148
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_81": {
+      "selection": [
+        "RT_clavicle_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        217.05258270456872, 
+        108.15948105981109
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_86": {
+      "selection": [], 
+      "selection_type": "group", 
+      "color": [
+        0.6431372549019608, 
+        0.6705882352941176, 
+        0.6705882352941176, 
+        1.0
+      ], 
+      "button_selection_list": [
+        "button_28", 
+        "button_39", 
+        "button_28", 
+        "button_39"
+      ], 
+      "position": [
+        2.0, 
+        185.0
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_87": {
+      "selection": [], 
+      "selection_type": "group", 
+      "color": [
+        0.6431372549019608, 
+        0.6705882352941176, 
+        0.6705882352941176, 
+        1.0
+      ], 
+      "button_selection_list": [
+        "button_10", 
+        "button_22", 
+        "button_11", 
+        "button_72", 
+        "button_54", 
+        "button_74", 
+        "button_19", 
+        "button_43", 
+        "button_49", 
+        "button_73", 
+        "button_35", 
+        "button_3", 
+        "button_32", 
+        "button_25", 
+        "button_77", 
+        "button_82", 
+        "button_48", 
+        "button_13", 
+        "button_47", 
+        "button_40"
+      ], 
+      "position": [
+        126.0, 
+        349.0
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_84": {
+      "selection": [
+        "LF_pinkie_3_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        368.27321310617555, 
+        403.47449305328723
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_88": {
+      "selection": [], 
+      "selection_type": "group", 
+      "color": [
+        0.6431372549019608, 
+        0.6705882352941176, 
+        0.6705882352941176, 
+        1.0
+      ], 
+      "button_selection_list": [
+        "button_59", 
+        "button_24", 
+        "button_30", 
+        "button_80", 
+        "button_59", 
+        "button_24", 
+        "button_30", 
+        "button_80"
+      ], 
+      "position": [
+        223.0, 
+        598.0
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_89": {
+      "selection": [], 
+      "selection_type": "group", 
+      "color": [
+        0.6431372549019608, 
+        0.6705882352941176, 
+        0.6705882352941176, 
+        1.0
+      ], 
+      "button_selection_list": [
+        "button_56", 
+        "button_75", 
+        "button_56", 
+        "button_75"
+      ], 
+      "position": [
+        148.0, 
+        528.0
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_108": {
+      "selection": [
+        "LF_outSkirtMid03_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.2, 
+        0.4470588235294118, 
+        0.9764705882352941, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        453.8821079402973, 
+        65.14900423387498
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_109": {
+      "selection": [
+        "LF_outSkirtMid04_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.2, 
+        0.4470588235294118, 
+        0.9764705882352941, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        453.8821079402973, 
+        43.17870748068684
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_102": {
+      "selection": [
+        "LF_outSkirtFront02_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.2, 
+        0.4470588235294118, 
+        0.9764705882352941, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        425.0822668672553, 
+        43.17870748068684
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_103": {
+      "selection": [
+        "LF_outSkirtFront03_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.2, 
+        0.4470588235294118, 
+        0.9764705882352941, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        425.0822668672553, 
+        65.14900423387498
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_100": {
+      "selection": [
+        "wheel_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.9490196078431372, 
+        0.15294117647058825, 
+        0.36470588235294116, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        74.45374664292194, 
+        504.83932676541633
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_101": {
+      "selection": [], 
+      "selection_type": "group", 
+      "color": [
+        0.6431372549019608, 
+        0.6705882352941176, 
+        0.6705882352941176, 
+        1.0
+      ], 
+      "button_selection_list": [
+        "button_20", 
+        "button_21", 
+        "button_22", 
+        "button_23", 
+        "button_24", 
+        "button_25", 
+        "button_26", 
+        "button_27", 
+        "button_28", 
+        "button_29", 
+        "button_182", 
+        "button_183", 
+        "button_55", 
+        "button_54", 
+        "button_57", 
+        "button_56", 
+        "button_51", 
+        "button_50", 
+        "button_53", 
+        "button_52", 
+        "button_59", 
+        "button_58", 
+        "button_193", 
+        "button_194", 
+        "button_46", 
+        "button_47", 
+        "button_44", 
+        "button_45", 
+        "button_42", 
+        "button_43", 
+        "button_40", 
+        "button_41", 
+        "button_48", 
+        "button_49", 
+        "button_79", 
+        "button_78", 
+        "button_73", 
+        "button_72", 
+        "button_71", 
+        "button_70", 
+        "button_77", 
+        "button_76", 
+        "button_75", 
+        "button_74", 
+        "button_68", 
+        "button_69", 
+        "button_64", 
+        "button_65", 
+        "button_66", 
+        "button_67", 
+        "button_60", 
+        "button_61", 
+        "button_62", 
+        "button_63", 
+        "button_9", 
+        "button_8", 
+        "button_0", 
+        "button_3", 
+        "button_2", 
+        "button_4", 
+        "button_7", 
+        "button_93", 
+        "button_95", 
+        "button_94", 
+        "button_97", 
+        "button_96", 
+        "button_99", 
+        "button_98", 
+        "button_19", 
+        "button_18", 
+        "button_11", 
+        "button_10", 
+        "button_13", 
+        "button_12", 
+        "button_15", 
+        "button_14", 
+        "button_17", 
+        "button_16", 
+        "button_82", 
+        "button_83", 
+        "button_80", 
+        "button_81", 
+        "button_86", 
+        "button_87", 
+        "button_84", 
+        "button_88", 
+        "button_89", 
+        "button_100", 
+        "button_39", 
+        "button_38", 
+        "button_37", 
+        "button_36", 
+        "button_35", 
+        "button_34", 
+        "button_33", 
+        "button_32", 
+        "button_31", 
+        "button_30", 
+        "button_179"
+      ], 
+      "position": [
+        -7.19808750339422, 
+        29.992031264142582
+      ], 
+      "rect": [
+        50.0, 
+        50.0
+      ]
+    }, 
+    "button_106": {
+      "selection": [
+        "LF_outSkirtMid01_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.2, 
+        0.4470588235294118, 
+        0.9764705882352941, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        453.8821079402973, 
+        21.762977156531505
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_107": {
+      "selection": [
+        "LF_outSkirtMid02_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.2, 
+        0.4470588235294118, 
+        0.9764705882352941, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        453.8821079402973, 
+        85.49946006248234
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_104": {
+      "selection": [
+        "LF_outSkirtFront04_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.2, 
+        0.4470588235294118, 
+        0.9764705882352941, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        425.0822668672553, 
+        85.49946006248234
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_105": {
+      "selection": [
+        "LF_outSkirtFront05_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.2, 
+        0.4470588235294118, 
+        0.9764705882352941, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        425.0822668672553, 
+        105.79425942465922
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_39": {
+      "selection": [
+        "RT_armPv_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        92.18517328056477, 
+        170.86474920695457
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_38": {
+      "selection": [
+        "LF_foot_fk_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        291.0524594114756, 
+        561.9361153586241
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_37": {
+      "selection": [
+        "LF_pinkie_1_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        368.27321310617555, 
+        355.6707570620333
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_36": {
+      "selection": [
+        "LF_ring_1_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        394.4017346090448, 
+        355.6707570620333
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_35": {
+      "selection": [
+        "RT_mid_4_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        55.93476136900023, 
+        435.1798465449552
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_34": {
+      "selection": [
+        "neck_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        1.0, 
+        0.2784313725490196, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        242.42882229513486, 
+        84.70085360552893
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_33": {
+      "selection": [
+        "RT_heel_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        224.31381506598638, 
+        628.8450705522246
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_32": {
+      "selection": [
+        "RT_index_4_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        33.41622522921688, 
+        435.1798465449552
+      ], 
+      "rect": [
+        15.0, 
+        15.0
+      ]
+    }, 
+    "button_31": {
+      "selection": [
+        "LF_leg_ikSwitch_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        0.023529411764705882, 
+        0.3333333333333333, 
+        1.0, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        331.3687965550017, 
+        606.770041912687
+      ], 
+      "rect": [
+        20.0, 
+        10.0
+      ]
+    }, 
+    "button_30": {
+      "selection": [
+        "RT_upLeg_fk_cc"
+      ], 
+      "selection_type": "single", 
+      "color": [
+        1.0, 
+        0.16470588235294117, 
+        0.17647058823529413, 
+        1.0
+      ], 
+      "button_selection_list": [], 
+      "position": [
+        195.08814847819244, 
+        312.6683640300565
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }, 
+    "button_179": {
+      "selection": [], 
+      "selection_type": "group", 
+      "color": [
+        0.6431372549019608, 
+        0.6705882352941176, 
+        0.6705882352941176, 
+        1.0
+      ], 
+      "button_selection_list": [
+        "button_50", 
+        "button_21", 
+        "button_29", 
+        "button_15", 
+        "button_51"
+      ], 
+      "position": [
+        211.0, 
+        193.0
+      ], 
+      "rect": [
+        20.0, 
+        20.0
+      ]
+    }
+  }, 
+  "background": "D:/Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/background_images/Reyda.png"
+}
