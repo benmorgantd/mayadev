@@ -4,6 +4,8 @@ from ..base import module
 from ..base.decorators import wrapBuild
 from bmaya.tools.shapes import shapelib
 
+CONSTANTS = {'root':'root_00_M'}
+
 
 class Root(module.Module):
 
@@ -45,19 +47,22 @@ class Root(module.Module):
 
     def makeRigGroups(self):
         self.character.rigGrp = cmds.group(empty=True, name='RIG')
+
         try:
             self.character.meshGrp = cmds.group(
                 self.character.meshSet, name='MESH')
         except RuntimeError:
             self.character.meshGrp = cmds.group(empty=True, name='MESH')
-        self.character.skeletonGrp = cmds.group('root', name='SKELETON')
+
+        self.character.skeletonGrp = cmds.group(CONSTANTS['root'], name='SKELETON')
         self.character.modulesGrp = cmds.group(empty=True, name='MODULES')
 
         cmds.parent(self.character.modulesGrp, self.character.skeletonGrp,
                     self.character.meshGrp, self.character.rigGrp)
 
         self.lockTransforms([self.character.modulesGrp, self.character.skeletonGrp,
-                             self.character.meshGrp, self.character.rigGrp], attrs=['translate', 'rotate', 'scale'])
+                             self.character.meshGrp, self.character.rigGrp], 
+                             attrs=['translate', 'rotate', 'scale'])
 
     def makeCtrls(self):
         # make a stack of offset controls

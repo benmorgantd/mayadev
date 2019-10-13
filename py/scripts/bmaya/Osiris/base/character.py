@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 import maya.cmds as cmds
 
@@ -22,6 +23,7 @@ class Character(Asset):
         self.modules = []
         self.buildData = None
         self.componentsSet = None
+        self.timeBuilt = time.strftime('%c', time.localtime())
 
     @property
     def meshes(self):
@@ -105,9 +107,9 @@ class Character(Asset):
 
         # scene cleanup:
         # set all meshes to reference
-        self.setMeshReference(True)
-        cmds.setAttr('SKELETON.visibility', 0)
-
+        self.setupMeshReferencing()
+        # cmds.setAttr('SKELETON.visibility', 0)
+        # self.setupSkeletonVisibility()
 
         cmds.file(rename=self.animRig.fullPath)
         cmds.file(save=True, type='mayaAscii', force=True)
@@ -119,8 +121,6 @@ class Character(Asset):
             print '>>> Created character node >> {0} <<'.format(self.node)
 
     def addNodeAttrs(self):
-        from . import module
-        
 
         if not self.node:
             raise RuntimeError('Character node does not exist yet for ' + self.name)
@@ -203,10 +203,16 @@ class Character(Asset):
                                                       weightDistribution=1,
                                                       normalizeWeights=2)[0])
 
-    def setMeshReference(self, value):
+    def setupMeshReferencing(self):
+
+        md = cmds.createNode('multDoubleLinear', name='meshRef_md')
+        cmds.setAttr(md + '.input2', 2)
         
+        cmds.addAttr(self.node, longName='referenceMesh', attributeType='bool', defaultValue=True)
+        cmds.connectAttr(self.node + '.referenceMesh', md + '.input1')
+
         for mesh in self.meshes:
-            cmds.setAttr(mesh + '.overrideEnabled', value)
-            cmds.setAttr(mesh + '.overrideDisplayType', 2 * value)
+            cmds.setAttr(mesh + '.overrideEnabled', 1)
+            cmds.connectAttr(md + '.output', mesh + '.overrideDisplayType')
 
 # import Osiris.lib.base.character as character;helm = character.Character('Helm','dev','prop');helm.build();

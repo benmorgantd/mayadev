@@ -13,10 +13,11 @@ class Weights(Component):
 
     @property
     def files(self):
-        files = os.listdir(self.fullPath)
-        if files:
-            return files
-        else:
-            return []
+        try:
+            files = os.listdir(self.fullPath)
+        except WindowsError:
+            files = list()
+        
+        return files
             
 
