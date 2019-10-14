@@ -41,9 +41,13 @@ def save(weightsDir):
 
             weightsPath = os.path.join(weightsDir, (dagName + ".weights"))
 
-            with open(weightsPath, "w") as f:
+            if not os.path.exists(weightsPath):
+                os.mkdir(os.path.split(weightsPath)[0])
 
+            with open(weightsPath, "w") as f:
                 json.dump(jsonData, f, indent=4)
+
+            print "Saved weights for {}".format(dagName)
 
 
         itSel.next()
@@ -64,9 +68,9 @@ def load(weightsPath):
     dag = om.MDagPath()
     sel.getDagPath(0, dag)
 
-    existingSkinCluster = cmds.ls(cmds.listHistory(dag.partialPathName()), type="skinCluster")
+    existingSkinCluster = cmds.ls(cmds.listHistory(dag.partialPathName()), type="skinCluster") or list()
 
-    if len(existingSkinCluster):
+    if existingSkinCluster:
         cmds.delete(existingSkinCluster)
 
     weightData = None

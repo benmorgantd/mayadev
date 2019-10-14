@@ -11,7 +11,7 @@ from decorators import wrapBuild
 
 class Module(object):
 
-    mirrorPairs = {"L": "R", "R": "L"}
+    mirrorPairs = {'L': 'R', 'R': 'L'}
 
     def __init__(self, character=None, name='module1',
                  modType='Module', parent=None, side='L', mirror=False,
@@ -34,33 +34,33 @@ class Module(object):
 
     @property
     def dict(self):
-        return {key: value for key, value in self.__dict__.items() if "__" not in key}
+        return {key: value for key, value in self.__dict__.items() if '__' not in key}
 
     def makeNode(self):
         # create the module node before anything gets built. 
-        if not cmds.objExists(self.name + "_MOD"):
+        if not cmds.objExists(self.name + '_MOD'):
             # this creates a locator shape of the given name
-            self.node = cmds.createNode("network", name=self.name + "_MOD")
-            self.modGrp = cmds.createNode("transform", name=self.name + "_GRP")
-            print ">>> Created {0} node >> {1} <<".format(self.modType, self.node)
+            self.node = cmds.createNode('network', name=self.name + '_MOD')
+            self.modGrp = cmds.createNode('transform', name=self.name + '_GRP')
+            print '>>> Created {0} node >> {1} <<'.format(self.modType, self.node)
 
     def addNodeAttrs(self):
         if not self.node:
-            raise RuntimeError("Module node doesn't exist yet for " + self.name)
+            raise RuntimeError('Module node does not exist yet for ' + self.name)
 
         for attr in self.__dict__:
             attrVal = self.__dict__[attr]
             attrType = type(attrVal)
 
             if isinstance(attrVal, character.Character):
-                attrType = "message"
+                attrType = 'message'
 
             if attrVal is None:
-                attrType = "string"
-                attrVal = "None"
+                attrType = 'string'
+                attrVal = 'None'
 
             if attrType in [unicode, str]:
-                attrType = "string"
+                attrType = 'string'
                 attrVal = str(attrVal)
 
             elif attrType is list:
@@ -74,7 +74,7 @@ class Module(object):
                     elif isinstance(val, shapelib.Shape):
                         cleanList.append(val.ctrl)
 
-                attrType = "string"
+                attrType = 'string'
                 attrVal = json.dumps(cleanList)
 
             elif attrType is dict:
@@ -88,17 +88,17 @@ class Module(object):
                     elif isinstance(attrVal[key], shapelib.Shape):
                         cleanDict[key] = attrVal[key].ctrl
 
-                attrType = "string"
+                attrType = 'string'
                 attrVal = json.dumps(cleanDict)
 
             elif attrType == bool:
-                attrType = "bool"
+                attrType = 'bool'
                 attrVal = attrVal
 
-            if attrType == "string":
-                cmds.addAttr(self.node, ln=attr, dt="string", keyable=False)
-                cmds.setAttr(self.node + "." + attr, str(attrVal), type="string")
-            elif attrType == "message":
+            if attrType == 'string':
+                cmds.addAttr(self.node, ln=attr, dt='string', keyable=False)
+                cmds.setAttr(self.node + '.' + attr, str(attrVal), type='string')
+            elif attrType == 'message':
                 cmds.addAttr(self.node, ln=attr, at=attrType, keyable=False)
             else:
                 cmds.addAttr(self.node, ln=attr, at=attrType, dv=attrVal, keyable=False)
@@ -111,7 +111,7 @@ class Module(object):
         return None
 
         # if self.mirror:
-        #     print ">>> Mirroring " + self.name
+        #     print '>>> Mirroring ' + self.name
         #
         #     mirrorSide = Module.mirrorPairs[self.side]
         #
@@ -139,8 +139,8 @@ class Module(object):
         #                                 side=mirrorSide,
         #                                 modType=self.modType,
         #                                 mirror=False,
-        #                                 name=self.name.replace(self.side + "_",
-        #                                                        mirrorSide + "_"))
+        #                                 name=self.name.replace(self.side + '_',
+        #                                                        mirrorSide + '_'))
         #
         #     mirrorSelf.build()
         #
@@ -151,19 +151,19 @@ class Module(object):
         Else returns None"""
 
         if not node:
-            print "No mirror node found since given node was None"
+            print 'No mirror node found since given node was None'
             return
 
         mirrorSide = Module.mirrorPairs[self.side]
 
-        mirrorNode = node.replace((self.side + "_"), (mirrorSide + "_"))
+        mirrorNode = node.replace((self.side + '_'), (mirrorSide + '_'))
 
         nodeType = cmds.objectType(node)
 
         if mirrorNode in cmds.ls(type=nodeType):
             return mirrorNode
         else:
-            raise RuntimeError("Mirror could not be found for >> " + node)
+            raise RuntimeError('Mirror could not be found for >> ' + node)
 
     def parentModule(self):
         # check if a specific joint parent was given. If not then check the parent of the startJoint
@@ -172,14 +172,14 @@ class Module(object):
         cmds.parent(self.modGrp, self.character.modulesGrp)
 
         if self.startJoint:
-            parentJoint = cmds.listRelatives(self.startJoint, parent=True, type="joint")
+            parentJoint = cmds.listRelatives(self.startJoint, parent=True, type='joint')
 
             if parentJoint:
                 moduleParent = parentJoint[0]
                 # todo: this is where you could add a followSwitch option
             else:
                 # parent to layout group control
-                moduleParent = "layout03_ctrl"
+                moduleParent = 'layout03_ctrl'
 
             self.parentConstrain(moduleParent, self.modGrp, maintainOffset=True)
 
@@ -191,18 +191,18 @@ class Module(object):
         for child in childList:
             cmds.parentConstraint(parent, child, mo=maintainOffset)
 
-    def lockTransforms(self, ctrls, attrs=["translate", "rotate", "scale"]):
+    def lockTransforms(self, ctrls, attrs=['translate', 'rotate', 'scale']):
         if type(ctrls) in [str, unicode]:
             ctrls = [ctrls]
 
         for ctrl in ctrls:
             for attr in attrs:
-                if attr in ["translate", "rotate", "scale"]:
-                    for axis in ["X", "Y", "Z"]:
-                        cmds.setAttr("{0}.{1}{2}".format(ctrl, attr, axis),
+                if attr in ['translate', 'rotate', 'scale']:
+                    for axis in ['X', 'Y', 'Z']:
+                        cmds.setAttr('{0}.{1}{2}'.format(ctrl, attr, axis),
                                      lock=True, keyable=False, channelBox=False)
                 else:
-                    cmds.setAttr("{0}.{1}".format(ctrl, attr),
+                    cmds.setAttr('{0}.{1}'.format(ctrl, attr),
                                   lock=True, keyable=False, channelBox=False)
 
     def checkContract(self):
@@ -210,28 +210,28 @@ class Module(object):
 
         # for key in self.contract:
         #     if self.contract[key] == None:
-        #         raise RuntimeError("Contract is not yet fulfilled")
+        #         raise RuntimeError('Contract is not yet fulfilled')
         #
-        # print ">>> Contract for {0} fulfilled".format(self.modType)
+        # print '>>> Contract for {0} fulfilled'.format(self.modType)
         # return True
 
     def connectComponents(self):
         for ctrl in self.components:
-            if not cmds.objExists(ctrl.ctrl + ".module"):
-                cmds.addAttr(ctrl.ctrl, longName="module", attributeType="message")
+            if not cmds.objExists(ctrl.ctrl + '.module'):
+                cmds.addAttr(ctrl.ctrl, longName='module', attributeType='message')
 
-            cmds.connectAttr(self.node + ".components", ctrl.ctrl + ".module")
+            cmds.connectAttr(self.node + '.components', ctrl.ctrl + '.module')
 
             self.lockTransforms(ctrl.grp)
 
     def connectBindJoints(self):
         for jnt in self.bindJoints:
-            if not cmds.objExists(jnt + ".module"):
-                cmds.addAttr(jnt, longName="module", attributeType="message")
+            if not cmds.objExists(jnt + '.module'):
+                cmds.addAttr(jnt, longName='module', attributeType='message')
             else:
-                raise RuntimeError("{0} already belongs to a module".format(jnt))
+                raise RuntimeError('{0} already belongs to a module'.format(jnt))
 
-            cmds.connectAttr(self.node + ".bindJoints", jnt + ".module")
+            cmds.connectAttr(self.node + '.bindJoints', jnt + '.module')
 
     def getContainedJoints(self):
 

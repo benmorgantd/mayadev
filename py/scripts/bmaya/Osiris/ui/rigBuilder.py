@@ -159,8 +159,6 @@ class RigBuilder(qtbase.DockableWidget):
 
         result = cmds.confirmDialog(message='Are you sure you would like to save ' + componentType + '?')
 
-        print result
-
         if not result:
             return
 
@@ -172,10 +170,10 @@ class RigBuilder(qtbase.DockableWidget):
             cmds.file(rename=componentPath)
             cmds.file(save=True, type="mayaAscii", force=True)
         elif componentType == 'cvs':
-            from bmaya.tools.shapes import io as shapeIO
-            shapeIO.save(componentPath)
+            from bmaya.tools.shapes import shapeio
+            shapeio.save(componentPath)
         elif componentType == 'weights':
-            from bmaya.tools.weights import io as weightio
+            from bmaya.tools.weights import weightio
             reload(weightio)
             weightio.save(componentPath)
 
@@ -187,10 +185,10 @@ class RigBuilder(qtbase.DockableWidget):
         if componentType in ['skeleton', 'mesh', 'animRig']:
             self.assetInstance.openFile(componentPath)
         elif componentType == 'cvs':
-            from bmaya.Osirs.tools.shapes import io as shapeIO
-            shapeIO.load(componentPath)
+            from bmaya.Osirs.tools.shapes import shapeio
+            shapeio.load(componentPath)
         elif componentType == 'weights':
-            from bmaya.tools.weights import io as weightio
+            from bmaya.tools.weights import weightio
             weightio.load(componentPath)
 
     def initiateAsset(self):

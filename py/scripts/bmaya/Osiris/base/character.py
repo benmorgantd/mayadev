@@ -208,7 +208,7 @@ class Character(Asset):
         md = cmds.createNode('multDoubleLinear', name='meshRef_md')
         cmds.setAttr(md + '.input2', 2)
         
-        cmds.addAttr(self.node, longName='referenceMesh', attributeType='bool', defaultValue=True)
+        cmds.addAttr(self.node, longName='referenceMesh', attributeType='bool', defaultValue=True, keyable=True)
         cmds.connectAttr(self.node + '.referenceMesh', md + '.input1')
 
         for mesh in self.meshes:
