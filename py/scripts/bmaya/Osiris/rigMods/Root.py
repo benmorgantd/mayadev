@@ -3,16 +3,18 @@ import maya.cmds as cmds
 from ..base import module
 from ..base.decorators import wrapBuild
 from bmaya.tools.shapes import shapelib
+from bmaya.core import constants
 
-CONSTANTS = {'root':'root_00_M'}
-
+reload(module)
+reload(shapelib)
+reload(constants)
 
 class Root(module.Module):
+    """Every rig must have a Root module"""
 
     def __init__(self, name='Root', character=None):
         super(Root, self).__init__(modType='Root', shapeType='triangle',
                                    name=name, character=character)
-
 
     @wrapBuild
     def build(self):
@@ -54,7 +56,9 @@ class Root(module.Module):
         except RuntimeError:
             self.character.meshGrp = cmds.group(empty=True, name='MESH')
 
-        self.character.skeletonGrp = cmds.group(CONSTANTS['root'], name='SKELETON')
+        self.character.skeletonGrp = cmds.group(constants.ROOT_JOINT, name='SKELETON')
+        cmds.setAttr(self.character.skeletonGrp + '.visibility', 0)
+
         self.character.modulesGrp = cmds.group(empty=True, name='MODULES')
 
         cmds.parent(self.character.modulesGrp, self.character.skeletonGrp,

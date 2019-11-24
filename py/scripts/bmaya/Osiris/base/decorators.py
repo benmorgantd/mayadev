@@ -4,7 +4,6 @@ import maya.standalone
 def wrapStandalone(fn):
     def wrapper(*args, **kwargs):
         maya.standalone.initialize()
-        # maya.standalone.initialize(name="python")
 
         result = fn(*args, **kwargs)
 
@@ -29,9 +28,10 @@ def wrapBuild(fn):
         self.connectComponents()
         self.connectBindJoints()
         self.parentModule()
+
         self.lockTransforms([comp.grp for comp in self.components] + [self.modGrp])
         self.lockTransforms([comp.ctrl for comp in self.components], attrs=["scale", "visibility"])
-
+        
         print "\n"
 
         return result 

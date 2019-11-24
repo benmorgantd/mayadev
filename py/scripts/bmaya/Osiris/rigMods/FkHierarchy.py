@@ -6,6 +6,9 @@ from ..base import module
 from ..base.decorators import wrapBuild
 from bmaya.tools.shapes import shapelib
 
+reload(module)
+reload(shapelib)
+
 
 class FkHierarchy(module.Module):
 
@@ -18,10 +21,12 @@ class FkHierarchy(module.Module):
         self.startJoint = startJoint
         self.exclude = exclude
 
+        self.contract = [self.startJoint]
+
     @wrapBuild
     def build(self):
 
-        self.checkContractJoint(['startJoint'])
+        self.checkContract()
 
         # fills self.joints to contain the non-excluded joints 
         # inbetween start and end joint

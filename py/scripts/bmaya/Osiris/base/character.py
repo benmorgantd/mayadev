@@ -11,6 +11,10 @@ from bmaya.tools.shapes import shapelib, shapeio
 from bmaya.tools.weights import weightio
 from bmaya.Osiris.tools.build import buildio
 
+reload(shapeio)
+reload(weightio)
+reload(buildio)
+
 
 class Character(Asset):
     '''Character is the base class for all rigs created with Osiris'''

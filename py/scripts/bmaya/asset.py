@@ -7,6 +7,7 @@ import json
 import maya.cmds as cmds
 
 from components import *
+from bmaya.core import constants
 
 try:
     PROJECT_ROOT = os.environ['OSIRIS_ROOT']
@@ -131,7 +132,7 @@ class Asset(object):
             print ">> Creating skeleton file."
             # create a single joint for the default skeleton file
             cmds.file(new=True, force=True)
-            cmds.joint(name="root")
+            cmds.joint(name=constants.ROOT_JOINT)
             cmds.file(rename=self.skeleton.fullPath)
             cmds.file(save=True, type="mayaAscii", force=True)
             self.versionFile(self.skeleton.fullPath)

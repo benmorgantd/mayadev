@@ -16,6 +16,7 @@ reload(asset)
 from ..base import creator
 reload(creator)
 from bmaya.Osiris.tools.build import buildio
+reload(buildio)
 
 
 class RigBuilder(qtbase.DockableWidget):

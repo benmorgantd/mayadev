@@ -4,6 +4,8 @@ from ..base import module
 from ..base.decorators import wrapBuild
 from bmaya.tools.shapes import shapelib
 
+reload(module)
+reload(shapelib)
 
 class SingleJoint(module.Module):
 
@@ -15,11 +17,13 @@ class SingleJoint(module.Module):
         self.parent = parent
         self.startJoint = startJoint
 
+        self.contract = [self.startJoint]
+
     @wrapBuild
     def build(self):
         # build a single joint control on the given joint
 
-        self.checkContractJoint('startJoint')
+        self.checkContract()
 
         ctrl = shapelib.Shape(self.startJoint, self.shapeType,
                               jnt=self.startJoint)

@@ -8,6 +8,9 @@ from bmaya.tools.shapes import shapelib
 
 from decorators import wrapBuild
 
+reload(character)
+reload(shapelib)
+
 
 class Module(object):
 
@@ -31,6 +34,8 @@ class Module(object):
         self.startJoint = None
         self.endJoint = None
         self.exclude = []
+
+        self.contract = []
 
     @property
     def dict(self):
@@ -101,7 +106,10 @@ class Module(object):
             elif attrType == 'message':
                 cmds.addAttr(self.node, ln=attr, at=attrType, keyable=False)
             else:
-                cmds.addAttr(self.node, ln=attr, at=attrType, dv=attrVal, keyable=False)
+                try:
+                    cmds.addAttr(self.node, ln=attr, at=attrType, dv=attrVal, keyable=False)
+                except TypeError:
+                    print 'Warning: Failed to add attribute ' + attr
 
     def build(self):
         return
@@ -206,14 +214,17 @@ class Module(object):
                                   lock=True, keyable=False, channelBox=False)
 
     def checkContract(self):
-        return True
 
-        # for key in self.contract:
-        #     if self.contract[key] == None:
-        #         raise RuntimeError('Contract is not yet fulfilled')
-        #
-        # print '>>> Contract for {0} fulfilled'.format(self.modType)
-        # return True
+        if not self.contract:
+            return True
+
+        nullValues = [v for v in self.contract if not v]
+
+        if nullValues:
+            raise RuntimeError('Contract for {0} not yet fulfilled.'.format(self.name))
+        
+        print '>>> Contract for {0} fulfilled'.format(self.modType)
+        return True
 
     def connectComponents(self):
         for ctrl in self.components:
