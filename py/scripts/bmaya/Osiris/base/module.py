@@ -14,13 +14,14 @@ reload(shapelib)
 
 class Module(object):
 
-    mirrorPairs = {'L': 'R', 'R': 'L'}
+    mirrorPairs = {'L': 'R', 'R': 'L', 'M': None}
 
     def __init__(self, character=None, name='module1',
                  modType='Module', parent=None, side='L', mirror=False,
                  shapeType='cube', alignWorld=False):
 
         self.character = character
+
         self.components = []
         self.name = name
         self.modType = modType
