@@ -31,16 +31,17 @@ class Character(Asset):
 
     @property
     def meshes(self):
-        m = cmds.sets(self.meshSet, query=True)
+        return cmds.sets(self.meshSet, query=True) or []
+    
+    @property
+    def controls(self):
+        return cmds.sets(self.allControls, query=True) or []
 
-        if m:
-            return m
-        else:
-            return []
-        
     def addModule(self, moduleDict):
         # pass it the dictionary representation of the module
         # this way we can add modules from file or object data
+
+        assert isinstance(moduleDict, dict)
 
         self.modules.append(moduleDict)
 
@@ -55,24 +56,29 @@ class Character(Asset):
 
         self.makeNode()
 
-        # open up the character's build file
+        # open up the character's build file (json)
         self.buildData = buildio.load(self.build.fullPath)
 
+        # read module data from file. 
         for mod in self.buildData:
+            # set that variable for the user
             mod['character'] = self
+            # add that module to the character's list
             self.addModule(mod)
 
-        # create the new class instance from the string
+        # create the new class instance from the data
         from .. import rigMods
 
         for mod in self.modules:
             # access the modType attribute from the module's dictionary
             modType = mod['modType']
 
+            # create a new instance of that class
             modInstance = rigMods.MODULE_CLASSES[modType].__new__(rigMods.MODULE_CLASSES[modType])
             modInstance.__init__(character=self)
 
             for key, value in mod.items():
+                # transfer the values from the read file to the instance
                 setattr(modInstance, key, value)
 
             # build it!
