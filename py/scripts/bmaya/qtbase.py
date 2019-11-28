@@ -9,6 +9,34 @@ import maya.cmds as cmds
 import maya.OpenMayaUI as omui
 
 
+class SimpleWindow(QtWidgets.QMainWindow):
+    def __init__(self, parent=None, designerFile=None, title='Simple Widget'):
+        super(SimpleWindow, self).__init__(parent=parent)
+
+        assert isinstance(title, basestring)
+        self.title = title
+
+        try:
+            cmds.deleteUI(self.title)
+        except RuntimeError:
+            pass
+
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+        self.setWindowTitle(self.title)
+
+        if designerFile and isinstance(designerFile, basestring):
+            if os.path.exists(designerFile):
+                self.widget = QtCompat.load_ui(designerFile)
+                self.widget.setParent(self)
+            else:
+                raise RuntimeError('Given Qt Designer file not in folder.')
+        else:
+            self.widget = QtWidgets.QWidget()
+            self.mainLayout = QtWidgets.QVBoxLayout()
+            self.widget.setLayout(self.mainLayout)
+            self.setCentralWidget(self.widget)
+
+
 class SimpleWidget(QtWidgets.QWidget):
     def __init__(self, parent=None, designerFile=None, title='Simple Widget'):
         super(SimpleWidget, self).__init__(parent=parent)
