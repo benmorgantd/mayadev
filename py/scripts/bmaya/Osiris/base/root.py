@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 
-from ..base import module
-from ..base.decorators import wrapBuild
+from . import module
+from decorators import wrapBuild
 from bmaya.tools.shapes import shapelib
 from bmaya.core import constants
 
@@ -9,12 +9,13 @@ reload(module)
 reload(shapelib)
 reload(constants)
 
+
 class Root(module.Module):
     """Every rig must have a Root module"""
 
-    def __init__(self, name='Root', character=None):
-        super(Root, self).__init__(modType='Root', shapeType='triangle',
-                                   name=name, character=character)
+    def __init__(self, character=None):
+        super(Root, self).__init__(modType='Root', shapeType='triangle', name='Root', 
+                                   character=character)
 
     @wrapBuild
     def build(self):
@@ -72,11 +73,12 @@ class Root(module.Module):
         # make a stack of offset controls
         for i in range(1, 4):
             if i > 1:
-                shp = shapelib.Shape('layout0{0}'.format(
-                    i), self.shapeType, scale=(1 - ((i - 1) * 0.15)))
+                shp = shapelib.Shape('layout_{0}_M'.format(
+                    str(i).zfill(2)), self.shapeType, scale=(1 - ((i - 1) * 0.15)))
                 cmds.parent(shp.grp, self.components[i - 2].ctrl)
             else:
-                shp = shapelib.Shape('layout0{0}'.format(i), self.shapeType)
+                shp = shapelib.Shape('layout_{0}_M'.format(
+                    str(i).zfill(2)), self.shapeType)
                 cmds.parent(shp.grp, self.modGrp)
 
             self.components.append(shp)

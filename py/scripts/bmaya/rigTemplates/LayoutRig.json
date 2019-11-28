@@ -1,14 +1,9 @@
 [
     {
-        "modType": "Root", 
-        "character": null, 
-        "name": "Root"
-    }, 
-    {
         "parent": null, 
         "shapeType": "boundingBox", 
         "character": null, 
-        "startJoint": "root", 
+        "startJoint": "root_00_M_JNT", 
         "modType": "SingleJoint", 
         "name": "singleJoint1"
     }

@@ -28,7 +28,7 @@ for modType in __all__:
     argspec = inspect.getargspec(ModClass.__init__)
     args = argspec.args
     # 'if this tuple has n elements, they correspond to the last n elements listed in args.'
-    defaults = argspec.defaults
+    defaults = argspec.defaults or []
 
     numArgs = len(args)
     numDefaults = len(defaults)

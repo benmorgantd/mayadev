@@ -11,10 +11,12 @@ from bmaya.tools.shapes import shapelib, shapeio
 from bmaya.tools.weights import weightio
 from bmaya.Osiris.tools.build import buildio
 
+import root
+
 reload(shapeio)
 reload(weightio)
 reload(buildio)
-
+reload(root)
 
 class Character(Asset):
     '''Character is the base class for all rigs created with Osiris'''
@@ -45,6 +47,11 @@ class Character(Asset):
 
         self.modules.append(moduleDict)
 
+    def buildRoot(self):
+        rootMod = root.Root(character=self)
+        rootMod.build()
+        return rootMod.dict
+
     def buildRig(self):
 
         self.modules = []
@@ -58,6 +65,10 @@ class Character(Asset):
 
         # open up the character's build file (json)
         self.buildData = buildio.load(self.build.fullPath)
+        
+        buildList = []
+
+        self.modules.append(self.buildRoot())
 
         # read module data from file. 
         for mod in self.buildData:
@@ -65,11 +76,12 @@ class Character(Asset):
             mod['character'] = self
             # add that module to the character's list
             self.addModule(mod)
+            buildList.append(mod)
 
         # create the new class instance from the data
         from .. import rigMods
 
-        for mod in self.modules:
+        for mod in buildList:
             # access the modType attribute from the module's dictionary
             modType = mod['modType']
 
@@ -224,5 +236,5 @@ class Character(Asset):
         for mesh in self.meshes:
             cmds.setAttr(mesh + '.overrideEnabled', 1)
             cmds.connectAttr(md + '.output', mesh + '.overrideDisplayType')
+    
 
-# import Osiris.lib.base.character as character;helm = character.Character('Helm','dev','prop');helm.build();

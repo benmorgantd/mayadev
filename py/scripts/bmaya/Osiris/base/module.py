@@ -3,12 +3,11 @@ import json
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from . import character
+# from .character import Character
 from bmaya.tools.shapes import shapelib
 
-from decorators import wrapBuild
+from decorators import wrapBuild, stringAttr, boolAttr
 
-reload(character)
 reload(shapelib)
 
 
@@ -16,13 +15,11 @@ class Module(object):
 
     mirrorPairs = {'L': 'R', 'R': 'L', 'M': None}
 
-    def __init__(self, character=None, name='module1',
-                 modType='Module', parent=None, side='L', mirror=False,
-                 shapeType='cube', alignWorld=False):
+    def __init__(self, character=None, name='module1', modType='Module', parent=None, side='L', 
+                 mirror=False, shapeType='cube', alignWorld=False):
 
         self.character = character
 
-        self.components = []
         self.name = name
         self.modType = modType
         self.parent = parent
@@ -30,6 +27,9 @@ class Module(object):
         self.mirror = mirror
         self.shapeType = shapeType
         self.alignWorld = alignWorld
+
+        self.components = []
+        self.bindJoints = []
 
     @property
     def dict(self):
@@ -55,53 +55,50 @@ class Module(object):
 
         for attr in self.__dict__:
             attrVal = self.__dict__[attr]
-            attrType = type(attrVal)
 
-            
-
-            if not attrVal:
-                attrType = 'string'
-                attrVal = 'None'
-
-            elif isinstance(attrType, bool):
+            if isinstance(attrVal, bool):
                 attrType = 'bool'
                 attrVal = attrVal
 
-            elif isinstance(attrVal, character.Character):
-                attrType = 'message'
+            # elif isinstance(attrVal, Character):
+            #     attrType = 'message'
 
             elif isinstance(attrVal, basestring):
                 attrType = 'string'
                 attrVal = str(attrVal)
 
-            elif isinstance(attrType, list):
-                print 'here'
+            elif isinstance(attrVal, list):
                 cleanList = []
 
                 for val in attrVal:
-                    if isinstance(val, (basestring, int, float, bool, None)):
+                    if isinstance(val, (basestring, int, float, bool)):
                         cleanList.append(val)
-                    elif isinstance(val, character.Character):
-                        cleanList.append(val.name)
+                    # creates a circular import
+                    # elif isinstance(val, Character):
+                    #     cleanList.append(val.name)
                     elif isinstance(val, shapelib.Shape):
                         cleanList.append(val.ctrl)
 
                 attrType = 'string'
                 attrVal = json.dumps(cleanList)
 
-            elif isinstance(attrType, dict):
+            elif isinstance(attrVal, dict):
                 cleanDict = {}
 
                 for key in attrVal:
-                    if isinstance(val, (basestring, int, float, bool, None)):
+                    if isinstance(val, (basestring, int, float, bool)):
                         cleanDict[key] = attrVal[key]
-                    elif isinstance(attrVal[key], character.Character):
-                        cleanDict[key] = attrVal[key].name
+                    # elif isinstance(attrVal[key], Character):
+                    #     cleanDict[key] = attrVal[key].name
                     elif isinstance(attrVal[key], shapelib.Shape):
                         cleanDict[key] = attrVal[key].ctrl
 
                 attrType = 'string'
                 attrVal = json.dumps(cleanDict)
+            
+            elif not attrVal:
+                attrType = 'string'
+                attrVal = 'None'
 
             # add the attribute
             
@@ -114,8 +111,10 @@ class Module(object):
                 try:
                     cmds.addAttr(self.node, ln=attr, at=attrType, dv=attrVal, keyable=False)
                 except TypeError:
-                    print attrType
-                    print 'Warning: Failed to add attribute \'{0}\''.format(attr)
+                    print '--'
+                    print 'type: ', attrType
+                    print 'value: ', attrVal
+                    print 'Warning: Failed to add attribute \'{0}\'\n--'.format(attr)
 
     def findMirror(self, node):
         """Returns the mirrored node of the same type if it's in the scene.
@@ -186,13 +185,12 @@ class Module(object):
         # we might give it a specific joint parent
         if self.parent:
             self.parentConstrain(self.parent, self.modGrp, maintainOffset=True)
-        elif self.startJoint:
+        elif hasattr(self, 'startJoint'):
             parentJoint = cmds.listRelatives(
-                self.startJoint, parent=True, type='joint') or 'layout_03_ctrl'
+                self.startJoint, parent=True, type='joint') or 'layout_03_M_ctrl'
 
             # todo: this is where you could add a followSwitch option
-
-            self.parentConstrain(moduleParent, self.modGrp, maintainOffset=True)
+            self.parentConstrain(parentJoint, self.modGrp, maintainOffset=True)
             
         elif self.modType != 'Root':
             raise RuntimeError('Module must have a start joint.')
@@ -236,7 +234,7 @@ class Module(object):
 
     def connectComponents(self):
         """Connects the module's compenents to the module"""
-
+        
         for ctrl in self.components:
             if not cmds.objExists(ctrl.ctrl + '.module'):
                 cmds.addAttr(ctrl.ctrl, longName='module', attributeType='message')
