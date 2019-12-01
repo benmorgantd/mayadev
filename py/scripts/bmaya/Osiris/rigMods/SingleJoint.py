@@ -10,9 +10,9 @@ reload(shapelib)
 class SingleJoint(module.Module):
 
     def __init__(self, startJoint=None, name='singleJoint1', character=None, parent=None, 
-                 shapeType='cube'):
+                 shapeType='cube', mirror=False):
         super(SingleJoint, self).__init__(modType='SingleJoint', name=name, character=character, 
-                                          shapeType=shapeType)
+                                          shapeType=shapeType, mirror=mirror)
 
         self.parent = parent
         self.startJoint = startJoint

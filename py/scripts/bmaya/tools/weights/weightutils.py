@@ -98,7 +98,6 @@ def skin(joints, mesh):
             cmds.joint(name=jnt)
     
     cstr = cmds.skinCluster(joints, mesh, 
-                            maximumInfluences=4,
                             obeyMaxInfluences=True,
                             weightDistribution=2,
                             skinMethod=0,
@@ -106,3 +105,31 @@ def skin(joints, mesh):
                             dropoffRate=3.0)
 
     return cstr[0]
+
+
+def quickSkin():
+
+    sel = cmds.ls(selection=True)
+    joints = cmds.ls(selection=True, type='joint')
+    meshes = list(set(sel) - set(joints))
+
+    for mesh in meshes:
+        existingSkin = cmds.ls(cmds.listHistory(mesh), type='skinCluster')
+        
+        if existingSkin:
+            cmds.delete(existingSkin)
+            print 'deleted ', existingSkin
+
+        cmds.select(joints)
+        cmds.select(mesh, add=True)
+
+        cstr = cmds.skinCluster(joints, mesh, 
+                                maximumInfluences=1,
+                                obeyMaxInfluences=True,
+                                weightDistribution=2,
+                                skinMethod=0,
+                                normalizeWeights=1,
+                                dropoffRate=3.0,
+                                toSelectedBones=True)
+
+        cmds.setAttr(cstr[0] + '.maxInfluences', 4)

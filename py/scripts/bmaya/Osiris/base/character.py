@@ -6,6 +6,7 @@ import maya.cmds as cmds
 
 from bmaya.asset import Asset
 from bmaya.components import *
+from bmaya.core import constants
 
 from bmaya.tools.shapes import shapelib, shapeio
 from bmaya.tools.weights import weightio
@@ -101,10 +102,11 @@ class Character(Asset):
             # it'll mirror if its mirror attribute is True
             mirrorInstance = modInstance.doMirror()
 
+            # optional
             cmds.refresh(currentView=True)
 
             if mirrorInstance:
-                mirrorModules.append(mirrorInstance.dict())
+                mirrorModules.append(mirrorInstance.dict)
                 self.allControls += [comp.ctrl for comp in mirrorInstance.components]
 
         self.modules += mirrorModules
@@ -218,17 +220,26 @@ class Character(Asset):
         # check for existing weights files. If not then skin to skeleton set
         # skin the root joint to all the meshes in the scene
 
+        # TODO: fix weight io issues
+
         for mesh in self.meshes:
-            self.skinClusters.append(cmds.skinCluster(self.skeletonSet, mesh,
-                                                      maximumInfluences=1,
-                                                      bindMethod=1,
-                                                      weightDistribution=1,
-                                                      normalizeWeights=2)[0])
+            weightsPath = os.path.join(self.weights.fullPath, mesh + '.' + self.weights.extension)
+            if os.path.exists(weightsPath):
+                weightio.load(weightsPath)
+            else:
+                # skin the mesh to the root joint
+                self.skinClusters.append(cmds.skinCluster(constants.ROOT_JOINT, mesh,
+                                                        maximumInfluences=1,
+                                                        bindMethod=1,
+                                                        weightDistribution=1,
+                                                        normalizeWeights=1)[0])
 
     def setupMeshReferencing(self):
 
         md = cmds.createNode('multDoubleLinear', name='meshRef_md')
         cmds.setAttr(md + '.input2', 2)
+        # don't have it show up in the mesh's channel box
+        cmds.setAttr(md + '.isHistoricallyInteresting', False)
         
         cmds.addAttr(self.node, longName='referenceMesh', attributeType='bool', defaultValue=True, keyable=True)
         cmds.connectAttr(self.node + '.referenceMesh', md + '.input1')
@@ -236,5 +247,13 @@ class Character(Asset):
         for mesh in self.meshes:
             cmds.setAttr(mesh + '.overrideEnabled', 1)
             cmds.connectAttr(md + '.output', mesh + '.overrideDisplayType')
+
+    def lockMeshes(self):
+
+        for mesh in self.meshes:
+            verts = cmds.polyEvaluate(mesh, vertex=True)
+
+            for i in range(verts):
+                cmds.setAttr('{0}.pt[{1}]'.format(mesh, i), lock=True)
     
 

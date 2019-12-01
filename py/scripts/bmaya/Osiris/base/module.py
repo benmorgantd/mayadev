@@ -1,4 +1,5 @@
 import json
+import inspect
 
 import maya.cmds as cmds
 import maya.OpenMaya as om
@@ -126,9 +127,12 @@ class Module(object):
 
         mirrorSide = Module.mirrorPairs[self.side]
 
-        mirrorNode = node.replace((self.side + '_'), (mirrorSide + '_'))
+        mirrorNode = node.replace(('_' + self.side + '_'), ('_' + mirrorSide + '_'))
 
-        nodeType = cmds.objectType(node)
+        try:
+            nodeType = cmds.objectType(node)
+        except RuntimeError:
+            return mirrorNode
 
         if mirrorNode in cmds.ls(type=nodeType):
             return mirrorNode
@@ -137,43 +141,48 @@ class Module(object):
 
     def doMirror(self):
 
-        return None
+        if self.mirror:
+            print '>>> Mirroring ' + self.name
 
-        # if self.mirror:
-        #     print '>>> Mirroring ' + self.name
-        #
-        #     mirrorSide = Module.mirrorPairs[self.side]
-        #
-        #     # create a new instance of this class with mirrored attributes
-        #
-        #     mirrorContract = {}
-        #
-        #     for key in self.contract:
-        #         value = self.contract[key]
-        #
-        #         if isinstance(value, basestring):
-        #             mirrorContract[key] = self.findMirror(value)
-        #
-        #         elif type(value) is list:
-        #             mirrorList = []
-        #             for j in value:
-        #                 mirrorList.append(self.findMirror(j))
-        #
-        #             mirrorContract[key] = mirrorList
-        #
-        #     # the mirror contract isn't getting set correctly
-        #
-        #
-        #     mirrorSelf = self.__class__(character=self.character,
-        #                                 side=mirrorSide,
-        #                                 modType=self.modType,
-        #                                 mirror=False,
-        #                                 name=self.name.replace(self.side + '_',
-        #                                                        mirrorSide + '_'))
-        #
-        #     mirrorSelf.build()
-        #
-        #     return mirrorSelf
+            # get all the arguments needed to build self and find their mirrors 
+            # before creating the instance
+        
+            mirroredInitArgs = {}
+
+            for attr in inspect.getargspec(self.__init__).args:
+                try:
+                    value = getattr(self, attr)
+                except AttributeError:
+                    # could be trying to get the value of 'self'
+                    continue
+
+                print attr
+        
+                if isinstance(value, basestring):
+                    mirroredInitArgs[attr] = self.findMirror(value)
+        
+                elif isinstance(value, list):
+                    mirrorList = []
+                    for j in value:
+                        mirrorList.append(self.findMirror(j))
+        
+                    mirroredInitArgs[attr] = mirrorList
+
+                else:
+                    mirroredInitArgs[attr] = value
+
+            # we don't want to worry about a name convention for mirrored modules
+            mirroredInitArgs['name'] = self.name + '_MIRROR'
+            mirroredInitArgs['mirror'] = False
+
+            mirrorSelf = self.__class__(**mirroredInitArgs)
+        
+            mirrorSelf.build()
+        
+            return mirrorSelf
+
+        else:
+            return None
 
     def parentModule(self):
         # check if a specific joint parent was given. If not then check the parent of the startJoint
