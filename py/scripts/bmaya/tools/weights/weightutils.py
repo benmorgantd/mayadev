@@ -90,22 +90,27 @@ def setSkinClusterWeights(skinClusterObj, influenceIndices, weights, components=
 
 def skin(joints, mesh):
 
+    if not cmds.objExists(mesh):
+        raise RuntimeError('Given mesh ' + mesh + ' does not exist in scene.')
+
     sceneJoints = cmds.ls(type="joint")
 
     for jnt in joints:
         if jnt not in sceneJoints:
             cmds.select(clear=True)
             cmds.joint(name=jnt)
-    
-    cstr = cmds.skinCluster(joints, mesh, 
-                            obeyMaxInfluences=True,
+
+    cmds.select(joints)
+    cmds.select(mesh, add=True)
+
+    cstr = cmds.skinCluster(obeyMaxInfluences=True,
                             weightDistribution=2,
                             skinMethod=0,
                             normalizeWeights=1,
-                            dropoffRate=3.0)
+                            dropoffRate=3.0,
+                            toSelectedBones=True)
 
     return cstr[0]
-
 
 def quickSkin():
 

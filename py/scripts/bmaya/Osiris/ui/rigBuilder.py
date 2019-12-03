@@ -190,7 +190,9 @@ class RigBuilder(qtbase.DockableWidget):
             shapeio.load(componentPath)
         elif componentType == 'weights':
             from bmaya.tools.weights import weightio
-            weightio.load(componentPath)
+            weightFiles = os.listdir(componentPath)
+            for f in weightFiles:
+                weightio.load(os.path.join(componentPath, f))
 
     def initiateAsset(self):
         project = self.widget.projectName.currentText()

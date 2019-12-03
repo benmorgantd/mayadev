@@ -2,11 +2,24 @@
 
 import json
 import os
+from xml.etree import ElementTree
 
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
 from . import weightutils
+
+def getJointsFromXML(weightsDir):
+  tree = ElementTree.parse(weightsDir)
+  root = tree.getroot()
+
+  joints = []
+
+  for child in root:
+    if child.tag == "weights":
+      joints.append(child.attrib["source"])
+
+  return joints
 
 def save(weightsDir):
     # Saves each selected object to a file in the given directory
@@ -21,34 +34,17 @@ def save(weightsDir):
         dag = om.MDagPath()
         itSel.getDagPath(dag)
 
-        skinClusterObj = weightutils.getSkinClusterObj(dag)
+        dagName = str(dag.partialPathName())
 
-        if skinClusterObj:
-            weights, infIndices, infObjects = weightutils.getSkinClusterWeights(skinClusterObj)
+        skin = cmds.ls(cmds.listHistory(dagName), type='skinCluster') or []
 
-            infObjectNames = []
-            # maya's MDoubleArray can easily be cast into a regular list so json can read it
-            weights = list(weights)
+        if skin:
+            # exports by vertex index. Changes to the vert order will break this
+            # with the new 'format' argument, this might not be backwards compatible... - _-
+            cmds.deformerWeights("{0}.weights".format(dagName), deformer=skin[0],
+                                 export=True, format='XML', path=weightsDir, method="index")
 
-            for i in range(0, infObjects.length()):
-                infObjectNames.append(str(infObjects[i].partialPathName()))
-
-            jsonData = {"weights": list(weights), 
-                        "influenceObjects": infObjectNames,
-                        "influenceIndices": list(infIndices)}
-
-            dagName = str(dag.partialPathName())
-
-            weightsPath = os.path.join(weightsDir, (dagName + ".weights"))
-
-            if not os.path.exists(weightsPath):
-                os.mkdir(os.path.split(weightsPath)[0])
-
-            with open(weightsPath, "w") as f:
-                json.dump(jsonData, f, indent=4)
-
-            print "Saved weights for {}".format(dagName)
-
+        print "Saved weights for {}".format(dagName)
 
         itSel.next()
 
@@ -58,46 +54,40 @@ def load(weightsPath):
     if not os.path.exists(weightsPath):
         raise ValueError("Given weights path doesn't exist")
 
+    if not weightsPath.endswith('.weights'):
+        raise ValueError('Given file must be in .weights format')
+
     objName = os.path.basename(weightsPath).replace(".weights", "")
+    weightsDirname = os.path.dirname(weightsPath)
 
-    if objName not in cmds.ls():
+
+    if not cmds.objExists(objName):
         raise ValueError("<{0}.weights> doesn't have a matching object in scene.".format(objName))
-
-    sel = om.MSelectionList()
-    sel.add(objName)
-    dag = om.MDagPath()
-    sel.getDagPath(0, dag)
-
-    existingSkinCluster = cmds.ls(cmds.listHistory(dag.partialPathName()), type="skinCluster") or list()
+    
+    # look for and delete old clusters if they exist
+    existingSkinCluster = cmds.ls(cmds.listHistory(objName), type="skinCluster") or []
 
     if existingSkinCluster:
         cmds.delete(existingSkinCluster)
 
-    weightData = None
+    jointList = getJointsFromXML(weightsPath)
 
-    # get the data from the weight file for this mesh
-    with open(weightsPath, "r") as f:
-        weightData = json.load(f)
+    cmds.select(jointList)
+    cmds.select(objName, add=True)
 
-    # create a new skinCluster
-    weightutils.skin(weightData["influenceObjects"], 
-                     dag.partialPathName())
+    # add the skin cluster
+    newCluster = cmds.skinCluster(maximumInfluences=4,
+                                 weightDistribution=1,
+                                 obeyMaxInfluences=True,
+                                 toSelectedBones=True,
+                                 skinMethod=0,
+                                 bindMethod=1)
 
-    skinClusterObj = weightutils.getSkinClusterObj(dag)
-
-    # we need to convert the json data back to API arrays
-    infArray = om.MIntArray()
-    weightArray = om.MDoubleArray()
-
-    for index in weightData["influenceIndices"]:
-        infArray.append(index)
-
-    for weightValue in weightData["weights"]:
-        weightArray.append(weightValue)
-
-    weightutils.setSkinClusterWeights(skinClusterObj,
-                                      infArray,
-                                      weightArray)
+    cmds.deformerWeights("{0}.weights".format(objName), im=True, path=weightsDirname, 
+                        ignoreName=True, format='XML', method="index", deformer=newCluster[0])
+    cmds.select(objName)
+    cmds.skinPercent(newCluster[0], normalize=True)
+    om.MGlobal.displayInfo("Loaded skinCluster weights onto {0}".format(objName))
 
     print ">>> Weight data loaded from {0}".format(weightsPath)
 

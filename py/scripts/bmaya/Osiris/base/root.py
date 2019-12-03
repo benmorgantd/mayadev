@@ -51,6 +51,8 @@ class Root(module.Module):
     def makeRigGroups(self):
         self.character.rigGrp = cmds.group(empty=True, name='RIG')
 
+        self.character.connectToCharacter(self.character.rigGrp)
+
         try:
             self.character.meshGrp = cmds.group(
                 self.character.meshSet, name='MESH')

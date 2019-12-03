@@ -63,7 +63,7 @@ class Character(Asset):
         cmds.file(new=True, force=True)
 
         self.makeNode()
-
+        
         # open up the character's build file (json)
         self.buildData = buildio.load(self.build.fullPath)
         
@@ -142,6 +142,10 @@ class Character(Asset):
     def makeNode(self):
         if not cmds.objExists(self.name + '_CHAR'):
             self.node = cmds.createNode('network', name=self.name + '_CHAR')
+
+            # create an attribute to glue other parts to the rig to
+            cmds.addAttr(self.node, longName='sock', attributeType='message')
+
             print '>>> Created character node >> {0} <<'.format(self.node)
 
     def addNodeAttrs(self):
@@ -256,4 +260,8 @@ class Character(Asset):
             for i in range(verts):
                 cmds.setAttr('{0}.pt[{1}]'.format(mesh, i), lock=True)
     
-
+    def connectToCharacter(self, node):
+        
+        if cmds.objExists(node):
+            cmds.addAttr(node, longName='character', attributeType='message')
+            cmds.connectAttr(self.node + '.sock', node + '.character')
