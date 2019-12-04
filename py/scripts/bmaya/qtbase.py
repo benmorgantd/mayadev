@@ -108,21 +108,17 @@ class List(QtWidgets.QListWidget):
 
 class Tree(QtWidgets.QTreeWidget):
     def __init__(self, parent=None):
-        super(TreeWidget, self).__init__(parent)
+        super(Tree, self).__init__(parent)
 
-        self.cellData = {}
-        self.moduleLayouts = []
-
-        # self.setSpacing(1)
         self.setAlternatingRowColors(True)
         self.setMaximumHeight(200)
 
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
+
         self.setHeaderHidden(True)
         self.setRootIsDecorated(True)
         
-
 
 class DockableWidget(SimpleWidget):
     def __init__(self, parent=None, designerFile=None, title='RigBuilder'):

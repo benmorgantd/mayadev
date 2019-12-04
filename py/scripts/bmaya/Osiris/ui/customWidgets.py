@@ -12,6 +12,9 @@ class ModuleList(qtbase.List):
     def __init__(self, attributeContainer=None):
         super(ModuleList, self).__init__()
 
+        self.cellData = {}
+        self.moduleLayouts = []
+
         self.attributeContainer = attributeContainer
 
     def setBuildList(self, listWidget):
@@ -29,15 +32,23 @@ class ModuleList(qtbase.List):
                 # no row selected
                 return
 
-            currentRow = self.buildList.currentRow()
+            # get the current item instead and add it as a child. If nothing is selected, 
+            # add it to the top node
 
             newMod = BuildListItem(modType=selectedModType, attributeContainer=self.attributeContainer)
-            self.buildList.addItem(newMod)
+            currentItem = self.buildList.currentItem()
+            if currentItem:
+                currentItem.addChild(newMod)
+            else:
+                self.buildList.addTopLevelItem(newMod)
 
 
-class BuildList(qtbase.List):
+class BuildList(qtbase.Tree):
     def __init__(self):
         super(BuildList, self).__init__()
+
+        self.cellData = {}
+        self.moduleLayouts = []
 
         self.setMaximumHeight(200)
         self.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked)
@@ -52,6 +63,7 @@ class BuildList(qtbase.List):
 
     def loadList(self, buildData, attributeLayoutContainer):
 
+        # clear should work with a tree
         self.clear()
 
         for mod in buildData:
@@ -65,18 +77,20 @@ class BuildList(qtbase.List):
             customAttrs.pop('name')
 
             listItem = BuildListItem(modType=modType, 
-                                    attributeContainer=attributeLayoutContainer,
-                                    customAttrs=customAttrs)
+                                     attributeContainer=attributeLayoutContainer,
+                                     customAttrs=customAttrs)
 
             listItem.setText(str(modName))
-            self.addItem(listItem)
+            self.addChild(listItem)
         
     def getAllValues(self):
 
         attrData = []
 
-        for i in range(self.count()):
-            modAtRow = self.item(i)
+        iterator = QtWidgets.QTreeWidgetItemIterator(self)
+
+        while iterator.value():
+            modAtRow = iterator.value()
             modType = modAtRow.modType
             modName = modAtRow.text()
 
@@ -90,13 +104,21 @@ class BuildList(qtbase.List):
 
             attrData.append(modAttrs)
 
+            iterator += 1
+
         return attrData
 
     def hideAttrLayouts(self):
-        for i in range(self.count()):
-            itemAtRow = self.item(i)
-            if itemAtRow.attributeLayout:
-                itemAtRow.attributeLayout.setVisible(False)
+        
+        iterator = QtWidgets.QTreeWidgetItemIterator(self)
+
+        while iterator.value():
+            item = iterator.value()
+
+            if item.attributeLayout:
+                item.attributeLayout.setVisible(False)
+
+            iterator += 1
 
     def mousePressEvent(self, event):
         QtWidgets.QListWidget.mousePressEvent(self, event)
@@ -107,32 +129,37 @@ class BuildList(qtbase.List):
             self.contextMenu.move(globalCursorPos)
             self.contextMenu.show()
 
-        listItem = self.item(self.currentRow())
+        listItem = self.currentItem()
 
         self.hideAttrLayouts()
 
         listItem.attributeLayout.setVisible(True)
 
     def mouseDoubleClickEvent(self, event):
-        QtWidgets.QListWidget.mouseDoubleClickEvent(self, event)
 
-        currentItem = self.item(self.currentRow())
+        currentItem = self.currentItem()
+        currentItem.setExpanded(not currentItem.isExpanded())
 
+    def renameItem(self):
+        
+        currentItem = self.currentItem()
         self.editItem(currentItem)
 
     def deleteItem(self):
         # delete the currently selected item
-        currentItemRow = self.currentRow()
-        currentItem = self.item(currentItemRow)
+        currentItem = self.currentItem()
         currentItem.attributeLayout.setVisible(False)
-        self.takeItem(currentItemRow)
+
+        currentItemParent = currentItem.parent()
+
+        currentItemParent.takeChild(currentItemParent.indexOfChild(currentItem))
 
         self.contextMenu.hide()
 
     def duplicateItem(self):
         
         # get the selection
-        currentObject = self.item(self.currentRow())
+        currentObject = self.currentItem()
 
         # copy the attributes over
         customAttrs = currentObject.getValues()
@@ -146,11 +173,12 @@ class BuildList(qtbase.List):
                                   attributeContainer=currentObject.attributeContainer,
                                   customAttrs=customAttrs)
 
-        listItem.setText(str(currentObject.modType) + '1')
-        self.addItem(listItem)
+        # listItem.setText(str(currentObject.modType) + '1')
+        currentObjectParent = currentObject.parent()
+        currentObjectParent.addChild(listItem)
 
         
-class BuildListItem(QtWidgets.QListWidgetItem):
+class BuildListItem(QtWidgets.QTreeWidgetItem):
     def __init__(self, modType, customAttrs=None, attributeContainer=None):
         super(BuildListItem, self).__init__()
 
@@ -158,9 +186,11 @@ class BuildListItem(QtWidgets.QListWidgetItem):
 
         self.modType = modType
 
-        self.setText(self.modType)
+        self.setText(0, self.modType)
         self.setFlags(self.flags() | QtCore.Qt.ItemIsEditable)
-        self.setSizeHint(QtCore.QSize(50,25))
+        self.setSizeHint(0, QtCore.QSize(50,25))
+
+        self.setFirstColumnSpanned(True)
 
         # Put attribute data inside of the build layout item
         self.customAttrs = customAttrs
@@ -195,7 +225,7 @@ class BuildListItem(QtWidgets.QListWidgetItem):
             attrValues[keyText] = valueText
 
 
-        attrValues['name'] = self.text()
+        attrValues['name'] = self.text(0)
         attrValues['character'] = None
         attrValues['modType'] = self.modType
 
@@ -206,6 +236,9 @@ class BuildListContextMenu(QtWidgets.QMenu):
     def __init__(self, buildList):
         super(BuildListContextMenu, self).__init__()
 
+        renameAction = self.addAction('Rename')
+        renameAction.triggered.connect(lambda: buildList.renameItem())
+
         deleteAction = self.addAction('Delete')
         deleteAction.triggered.connect(lambda: buildList.deleteItem())
 
@@ -213,6 +246,7 @@ class BuildListContextMenu(QtWidgets.QMenu):
 
         duplicateAction = self.addAction('Duplicate')
         duplicateAction.triggered.connect(lambda: buildList.duplicateItem())
+        
 
 
 class AttributeLayoutValue(object):
