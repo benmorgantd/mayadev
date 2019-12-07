@@ -1,6 +1,7 @@
 '''Custom widgets for rigBuilder'''
 
 import ast
+import uuid
 
 from lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
@@ -36,11 +37,14 @@ class ModuleList(qtbase.List):
             # add it to the top node
 
             newMod = BuildListItem(modType=selectedModType, attributeContainer=self.attributeContainer)
+
             currentItem = self.buildList.currentItem()
             if currentItem:
                 currentItem.addChild(newMod)
             else:
                 self.buildList.addTopLevelItem(newMod)
+
+            self.buildList.verifyName(newMod)
 
 
 class BuildList(qtbase.Tree):
@@ -54,20 +58,43 @@ class BuildList(qtbase.Tree):
         self.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked)
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
-        self.setDragDropMode(QtWidgets.QListWidget.DragDropMode.DragDrop)
+        self.setDragDropMode(QtWidgets.QTreeWidget.DragDropMode.DragDrop)
         self.setDragDropOverwriteMode(False)
         self.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
 
         self.contextMenu = BuildListContextMenu(buildList=self)
         self.contextMenu.hide()
 
+    def mousePressEvent(self, event):
+        self.clearSelection()
+
+        QtWidgets.QTreeWidget.mousePressEvent(self, event)
+
+        # check if it's a right click
+        if event.button() == QtCore.Qt.RightButton:
+            globalCursorPos = QtGui.QCursor().pos()
+            self.contextMenu.move(globalCursorPos)
+            self.contextMenu.show()
+
+        listItem = self.currentItem()
+
+        self.hideAttrLayouts()
+
+        listItem.attributeLayout.setVisible(True)
+
+    def mouseDoubleClickEvent(self, event):
+
+        currentItem = self.currentItem()
+        currentItem.setExpanded(not currentItem.isExpanded())
+
     def loadList(self, buildData, attributeLayoutContainer):
 
         # clear should work with a tree
         self.clear()
 
-        for mod in buildData:
+        # need to recursively add children here
 
+        for mod in buildData:
             modType = mod['modType']
             modName = mod['name']
 
@@ -80,8 +107,8 @@ class BuildList(qtbase.Tree):
                                      attributeContainer=attributeLayoutContainer,
                                      customAttrs=customAttrs)
 
-            listItem.setText(str(modName))
-            self.addChild(listItem)
+            listItem.setText(0, str(modName))
+            self.addTopLevelItem(listItem)
         
     def getAllValues(self):
 
@@ -92,13 +119,14 @@ class BuildList(qtbase.Tree):
         while iterator.value():
             modAtRow = iterator.value()
             modType = modAtRow.modType
-            modName = modAtRow.text()
+            modName = modAtRow.text(0)
 
             modAttrs = modAtRow.getValues()
 
             modAttrs['modType'] = modType
             modAttrs['name'] = modName
             modAttrs['character'] = None
+            modAttrs['treeParent'] = modAtRow.parent().text(0)
 
             # todo: could check the values of what we're saving here
 
@@ -120,30 +148,12 @@ class BuildList(qtbase.Tree):
 
             iterator += 1
 
-    def mousePressEvent(self, event):
-        QtWidgets.QListWidget.mousePressEvent(self, event)
-
-        # check if it's a right click
-        if event.button() == QtCore.Qt.RightButton:
-            globalCursorPos = QtGui.QCursor().pos()
-            self.contextMenu.move(globalCursorPos)
-            self.contextMenu.show()
-
-        listItem = self.currentItem()
-
-        self.hideAttrLayouts()
-
-        listItem.attributeLayout.setVisible(True)
-
-    def mouseDoubleClickEvent(self, event):
-
-        currentItem = self.currentItem()
-        currentItem.setExpanded(not currentItem.isExpanded())
-
     def renameItem(self):
         
         currentItem = self.currentItem()
         self.editItem(currentItem)
+        # check name
+        self.verifyName(currentItem)
 
     def deleteItem(self):
         # delete the currently selected item
@@ -173,17 +183,34 @@ class BuildList(qtbase.Tree):
                                   attributeContainer=currentObject.attributeContainer,
                                   customAttrs=customAttrs)
 
-        # listItem.setText(str(currentObject.modType) + '1')
+        self.verifyName(listItem)
         currentObjectParent = currentObject.parent()
         currentObjectParent.addChild(listItem)
 
+    def verifyName(self, item):
+        print 'verifying name'
+
+        iterator = QtWidgets.QTreeWidgetItemIterator(self)
+
+        itemName = str(item.text(0))
+        numDuplicates = 0
+
+        while iterator.value():
+            currentItem = iterator.value()
+
+            if str(currentItem.text(0)) == itemName:
+                numDuplicates += 1
+
+            iterator += 1
+
+        if numDuplicates:
+            item.setText(0, itemName + str(numDuplicates))
         
 class BuildListItem(QtWidgets.QTreeWidgetItem):
     def __init__(self, modType, customAttrs=None, attributeContainer=None):
         super(BuildListItem, self).__init__()
 
         self.attributeContainer = attributeContainer
-
         self.modType = modType
 
         self.setText(0, self.modType)

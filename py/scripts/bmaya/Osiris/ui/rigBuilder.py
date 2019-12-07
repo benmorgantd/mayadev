@@ -263,8 +263,12 @@ class RigBuilder(qtbase.DockableWidget):
             if not filepath:
                 return
 
-        self.assetInstance.versionFile(filepath)
-
+        try:
+            self.assetInstance.versionFile(filepath)
+        except AttributeError:
+            # no asset is loaded
+            pass
+        
         buildio.save(filepath, jsonData)
 
     def resetAssetBoxes(self):

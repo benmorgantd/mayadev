@@ -13,7 +13,7 @@ def load(filepath):
 
 def save(filepath, data):
 
-    if not os.path.exists(filepath):
+    if not os.path.exists(os.path.dirname(filepath)):
         raise RuntimeError('Filepath does not exist.')
 
     with open(filepath, "w+") as f:
