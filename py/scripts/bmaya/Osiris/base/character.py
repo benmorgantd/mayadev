@@ -4,12 +4,12 @@ import time
 
 import maya.cmds as cmds
 
-from bmaya.asset import Asset
+from bmaya.core.asset import Asset
 from bmaya.components import *
 from bmaya.core import constants
 
-from bmaya.tools.shapes import shapelib, shapeio
-from bmaya.tools.weights import weightio
+from bmaya.rigging.shapes import shapelib, shapeio
+from bmaya.rigging.weights import weightio
 from bmaya.Osiris.tools.build import buildio
 
 import root
@@ -80,14 +80,14 @@ class Character(Asset):
             buildList.append(mod)
 
         # create the new class instance from the data
-        from .. import rigMods
+        from bmaya.rigging import rigModules
 
         for mod in buildList:
             # access the modType attribute from the module's dictionary
             modType = mod['modType']
 
             # create a new instance of that class
-            modInstance = rigMods.MODULE_CLASSES[modType].__new__(rigMods.MODULE_CLASSES[modType])
+            modInstance = rigModules.MODULE_CLASSES[modType].__new__(rigModules.MODULE_CLASSES[modType])
             modInstance.__init__(character=self)
 
             for key, value in mod.items():
@@ -223,8 +223,6 @@ class Character(Asset):
     def skin(self):
         # check for existing weights files. If not then skin to skeleton set
         # skin the root joint to all the meshes in the scene
-
-        # TODO: fix weight io issues
 
         for mesh in self.meshes:
             weightsPath = os.path.join(self.weights.fullPath, mesh + '.' + self.weights.extension)

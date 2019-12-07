@@ -4,14 +4,14 @@ import maya.cmds as cmds
 
 from lib.Qt import QtWidgets, QtCore
 
-from bmaya import qtbase
+from bmaya.core import qtbase
 reload(qtbase)
-from bmaya.tools import mayaQt
+from bmaya.utils import mayaQt
 from . import customWidgets, assetCreator
 reload(customWidgets)
 reload(assetCreator)
 
-from bmaya import asset
+from bmaya.core import asset
 reload(asset)
 from ..base import creator
 reload(creator)
@@ -171,10 +171,10 @@ class RigBuilder(qtbase.DockableWidget):
             cmds.file(rename=componentPath)
             cmds.file(save=True, type="mayaAscii", force=True)
         elif componentType == 'cvs':
-            from bmaya.tools.shapes import shapeio
+            from bmaya.rigging.shapes import shapeio
             shapeio.save(componentPath)
         elif componentType == 'weights':
-            from bmaya.tools.weights import weightio
+            from bmaya.rigging.weights import weightio
             reload(weightio)
             weightio.save(componentPath)
 
@@ -186,10 +186,10 @@ class RigBuilder(qtbase.DockableWidget):
         if componentType in ['skeleton', 'mesh', 'animRig']:
             self.assetInstance.openFile(componentPath)
         elif componentType == 'cvs':
-            from bmaya.Osirs.tools.shapes import shapeio
+            from bmaya.Osirs.rigging.shapes import shapeio
             shapeio.load(componentPath)
         elif componentType == 'weights':
-            from bmaya.tools.weights import weightio
+            from bmaya.rigging.weights import weightio
             weightFiles = os.listdir(componentPath)
             for f in weightFiles:
                 weightio.load(os.path.join(componentPath, f))

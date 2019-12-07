@@ -2,7 +2,7 @@ import maya.cmds as cmds
 
 from . import module
 from decorators import wrapBuild
-from bmaya.tools.shapes import shapelib
+from bmaya.rigging.shapes import shapelib
 from bmaya.core import constants
 
 reload(module)

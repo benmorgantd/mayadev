@@ -5,7 +5,7 @@ import uuid
 
 from lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
-from bmaya import qtbase
+from bmaya.core import qtbase
 reload(qtbase)
 
 
@@ -233,10 +233,10 @@ class BuildListItem(QtWidgets.QTreeWidgetItem):
         self.attributeLayout.build()
 
     def loadAttributeTemplates(self):
-        from .. import rigMods
-        reload(rigMods)
+        from bmaya.rigging import rigModules
+        reload(rigModules)
 
-        attrData = rigMods.MODULE_ARGS[self.modType]
+        attrData = rigModules.MODULE_ARGS[self.modType]
 
         return attrData
 
@@ -250,7 +250,6 @@ class BuildListItem(QtWidgets.QTreeWidgetItem):
             valueText = row[1].toJson()
 
             attrValues[keyText] = valueText
-
 
         attrValues['name'] = self.text(0)
         attrValues['character'] = None
@@ -273,7 +272,6 @@ class BuildListContextMenu(QtWidgets.QMenu):
 
         duplicateAction = self.addAction('Duplicate')
         duplicateAction.triggered.connect(lambda: buildList.duplicateItem())
-        
 
 
 class AttributeLayoutValue(object):
@@ -305,7 +303,7 @@ class AttributeLayoutValue(object):
                 widget.setCurrentIndex(widget.findText(self.defaultValue))
 
             elif self.attribute == 'shapeType':
-                from bmaya.tools.shapes import shapelib
+                from bmaya.rigging.shapes import shapelib
 
                 widget = QtWidgets.QComboBox()
 
@@ -315,7 +313,7 @@ class AttributeLayoutValue(object):
                 widget.setCurrentIndex(widget.findText(self.defaultValue))
 
             elif self.attribute == 'solverType':
-                import Osiris.lib.rigMods.IkChain as ikChain
+                import Osiris.lib.rigModules.IkChain as ikChain
                 reload(ikChain)
 
                 widget = QtWidgets.QComboBox()

@@ -8,7 +8,7 @@ from lib.Qt import QtWidgets, QtCompat
 
 from ..base import creator
 reload(creator)
-from bmaya import asset
+from bmaya.core import asset
 reload(asset)
 
 

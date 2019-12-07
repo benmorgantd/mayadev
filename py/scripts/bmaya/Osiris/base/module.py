@@ -5,7 +5,7 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 
 # from .character import Character
-from bmaya.tools.shapes import shapelib
+from bmaya.rigging.shapes import shapelib
 
 from decorators import wrapBuild, stringAttr, boolAttr
 
