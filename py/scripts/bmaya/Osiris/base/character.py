@@ -5,7 +5,7 @@ import time
 import maya.cmds as cmds
 
 from bmaya.core.asset import Asset
-from bmaya.components import *
+from bmaya.rigging.components import *
 from bmaya.core import constants
 
 from bmaya.rigging.shapes import shapelib, shapeio

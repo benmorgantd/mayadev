@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 
-from ..base import module
-from ..base.decorators import wrapBuild
+from bmaya.Osiris.base import module
+from bmaya.Osiris.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 
 reload(module)

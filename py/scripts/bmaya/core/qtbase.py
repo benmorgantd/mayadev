@@ -106,6 +106,7 @@ class List(QtWidgets.QListWidget):
         self.setDragEnabled(False)
         self.setAcceptDrops(False)
 
+
 class Tree(QtWidgets.QTreeWidget):
     def __init__(self, parent=None):
         super(Tree, self).__init__(parent)
@@ -118,7 +119,66 @@ class Tree(QtWidgets.QTreeWidget):
 
         self.setHeaderHidden(True)
         self.setRootIsDecorated(True)
+
+    @property
+    def items(self):
+        iterator = QtWidgets.QTreeWidgetItemIterator(self)
+
+        _items = []
+
+        while iterator.value():
+            _items.append(iterator.value())
+            iterator += 1
+
+        return _items
+
+    @property
+    def topLevelItems(self):
+        _topLevelItems = []
+
+        for i in self.items:
+            if not i.parent():
+                _topLevelItems.append(i)
+
+        return _topLevelItems
+
+
+class TreeItem(QtWidgets.QTreeWidgetItem):
+    def __init__(self, parent=None):
+        super(TreeItem, self).__init__(parent)
+
+        self.setFlags(self.flags() | QtCore.Qt.ItemIsEditable)
+        self.setSizeHint(0, QtCore.QSize(50,20))
+        self.setFirstColumnSpanned(True)
+
+        self.setText(0, 'Tree Item')
+
+    @property
+    def parents(self):
+        _parents = []
+
+        item = self
+
+        while item.parent():
+            _parents.append(item.parent())
         
+        return _parents
+
+    @property
+    def children(self):
+        _children = []
+        # get child count
+        childCount = self.childCount()
+
+        for i in range(childCount):
+            _children.append(self.child(i))
+
+        return _children
+
+    @property
+    def name(self):
+        return str(self.text(0))
+                
 
 class DockableWidget(SimpleWidget):
     def __init__(self, parent=None, designerFile=None, title='RigBuilder'):

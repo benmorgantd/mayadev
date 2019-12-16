@@ -2,6 +2,9 @@
 
 import ast
 import uuid
+import re
+from collections import OrderedDict
+
 
 from lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
@@ -43,9 +46,7 @@ class ModuleList(qtbase.List):
                 currentItem.addChild(newMod)
             else:
                 self.buildList.addTopLevelItem(newMod)
-
-            self.buildList.verifyName(newMod)
-
+            
 
 class BuildList(qtbase.Tree):
     def __init__(self):
@@ -65,6 +66,7 @@ class BuildList(qtbase.Tree):
         self.contextMenu = BuildListContextMenu(buildList=self)
         self.contextMenu.hide()
 
+
     def mousePressEvent(self, event):
         self.clearSelection()
 
@@ -83,13 +85,12 @@ class BuildList(qtbase.Tree):
         listItem.attributeLayout.setVisible(True)
 
     def mouseDoubleClickEvent(self, event):
-
         currentItem = self.currentItem()
-        currentItem.setExpanded(not currentItem.isExpanded())
+        if currentItem:
+            currentItem.setExpanded(not currentItem.isExpanded())
 
     def loadList(self, buildData, attributeLayoutContainer):
 
-        # clear should work with a tree
         self.clear()
 
         # need to recursively add children here
@@ -114,46 +115,36 @@ class BuildList(qtbase.Tree):
 
         attrData = []
 
-        iterator = QtWidgets.QTreeWidgetItemIterator(self)
+        def getChildValues(mod):
+            modAttrs = mod.values
+            modAttrs['children'] = []
 
-        while iterator.value():
-            modAtRow = iterator.value()
-            modType = modAtRow.modType
-            modName = modAtRow.text(0)
+            for child in mod.children:
+                modAttrs['children'].append(getChildValues(child))
 
-            modAttrs = modAtRow.getValues()
+            return modAttrs
 
-            modAttrs['modType'] = modType
-            modAttrs['name'] = modName
-            modAttrs['character'] = None
-            modAttrs['treeParent'] = modAtRow.parent().text(0)
-
-            # todo: could check the values of what we're saving here
-
-            attrData.append(modAttrs)
-
-            iterator += 1
+        for mod in self.topLevelItems:
+            if mod.children:
+                attrData.append(getChildValues(mod))
+            else:
+                # top level item with no children
+                modAttrs = mod.values
+                modAttrs['children'] = []
+                attrData.append(modAttrs)
 
         return attrData
 
     def hideAttrLayouts(self):
         
-        iterator = QtWidgets.QTreeWidgetItemIterator(self)
-
-        while iterator.value():
-            item = iterator.value()
-
+        for item in self.items:
             if item.attributeLayout:
                 item.attributeLayout.setVisible(False)
-
-            iterator += 1
 
     def renameItem(self):
         
         currentItem = self.currentItem()
         self.editItem(currentItem)
-        # check name
-        self.verifyName(currentItem)
 
     def deleteItem(self):
         # delete the currently selected item
@@ -183,30 +174,15 @@ class BuildList(qtbase.Tree):
                                   attributeContainer=currentObject.attributeContainer,
                                   customAttrs=customAttrs)
 
-        self.verifyName(listItem)
         currentObjectParent = currentObject.parent()
-        currentObjectParent.addChild(listItem)
 
-    def verifyName(self, item):
-        print 'verifying name'
+        if currentObjectParent:
+            currentObjectParent.addChild(listItem)
+        else:
+            self.addTopLevelItem(listItem)
 
-        iterator = QtWidgets.QTreeWidgetItemIterator(self)
 
-        itemName = str(item.text(0))
-        numDuplicates = 0
-
-        while iterator.value():
-            currentItem = iterator.value()
-
-            if str(currentItem.text(0)) == itemName:
-                numDuplicates += 1
-
-            iterator += 1
-
-        if numDuplicates:
-            item.setText(0, itemName + str(numDuplicates))
-        
-class BuildListItem(QtWidgets.QTreeWidgetItem):
+class BuildListItem(qtbase.TreeItem):
     def __init__(self, modType, customAttrs=None, attributeContainer=None):
         super(BuildListItem, self).__init__()
 
@@ -214,11 +190,7 @@ class BuildListItem(QtWidgets.QTreeWidgetItem):
         self.modType = modType
 
         self.setText(0, self.modType)
-        self.setFlags(self.flags() | QtCore.Qt.ItemIsEditable)
-        self.setSizeHint(0, QtCore.QSize(50,25))
-
-        self.setFirstColumnSpanned(True)
-
+    
         # Put attribute data inside of the build layout item
         self.customAttrs = customAttrs
         self.defaultAttrs = self.loadAttributeTemplates()
@@ -232,6 +204,21 @@ class BuildListItem(QtWidgets.QTreeWidgetItem):
 
         self.attributeLayout.build()
 
+    @property
+    def values(self):
+        attrValues = OrderedDict()
+
+        for row in self.attributeLayout.rows:
+            keyText = row[0].text()
+            valueText = row[1].toJson()
+            attrValues[keyText] = valueText
+
+        attrValues['name'] = self.name
+        attrValues['character'] = None
+        attrValues['modType'] = self.modType
+
+        return attrValues
+
     def loadAttributeTemplates(self):
         from bmaya.rigging import rigModules
         reload(rigModules)
@@ -239,23 +226,6 @@ class BuildListItem(QtWidgets.QTreeWidgetItem):
         attrData = rigModules.MODULE_ARGS[self.modType]
 
         return attrData
-
-    def getValues(self):
-
-        attrValues = {}
-
-        for row in self.attributeLayout.rows:
-            keyText = row[0].text()
-
-            valueText = row[1].toJson()
-
-            attrValues[keyText] = valueText
-
-        attrValues['name'] = self.text(0)
-        attrValues['character'] = None
-        attrValues['modType'] = self.modType
-
-        return attrValues
 
 
 class BuildListContextMenu(QtWidgets.QMenu):

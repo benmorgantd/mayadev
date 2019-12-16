@@ -145,8 +145,9 @@ class RigBuilder(qtbase.DockableWidget):
             self.widget.assetName.addItem(assetName)
 
     def loadModules(self):
-        rigModsPath = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), '..', 'rigMods'))
+        from bmaya.rigging import rigModules
+
+        rigModsPath = os.path.dirname(os.path.abspath(rigModules.__file__))
         # load every module from the rigMods folder
         mods = os.listdir(rigModsPath)
         # sort them alphabetically 

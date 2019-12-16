@@ -14,8 +14,6 @@ try:
 except KeyError:
     raise RuntimeError('OSIRIS_ROOT environment variable is not set.')
 
-ASSET_TYPES = ['prop', 'environment', 'character']
-
 class Asset(object):
     def __init__(self, name, project, assetType):
         self.name = name
@@ -23,8 +21,6 @@ class Asset(object):
         self.project = project
         self.components = []
 
-        self.templatesPath = os.path.abspath(os.path.join(os.path.dirname(__file__),'rigTemplates'))
-        
         self.initComponents()
         self.initComponentFolders()
         self.initComponentFiles()
@@ -150,7 +146,7 @@ class Asset(object):
         if not os.path.exists(self.build.fullPath):
             print ">> Creating build file."
             # give it a LayoutRig template
-            layoutRigPath = os.path.join(self.templatesPath, "LayoutRig.json")
+            layoutRigPath = os.path.join(constants.TEMPLATES_PATH, "LayoutRig.json")
 
             with open(layoutRigPath, "r") as f:
                 layoutRigData = f.read()

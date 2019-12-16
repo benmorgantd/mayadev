@@ -13,10 +13,10 @@ MODULE_ARGS = {}
 
 for modType in __all__:
 
-    exec('import bmaya.Osiris.rigMods.' + modType)
+    exec('import bmaya.rigging.rigModules.' + modType)
 
     # find the classes in that file
-    modClasses = inspect.getmembers(sys.modules['bmaya.Osiris.rigMods.' + modType], inspect.isclass)
+    modClasses = inspect.getmembers(sys.modules['bmaya.rigging.rigModules.' + modType], inspect.isclass)
 
     ModClass = None
 
