@@ -80,8 +80,11 @@ class BuildList(qtbase.Tree):
 
         listItem = self.currentItem()
 
-        self.hideAttrLayouts()
+        if not listItem:
+            return
 
+        self.hideAttrLayouts()
+        
         listItem.attributeLayout.setVisible(True)
 
     def mouseDoubleClickEvent(self, event):
@@ -93,23 +96,36 @@ class BuildList(qtbase.Tree):
 
         self.clear()
 
-        # need to recursively add children here
+        def addChildren(modData, parent=None):
+            modType = modData['modType']
+            modName = modData['name']
+            modChildren = modData['children']
 
-        for mod in buildData:
-            modType = mod['modType']
-            modName = mod['name']
-
-            customAttrs = mod
-            customAttrs.pop('character')
-            customAttrs.pop('modType')
-            customAttrs.pop('name')
+            modData.pop('character')
+            modData.pop('modType')
+            modData.pop('name')
+            modData.pop('children')
 
             listItem = BuildListItem(modType=modType, 
                                      attributeContainer=attributeLayoutContainer,
-                                     customAttrs=customAttrs)
+                                     customAttrs=modData)
 
             listItem.setText(0, str(modName))
-            self.addTopLevelItem(listItem)
+
+            if not parent:
+                 self.addTopLevelItem(listItem)
+
+                 for child in modChildren:
+                    addChildren(child, parent=listItem)
+
+            else:
+                parent.addChild(listItem)
+
+                for child in modChildren:
+                    addChildren(child, parent=listItem)
+            
+        for topLevelMod in buildData:
+            addChildren(topLevelMod, parent=None)
         
     def getAllValues(self):
 
@@ -163,7 +179,7 @@ class BuildList(qtbase.Tree):
         currentObject = self.currentItem()
 
         # copy the attributes over
-        customAttrs = currentObject.getValues()
+        customAttrs = currentObject.values
 
         customAttrs.pop('character')
         customAttrs.pop('modType')
