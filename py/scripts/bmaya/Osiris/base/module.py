@@ -212,7 +212,7 @@ class Module(object):
         for child in childList:
             cmds.parentConstraint(parent, child, mo=maintainOffset)
 
-    def lockTransforms(self, ctrls, attrs=['translate', 'rotate', 'scale']):
+    def lockTransforms(self, ctrls, attrs=['translate', 'rotate', 'scale'], lock=True):
         if isinstance(ctrls, basestring):
             ctrls = [ctrls]
 
@@ -221,10 +221,10 @@ class Module(object):
                 if attr in ['translate', 'rotate', 'scale']:
                     for axis in ['X', 'Y', 'Z']:
                         cmds.setAttr('{0}.{1}{2}'.format(ctrl, attr, axis),
-                                     lock=True, keyable=False, channelBox=False)
+                                     lock=lock, keyable=False, channelBox=False)
                 else:
                     cmds.setAttr('{0}.{1}'.format(ctrl, attr),
-                                  lock=True, keyable=False, channelBox=False)
+                                  lock=lock, keyable=False, channelBox=False)
 
     def checkContract(self):
         # TODO: Check by attribute types
@@ -250,7 +250,7 @@ class Module(object):
 
             cmds.connectAttr(self.node + '.components', ctrl.ctrl + '.module')
 
-            self.lockTransforms(ctrl.grp)
+            self.lockTransforms(ctrl.offsetGrp)
 
     def connectBindJoints(self):
         """Connects the module's bind joints to their control"""
@@ -320,6 +320,4 @@ class Module(object):
         """Duplicate the given input chain"""
 
         return
-        
-        
         

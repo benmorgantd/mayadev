@@ -70,20 +70,24 @@ class Shape(object):
             cmds.xform(
                 self.ctrl + ".cv[0:]", scale=(self.scale, self.scale, self.scale), relative=True)
 
-        self.grp = cmds.group(
-            self.ctrl, name=self.ctrl + "_grp", absolute=True)
+        # make offsetGrp>>spaceGrp>>targetGrp>>ctrl
+
+        self.targetGrp = cmds.group(self.ctrl, name=self.ctrl + '_targetGrp', absolute=True)
+        self.spaceGrp = cmds.group(self.targetGrp, name=self.ctrl + '_spaceGrp', absolute=True)
+        self.offsetGrp = cmds.group(self.spaceGrp, name=self.ctrl + '_offsetGrp', absolute=True)
+
+        self.groupHierarchy = [self.offsetGrp, self.targetGrp, self.spaceGrp]
 
         if self.jnt:
-            cmds.setAttr(self.ctrl + ".rotateOrder",
-                         cmds.getAttr(self.jnt + ".rotateOrder"))
-            cmds.setAttr(self.grp + ".rotateOrder",
-                         cmds.getAttr(self.jnt + ".rotateOrder"))
+            for x in self.groupHierarchy + [self.ctrl]:
+                cmds.setAttr(x + ".rotateOrder",
+                            cmds.getAttr(self.jnt + ".rotateOrder"))
 
         if self.shapeType == "boundingBox":
             self.setupBoundingBox()
 
         if self.jnt:
-            cmds.delete(cmds.parentConstraint(self.jnt, self.grp, mo=0))
+            cmds.delete(cmds.parentConstraint(self.jnt, self.offsetGrp, mo=0))
 
     def setupBoundingBox(self):
         sceneBoundingBox = boundingBox.getSceneBoundingBox()

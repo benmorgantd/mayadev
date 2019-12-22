@@ -36,8 +36,8 @@ class SingleJoint(module.Module):
         self.parentConstrain(
             ctrl.ctrl, self.startJoint, maintainOffset=True)
 
-        cmds.parent(ctrl.grp, self.modGrp)
+        cmds.parent(ctrl.offsetGrp, self.modGrp)
 
         if self.parent:
-            self.parentConstrain(self.parent, self.components[0].grp,
+            self.parentConstrain(self.parent, self.components[0].offsetGrp,
                                 maintainOffset=True)

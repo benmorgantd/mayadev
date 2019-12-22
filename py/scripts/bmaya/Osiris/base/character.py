@@ -71,13 +71,22 @@ class Character(Asset):
 
         self.modules.append(self.buildRoot())
 
-        # read module data from file. 
-        for mod in self.buildData:
-            # set that variable for the user
+        # unflatten tree
+        def addChildren(mod):
             mod['character'] = self
-            # add that module to the character's list
             self.addModule(mod)
             buildList.append(mod)
+
+            for child in mod['children']:
+                addChildren(child)
+
+        for topLevelMod in self.buildData:
+            if topLevelMod['children']:
+                addChildren(topLevelMod)
+            else:
+                mod['character'] = self
+                self.addModule(mod)
+                buildList.append(mod)
 
         # create the new class instance from the data
         from bmaya.rigging import rigModules
@@ -130,11 +139,10 @@ class Character(Asset):
             weightio.load(os.path.join(weightRoot, os.path.basename(weightPath)))
 
         # scene cleanup:
-        # set all meshes to reference
         self.setupMeshReferencing()
-        # cmds.setAttr('SKELETON.visibility', 0)
-        # self.setupSkeletonVisibility()
 
+        self.lockDownConstraints()
+    
         cmds.file(rename=self.animRig.fullPath)
         cmds.file(save=True, type='mayaAscii', force=True)
         self.versionFile(self.animRig.fullPath)
@@ -263,3 +271,33 @@ class Character(Asset):
         if cmds.objExists(node):
             cmds.addAttr(node, longName='character', attributeType='message')
             cmds.connectAttr(self.node + '.sock', node + '.character')
+
+    def hideKeyableAttr(self, obj):
+        cmds.setAttr(obj, keyable=False, channelBox=False)
+
+    def lockDownConstraints(self):
+         # manage constraints
+        for constraint in cmds.ls(type='constraint'):
+            attrHideList = ['nodeState', 'interpType']
+
+            constraintType = cmds.objectType(constraint)
+
+            if constraintType in ['parentConstraint', 'orientConstraint']:
+                cmds.setAttr(constraint + '.interpType', 2)
+                attrHideList += ['rdtx', 'rdty', 'rdtz']
+                if constraintType == 'parentConstraint':
+                    weights = cmds.parentConstraint(constraint, query=True, weightAliasList=True)
+                else:
+                    weights = cmds.orientConstraint(constraint, query=True, weightAliasList=True)
+                
+                for w in range(len(weights)):
+                    attrHideList += ['w{0}'.format(w)]
+            else:
+                weights = cmds.parentConstraint(constraint, query=True, weightAliasList=True)
+                for w in range(len(weights)):
+                    attrHideList += ['w{0}'.format(w)]
+            
+            for attr in attrHideList:
+                self.hideKeyableAttr('{0}.{1}'.format(constraint, attr))
+            
+
