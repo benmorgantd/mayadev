@@ -42,39 +42,3 @@ def wrapBuild(fn):
         return result 
 
     return wrapper
-
-
-# # #
-# attribute wrappers for tagging module attributes
-# # #
-
-
-def stringAttr(fn):
-    def stringAttrWrapper(self, *args, **kwargs):
-        return True
-    return stringAttrWrapper
-
-def intAttr(fn):
-    def intAttrWrapper(self, *args, **kwargs):
-        return True
-    return intAttrWrapper
-
-def boolAttr(fn):
-    def boolAttrWrapper(self, *args, **kwargs):
-        return True
-    return boolAttrWrapper
-
-def listAttr(fn):
-    def listAttrWrapper(self, *args, **kwargs):
-        return True
-    return listAttrWrapper
-
-def dictAttr(fn):
-    def dictAttrWrapper(self, *args, **kwargs):
-        return True
-    return dictAttrWrapper
-
-def enumAttr(fn):
-    def enumAttrWrapper(self, *args, **kwargs):
-        return True
-    return enumAttrWrapper

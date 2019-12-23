@@ -1,6 +1,6 @@
 import maya.cmds as cmds
 
-from lib.Qt import QtWidgets
+from bmaya.lib.Qt import QtWidgets
 from bmaya.core import qtbase
 from bmaya.utils import mayaQt
 

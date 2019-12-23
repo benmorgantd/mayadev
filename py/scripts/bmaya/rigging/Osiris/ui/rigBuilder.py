@@ -2,7 +2,7 @@ import os
 
 import maya.cmds as cmds
 
-from lib.Qt import QtWidgets, QtCore
+from bmaya.lib.Qt import QtWidgets, QtCore
 
 from bmaya.core import qtbase
 reload(qtbase)
@@ -15,7 +15,7 @@ from bmaya.core import asset
 reload(asset)
 from ..base import creator
 reload(creator)
-from bmaya.Osiris.tools.build import buildio
+from bmaya.rigging.Osiris.tools.build import buildio
 reload(buildio)
 
 

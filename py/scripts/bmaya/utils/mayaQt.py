@@ -1,4 +1,4 @@
-from lib.Qt import QtCompat, QtWidgets
+from bmaya.lib.Qt import QtCompat, QtWidgets
 
 import maya.OpenMayaUI as omui
 

@@ -6,7 +6,7 @@ import re
 from collections import OrderedDict
 
 
-from lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
+from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
 from bmaya.core import qtbase
 reload(qtbase)

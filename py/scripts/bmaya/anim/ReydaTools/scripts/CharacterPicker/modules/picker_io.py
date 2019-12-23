@@ -4,7 +4,7 @@ import maya.cmds as cmds
 import CharacterPicker.modules.custom_graphics_items as custom_graphics_items
 reload(custom_graphics_items)
 
-from lib.Qt import QtWidgets, QtGui, QtCore
+from bmaya.lib.Qt import QtWidgets, QtGui, QtCore
 
 # save a picker data to a json file
 def save_picker(scene_items, background_path=""):

@@ -4,7 +4,7 @@ import maya.OpenMayaMPx as omMPx
 
 class CustomAimConstraint(omMPx.MPxConstraint):
   # give it a unique id
-  node_id = om.MTypeId(0x40218)
+  nodeId = om.MTypeId(0x40218)
 
   # declare our input attributes
   inMatrix = om.MObject()
@@ -14,7 +14,9 @@ class CustomAimConstraint(omMPx.MPxConstraint):
   outRotate = om.MObject()
 
   def compute(self, plug, dataBlock):
-    """Maya calls your node's MPxNode::compute() method when it determines that one of your node's output attributes, or plugs, is out-of-date and needs to be re-computed. """
+    """Maya calls your node's MPxNode::compute() method when it determines 
+    that one of your node's output attributes, or plugs, is out-of-date
+    and needs to be re-computed. """
 
     # you clean plugs with the given dataBlock
     if plug.attribute() == CustomAimConstraint.outTranslateX:
@@ -69,7 +71,7 @@ def initialize():
 def initializePlugin(obj):
   plugin = omMPx.MFnPlugin(obj, "Ben Morgan", "1.0", "Any")
   try:
-    plugin.registerNode("bm_aimConstraint", CustomAimConstraint.node_id, creator, initialize)
+    plugin.registerNode("bm_aimConstraint", CustomAimConstraint.nodeId, creator, initialize)
   except:
     raise RuntimeError("Failed to register node")
 
@@ -77,6 +79,6 @@ def initializePlugin(obj):
 def uninitializePlugin(obj):
   plugin = omMPx.MFnPlugin(obj)
   try:
-    plugin.deregisterNode(CustomAimConstraint.node_id)
+    plugin.deregisterNode(CustomAimConstraint.nodeId)
   except:
     raise RuntimeError("Failed to register node")

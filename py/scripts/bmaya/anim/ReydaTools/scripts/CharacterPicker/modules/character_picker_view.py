@@ -5,7 +5,7 @@ import CharacterPicker.modules.character_picker_model as model
 reload(model)
 import os
 
-from lib.Qt import QtWidgets
+from bmaya.lib.Qt import QtWidgets
 
 try:
   from shiboken import wrapInstance

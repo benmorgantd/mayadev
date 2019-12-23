@@ -7,17 +7,17 @@ class ConeReader(omMPx.MPxNode):
   """Creates a node which allows for the ramped calculation of vector angles
   
   Attributes:
-    node_id (MTypeId): The unique id for this node
+    nodeId (MTypeId): The unique id for this node
     objectMatrix (MObject): The worldMatrix of the object you want driven
     targetObjectMatrix (MObject): The worldMatrix of the object you want to be the target
     downAxis (MObject): The axis to aim down
     outputValue (MObject): The resulting Euler rotation
-    unit_vectors (MObject): Hold the unit vectors used for calcultion.
+    unitVectors (MObject): Hold the unit vectors used for calcultion.
 
   """
 
   # give it a unique id
-  node_id = om.MTypeId(0x40219)
+  nodeId = om.MTypeId(0x40219)
 
   # input attributes
   objectMatrix = om.MObject()
@@ -28,7 +28,7 @@ class ConeReader(omMPx.MPxNode):
   # output attribute
   outputValue = om.MObject()
 
-  unit_vectors = [om.MVector().xAxis, om.MVector().yAxis, om.MVector().zAxis]
+  unitVectors = [om.MVector().xAxis, om.MVector().yAxis, om.MVector().zAxis]
 
   def compute(self, plug, dataBlock):
     """Maya calls your node's MPxNode::compute() method when it determines that 
@@ -49,7 +49,7 @@ class ConeReader(omMPx.MPxNode):
     # Multi attributes are of type short
     kDownAxis = dataBlock.inputValue(ConeReader.downAxis).asShort()
 
-    kDownAxis = ConeReader.unit_vectors[kDownAxis]
+    kDownAxis = ConeReader.unitVectors[kDownAxis]
 
     # get all the object's locations in world space
     xformMatrix = om.MTransformationMatrix(kObjectMatrix)
@@ -146,14 +146,14 @@ def initialize():
 def initializePlugin(obj):
   plugin = omMPx.MFnPlugin(obj, "Ben Morgan", "1.0", "Any")
   try:
-    plugin.registerNode("coneReader", ConeReader.node_id, creator, initialize)
+    plugin.registerNode("coneReader", ConeReader.nodeId, creator, initialize)
   except:
     raise RuntimeError("Failed to register node")
 
 def uninitializePlugin(obj):
   plugin = omMPx.MFnPlugin(obj)
   try:
-    plugin.deregisterNode(ConeReader.node_id)
+    plugin.deregisterNode(ConeReader.nodeId)
   except:
     raise RuntimeError("Failed to register node")
 

@@ -10,7 +10,7 @@ class QuatExtract(omMPx.MPxNode):
   """Creates a node which allows for the ramped calculation of vector angles
   
   Attributes:
-    node_id (MTypeId): The unique id for this node
+    nodeId (MTypeId): The unique id for this node
     objectMatrix (MObject): The worldMatrix of the object you want driven
     targetObjectMatrix (MObject): The worldMatrix of the object you want to be the target
     outputRotate (MObject): The resulting Euler rotation
@@ -19,7 +19,7 @@ class QuatExtract(omMPx.MPxNode):
   """
 
   # give it a unique id
-  node_id = om.MTypeId(0x40221)
+  nodeId = om.MTypeId(0x40221)
 
   # input attributes
   objectMatrix = om.MObject()
@@ -31,9 +31,9 @@ class QuatExtract(omMPx.MPxNode):
   # output attribute
   outputAngle = om.MObject()
 
-  double_null = om.MScriptUtil(0.0).asDouble()
-  angle_default = om.MAngle(0.0)
-  short_values = [om.MScriptUtil(0).asShort(), om.MScriptUtil(1).asShort(), om.MScriptUtil(2).asShort()]
+  doubleNull = om.MScriptUtil(0.0).asDouble()
+  angleDefault = om.MAngle(0.0)
+  shortValues = [om.MScriptUtil(0).asShort(), om.MScriptUtil(1).asShort(), om.MScriptUtil(2).asShort()]
   
 
   def compute(self, plug, dataBlock):
@@ -59,16 +59,16 @@ class QuatExtract(omMPx.MPxNode):
     # Multi attributes are of type short
     kTwistAxis = dataBlock.inputValue(QuatExtract.twistAxis).asShort()
     
-    if kTwistAxis == QuatExtract.short_values[0]:    
-      quat_x = om.MQuaternion(quat.x, QuatExtract.double_null, QuatExtract.double_null, quat.w)
+    if kTwistAxis == QuatExtract.shortValues[0]:    
+      quat_x = om.MQuaternion(quat.x, QuatExtract.doubleNull, QuatExtract.doubleNull, quat.w)
       quat_euler = quat_x.asEulerRotation().x + kOffset
 
-    elif kTwistAxis == QuatExtract.short_values[1]:
-      quat_y = om.MQuaternion(QuatExtract.double_null, quat.y, QuatExtract.double_null, quat.w)
+    elif kTwistAxis == QuatExtract.shortValues[1]:
+      quat_y = om.MQuaternion(QuatExtract.doubleNull, quat.y, QuatExtract.doubleNull, quat.w)
       quat_euler = quat_y.asEulerRotation().y + kOffset
 
-    elif kTwistAxis == QuatExtract.short_values[2]:
-      quat_z = om.MQuaternion(QuatExtract.double_null, QuatExtract.double_null, quat.z, quat.w)
+    elif kTwistAxis == QuatExtract.shortValues[2]:
+      quat_z = om.MQuaternion(QuatExtract.doubleNull, QuatExtract.doubleNull, quat.z, quat.w)
       quat_euler = quat_z.asEulerRotation().z + kOffset
 
 
@@ -150,7 +150,7 @@ def initialize():
 
 
   """ Output Attributes """
-  QuatExtract.outputAngle = uAttr.create("outputAngle", "oa", QuatExtract.angle_default)
+  QuatExtract.outputAngle = uAttr.create("outputAngle", "oa", QuatExtract.angleDefault)
   uAttr.setWritable(False)
   uAttr.setStorable(False)
   uAttr.setReadable(True)
@@ -170,14 +170,14 @@ def initialize():
 def initializePlugin(obj):
   plugin = omMPx.MFnPlugin(obj, "Ben Morgan", "1.0", "Any")
   try:
-    plugin.registerNode("quatExtract", QuatExtract.node_id, creator, initialize)
+    plugin.registerNode("quatExtract", QuatExtract.nodeId, creator, initialize)
   except:
     raise RuntimeError("Failed to register node")
 
 def uninitializePlugin(obj):
   plugin = omMPx.MFnPlugin(obj)
   try:
-    plugin.deregisterNode(QuatExtract.node_id)
+    plugin.deregisterNode(QuatExtract.nodeId)
   except:
     raise RuntimeError("Failed to register node")
 

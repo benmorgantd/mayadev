@@ -2,7 +2,7 @@
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui
 import os
-from lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
+from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 import PoseStorage.modules.bm_poseStorage as bm_poseStorage
 reload(bm_poseStorage)
 

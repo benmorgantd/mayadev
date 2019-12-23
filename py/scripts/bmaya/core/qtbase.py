@@ -3,7 +3,7 @@
 import os
 import ast
 
-from lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
+from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui

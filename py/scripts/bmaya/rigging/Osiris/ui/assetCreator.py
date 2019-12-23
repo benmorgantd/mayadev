@@ -4,7 +4,7 @@ import os
 
 import maya.OpenMaya as om
 
-from lib.Qt import QtWidgets, QtCompat
+from bmaya.lib.Qt import QtWidgets, QtCompat
 
 from ..base import creator
 reload(creator)

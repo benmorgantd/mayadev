@@ -10,17 +10,17 @@ class RayIntersect(omMPx.MPxNode):
   """Creates a node which allows for the ramped calculation of vector angles
   
   Attributes:
-    node_id (MTypeId): The unique id for this node
+    nodeId (MTypeId): The unique id for this node
     objectMatrix (MObject): The worldMatrix of the object you want driven
     targetObjectMatrix (MObject): The worldMatrix of the object you want to be the target
     downAxis (MObject): The axis to aim down
     outputPoint (MObject): The resulting position
-    unit_vectors (MObject): Hold the unit vectors used for calcultion.
+    unitVectors (MObject): Hold the unit vectors used for calcultion.
 
   """
 
   # give it a unique id
-  node_id = om.MTypeId(0x40222)
+  nodeId = om.MTypeId(0x40222)
 
   # input attributes
   objectMatrix = om.MObject()
@@ -31,7 +31,7 @@ class RayIntersect(omMPx.MPxNode):
   # output attribute
   outputPoint = om.MObject()
 
-  unit_vectors = [om.MVector().xAxis, om.MVector().yAxis, om.MVector().zAxis]
+  unitVectors = [om.MVector().xAxis, om.MVector().yAxis, om.MVector().zAxis]
   tolerance = om.MScriptUtil(1.0e-10).asDouble()
 
   def compute(self, plug, dataBlock):
@@ -52,7 +52,7 @@ class RayIntersect(omMPx.MPxNode):
     # get all the object's locations in world space
     xformMatrix = om.MTransformationMatrix(kObjectMatrix)
     objectVector = xformMatrix.getTranslation(om.MSpace.kWorld)
-    xformMatrix.addTranslation(RayIntersect.unit_vectors[kDownAxis], om.MSpace.kObject)
+    xformMatrix.addTranslation(RayIntersect.unitVectors[kDownAxis], om.MSpace.kObject)
     outVector = xformMatrix.getTranslation(om.MSpace.kWorld)
     downVector = outVector - objectVector
 
@@ -167,14 +167,14 @@ def initialize():
 def initializePlugin(obj):
   plugin = omMPx.MFnPlugin(obj, "Ben Morgan", "1.0", "Any")
   try:
-    plugin.registerNode("rayIntersect", RayIntersect.node_id, creator, initialize)
+    plugin.registerNode("rayIntersect", RayIntersect.nodeId, creator, initialize)
   except:
     raise RuntimeError("Failed to register node")
 
 def uninitializePlugin(obj):
   plugin = omMPx.MFnPlugin(obj)
   try:
-    plugin.deregisterNode(RayIntersect.node_id)
+    plugin.deregisterNode(RayIntersect.nodeId)
   except:
     raise RuntimeError("Failed to register node")
 

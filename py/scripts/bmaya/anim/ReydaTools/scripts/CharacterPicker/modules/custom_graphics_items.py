@@ -4,7 +4,7 @@ import CharacterPicker.modules.rig_tools as rig_tools
 reload(rig_tools)
 
 
-from lib.Qt import QtWidgets, QtGui, QtCore
+from bmaya.lib.Qt import QtWidgets, QtGui, QtCore
 
 class CustomGraphicsScene(QtWidgets.QGraphicsScene):
   def __init__(self, parent=None, namespace=None, pixmap_path=None):

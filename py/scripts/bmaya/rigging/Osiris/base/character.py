@@ -10,7 +10,7 @@ from bmaya.core import constants
 
 from bmaya.rigging.shapes import shapelib, shapeio
 from bmaya.rigging.weights import weightio
-from bmaya.Osiris.tools.build import buildio
+from bmaya.rigging.Osiris.tools.build import buildio
 
 import root
 

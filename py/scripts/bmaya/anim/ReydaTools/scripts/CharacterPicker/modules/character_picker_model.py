@@ -6,7 +6,7 @@ import maya.OpenMaya as om
 import maya.mel as mel
 
 import os
-from lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
+from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
 import CharacterPicker.modules.custom_graphics_items as graphics_items
 reload(graphics_items)
