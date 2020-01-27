@@ -1,0 +1,65 @@
+{
+  "LF_browLowerer": {
+    "driver_val": 0.0, 
+    "driver": "browRegion_cc", 
+    "obj_keys": {
+      "LF_frontalis_sdk": {
+        "tz": 0.0, 
+        "tx": 0.0, 
+        "ty": 0.0, 
+        "rx": 0.0, 
+        "ry": 0.0, 
+        "rz": 0.0
+      }, 
+      "LF_browbone01_sdk": {
+        "tz": 0.0, 
+        "tx": 0.0, 
+        "ty": 0.0, 
+        "rx": -3.4555292095581165, 
+        "ry": 0.20648139163732385, 
+        "rz": 0.0
+      }, 
+      "LF_browOut_sdk": {
+        "tz": 0.0, 
+        "tx": 0.0, 
+        "ty": 0.0, 
+        "rx": 0.0, 
+        "ry": 0.0, 
+        "rz": 0.0
+      }, 
+      "LF_temple_sdk": {
+        "tz": 0.0, 
+        "tx": 0.0, 
+        "ty": 0.0, 
+        "rx": 0.0, 
+        "ry": 0.0, 
+        "rz": 0.0
+      }, 
+      "LF_browbone03_sdk": {
+        "tz": 0.0, 
+        "tx": 0.0, 
+        "ty": 0.0, 
+        "rx": 0.0, 
+        "ry": 10.378232472825312, 
+        "rz": 0.0
+      }, 
+      "LF_browbone02_sdk": {
+        "tz": 0.0, 
+        "tx": 0.0, 
+        "ty": 0.0, 
+        "rx": 0.0, 
+        "ry": -0.6034365985123077, 
+        "rz": 0.0
+      }, 
+      "LF_browIn_sdk": {
+        "tz": 0.0, 
+        "tx": 0.0, 
+        "ty": 0.0, 
+        "rx": 0.0, 
+        "ry": 0.0, 
+        "rz": 0.0
+      }
+    }, 
+    "driver_attr": "LF_browLowerer"
+  }
+}
