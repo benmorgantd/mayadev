@@ -30,6 +30,9 @@ def save(weightsDir):
     
     itSel = om.MItSelectionList(sel)
 
+    if not os.path.exists(weightsDir):
+        os.makedirs(weightsDir)
+
     while not itSel.isDone():
         dag = om.MDagPath()
         itSel.getDagPath(dag)

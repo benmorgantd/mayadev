@@ -80,9 +80,9 @@ class Character(Asset):
             for child in mod['children']:
                 addChildren(child)
 
-        for topLevelMod in self.buildData:
-            if topLevelMod['children']:
-                addChildren(topLevelMod)
+        for mod in self.buildData:
+            if mod['children']:
+                addChildren(mod)
             else:
                 mod['character'] = self
                 self.addModule(mod)

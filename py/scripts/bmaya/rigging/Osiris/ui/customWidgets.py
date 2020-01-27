@@ -169,7 +169,10 @@ class BuildList(qtbase.Tree):
 
         currentItemParent = currentItem.parent()
 
-        currentItemParent.takeChild(currentItemParent.indexOfChild(currentItem))
+        if currentItemParent:
+            currentItemParent.takeChild(currentItemParent.indexOfChild(currentItem))
+        else:
+            self.takeTopLevelItem(self.indexOfTopLevelItem(currentItem))
 
         self.contextMenu.hide()
 

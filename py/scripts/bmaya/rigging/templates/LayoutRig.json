@@ -1,10 +1,12 @@
 [
     {
+        "startJoint": "root_00_M_JNT", 
         "parent": null, 
         "shapeType": "boundingBox", 
+        "mirror": false, 
+        "name": "root", 
         "character": null, 
-        "startJoint": "root_00_M_JNT", 
         "modType": "SingleJoint", 
-        "name": "singleJoint1"
+        "children": []
     }
 ]

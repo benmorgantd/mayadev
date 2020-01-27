@@ -45,7 +45,11 @@ class Module(object):
         if not cmds.objExists(self.name + '_MOD'):
             # this creates a locator shape of the given name
             self.node = cmds.createNode('network', name=self.name + '_MOD')
+            # holds all the parts of the module. Not for transforming
             self.modGrp = cmds.createNode('transform', name=self.name + '_GRP')
+            # holds the components of the node. Transform this should not result in double xforms
+            self.componentsGrp = cmds.createNode('transform', name=self.name + '_COMPONENTS')
+
             print '>>> Created {0} node >> {1} <<'.format(self.modType, self.node)
         else:
             raise RuntimeError('Module of name {0} already exists.'.format(self.name + '_MOD'))
@@ -190,6 +194,7 @@ class Module(object):
 
         # parent the whole module's group into the module group for the character
         cmds.parent(self.modGrp, self.character.modulesGrp)
+        cmds.parent(self.componentsGrp, self.modGrp)
 
         # we might give it a specific joint parent
         if self.parent:
@@ -320,4 +325,19 @@ class Module(object):
         """Duplicate the given input chain"""
 
         return
+
+    def makeIkHandle(self, startJoint, endJoint, solverType, name):
+
+        ik = cmds.ikHandle(startJoint=startJoint, endEffector=endJoint,
+                          name=name, solver=solverType)[0]
+
+        grp = cmds.group(empty=True, name=name + '_grp')
+
+        cmds.delete(cmds.parentConstraint(ik, grp, maintainOffset=False))
+
+        cmds.parent(ik, grp)
+
+        return [ik, grp]
+
+        
         

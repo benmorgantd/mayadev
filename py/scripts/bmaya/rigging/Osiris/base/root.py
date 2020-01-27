@@ -84,3 +84,5 @@ class Root(module.Module):
                 cmds.parent(shp.offsetGrp, self.modGrp)
 
             self.components.append(shp)
+
+        cmds.parent(self.components[0].offsetGrp, self.componentsGrp)

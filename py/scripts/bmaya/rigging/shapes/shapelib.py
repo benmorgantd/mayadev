@@ -43,7 +43,7 @@ class Shape(object):
              }
 
     def __init__(self, name, shapeType="cube", scale=None, jnt=None):
-        self.name = name
+        self.name = name.replace('_JNT', '')
         self.shapeType = shapeType
         self.ctrl = None
         self.ctrlShape = None
@@ -72,9 +72,9 @@ class Shape(object):
 
         # make offsetGrp>>spaceGrp>>targetGrp>>ctrl
 
-        self.targetGrp = cmds.group(self.ctrl, name=self.ctrl + '_targetGrp', absolute=True)
-        self.spaceGrp = cmds.group(self.targetGrp, name=self.ctrl + '_spaceGrp', absolute=True)
-        self.offsetGrp = cmds.group(self.spaceGrp, name=self.ctrl + '_offsetGrp', absolute=True)
+        self.targetGrp = cmds.group(self.ctrl, name=self.name + '_targetGrp', absolute=True)
+        self.spaceGrp = cmds.group(self.targetGrp, name=self.name + '_spaceGrp', absolute=True)
+        self.offsetGrp = cmds.group(self.spaceGrp, name=self.name + '_offsetGrp', absolute=True)
 
         self.groupHierarchy = [self.offsetGrp, self.targetGrp, self.spaceGrp]
 

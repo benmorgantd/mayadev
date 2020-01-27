@@ -42,7 +42,7 @@ class FkHierarchy(module.Module):
             self.parentConstrain(ctrl.ctrl, jnt, maintainOffset=True)
 
             if rootJnt:
-                cmds.parent(ctrl.grp, self.modGrp)
+                cmds.parent(ctrl.grp, self.componentsGrp)
             else:
                 parentJoint = cmds.listRelatives(
                     jnt, parent=True, type='joint')[0]
