@@ -1,15 +1,14 @@
 '''Custom widgets for rigBuilder'''
 
 import ast
-import uuid
-import re
 from collections import OrderedDict
-
 
 from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
 from bmaya.core import qtbase
 reload(qtbase)
+
+import maya.cmds as cmds
 
 
 class ModuleList(qtbase.List):
@@ -262,6 +261,46 @@ class BuildListContextMenu(QtWidgets.QMenu):
         duplicateAction = self.addAction('Duplicate')
         duplicateAction.triggered.connect(lambda: buildList.duplicateItem())
 
+class CustomLineEdit(QtWidgets.QLineEdit):
+    def __init__(self, text, parent=None):
+        super(CustomLineEdit, self).__init__(parent)
+
+        self.defaultValue = text
+
+        self.setText(self.defaultValue)
+
+        self.contextMenu = LineEditMenu(self)
+        self.contextMenu.hide()
+
+    def mousePressEvent(self, event):
+        # QtWidgets.QLineEdit.mousePressEvent(self, event)
+
+        # check if it's a right click
+        if event.button() == QtCore.Qt.RightButton:
+            globalCursorPos = QtGui.QCursor().pos()
+            self.contextMenu.move(globalCursorPos)
+            self.contextMenu.show()
+        # else:
+        #     QtWidgets.QLineEdit.mousePressEvent(self, event)
+
+    def addSelection(self):
+        sel = cmds.ls(sl=1)
+
+        if sel:
+            self.setText(sel[0])
+
+    def resetToDefault(self):
+        self.setText(self.defaultValue)
+
+class LineEditMenu(QtWidgets.QMenu):
+    def __init__(self, lineEdit):
+        super(LineEditMenu, self).__init__()
+
+        renameAction = self.addAction('Add Selection')
+        renameAction.triggered.connect(lambda: lineEdit.addSelection())
+
+        resetAction = self.addAction('Reset To Default')
+        resetAction.triggered.connect(lambda: lineEdit.resetToDefault())
 
 class AttributeLayoutValue(object):
 
@@ -286,7 +325,7 @@ class AttributeLayoutValue(object):
                 widget = QtWidgets.QComboBox()
                 widget.addItem('L')
                 widget.addItem('R')
-                widget.addItem('C')
+                widget.addItem('M')
                 widget.addItem('None')
 
                 widget.setCurrentIndex(widget.findText(self.defaultValue))
@@ -301,29 +340,29 @@ class AttributeLayoutValue(object):
 
                 widget.setCurrentIndex(widget.findText(self.defaultValue))
 
-            elif self.attribute == 'solverType':
-                import Osiris.lib.rigModules.IkChain as ikChain
-                reload(ikChain)
+            # elif self.attribute == 'solverType':
+            #     import Osiris.lib.rigModules.IkChain as ikChain
+            #     reload(ikChain)
 
-                widget = QtWidgets.QComboBox()
+            #     widget = QtWidgets.QComboBox()
 
-                for solverType in ikChain.IkChain.solverTypes:
-                    widget.addItem(solverType)
+            #     for solverType in ikChain.IkChain.solverTypes:
+            #         widget.addItem(solverType)
 
-                widget.setCurrentIndex(widget.findText(self.defaultValue))
+            #     widget.setCurrentIndex(widget.findText(self.defaultValue))
 
             else:
-                widget = QtWidgets.QLineEdit(self.defaultValue)
+                widget = CustomLineEdit(self.defaultValue)
 
         elif self.valueType is bool:
             widget = QtWidgets.QCheckBox()
             widget.setChecked(self.defaultValue)
 
         elif self.valueType is dict:
-            widget = QtWidgets.QLineEdit(str(self.defaultValue))
+            widget = CustomLineEdit(str(self.defaultValue))
 
         else:
-            widget = QtWidgets.QLineEdit(str(self.defaultValue))
+            widget = CustomLineEdit(str(self.defaultValue))
 
         return widget
 

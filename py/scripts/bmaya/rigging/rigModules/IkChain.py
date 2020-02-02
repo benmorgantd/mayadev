@@ -4,20 +4,21 @@ from bmaya.rigging.Osiris.base import module
 from bmaya.rigging.Osiris.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 
-reload(module)
-reload(shapelib)
+from bmaya.rigging.Osiris.tools import mathUtils
 
-class SingleChainIK(module.Module):
 
-    def __init__(self, startJoint=None, endJoint=None, name='singleChainIK1', character=None, 
-                parent=None, mirror=False, upVector=[0,2,0]):
-        super(SingleChainIK, self).__init__(modType='SingleChainIK', name=name, character=character, 
+class IkChain(module.Module):
+
+    def __init__(self, startJoint=None, endJoint=None, name='IkChain1', character=None, 
+                parent=None, mirror=False, upVector=[0,2,0], exclude=[]):
+        super(IkChain, self).__init__(modType='IkChain', name=name, character=character, 
                                           shapeType='cube', mirror=mirror)
 
         self.parent = parent
         self.startJoint = startJoint
         self.endJoint = endJoint
         self.upVector = upVector
+        self.exclude = exclude
 
         self.contract = [self.startJoint, self.endJoint]
 
@@ -26,6 +27,8 @@ class SingleChainIK(module.Module):
         # build a simple single chain ik system
 
         self.checkContract()
+
+        self.findHierarchyJoints()
 
         startCtrl = shapelib.Shape(self.startJoint, 'cube',
                                    jnt=self.startJoint)
@@ -39,7 +42,12 @@ class SingleChainIK(module.Module):
                                       solverType='ikRPsolver', name=self.name + '_ikHandle')
 
         poleVectorCtrl = shapelib.Shape(self.endJoint + '_pv', shapeType='cube', jnt=self.endJoint)
-        cmds.xform(poleVectorCtrl.offsetGrp, translation=self.upVector, relative=True, objectSpace=True)
+        
+        if len(self.bindJoints) < 3:
+            cmds.xform(poleVectorCtrl.offsetGrp, translation=self.upVector, relative=True, objectSpace=True)
+        else:
+            cmds.xform(poleVectorCtrl.offsetGrp, translation=mathUtils.findPoleVector(self.bindJoints), worldSpace=True)
+        
         cmds.parent(poleVectorCtrl.offsetGrp, startCtrl.ctrl)
         cmds.pointConstraint(endCtrl.ctrl, poleVectorCtrl.offsetGrp, maintainOffset=True)
         cmds.poleVectorConstraint(poleVectorCtrl.ctrl, ik)
@@ -48,8 +56,6 @@ class SingleChainIK(module.Module):
 
         self.components += [startCtrl, endCtrl, poleVectorCtrl]
         self.ikHandles = ik
-
-        self.bindJoints.append(self.startJoint)
 
         # connect the controls to the joints and effectors
         self.parentConstrain(startCtrl.ctrl, self.startJoint)

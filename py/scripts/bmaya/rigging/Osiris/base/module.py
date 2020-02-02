@@ -268,13 +268,17 @@ class Module(object):
 
             cmds.connectAttr(self.node + '.bindJoints', jnt + '.module')
 
-    def getContainedJoints(self):
-        """Finds the joints between a start and end point on a dag"""
+    def findHierarchyJoints(self):
+        """Expands from a start joint and until it hits excluded joints."""
 
         sel = om.MSelectionList()
 
+        exclude = []
+
         if not self.startJoint:
             raise RuntimeError('Need a start joint.')
+        if hasattr(self, 'exclude'):
+            exclude = self.exclude
 
         sel.add(self.startJoint)
         dag = om.MDagPath()
@@ -288,12 +292,14 @@ class Module(object):
         while not itDag.isDone():
             jnt = itDag.partialPathName()
 
-            if jnt not in self.exclude:
-
-                self.bindJoints.append(jnt)
-
+            if jnt not in exclude:
+                if jnt != self.endJoint:
+                    self.bindJoints.append(jnt)
+                else:
+                    # add control on end joint then prune
+                    self.bindJoints.append(jnt)
+                    itDag.prune()
                 rootJnt = False
-
             else:
                 itDag.prune()
 

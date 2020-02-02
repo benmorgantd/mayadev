@@ -140,8 +140,9 @@ class Character(Asset):
 
         # scene cleanup:
         self.setupMeshReferencing()
-
         self.lockDownConstraints()
+
+        cmds.hide(cmds.ls(type='ikHandle'))
     
         cmds.file(rename=self.animRig.fullPath)
         cmds.file(save=True, type='mayaAscii', force=True)
@@ -273,7 +274,8 @@ class Character(Asset):
             cmds.connectAttr(self.node + '.sock', node + '.character')
 
     def hideKeyableAttr(self, obj):
-        cmds.setAttr(obj, keyable=False, channelBox=False)
+        if cmds.objExists(obj):
+            cmds.setAttr(obj, keyable=False, channelBox=False)
 
     def lockDownConstraints(self):
          # manage constraints
@@ -290,12 +292,14 @@ class Character(Asset):
                 else:
                     weights = cmds.orientConstraint(constraint, query=True, weightAliasList=True)
                 
-                for w in range(len(weights)):
-                    attrHideList += ['w{0}'.format(w)]
+                if weights:
+                    for w in range(len(weights)):
+                        attrHideList += ['w{0}'.format(w)]
             else:
                 weights = cmds.parentConstraint(constraint, query=True, weightAliasList=True)
-                for w in range(len(weights)):
-                    attrHideList += ['w{0}'.format(w)]
+                if weights:
+                    for w in range(len(weights)):
+                        attrHideList += ['w{0}'.format(w)]
             
             for attr in attrHideList:
                 self.hideKeyableAttr('{0}.{1}'.format(constraint, attr))
