@@ -4,6 +4,9 @@ from bmaya.rigging.Osiris.base import module
 from bmaya.rigging.Osiris.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 
+reload(module)
+reload(shapelib)
+
 class SingleJoint(module.Module):
 
     def __init__(self, startJoint=None, name='singleJoint1', character=None, parent=None, 
@@ -22,16 +25,18 @@ class SingleJoint(module.Module):
 
         self.checkContract()
 
-        ctrl = shapelib.Shape(self.startJoint, self.shapeType,
-                              jnt=self.startJoint)
+        self.bindJoints.append(self.startJoint)
+
+        self.driveJoints = self.createDriveJoints()
+
+        self.startJointDriver = self.getDriver(self.startJoint)
+
+        ctrl = shapelib.Shape(self.startJointDriver, self.shapeType,
+                              jnt=self.startJointDriver)
 
         self.components.append(ctrl)
 
-        self.bindJoints.append(self.startJoint)
-
-        # binds the joint to the control
-        self.parentConstrain(
-            ctrl.ctrl, self.startJoint, maintainOffset=True)
+        self.parentConstrain(ctrl.ctrl, self.startJointDriver, maintainOffset=True)
 
         cmds.parent(ctrl.offsetGrp, self.componentsGrp)
 

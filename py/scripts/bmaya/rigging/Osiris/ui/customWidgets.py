@@ -6,7 +6,6 @@ from collections import OrderedDict
 from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
 from bmaya.core import qtbase
-reload(qtbase)
 
 import maya.cmds as cmds
 
@@ -302,6 +301,7 @@ class LineEditMenu(QtWidgets.QMenu):
         resetAction = self.addAction('Reset To Default')
         resetAction.triggered.connect(lambda: lineEdit.resetToDefault())
 
+
 class AttributeLayoutValue(object):
 
     def __init__(self, attribute, defaultValue):
@@ -321,16 +321,7 @@ class AttributeLayoutValue(object):
 
         if self.valueType in [unicode, str]:
             
-            if self.attribute == 'side':
-                widget = QtWidgets.QComboBox()
-                widget.addItem('L')
-                widget.addItem('R')
-                widget.addItem('M')
-                widget.addItem('None')
-
-                widget.setCurrentIndex(widget.findText(self.defaultValue))
-
-            elif self.attribute == 'shapeType':
+            if self.attribute == 'shapeType':
                 from bmaya.rigging.shapes import shapelib
 
                 widget = QtWidgets.QComboBox()
@@ -339,17 +330,6 @@ class AttributeLayoutValue(object):
                     widget.addItem(shapeType)
 
                 widget.setCurrentIndex(widget.findText(self.defaultValue))
-
-            # elif self.attribute == 'solverType':
-            #     import Osiris.lib.rigModules.IkChain as ikChain
-            #     reload(ikChain)
-
-            #     widget = QtWidgets.QComboBox()
-
-            #     for solverType in ikChain.IkChain.solverTypes:
-            #         widget.addItem(solverType)
-
-            #     widget.setCurrentIndex(widget.findText(self.defaultValue))
 
             else:
                 widget = CustomLineEdit(self.defaultValue)

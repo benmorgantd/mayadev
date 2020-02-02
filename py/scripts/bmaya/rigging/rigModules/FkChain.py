@@ -6,6 +6,9 @@ from bmaya.rigging.Osiris.base import module
 from bmaya.rigging.Osiris.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 
+reload(module)
+reload(shapelib)
+
 
 class FkChain(module.Module):
 
@@ -28,8 +31,10 @@ class FkChain(module.Module):
         self.checkContract()
 
         # finds the joints that should belong in the chain
-        self.findHierarchyJoints()
-        
+        self.bindJoints = self.findHierarchyJoints()
+
+        self.driveJoints = self.createDriveJoints()
+
         self.buildFkControls()
 
         # parent the startJoint control to the module's parent
@@ -38,9 +43,9 @@ class FkChain(module.Module):
 
     def buildFkControls(self):
 
-        for i in range(len(self.bindJoints)):
+        for i in range(len(self.driveJoints)):
             
-            jnt = self.bindJoints[i]
+            jnt = self.driveJoints[i]
 
             ctrl = shapelib.Shape(jnt, self.shapeType, jnt=jnt)
 
@@ -53,14 +58,14 @@ class FkChain(module.Module):
             else:
                 parentJoint = cmds.listRelatives(
                     jnt, parent=True, type='joint')[0]
-                parentCtrl = cmds.listConnections(parentJoint + '.ctrl')
+                parentCtrl = cmds.listConnections(parentJoint + '.driveCtrl')
 
                 if parentCtrl:
                     cmds.parent(ctrl.offsetGrp, parentCtrl[0])
                 else:
                     cmds.parent(ctrl.offsetGrp, self.components[0].ctrl)
 
-            cmds.addAttr(jnt, longName='ctrl', attributeType='message')
-            cmds.addAttr(ctrl.ctrl, longName='bindJoint', attributeType='message')
-            cmds.connectAttr(ctrl.ctrl + '.bindJoint', jnt + '.ctrl')
+            cmds.addAttr(jnt, longName='driveCtrl', attributeType='message')
+            cmds.addAttr(ctrl.ctrl, longName='driveJoint', attributeType='message')
+            cmds.connectAttr(ctrl.ctrl + '.driveJoint', jnt + '.driveCtrl')
 

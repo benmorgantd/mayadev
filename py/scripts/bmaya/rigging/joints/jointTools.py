@@ -5,9 +5,7 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 
 
-def bestFitPlane():
-    # get selection
-
+def getSelectionCenter():
     cmds.select(cmds.polyListComponentConversion(toVertex=True))
 
     sel = om.MSelectionList()
@@ -19,9 +17,6 @@ def bestFitPlane():
     sel.getDagPath(0, dag, components)
 
     itVerts = om.MItMeshVertex(dag, components)
-
-    if itVerts.count() < 3:
-        raise ValueError('Must select at least 3 points')
 
     vectors = om.MVectorArray()
     vectorSum = om.MVector(0.0, 0.0, 0.0)
@@ -36,9 +31,12 @@ def bestFitPlane():
 
         itVerts.next()    
 
-    numVectors = float(vectors.length())
-    centroid = vectorSum / numVectors
+    centroid = vectorSum / float(vectors.length())
 
+    return centroid
+
+def bestFitPlane():
+    centroid = getSelectionCenter()
     loc = cmds.spaceLocator()[0]
     cmds.xform(loc, t=[centroid.x, centroid.y, centroid.z], ws=1)
 
@@ -150,9 +148,6 @@ def bestFitPlane():
     fnTrans.rotateBy(quaternion, om.MSpace.kWorld)
 
     cmds.delete(aimLoc)
-
-
-
 
 
     

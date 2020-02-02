@@ -11,7 +11,7 @@ def fromString(obj):
 
     """
 
-    assert isinstance(obj, str)
+    assert isinstance(obj, basestring)
 
     if not cmds.objExists(obj):
         raise ValueError('Given object {} does not exist'.format(obj))

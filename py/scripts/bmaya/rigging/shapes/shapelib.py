@@ -43,7 +43,7 @@ class Shape(object):
              }
 
     def __init__(self, name, shapeType="cube", scale=None, jnt=None):
-        self.name = name.replace('_JNT', '')
+        self.name = name.replace('_DRIVER', '')
         self.shapeType = shapeType
         self.ctrl = None
         self.ctrlShape = None

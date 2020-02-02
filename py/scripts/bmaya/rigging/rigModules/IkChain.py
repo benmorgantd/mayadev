@@ -6,6 +6,9 @@ from bmaya.rigging.shapes import shapelib
 
 from bmaya.rigging.Osiris.tools import mathUtils
 
+reload(module)
+reload(shapelib)
+
 
 class IkChain(module.Module):
 
@@ -28,25 +31,27 @@ class IkChain(module.Module):
 
         self.checkContract()
 
-        self.findHierarchyJoints()
+        self.bindJoints = self.findHierarchyJoints()
 
-        startCtrl = shapelib.Shape(self.startJoint, 'cube',
-                                   jnt=self.startJoint)
+        self.driveJoints = self.createDriveJoints()
 
-        endCtrl = shapelib.Shape(self.endJoint, shapeType='cube', 
-                                 jnt=self.endJoint)
+        startCtrl = shapelib.Shape(self.getDriver(self.startJoint), 'cube',
+                                   jnt=self.getDriver(self.startJoint))
+
+        endCtrl = shapelib.Shape(self.getDriver(self.endJoint), shapeType='cube', 
+                                 jnt=self.getDriver(self.endJoint))
 
         cmds.parent(endCtrl.offsetGrp, startCtrl.ctrl)
 
-        ik, ikGrp = self.makeIkHandle(startJoint=self.startJoint, endJoint=self.endJoint, 
+        ik, ikGrp = self.makeIkHandle(startJoint=self.getDriver(self.startJoint), endJoint=self.getDriver(self.endJoint), 
                                       solverType='ikRPsolver', name=self.name + '_ikHandle')
 
-        poleVectorCtrl = shapelib.Shape(self.endJoint + '_pv', shapeType='cube', jnt=self.endJoint)
+        poleVectorCtrl = shapelib.Shape(self.getDriver(self.endJoint) + '_pv', shapeType='cube', jnt=self.getDriver(self.endJoint))
         
-        if len(self.bindJoints) < 3:
+        if len(self.driveJoints) < 3:
             cmds.xform(poleVectorCtrl.offsetGrp, translation=self.upVector, relative=True, objectSpace=True)
         else:
-            cmds.xform(poleVectorCtrl.offsetGrp, translation=mathUtils.findPoleVector(self.bindJoints), worldSpace=True)
+            cmds.xform(poleVectorCtrl.offsetGrp, translation=mathUtils.findPoleVector(self.driveJoints), worldSpace=True)
         
         cmds.parent(poleVectorCtrl.offsetGrp, startCtrl.ctrl)
         cmds.pointConstraint(endCtrl.ctrl, poleVectorCtrl.offsetGrp, maintainOffset=True)
@@ -58,7 +63,7 @@ class IkChain(module.Module):
         self.ikHandles = ik
 
         # connect the controls to the joints and effectors
-        self.parentConstrain(startCtrl.ctrl, self.startJoint)
+        self.parentConstrain(startCtrl.ctrl, self.getDriver(self.startJoint))
         self.parentConstrain(endCtrl.ctrl, ikGrp)
 
         cmds.parent(startCtrl.offsetGrp, self.componentsGrp)

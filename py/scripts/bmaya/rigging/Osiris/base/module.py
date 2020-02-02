@@ -49,77 +49,84 @@ class Module(object):
             self.modGrp = cmds.createNode('transform', name=self.name + '_GRP')
             # holds the components of the node. Transform this should not result in double xforms
             self.componentsGrp = cmds.createNode('transform', name=self.name + '_COMPONENTS')
+            # holds the driver joints for the node
+            self.driverGrp = cmds.createNode('transform', name=self.name + '_DRIVERS')
+            cmds.parent(self.driverGrp, self.componentsGrp)
 
             print '>>> Created {0} node >> {1} <<'.format(self.modType, self.node)
         else:
             raise RuntimeError('Module of name {0} already exists.'.format(self.name + '_MOD'))
+    
+    def parseForMayaAttr(self, attr):
+
+        if isinstance(attr, bool):
+            mayaAttrType = 'bool'
+            mayaAttrVal = attr
+
+        elif isinstance(attr, basestring):
+            mayaAttrType = 'string'
+            mayaAttrVal = str(attr)
+
+        elif isinstance(attr, list):
+                cleanList = []
+
+                for val in attr:
+                    if isinstance(val, (basestring, int, float, bool)):
+                        cleanList.append(val)
+                    elif isinstance(val, shapelib.Shape):
+                        cleanList.append(val.ctrl)
+
+                mayaAttrType = 'string'
+                mayaAttrVal = json.dumps(cleanList)
+
+        elif isinstance(attr, dict):
+            cleanDict = {}
+
+            for key, value in attr.items():
+                if isinstance(value, (basestring, int, float, bool)):
+                    cleanDict[key] = value
+                elif isinstance(value, shapelib.Shape):
+                    cleanDict[key] = value.ctrl
+
+            mayaAttrType = 'string'
+            mayaAttrVal = json.dumps(cleanDict)
+        
+        elif not attr:
+            mayaAttrType = 'string'
+            mayaAttrVal = 'None'
+        
+        else:
+            mayaAttrType = 'string'
+            mayaAttrVal = str(attr)
+
+        return mayaAttrType, mayaAttrVal    
 
     def addNodeAttrs(self):
         if not self.node:
             raise RuntimeError('Module node does not exist yet for ' + self.name)
 
-        for attr in self.__dict__:
-            attrVal = self.__dict__[attr]
-
-            if isinstance(attrVal, bool):
-                attrType = 'bool'
-                attrVal = attrVal
-
-            # elif isinstance(attrVal, Character):
-            #     attrType = 'message'
-
-            elif isinstance(attrVal, basestring):
-                attrType = 'string'
-                attrVal = str(attrVal)
-
-            elif isinstance(attrVal, list):
-                cleanList = []
-
-                for val in attrVal:
-                    if isinstance(val, (basestring, int, float, bool)):
-                        cleanList.append(val)
-                    # creates a circular import
-                    # elif isinstance(val, Character):
-                    #     cleanList.append(val.name)
-                    elif isinstance(val, shapelib.Shape):
-                        cleanList.append(val.ctrl)
-
-                attrType = 'string'
-                attrVal = json.dumps(cleanList)
-
-            elif isinstance(attrVal, dict):
-                cleanDict = {}
-
-                for key in attrVal:
-                    if isinstance(val, (basestring, int, float, bool)):
-                        cleanDict[key] = attrVal[key]
-                    # elif isinstance(attrVal[key], Character):
-                    #     cleanDict[key] = attrVal[key].name
-                    elif isinstance(attrVal[key], shapelib.Shape):
-                        cleanDict[key] = attrVal[key].ctrl
-
-                attrType = 'string'
-                attrVal = json.dumps(cleanDict)
+        for attrName, attrVal in self.__dict__.items():
+            attrType = type(attrVal)
             
-            elif not attrVal:
-                attrType = 'string'
-                attrVal = 'None'
+            mayaAttrType, mayaAttrVal = self.parseForMayaAttr(attrVal)
 
             # add the attribute
             
-            if attrType is 'string':
-                cmds.addAttr(self.node, ln=attr, dt='string', keyable=False)
-                cmds.setAttr(self.node + '.' + attr, str(attrVal), type='string')
-            elif attrType is 'message':
-                cmds.addAttr(self.node, ln=attr, at=attrType, keyable=False)
+            if mayaAttrType == 'string':
+                cmds.addAttr(self.node, ln=attrName, dt='string', keyable=False)
+                cmds.setAttr(self.node + '.' + attrName, mayaAttrVal, type='string')
+            elif mayaAttrType == 'bool':
+                cmds.addAttr(self.node, ln=attrName, at='bool', dv=mayaAttrVal, keyable=False)
+            elif mayaAttrType == 'message':
+                cmds.addAttr(self.node, ln=attrName, at=mayaAttrType, keyable=False)
             else:
                 try:
-                    cmds.addAttr(self.node, ln=attr, at=attrType, dv=attrVal, keyable=False)
+                    cmds.addAttr(self.node, ln=attrName, at=mayaAttrType, dv=mayaAttrVal, keyable=False)
                 except TypeError:
                     print '--'
-                    print 'type: ', attrType
-                    print 'value: ', attrVal
-                    print 'Warning: Failed to add attribute \'{0}\'\n--'.format(attr)
+                    print 'type: ', mayaAttrType
+                    print 'value: ', mayaAttrVal
+                    print 'Warning: Failed to add attribute \'{0}\'\n--'.format(attrName)
 
     def findMirror(self, node):
         """Returns the mirrored node of the same type if it's in the scene.
@@ -200,17 +207,20 @@ class Module(object):
         if self.parent:
             self.parentConstrain(self.parent, self.modGrp, maintainOffset=True)
         elif hasattr(self, 'startJoint'):
-            parentJoint = cmds.listRelatives(
-                self.startJoint, parent=True, type='joint') or 'layout_03_M_ctrl'
+            parentTransform = cmds.listRelatives(self.startJoint, parent=True, type='joint')
+            if parentTransform:
+                parentTransform = parentTransform[0]
+            else:
+                parentTransform = 'layout_03_M_ctrl'
 
             # todo: this is where you could add a followSwitch option
-            self.parentConstrain(parentJoint, self.modGrp, maintainOffset=True)
+            self.parentConstrain(parentTransform, self.modGrp, maintainOffset=True)
             
         elif self.modType != 'Root':
             raise RuntimeError('Module must have a start joint.')
 
     def parentConstrain(self, parent=None, childList=None, maintainOffset=True):
-
+        
         if isinstance(childList, basestring):
             childList = [childList]
 
@@ -273,6 +283,8 @@ class Module(object):
 
         sel = om.MSelectionList()
 
+        bindJoints = []
+
         exclude = []
 
         if not self.startJoint:
@@ -294,43 +306,45 @@ class Module(object):
 
             if jnt not in exclude:
                 if jnt != self.endJoint:
-                    self.bindJoints.append(jnt)
+                    bindJoints.append(jnt)
                 else:
                     # add control on end joint then prune
-                    self.bindJoints.append(jnt)
+                    bindJoints.append(jnt)
                     itDag.prune()
                 rootJnt = False
             else:
                 itDag.prune()
 
             itDag.next()
+        
+        return bindJoints
 
-    def checkContractJoint(self, contractKeys):
-        """Check to see if all the given contract joints are unique to this module"""
+    def createDriveJoints(self, label='DRIVER'):
+        driveJoints = []
 
-        return True
+        for joint in self.bindJoints:
+            driver = cmds.duplicate(joint, parentOnly=True, name=joint.replace('JNT', label))[0]
+            
+            jointParent = cmds.listRelatives(joint, parent=True, type='joint')
+            
+            if jointParent:
+                driverParent = jointParent[0].replace('JNT', label)
+                if cmds.objExists(driverParent):
+                    cmds.parent(driver, driverParent, absolute=True)
+            else:
+                cmds.parent(driver, self.driverGrp)
 
-        # todo: check contract joints correctly
+            self.parentConstrain(driver, joint, maintainOffset=False)
 
-        # if isinstance(contractKeys, basestring):
-        #     contractKeys = [contractKeys]
-        #
-        # for contractKey in contractKeys:
-        #
-        #     if contractKey in self.contract.values():
-        #         if cmds.objExists(self.contract[contractKey] + '.module'):
-        #             raise RuntimeError(
-        #                 'Given startJoint <{0}> already belongs to a module'.format(self.contract[contractKey]))
-        #
-        #         else:
-        #             return True
-        #     else:
-        #         raise RuntimeError('<{0}> is not a part of the module contract.'.format(contractKey))
+            # add a connection for driver and driven joint
+            cmds.addAttr(joint, longName='driver', attributeType='message')
+            cmds.addAttr(driver, longName='driven', attributeType='message')
+            cmds.connectAttr(driver + '.driven', joint + '.driver')
 
-    def duplicateChain(self, joints):
-        """Duplicate the given input chain"""
+            driveJoints.append(driver)
+        
+        return driveJoints
 
-        return
 
     def makeIkHandle(self, startJoint, endJoint, solverType, name):
 
@@ -346,4 +360,13 @@ class Module(object):
         return [ik, grp]
 
         
-        
+    def getDriver(self, joint):
+
+        if 'driver' in cmds.listAttr(joint):
+            driver = cmds.listConnections(joint + '.driver', source=True)
+            if driver:
+                return driver[0]
+            else:
+                raise ValueError('Driver connection lost on {0}'.format(joint))
+        else:
+            raise ValueError('Given joint {0} has no driver.'.format(joint))

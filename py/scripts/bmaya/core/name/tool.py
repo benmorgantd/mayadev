@@ -4,10 +4,7 @@ from bmaya.lib.Qt import QtWidgets
 from bmaya.core import qtbase
 from bmaya.utils import mayaQt
 
-reload(qtbase)
-
 import nameSelection
-reload(nameSelection)
 
 class NamingTool(qtbase.SimpleWindow):
     def __init__(self, parent=None, title='Naming Tool'):
