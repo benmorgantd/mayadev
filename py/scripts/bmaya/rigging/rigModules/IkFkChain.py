@@ -4,21 +4,28 @@ from bmaya.rigging.Osiris.base import module
 from bmaya.rigging.Osiris.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 
+from IkChain import IkChain
+from FkChain import FkChain
+
+# reload(IkChain)
+# reload(FkChain)
+
 reload(module)
 reload(shapelib)
 
 
-class IkFkChain(module.Module):
+class IkFkChain(FkChain, IkChain):
 
-    def __init__(self, startJoint=None, name='IkFkChain1', character=None, parent=None, 
-                 shapeType='cube', mirror=False):
-        super(IkFkChain, self).__init__(modType='IkFkChain', name=name, character=character, 
-                                          shapeType=shapeType, mirror=mirror)
+    def __init__(self, startJoint=None, endJoint=None, name='IkFkChain1', character=None, 
+                parent=None, mirror=False, upVector=[0,2,0], exclude=[]):
 
-        self.parent = parent
-        self.startJoint = startJoint
+        IkChain.__init__(self, startJoint=startJoint, endJoint=endJoint, name=name, 
+                        character=character, parent=parent, mirror=mirror, upVector=upVector, exclude=exclude)
 
-        self.contract = [self.startJoint]
+        FkChain.__init__(self, startJoint=startJoint, endJoint=endJoint, name=name, 
+                        character=character, parent=parent, mirror=mirror, shapeType='cube')
+
+        self.contract = [self.startJoint, self.endJoint]
 
     @wrapBuild
     def build(self):
@@ -26,18 +33,32 @@ class IkFkChain(module.Module):
 
         self.checkContract()
 
-        ctrl = shapelib.Shape(self.startJoint, self.shapeType,
-                              jnt=self.startJoint)
+        self.bindJoints = self.findHierarchyJoints()
 
-        self.components.append(ctrl)
+        # need to feed it our specific drive joints
+        self.ikDriveJoints = self.createDriveJoints(label='IKDRIVER', constrain=False)
+        self.fkDriveJoints = self.createDriveJoints(label='FKDRIVER', constrain=False)
 
-        self.bindJoints.append(self.startJoint)
+        self.ikComponents = self.buildIkControls(self.ikDriveJoints)
 
-        # binds the joint to the control
-        self.parentConstrain(
-            ctrl.ctrl, self.startJoint, maintainOffset=True)
+        self.fkComponents = self.buildFkControls(self.fkDriveJoints)
 
-        cmds.parent(ctrl.offsetGrp, self.componentsGrp)
+        # add an attribute for blending
+        cmds.addAttr(self.node, longName='FKIK', attributeType='float', dv=0.0, 
+                     min=0, max=1, keyable=True)
 
-        if self.parent:
-            self.parentConstrain(self.parent, self.componentsGrp, maintainOffset=True)
+        blendReverse = self.blendChains(self.fkDriveJoints, self.ikDriveJoints, self.bindJoints, self.node + '.FKIK')
+
+        # connect blend control to visibility
+        cmds.connectAttr(blendReverse, '{0}.v'.format(self.fkComponents[0].offsetGrp))
+        cmds.connectAttr(self.node + '.FKIK', '{0}.v'.format(self.ikComponents[0].offsetGrp))
+        
+        self.components += self.ikComponents
+        self.components += self.fkComponents
+
+        # if self.parent:
+        #     self.parentConstrain(self.parent, self.components[0].offsetGrp,
+        #                         maintainOffset=True)
+
+
+    

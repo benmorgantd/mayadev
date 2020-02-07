@@ -13,9 +13,10 @@ reload(shapelib)
 class FkChain(module.Module):
 
     def __init__(self, startJoint=None, endJoint=None, exclude=[], name='FkChain1',
-                 character=None, parent=None, shapeType='cube'):
-        super(FkChain, self).__init__(name=name, modType='FkChain',
-                                      character=character, shapeType=shapeType)
+                 character=None, parent=None, shapeType='cube', mirror=False):
+
+        super(FkChain, self).__init__(name=name, modType='FkChain', character=character, 
+                                      shapeType=shapeType, mirror=mirror)
 
         self.parent = parent
         self.startJoint = startJoint
@@ -32,24 +33,25 @@ class FkChain(module.Module):
 
         # finds the joints that should belong in the chain
         self.bindJoints = self.findHierarchyJoints()
-
         self.driveJoints = self.createDriveJoints()
 
-        self.buildFkControls()
+        self.components = self.buildFkControls(self.driveJoints)
 
         # parent the startJoint control to the module's parent
         if self.parent:
             self.parentConstrain(self.parent, self.componentsGrp, maintainOffset=True)
 
-    def buildFkControls(self):
+    def buildFkControls(self, driveJoints):
 
-        for i in range(len(self.driveJoints)):
+        components = []
+
+        for i in range(len(driveJoints)):
             
-            jnt = self.driveJoints[i]
+            jnt = driveJoints[i]
 
             ctrl = shapelib.Shape(jnt, self.shapeType, jnt=jnt)
 
-            self.components.append(ctrl)
+            components.append(ctrl)
 
             self.parentConstrain(ctrl.ctrl, jnt, maintainOffset=True)
 
@@ -63,9 +65,11 @@ class FkChain(module.Module):
                 if parentCtrl:
                     cmds.parent(ctrl.offsetGrp, parentCtrl[0])
                 else:
-                    cmds.parent(ctrl.offsetGrp, self.components[0].ctrl)
+                    cmds.parent(ctrl.offsetGrp, components[0].ctrl)
 
             cmds.addAttr(jnt, longName='driveCtrl', attributeType='message')
             cmds.addAttr(ctrl.ctrl, longName='driveJoint', attributeType='message')
             cmds.connectAttr(ctrl.ctrl + '.driveJoint', jnt + '.driveCtrl')
+
+        return components
 

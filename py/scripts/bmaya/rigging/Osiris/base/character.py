@@ -123,6 +123,7 @@ class Character(Asset):
         self.componentSet = cmds.sets(self.allControls, name='CTRL_set')
         cmds.sets(self.componentSet, include='MASTER_set')
 
+        # skinning after the components have been built allows us to create bind joints
         self.skin()
 
         self.addNodeAttrs()

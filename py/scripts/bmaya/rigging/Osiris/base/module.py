@@ -319,7 +319,7 @@ class Module(object):
         
         return bindJoints
 
-    def createDriveJoints(self, label='DRIVER'):
+    def createDriveJoints(self, label='DRIVER', constrain=True):
         driveJoints = []
 
         for joint in self.bindJoints:
@@ -331,17 +331,19 @@ class Module(object):
                 driverParent = jointParent[0].replace('JNT', label)
                 if cmds.objExists(driverParent):
                     cmds.parent(driver, driverParent, absolute=True)
-            else:
-                cmds.parent(driver, self.driverGrp)
 
-            self.parentConstrain(driver, joint, maintainOffset=False)
+            if constrain:
+                self.parentConstrain(driver, joint, maintainOffset=False)
 
-            # add a connection for driver and driven joint
-            cmds.addAttr(joint, longName='driver', attributeType='message')
-            cmds.addAttr(driver, longName='driven', attributeType='message')
-            cmds.connectAttr(driver + '.driven', joint + '.driver')
+                # add a connection for driver and driven joint
+                # only add this attribute if it's a direct constraint
+                cmds.addAttr(joint, longName='driver', attributeType='message')
+                cmds.addAttr(driver, longName='driven', attributeType='message')
+                cmds.connectAttr(driver + '.driven', joint + '.driver')
 
             driveJoints.append(driver)
+
+        cmds.parent(driveJoints[0], self.driverGrp)
         
         return driveJoints
 
@@ -369,4 +371,36 @@ class Module(object):
             else:
                 raise ValueError('Driver connection lost on {0}'.format(joint))
         else:
-            raise ValueError('Given joint {0} has no driver.'.format(joint))
+            raise ValueError('Given joint {0} has no direct driver.'.format(joint))
+
+
+    def blendChains(self, fkChain, ikChain, childChain, driveAttribute):
+
+        # create the reverse node (name is now more vague)
+        reverse = cmds.createNode('reverse', name=childChain[0] + '_REV')
+        cmds.connectAttr(driveAttribute, reverse + '.inputX')
+        reverseAttr = reverse + '.outputX'
+
+        for i in range(len(fkChain)):
+            const = cmds.parentConstraint(fkChain[i], ikChain[i], childChain[i], maintainOffset=True)[0]
+            
+            cmds.connectAttr(driveAttribute, '{0}.{1}W0'.format(const, fkChain[i]))
+            cmds.connectAttr(reverseAttr, '{0}.{1}W1'.format(const, ikChain[i]))
+            
+            # set interpolation type to Shortest
+            cmds.setAttr(const + '.interpType', 2)
+
+            self.messageConnect(childChain[i], fkChain[i], 'fkDriver', 'driven')
+            self.messageConnect(childChain[i], ikChain[i], 'ikDriver', 'driven')
+
+        return reverseAttr
+            
+            # TODO: add a drive attribute on the module
+
+    def messageConnect(self, nodeA, nodeB, longNameA, longNameB):
+
+        cmds.addAttr(nodeA, longName=longNameA, attributeType='message')
+        cmds.addAttr(nodeB, longName=longNameB, attributeType='message')
+
+        cmds.connectAttr('{0}.{1}'.format(nodeA, longNameA), 
+                         '{0}.{1}'.format(nodeB, longNameB))

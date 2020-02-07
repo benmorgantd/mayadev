@@ -14,8 +14,9 @@ class IkChain(module.Module):
 
     def __init__(self, startJoint=None, endJoint=None, name='IkChain1', character=None, 
                 parent=None, mirror=False, upVector=[0,2,0], exclude=[]):
+
         super(IkChain, self).__init__(modType='IkChain', name=name, character=character, 
-                                          shapeType='cube', mirror=mirror)
+                                      shapeType='cube', mirror=mirror)
 
         self.parent = parent
         self.startJoint = startJoint
@@ -35,23 +36,34 @@ class IkChain(module.Module):
 
         self.driveJoints = self.createDriveJoints()
 
-        startCtrl = shapelib.Shape(self.getDriver(self.startJoint), 'cube',
-                                   jnt=self.getDriver(self.startJoint))
+        self.components = self.buildIkControls(self.driveJoints)
 
-        endCtrl = shapelib.Shape(self.getDriver(self.endJoint), shapeType='cube', 
-                                 jnt=self.getDriver(self.endJoint))
+        if self.parent:
+            self.parentConstrain(self.parent, self.components[0].offsetGrp,
+                                maintainOffset=True)
+
+    def buildIkControls(self, driveJoints):
+        # letting components be a local variable here so that we can use this 
+        # safer in child methods
+        components = []
+
+        startCtrl = shapelib.Shape(driveJoints[0], 'cube',
+                                   jnt=driveJoints[0])
+
+        endCtrl = shapelib.Shape(driveJoints[-1], shapeType='cube', 
+                                 jnt=driveJoints[-1])
 
         cmds.parent(endCtrl.offsetGrp, startCtrl.ctrl)
 
-        ik, ikGrp = self.makeIkHandle(startJoint=self.getDriver(self.startJoint), endJoint=self.getDriver(self.endJoint), 
+        ik, ikGrp = self.makeIkHandle(startJoint=driveJoints[0], endJoint=driveJoints[-1], 
                                       solverType='ikRPsolver', name=self.name + '_ikHandle')
 
-        poleVectorCtrl = shapelib.Shape(self.getDriver(self.endJoint) + '_pv', shapeType='cube', jnt=self.getDriver(self.endJoint))
+        poleVectorCtrl = shapelib.Shape(driveJoints[-1] + '_pv', shapeType='cube', jnt=driveJoints[-1])
         
-        if len(self.driveJoints) < 3:
+        if len(driveJoints) < 3:
             cmds.xform(poleVectorCtrl.offsetGrp, translation=self.upVector, relative=True, objectSpace=True)
         else:
-            cmds.xform(poleVectorCtrl.offsetGrp, translation=mathUtils.findPoleVector(self.driveJoints), worldSpace=True)
+            cmds.xform(poleVectorCtrl.offsetGrp, translation=mathUtils.findPoleVector(driveJoints), worldSpace=True)
         
         cmds.parent(poleVectorCtrl.offsetGrp, startCtrl.ctrl)
         cmds.pointConstraint(endCtrl.ctrl, poleVectorCtrl.offsetGrp, maintainOffset=True)
@@ -59,15 +71,13 @@ class IkChain(module.Module):
 
         cmds.parent(ikGrp, self.modGrp)
 
-        self.components += [startCtrl, endCtrl, poleVectorCtrl]
+        components += [startCtrl, endCtrl, poleVectorCtrl]
         self.ikHandles = ik
 
         # connect the controls to the joints and effectors
-        self.parentConstrain(startCtrl.ctrl, self.getDriver(self.startJoint))
+        self.parentConstrain(startCtrl.ctrl, driveJoints[0])
         self.parentConstrain(endCtrl.ctrl, ikGrp)
 
         cmds.parent(startCtrl.offsetGrp, self.componentsGrp)
 
-        if self.parent:
-            self.parentConstrain(self.parent, self.components[0].offsetGrp,
-                                maintainOffset=True)
+        return components

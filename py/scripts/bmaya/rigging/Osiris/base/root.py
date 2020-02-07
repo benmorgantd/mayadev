@@ -40,7 +40,7 @@ class Root(module.Module):
         self.character.masterSet = cmds.sets(empty=True, name='MASTER_set')
 
         self.character.skeletonSet = cmds.sets(
-            cmds.ls(type='joint'), name='SKELETON_set')
+            cmds.ls('*_JNT', type='joint'), name='SKELETON_set')
 
         self.character.meshSet = cmds.sets([cmds.listRelatives(shp, parent=True)[0] for shp in cmds.ls(type='mesh')],
                                            name='MESH_set')
