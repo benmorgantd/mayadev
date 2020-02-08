@@ -12,12 +12,12 @@ from bmaya.rigging.shapes import shapelib, shapeio
 from bmaya.rigging.weights import weightio
 from bmaya.rigging.Osiris.tools.build import buildio
 
-import root
+import layout
 
 reload(shapeio)
 reload(weightio)
 reload(buildio)
-reload(root)
+reload(layout)
 
 class Character(Asset):
     '''Character is the base class for all rigs created with Osiris'''
@@ -48,10 +48,10 @@ class Character(Asset):
 
         self.modules.append(moduleDict)
 
-    def buildRoot(self):
-        rootMod = root.Root(character=self)
-        rootMod.build()
-        return rootMod.dict
+    def buildLayout(self):
+        layoutMod = layout.Layout(character=self)
+        layoutMod.build()
+        return layoutMod.dict
 
     def buildRig(self):
 
@@ -69,7 +69,7 @@ class Character(Asset):
         
         buildList = []
 
-        self.modules.append(self.buildRoot())
+        self.modules.append(self.buildLayout())
 
         # unflatten tree
         def addChildren(mod):

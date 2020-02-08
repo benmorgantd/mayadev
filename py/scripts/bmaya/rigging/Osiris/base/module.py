@@ -51,6 +51,7 @@ class Module(object):
             self.componentsGrp = cmds.createNode('transform', name=self.name + '_COMPONENTS')
             # holds the driver joints for the node
             self.driverGrp = cmds.createNode('transform', name=self.name + '_DRIVERS')
+            cmds.hide(self.driverGrp)
             cmds.parent(self.driverGrp, self.componentsGrp)
 
             print '>>> Created {0} node >> {1} <<'.format(self.modType, self.node)
@@ -216,7 +217,7 @@ class Module(object):
             # todo: this is where you could add a followSwitch option
             self.parentConstrain(parentTransform, self.modGrp, maintainOffset=True)
             
-        elif self.modType != 'Root':
+        elif self.modType != 'Layout':
             raise RuntimeError('Module must have a start joint.')
 
     def parentConstrain(self, parent=None, childList=None, maintainOffset=True):
@@ -384,8 +385,8 @@ class Module(object):
         for i in range(len(fkChain)):
             const = cmds.parentConstraint(fkChain[i], ikChain[i], childChain[i], maintainOffset=True)[0]
             
-            cmds.connectAttr(driveAttribute, '{0}.{1}W0'.format(const, fkChain[i]))
-            cmds.connectAttr(reverseAttr, '{0}.{1}W1'.format(const, ikChain[i]))
+            cmds.connectAttr(reverseAttr, '{0}.{1}W0'.format(const, fkChain[i]))
+            cmds.connectAttr(driveAttribute, '{0}.{1}W1'.format(const, ikChain[i]))
             
             # set interpolation type to Shortest
             cmds.setAttr(const + '.interpType', 2)
@@ -398,9 +399,11 @@ class Module(object):
             # TODO: add a drive attribute on the module
 
     def messageConnect(self, nodeA, nodeB, longNameA, longNameB):
-
-        cmds.addAttr(nodeA, longName=longNameA, attributeType='message')
-        cmds.addAttr(nodeB, longName=longNameB, attributeType='message')
+        
+        if longNameA not in cmds.listAttr(nodeA):
+            cmds.addAttr(nodeA, longName=longNameA, attributeType='message')
+        if longNameB not in cmds.listAttr(nodeB):
+            cmds.addAttr(nodeB, longName=longNameB, attributeType='message')
 
         cmds.connectAttr('{0}.{1}'.format(nodeA, longNameA), 
                          '{0}.{1}'.format(nodeB, longNameB))

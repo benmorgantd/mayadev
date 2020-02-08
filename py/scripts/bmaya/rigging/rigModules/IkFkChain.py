@@ -35,6 +35,12 @@ class IkFkChain(FkChain, IkChain):
 
         self.bindJoints = self.findHierarchyJoints()
 
+        self.buildFkIkSetup()
+
+        self.components += self.ikComponents
+        self.components += self.fkComponents
+
+    def buildFkIkSetup(self):
         # need to feed it our specific drive joints
         self.ikDriveJoints = self.createDriveJoints(label='IKDRIVER', constrain=False)
         self.fkDriveJoints = self.createDriveJoints(label='FKDRIVER', constrain=False)
@@ -47,18 +53,8 @@ class IkFkChain(FkChain, IkChain):
         cmds.addAttr(self.node, longName='FKIK', attributeType='float', dv=0.0, 
                      min=0, max=1, keyable=True)
 
-        blendReverse = self.blendChains(self.fkDriveJoints, self.ikDriveJoints, self.bindJoints, self.node + '.FKIK')
+        self.blendReverse = self.blendChains(self.fkDriveJoints, self.ikDriveJoints, self.bindJoints, self.node + '.FKIK')
 
         # connect blend control to visibility
-        cmds.connectAttr(blendReverse, '{0}.v'.format(self.fkComponents[0].offsetGrp))
+        cmds.connectAttr(self.blendReverse, '{0}.v'.format(self.fkComponents[0].offsetGrp))
         cmds.connectAttr(self.node + '.FKIK', '{0}.v'.format(self.ikComponents[0].offsetGrp))
-        
-        self.components += self.ikComponents
-        self.components += self.fkComponents
-
-        # if self.parent:
-        #     self.parentConstrain(self.parent, self.components[0].offsetGrp,
-        #                         maintainOffset=True)
-
-
-    

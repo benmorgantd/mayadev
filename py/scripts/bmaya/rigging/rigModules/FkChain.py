@@ -29,17 +29,12 @@ class FkChain(module.Module):
 
     @wrapBuild
     def build(self):
-        self.checkContract()
 
         # finds the joints that should belong in the chain
         self.bindJoints = self.findHierarchyJoints()
         self.driveJoints = self.createDriveJoints()
 
         self.components = self.buildFkControls(self.driveJoints)
-
-        # parent the startJoint control to the module's parent
-        if self.parent:
-            self.parentConstrain(self.parent, self.componentsGrp, maintainOffset=True)
 
     def buildFkControls(self, driveJoints):
 

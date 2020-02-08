@@ -23,8 +23,6 @@ class SingleJoint(module.Module):
     def build(self):
         # build a single joint control on the given joint
 
-        self.checkContract()
-
         self.bindJoints.append(self.startJoint)
 
         self.driveJoints = self.createDriveJoints()
@@ -40,5 +38,3 @@ class SingleJoint(module.Module):
 
         cmds.parent(ctrl.offsetGrp, self.componentsGrp)
 
-        if self.parent:
-            self.parentConstrain(self.parent, self.componentsGrp, maintainOffset=True)

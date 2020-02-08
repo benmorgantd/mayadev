@@ -30,17 +30,11 @@ class IkChain(module.Module):
     def build(self):
         # build a simple single chain ik system
 
-        self.checkContract()
-
         self.bindJoints = self.findHierarchyJoints()
 
         self.driveJoints = self.createDriveJoints()
 
         self.components = self.buildIkControls(self.driveJoints)
-
-        if self.parent:
-            self.parentConstrain(self.parent, self.components[0].offsetGrp,
-                                maintainOffset=True)
 
     def buildIkControls(self, driveJoints):
         # letting components be a local variable here so that we can use this 
