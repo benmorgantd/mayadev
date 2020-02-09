@@ -34,6 +34,8 @@ def wrapBuild(fn):
         for comp in self.components:
             for grp in comp.groupHierarchy:
                 self.lockTransforms(grp, lock=False, attrs=['translate', 'rotate', 'scale', 'visibility'])
+
+        self.captureComponentDefaults()
         
         print "\n"
 

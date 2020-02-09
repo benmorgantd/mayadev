@@ -27,7 +27,6 @@ def build(asset, standalone=True):
     @wrapStandalone
     def withStandalone(asset):
         asset.buildRig()
-
     if standalone:
         withStandalone(asset)
     else:

@@ -407,3 +407,18 @@ class Module(object):
 
         cmds.connectAttr('{0}.{1}'.format(nodeA, longNameA), 
                          '{0}.{1}'.format(nodeB, longNameB))
+
+
+    def captureComponentDefaults(self):
+        # get the controls that are in the module
+        for component in self.components:
+            cmds.addAttr(component.ctrl, longName='defaultValues', dt='string')
+
+            defaultValues = {}
+
+            for attr in cmds.listAttr(component.ctrl, keyable=True):
+                defaultValues[attr] = cmds.getAttr('{0}.{1}'.format(component.ctrl, attr))
+
+            cmds.setAttr(component.ctrl + '.defaultValues', json.dumps(defaultValues), type='string')
+
+

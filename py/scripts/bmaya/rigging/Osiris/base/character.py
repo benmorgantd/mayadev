@@ -112,7 +112,7 @@ class Character(Asset):
             mirrorInstance = modInstance.doMirror()
 
             # optional
-            cmds.refresh(currentView=True)
+            # cmds.refresh(currentView=True)
 
             if mirrorInstance:
                 mirrorModules.append(mirrorInstance.dict)
