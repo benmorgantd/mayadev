@@ -18,7 +18,11 @@ def toggleSkinMode():
 
 def getModuleNode(ctrl):
     if 'module' not in cmds.listAttr(ctrl):
-        raise ValueError('Given control {0} is not connected to a module'.format(ctrl))
+        if any(attr in ['node', 'modType'] for attr in cmds.listAttr(ctrl)):
+            # ctrl is a module
+            return ctrl
+        else:
+            raise ValueError('Given control {0} is not connected to a module'.format(ctrl))
         
     mod = cmds.listConnections(ctrl + '.module')[0]
 
@@ -46,12 +50,22 @@ def resetControl(ctrl):
     
     for attr, value in defaultValues.items():
         cmds.setAttr('{0}.{1}'.format(ctrl, attr), value)
-        
+
 def resetModule(mod):
     components = cmds.listConnections(mod + '.components')
     
     for component in components:
         resetControl(component)
+
+    if 'defaultValues' not in cmds.listAttr(mod):
+        raise ValueError('Module {0} has no default value attribute'.format(mod))
+    
+    defaultValues = cmds.getAttr(mod + '.defaultValues')
+    
+    defaultValues = json.loads(defaultValues)
+    
+    for attr, value in defaultValues.items():
+        cmds.setAttr('{0}.{1}'.format(mod, attr), value)
 
 def resetCharacter(ctrl):
     character = getCharacterNode(ctrl)

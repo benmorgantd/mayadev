@@ -74,8 +74,12 @@ def load(weightsPath):
         cmds.delete(existingSkinCluster)
 
     jointList = getJointsFromXML(weightsPath)
-
-    cmds.select(jointList)
+    
+    try:
+        cmds.select(jointList)
+    except ValueError:
+        om.MGlobal.displayWarning('Joints went missing or have been renamed since weight data was last saved.')
+        return
     cmds.select(objName, add=True)
 
     # add the skin cluster

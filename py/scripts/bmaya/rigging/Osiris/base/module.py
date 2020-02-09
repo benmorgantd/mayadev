@@ -421,4 +421,15 @@ class Module(object):
 
             cmds.setAttr(component.ctrl + '.defaultValues', json.dumps(defaultValues), type='string')
 
+        # capture defaults for keyable module attributes as well
+        cmds.addAttr(self.node, longName='defaultValues', dt='string')
+
+        defaultValues = {}
+
+        for attr in cmds.listAttr(self.node, keyable=True) or []:
+            defaultValues[attr] = cmds.getAttr('{0}.{1}'.format(self.node, attr))
+
+        cmds.setAttr(self.node + '.defaultValues', json.dumps(defaultValues), type='string')
+    
+
 
