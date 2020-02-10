@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 import maya.OpenMaya as om
 import CharacterPicker.modules.rig_tools as rig_tools
-reload(rig_tools)
+#reload(rig_tools)
 
 
 from bmaya.lib.Qt import QtWidgets, QtGui, QtCore

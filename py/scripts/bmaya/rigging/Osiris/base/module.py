@@ -9,8 +9,7 @@ from bmaya.rigging.shapes import shapelib
 
 from decorators import wrapBuild
 
-reload(shapelib)
-
+#reload(shapelib)
 
 class Module(object):
 
@@ -279,7 +278,7 @@ class Module(object):
 
             cmds.connectAttr(self.node + '.bindJoints', jnt + '.module')
 
-    def findHierarchyJoints(self):
+    def findHierarchyJoints(self, shortestDistance=False):
         """Expands from a start joint and until it hits excluded joints."""
 
         sel = om.MSelectionList()
@@ -307,7 +306,11 @@ class Module(object):
 
             if jnt not in exclude:
                 if jnt != self.endJoint:
-                    bindJoints.append(jnt)
+                    jntChildren = cmds.listRelatives(jnt, type='joint', children=True, ad=1)
+                    if shortestDistance and self.endJoint not in jntChildren:
+                        itDag.prune()
+                    else:
+                        bindJoints.append(jnt)
                 else:
                     # add control on end joint then prune
                     bindJoints.append(jnt)

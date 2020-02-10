@@ -1,28 +1,25 @@
 import maya.cmds as cmds
 
-from bmaya.rigging.Osiris.base import module
 from bmaya.rigging.Osiris.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 
-from IkChain import IkChain
-from FkChain import FkChain
+import IkChain
+import FkChain
 
-# reload(IkChain)
-# reload(FkChain)
-
-reload(module)
-reload(shapelib)
+#reload(IkChain)
+#reload(FkChain)
 
 
-class IkFkChain(FkChain, IkChain):
+class IkFkChain(FkChain.FkChain, IkChain.IkChain):
 
     def __init__(self, startJoint=None, endJoint=None, name='IkFkChain1', character=None, 
                 parent=None, mirror=False, upVector=[0,2,0], exclude=[]):
 
-        IkChain.__init__(self, startJoint=startJoint, endJoint=endJoint, name=name, 
-                        character=character, parent=parent, mirror=mirror, upVector=upVector, exclude=exclude)
+        IkChain.IkChain.__init__(self, startJoint=startJoint, endJoint=endJoint, name=name, 
+                         character=character, parent=parent, mirror=mirror, upVector=upVector,
+                         exclude=exclude)
 
-        FkChain.__init__(self, startJoint=startJoint, endJoint=endJoint, name=name, 
+        FkChain.FkChain.__init__(self, startJoint=startJoint, endJoint=endJoint, name=name, 
                         character=character, parent=parent, mirror=mirror, shapeType='cube')
 
         self.contract = [self.startJoint, self.endJoint]
@@ -30,8 +27,6 @@ class IkFkChain(FkChain, IkChain):
     @wrapBuild
     def build(self):
         # build a single joint control on the given joint
-
-        self.checkContract()
 
         self.bindJoints = self.findHierarchyJoints()
 

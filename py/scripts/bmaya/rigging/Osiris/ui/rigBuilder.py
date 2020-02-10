@@ -5,18 +5,18 @@ import maya.cmds as cmds
 from bmaya.lib.Qt import QtWidgets, QtCore
 
 from bmaya.core import qtbase
-reload(qtbase)
+#reload(qtbase)
 from bmaya.utils import mayaQt
 from . import customWidgets, assetCreator
-reload(customWidgets)
-reload(assetCreator)
+#reload(customWidgets)
+#reload(assetCreator)
 
 from bmaya.core import asset
-reload(asset)
+#reload(asset)
 from ..base import creator
-reload(creator)
+#reload(creator)
 from bmaya.rigging.Osiris.tools.build import buildio
-reload(buildio)
+#reload(buildio)
 
 
 class RigBuilder(qtbase.DockableWidget):
@@ -176,7 +176,7 @@ class RigBuilder(qtbase.DockableWidget):
             shapeio.save(componentPath)
         elif componentType == 'weights':
             from bmaya.rigging.weights import weightio
-            reload(weightio)
+            #reload(weightio)
             weightio.save(componentPath)
 
     def loadComponent(self):

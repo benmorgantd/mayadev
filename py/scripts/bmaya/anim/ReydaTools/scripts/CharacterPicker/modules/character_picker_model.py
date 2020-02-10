@@ -9,10 +9,10 @@ import os
 from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
 import CharacterPicker.modules.custom_graphics_items as graphics_items
-reload(graphics_items)
+#reload(graphics_items)
 
 import CharacterPicker.modules.picker_io as picker_io
-reload(picker_io)
+#reload(picker_io)
 
 
 class PickerModel(QtWidgets.QMainWindow):

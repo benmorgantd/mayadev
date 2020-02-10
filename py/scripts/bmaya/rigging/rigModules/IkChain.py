@@ -6,17 +6,15 @@ from bmaya.rigging.shapes import shapelib
 
 from bmaya.rigging.Osiris.tools import mathUtils
 
-reload(module)
-reload(shapelib)
-
+#reload(module)
 
 class IkChain(module.Module):
 
     def __init__(self, startJoint=None, endJoint=None, name='IkChain1', character=None, 
                 parent=None, mirror=False, upVector=[0,2,0], exclude=[]):
 
-        super(IkChain, self).__init__(modType='IkChain', name=name, character=character, 
-                                      shapeType='cube', mirror=mirror)
+        module.Module.__init__(self, modType='IkChain', name=name, character=character, 
+                               shapeType='cube', mirror=mirror)
 
         self.parent = parent
         self.startJoint = startJoint

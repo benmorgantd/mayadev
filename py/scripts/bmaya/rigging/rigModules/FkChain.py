@@ -6,8 +6,7 @@ from bmaya.rigging.Osiris.base import module
 from bmaya.rigging.Osiris.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 
-reload(module)
-reload(shapelib)
+#reload(module)
 
 
 class FkChain(module.Module):
@@ -15,8 +14,8 @@ class FkChain(module.Module):
     def __init__(self, startJoint=None, endJoint=None, exclude=[], name='FkChain1',
                  character=None, parent=None, shapeType='cube', mirror=False):
 
-        super(FkChain, self).__init__(name=name, modType='FkChain', character=character, 
-                                      shapeType=shapeType, mirror=mirror)
+        module.Module.__init__(self, name=name, modType='FkChain', character=character, 
+                               shapeType=shapeType, mirror=mirror)
 
         self.parent = parent
         self.startJoint = startJoint

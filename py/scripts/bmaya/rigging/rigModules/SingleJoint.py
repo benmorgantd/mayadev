@@ -4,9 +4,6 @@ from bmaya.rigging.Osiris.base import module
 from bmaya.rigging.Osiris.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 
-reload(module)
-reload(shapelib)
-
 class SingleJoint(module.Module):
 
     def __init__(self, startJoint=None, name='singleJoint1', character=None, parent=None, 

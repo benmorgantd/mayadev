@@ -9,7 +9,7 @@ def findPoleVector(joints, scaleFactor=1):
     if len(joints) < 3:
         raise ValueError('Pass at least 3 joints to this function.')
 
-    obj = om.MobjectionList()
+    obj = om.MSelectionList()
     jointDags = om.MDagPathArray()
 
     for i in range(len(joints)):

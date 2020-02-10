@@ -7,9 +7,9 @@ import maya.OpenMaya as om
 from bmaya.lib.Qt import QtWidgets, QtCompat
 
 from ..base import creator
-reload(creator)
+#reload(creator)
 from bmaya.core import asset
-reload(asset)
+#reload(asset)
 
 
 class AssetCreator(QtWidgets.QMainWindow):

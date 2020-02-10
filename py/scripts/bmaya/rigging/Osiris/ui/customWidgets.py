@@ -238,7 +238,7 @@ class BuildListItem(qtbase.TreeItem):
 
     def loadAttributeTemplates(self):
         from bmaya.rigging import rigModules
-        reload(rigModules)
+        #reload(rigModules)
 
         attrData = rigModules.MODULE_ARGS[self.modType]
 
@@ -279,8 +279,8 @@ class CustomLineEdit(QtWidgets.QLineEdit):
             globalCursorPos = QtGui.QCursor().pos()
             self.contextMenu.move(globalCursorPos)
             self.contextMenu.show()
-        # else:
-        #     QtWidgets.QLineEdit.mousePressEvent(self, event)
+        else:
+            QtWidgets.QLineEdit.mousePressEvent(self, event)
 
     def addSelection(self):
         sel = cmds.ls(sl=1)
