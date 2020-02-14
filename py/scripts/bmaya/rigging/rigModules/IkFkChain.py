@@ -13,14 +13,14 @@ import FkChain
 class IkFkChain(FkChain.FkChain, IkChain.IkChain):
 
     def __init__(self, startJoint=None, endJoint=None, name='IkFkChain1', character=None, 
-                parent=None, mirror=False, upVector=[0,2,0], exclude=[]):
+                parent=None, mirror=False, upVector=[0,2,0], exclude=[], side='L'):
 
         IkChain.IkChain.__init__(self, startJoint=startJoint, endJoint=endJoint, name=name, 
                          character=character, parent=parent, mirror=mirror, upVector=upVector,
-                         exclude=exclude)
+                         exclude=exclude, side=side)
 
         FkChain.FkChain.__init__(self, startJoint=startJoint, endJoint=endJoint, name=name, 
-                        character=character, parent=parent, mirror=mirror, shapeType='cube')
+                        character=character, parent=parent, mirror=mirror, shapeType='cube', side=side)
 
         self.contract = [self.startJoint, self.endJoint]
 
@@ -41,7 +41,6 @@ class IkFkChain(FkChain.FkChain, IkChain.IkChain):
         self.fkDriveJoints = self.createDriveJoints(label='FKDRIVER', constrain=False)
 
         self.ikComponents = self.buildIkControls(self.ikDriveJoints)
-
         self.fkComponents = self.buildFkControls(self.fkDriveJoints)
 
         # add an attribute for blending

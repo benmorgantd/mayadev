@@ -60,6 +60,7 @@ class BuildList(qtbase.Tree):
         self.setDragDropMode(QtWidgets.QTreeWidget.DragDropMode.DragDrop)
         self.setDragDropOverwriteMode(False)
         self.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
+        self.setIndentation(15)
 
         self.contextMenu = BuildListContextMenu(buildList=self)
         self.contextMenu.hide()

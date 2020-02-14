@@ -1,11 +1,13 @@
-# skinCluster tools
 import json
 
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as omAnim
 import maya.cmds as cmds
+import maya.mel
 
-def getSkinClusterObj(dag):
+
+
+def getSkinClusterName(dag):
     """A convenience function for finding the skinCluster deforming a mesh.
 
     params:
@@ -22,9 +24,26 @@ def getSkinClusterObj(dag):
     skinClusterName = cmds.ls(cmds.listHistory(meshName), type="skinCluster")
 
     if len(skinClusterName):
+        return skinClusterName[0]
+    else:
+        return None
+
+def getSkinClusterObj(dag):
+    """A convenience function for finding the skinCluster deforming a mesh.
+
+    params:
+        dag (MDagPath): A MDagPath for the mesh we want to investigate. 
+
+    returns:
+        skinCluster (str), skinClusterObj (MObject)
+    """
+
+    skinClusterName = getSkinClusterName(dag)
+
+    if skinClusterName:
         # get the MObject for that skinCluster node if there is one
         sel = om.MSelectionList()
-        sel.add(skinClusterName[0])
+        sel.add(skinClusterName)
         skinClusterObj = om.MObject()
         sel.getDependNode(0, skinClusterObj)
 
@@ -138,3 +157,86 @@ def quickSkin():
                                 toSelectedBones=True)
 
         cmds.setAttr(cstr[0] + '.maxInfluences', 4)
+
+def bakeDeltaMushToSkinCluster(dag):
+    cmds.select(clear=True)
+    skinClusterObj = getSkinClusterObj(dag)
+    fnMesh = om.MFnMesh(dag)
+
+    originalWeights, infIndices, infObjects = getSkinClusterWeights(skinClusterObj)
+
+    restPoints = om.MPointArray()
+    # get rest pose vertex positions
+    fnMesh.getPoints(restPoints, om.MSpace.kWorld)
+    numVerts = restPoints.length()
+
+    infCount = infObjects.length()
+
+    deltaMush = cmds.deltaMush(dag.fullPathName(),
+                              smoothingIterations=5, 
+                              smoothingStep=0.5,
+                              pinBorderVertices=False, 
+                              envelope=1, 
+                              after=True)[0]
+    # makes the vertices keep their relative distances
+    cmds.setAttr(deltaMush + '.distanceWeight', 1.0)
+
+    deltaWeights = originalWeights
+    # for i in range(originalWeights.length()):
+    #     deltaWeights.append(0.0)
+
+
+    gMainProgressBar = maya.mel.eval('$tmp = $gMainProgressBar')
+    cmds.progressBar(gMainProgressBar,
+                     edit=True,
+                     beginProgress=True,
+                     isInterruptable=True,
+                     status='Converting Delta Mush ...',
+                     maxValue=infCount)
+
+    try:
+
+        for influenceIndex in range(infCount):
+            # move influence object one unit
+            infName = infObjects[influenceIndex].partialPathName()
+
+            # this is where the delta mush deformer stops "working"
+            # the deformation made by this move isn't affected by the delta mush
+            cmds.move(0,1,0, infName, preserveChildPosition=1, worldSpace=1, relative=1)
+
+            # if we don't re-declare the fnMesh every time, the points don't update
+            fnMesh = om.MFnMesh(dag)
+            influencePointLocations = om.MPointArray()
+            fnMesh.getPoints(influencePointLocations, om.MSpace.kWorld)
+
+            for vertexIndex in range(influencePointLocations.length()):
+                restDeltaDistance = influencePointLocations[vertexIndex].distanceTo(restPoints[vertexIndex])
+
+                # after moving the joint, if the vertex moves, that joint has some influence on the mesh
+                if restDeltaDistance > 0:
+                    # set the weight for that vertex at that weight index to the distance
+                    deltaWeights[(vertexIndex * infCount) + influenceIndex] = restDeltaDistance
+            
+            # cmds.refresh(currentView=True)
+
+            cmds.move(0,-1,0, infName, preserveChildPosition=1, worldSpace=1, relative=1)
+
+            cmds.progressBar(gMainProgressBar, edit=True, step=1)
+
+            # om.MGlobal.displayInfo('Delta Mush conversion at {:.2f}%'.format((influenceIndex / float(infCount)) * 100))
+
+    except Exception as e:
+        raise Exception(e)
+    finally:
+        cmds.progressBar(gMainProgressBar,
+                        edit=True,
+                        endProgress=True)
+
+    setSkinClusterWeights(skinClusterObj, infIndices, deltaWeights)
+
+    cmds.select(dag.partialPathName())
+    cmds.skinPercent(getSkinClusterName(dag), normalize=True)
+
+    cmds.delete(deltaMush)
+
+    om.MGlobal.displayInfo('Converted Delta Mush to skinCluster weights')

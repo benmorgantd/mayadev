@@ -44,7 +44,6 @@ class Asset(object):
     def openFile(cls, path):
         if os.path.exists(path):
             if path.endswith('.ma'):
-                # todo: should ask to save the current scene first
                 cmds.file(path, open=True, force=True)
             else:
                 os.startfile(path)
@@ -77,6 +76,13 @@ class Asset(object):
         shutil.copy(path, versionFilename)
 
         print ">> Versioned file to {0}".format(versionFilename)
+
+    @classmethod
+    def referenceFile(cls, path):
+        if os.path.exists(path):
+            if path.endswith('.ma'):
+                cmds.file(path, reference=True)
+        
 
     @classmethod
     def exists(cls, project, name, assetType):

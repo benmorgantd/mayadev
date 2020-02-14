@@ -36,10 +36,8 @@ def save(cvsPath):
 
         objIter.next()
 
-    with open(cvsPath, "r+") as f:
-
+    with open(cvsPath, "w+") as f:
         jsonData = json.dumps(cvPoints, indent=4)
-
         f.write(jsonData)
 
 
@@ -52,7 +50,7 @@ def load(cvsPath):
 
     shapeData = None
 
-    with open(cvsPath, "r+") as f:
+    with open(cvsPath, "r") as f:
         shapeData = json.load(f)
 
     scene = cmds.ls()
@@ -87,13 +85,17 @@ def load(cvsPath):
     cmds.select(cl=1)
     print ">>> Shape data loaded from " + cvsPath
     
-def mirror(cvsPath, mirror_mode=0):
+def mirror(cvsPath):
 
-    mirror_directions = ["LF", "RT"]
+    mirrorDirections = ["L", "R"]
 
-    f = open("shapeData.json", "r")
-    shapeData = json.load(f)
-    cmds.select([k for k in shapeData[char_name].keys() if mirror_directions[mirror_mode] in k])
+    shapeData = None
+
+    with open(cvsPath, "r") as f:
+        shapeData = json.load(f)
+
+    scene = cmds.ls()
+    cmds.select([obj for obj in shapeData.keys() if obj in scene and mirrorDirections[0] in obj])
 
     sel = om.MSelectionList()
     om.MGlobal.getActiveSelectionList(sel)
@@ -103,62 +105,67 @@ def mirror(cvsPath, mirror_mode=0):
     while not objIter.isDone():
         dag = om.MDagPath()
         objIter.getDagPath(dag)
+        dagName = str(dag.partialPathName())
 
         sel = om.MSelectionList()
-        mirror_exists=True
 
-        try:
-            sel.add(str(dag.partialPathName().replace(mirror_directions[mirror_mode],mirror_directions[mirror_mode - 1])))
-        except RuntimeError:
-            print "no mirror"
-            mirror_exists = False
+        mirrorName = dagName.replace(mirrorDirections[0], mirrorDirections[-1])
 
-        if mirror_exists:
-            mirror_dag = om.MDagPath()
-            sel.getDagPath(0, mirror_dag)
+        if mirrorName in scene:
+            sel.add(mirrorName)
 
-            fnNurbs = om.MFnNurbsCurve(mirror_dag)
+            mirrorDag = om.MDagPath()
+            sel.getDagPath(0, mirrorDag)
 
-            pointArray = shapeData[char_name][str(dag.partialPathName())]
+            fnNurbs = om.MFnNurbsCurve(mirrorDag)
 
-            final_pointArray = om.MPointArray()
+            pointArray = shapeData[dagName]
+
+            finalPointArray = om.MPointArray()
 
             for point in pointArray:
-                flipped_x = -1 * point[0]
-                final_pointArray.append(flipped_x, point[1], point[2])
+                flippedX = -1 * point[0]
+                finalPointArray.append(flippedX, point[1], point[2])
 
-            fnNurbs.setCVs(final_pointArray, om.MSpace.kWorld)
+            fnNurbs.setCVs(finalPointArray, om.MSpace.kWorld)
             
             fnNurbs.updateCurve()
 
-        objIter.next()
+            shapeData[mirrorName] = finalPointArray
 
+            objIter.next()
+        else:
+            print "No mirror for control: " + dagName
+            objIter.next()
+
+    
     cmds.select(cl=1)
-    
-    f.close()
 
+    print('CV data mirrored.')
+
+    save(cvsPath)    
 
 #########################################
 #########################################
 
-def cvIO(mode="import"):
-    if mode not in ["import","export","mirror"]:
-        raise ValueError("Invalid mode for cvIO")
+# def cvIO(mode="import"):
+#     if mode not in ["import","export","mirror"]:
+#         raise ValueError("Invalid mode for cvIO")
     
-    import os
+#     import os
     
-    from Osiris.lib.base.asset import Asset
+#     from Osiris.lib.base.asset import Asset
     
-    if cmds.objExists("*_CHAR"):
-        for char in cmds.ls("*_CHAR"):
+#     if cmds.objExists("*_CHAR"):
+#         for char in cmds.ls("*_CHAR"):
             
-            rootDir = cmds.getAttr(char + ".rootDir")
-            cvsDir = cmds.getAttr(char + ".cvsPath")
+#             rootDir = cmds.getAttr(char + ".rootDir")
+#             cvsDir = cmds.getAttr(char + ".cvsPath")
             
-            if mode == "import":
-                cvs.load(os.path.join(rootDir, cvsDir))
-            elif mode == "export":
-                Asset.versionFile(os.path.join(rootDir, cvsDir))
-                cvs.save(os.path.join(rootDir, cvsDir))
-            elif mode == "mirror":
-                cvs.mirror(os.path.join(rootDir, cvsDir))
+#             if mode == "import":
+#                 cvs.load(os.path.join(rootDir, cvsDir))
+#             elif mode == "export":
+#                 Asset.versionFile(os.path.join(rootDir, cvsDir))
+#                 cvs.save(os.path.join(rootDir, cvsDir))
+#             elif mode == "mirror":
+#                 cvs.mirror(os.path.join(rootDir, cvsDir))

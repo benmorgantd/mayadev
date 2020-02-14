@@ -75,12 +75,12 @@ class Layout(module.Module):
         # make a stack of offset controls
         for i in range(1, 4):
             if i > 1:
-                shp = shapelib.Shape('layout_{0}_M'.format(
-                    str(i).zfill(2)), self.shapeType, scale=(1 - ((i - 1) * 0.15)))
+                shp = shapelib.Shape(name='layout_{0}_M_ctrl'.format(
+                    str(i).zfill(2)),shapeType=self.shapeType, scale=(1 - ((i - 1) * 0.15)))
                 cmds.parent(shp.offsetGrp, self.components[i - 2].ctrl)
             else:
-                shp = shapelib.Shape('layout_{0}_M'.format(
-                    str(i).zfill(2)), self.shapeType)
+                shp = shapelib.Shape(name='layout_{0}_M_ctrl'.format(
+                    str(i).zfill(2)), shapeType=self.shapeType)
                 cmds.parent(shp.offsetGrp, self.modGrp)
 
             self.components.append(shp)

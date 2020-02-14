@@ -7,9 +7,9 @@ from bmaya.rigging.shapes import shapelib
 class SingleJoint(module.Module):
 
     def __init__(self, startJoint=None, name='singleJoint1', character=None, parent=None, 
-                 shapeType='cube', mirror=False):
+                 shapeType='cube', mirror=False, side='L'):
         super(SingleJoint, self).__init__(modType='SingleJoint', name=name, character=character, 
-                                          shapeType=shapeType, mirror=mirror)
+                                          shapeType=shapeType, mirror=mirror, side=side)
 
         self.parent = parent
         self.startJoint = startJoint
@@ -26,7 +26,7 @@ class SingleJoint(module.Module):
 
         self.startJointDriver = self.getDriver(self.startJoint)
 
-        ctrl = shapelib.Shape(self.startJointDriver, self.shapeType,
+        ctrl = shapelib.Shape(name=self.findControlName(self.startJointDriver), shapeType=self.shapeType,
                               jnt=self.startJointDriver)
 
         self.components.append(ctrl)

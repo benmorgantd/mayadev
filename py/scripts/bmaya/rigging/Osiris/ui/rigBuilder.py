@@ -39,6 +39,7 @@ class RigBuilder(qtbase.DockableWidget):
 
         self.widget.loadComponent.setEnabled(False)
         self.widget.saveComponent.setEnabled(False)
+        self.widget.referenceComponent.setEnabled(False)
         self.widget.build.setEnabled(False)
 
         self.newAsset = None
@@ -118,6 +119,7 @@ class RigBuilder(qtbase.DockableWidget):
         self.widget.loadCharacter.clicked.connect(lambda: self.initiateAsset())
         self.widget.loadComponent.clicked.connect(lambda: self.loadComponent())
         self.widget.saveComponent.clicked.connect(lambda: self.saveComponent())
+        self.widget.referenceComponent.clicked.connect(lambda: self.referenceComponent())
         self.widget.build.clicked.connect(lambda: self.buildCharacter())
 
     def loadProjects(self):
@@ -187,13 +189,22 @@ class RigBuilder(qtbase.DockableWidget):
         if componentType in ['skeleton', 'mesh', 'animRig']:
             self.assetInstance.openFile(componentPath)
         elif componentType == 'cvs':
-            from bmaya.Osirs.rigging.shapes import shapeio
+            from bmaya.rigging.shapes import shapeio
             shapeio.load(componentPath)
         elif componentType == 'weights':
             from bmaya.rigging.weights import weightio
             weightFiles = os.listdir(componentPath)
             for f in weightFiles:
                 weightio.load(os.path.join(componentPath, f))
+
+    def referenceComponent(self):
+        componentType = self.widget.componentType.currentText()
+        componentPath = self.assetInstance.componentPathFromType(componentType)
+
+        if componentType in ['skeleton', 'mesh', 'animRig']:
+            self.assetInstance.referenceFile(componentPath)
+        else:
+            print "Cannot reference component type " + componentType
 
     def initiateAsset(self):
         project = self.widget.projectName.currentText()
@@ -213,6 +224,7 @@ class RigBuilder(qtbase.DockableWidget):
 
             self.widget.loadComponent.setEnabled(True)
             self.widget.saveComponent.setEnabled(True)
+            self.widget.referenceComponent.setEnabled(True)
             self.widget.build.setEnabled(True)
 
     def buildCharacter(self):
@@ -248,6 +260,8 @@ class RigBuilder(qtbase.DockableWidget):
             filepath = self.exploreToBuildPath(action='Open', fileMode=1)
             if not filepath:
                 return
+        
+        self.resetBuildList()
 
         self.buildData = buildio.load(filepath)
 

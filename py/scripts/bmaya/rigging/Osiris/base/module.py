@@ -53,7 +53,7 @@ class Module(object):
             cmds.hide(self.driverGrp)
             cmds.parent(self.driverGrp, self.componentsGrp)
 
-            print '>>> Created {0} node >> {1} <<'.format(self.modType, self.node)
+            # print '>>> Created {0} node >> {1} <<'.format(self.modType, self.node)
         else:
             raise RuntimeError('Module of name {0} already exists.'.format(self.name + '_MOD'))
     
@@ -138,6 +138,9 @@ class Module(object):
 
         mirrorSide = Module.mirrorPairs[self.side]
 
+        if node in ['R', 'L']:
+            return mirrorSide
+
         mirrorNode = node.replace(('_' + self.side + '_'), ('_' + mirrorSide + '_'))
 
         try:
@@ -167,8 +170,6 @@ class Module(object):
                     # could be trying to get the value of 'self'
                     continue
 
-                print attr
-        
                 if isinstance(value, basestring):
                     mirroredInitArgs[attr] = self.findMirror(value)
         
@@ -183,7 +184,7 @@ class Module(object):
                     mirroredInitArgs[attr] = value
 
             # we don't want to worry about a name convention for mirrored modules
-            mirroredInitArgs['name'] = self.name + '_MIRROR'
+            mirroredInitArgs['name'] = self.name + '_' + mirroredInitArgs['side']
             mirroredInitArgs['mirror'] = False
 
             mirrorSelf = self.__class__(**mirroredInitArgs)
@@ -434,5 +435,30 @@ class Module(object):
 
         cmds.setAttr(self.node + '.defaultValues', json.dumps(defaultValues), type='string')
     
+    def findControlName(self, node, identifier=None):
+        nodeSplit = node.split('_')
+        if identifier:
+            nodeSplit[0] += identifier
+
+        ctrlName = '_'.join(nodeSplit[0:-1])
+        
+        ctrlName += '_ctrl'
+
+        return ctrlName
+
+    def findJointName(self, node, identifier=None, count=0, suffix='DRIVER'):
+        nodeSplit = node.split('_')
+        if identifier:
+            nodeSplit[0] += identifier
+        if isinstance(count, int):
+            nodeSplit[1] = str(count).zfill(2)
+        
+        jntName = '_'.join(nodeSplit[0:-1])
+
+        suffix = suffix.replace('_', '')
+        
+        jntName = jntName + '_' + suffix
+
+        return jntName
 
 

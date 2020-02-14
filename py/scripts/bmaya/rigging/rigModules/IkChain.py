@@ -11,10 +11,10 @@ from bmaya.rigging.Osiris.tools import mathUtils
 class IkChain(module.Module):
 
     def __init__(self, startJoint=None, endJoint=None, name='IkChain1', character=None, 
-                parent=None, mirror=False, upVector=[0,2,0], exclude=[]):
+                parent=None, mirror=False, upVector=[0,2,0], exclude=[], side='L'):
 
         module.Module.__init__(self, modType='IkChain', name=name, character=character, 
-                               shapeType='cube', mirror=mirror)
+                               shapeType='cube', mirror=mirror, side=side)
 
         self.parent = parent
         self.startJoint = startJoint
@@ -39,18 +39,18 @@ class IkChain(module.Module):
         # safer in child methods
         components = []
 
-        startCtrl = shapelib.Shape(driveJoints[0], 'cube',
-                                   jnt=driveJoints[0])
+        startCtrl = shapelib.Shape(name=self.findControlName(driveJoints[0], identifier='Ik'), 
+                                   shapeType='cube', jnt=driveJoints[0])
 
-        endCtrl = shapelib.Shape(driveJoints[-1], shapeType='cube', 
-                                 jnt=driveJoints[-1])
+        endCtrl = shapelib.Shape(self.findControlName(driveJoints[-1], identifier='Ik'), 
+                                shapeType='cube', jnt=driveJoints[-1])
 
         cmds.parent(endCtrl.offsetGrp, startCtrl.ctrl)
 
         ik, ikGrp = self.makeIkHandle(startJoint=driveJoints[0], endJoint=driveJoints[-1], 
                                       solverType='ikRPsolver', name=self.name + '_ikHandle')
 
-        poleVectorCtrl = shapelib.Shape(driveJoints[-1] + '_pv', shapeType='cube', jnt=driveJoints[-1])
+        poleVectorCtrl = shapelib.Shape(name=self.findControlName(driveJoints[0], identifier='IkAim'), shapeType='sphere', jnt=driveJoints[-1])
         
         if len(driveJoints) < 3:
             cmds.xform(poleVectorCtrl.offsetGrp, translation=self.upVector, relative=True, objectSpace=True)

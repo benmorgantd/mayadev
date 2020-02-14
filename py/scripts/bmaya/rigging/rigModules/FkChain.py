@@ -1,6 +1,6 @@
 '''FkChain'''
 
-import maya.cmds as cmds
+import maya.cmds as cmds 
 
 from bmaya.rigging.Osiris.base import module
 from bmaya.rigging.Osiris.base.decorators import wrapBuild
@@ -12,10 +12,10 @@ from bmaya.rigging.shapes import shapelib
 class FkChain(module.Module):
 
     def __init__(self, startJoint=None, endJoint=None, exclude=[], name='FkChain1',
-                 character=None, parent=None, shapeType='cube', mirror=False):
+                 character=None, parent=None, shapeType='cube', mirror=False, side='L'):
 
         module.Module.__init__(self, name=name, modType='FkChain', character=character, 
-                               shapeType=shapeType, mirror=mirror)
+                               shapeType=shapeType, mirror=mirror, side=side)
 
         self.parent = parent
         self.startJoint = startJoint
@@ -28,6 +28,7 @@ class FkChain(module.Module):
 
     @wrapBuild
     def build(self):
+        print 'in fk chain build'
 
         # finds the joints that should belong in the chain
         self.bindJoints = self.findHierarchyJoints()
@@ -40,10 +41,10 @@ class FkChain(module.Module):
         components = []
 
         for i in range(len(driveJoints)):
-            
             jnt = driveJoints[i]
 
-            ctrl = shapelib.Shape(jnt, self.shapeType, jnt=jnt)
+            ctrl = shapelib.Shape(name=self.findControlName(jnt, identifier='Fk'),
+                                  shapeType=self.shapeType, jnt=jnt)
 
             components.append(ctrl)
 

@@ -19,7 +19,7 @@ def wrapBuild(fn):
 
         self.checkContract()
         self.makeNode()
-        self.side = self.side.upper()
+        # self.side = self.side.upper()
 
         result = fn(self, *args, **kwargs)
 

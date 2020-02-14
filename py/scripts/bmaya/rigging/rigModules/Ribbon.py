@@ -12,7 +12,7 @@ class Ribbon(module.Module):
                  name='Ribbon1', character=None, parent=None, side='L', mirror=False,
                  addDeformers=True):
         super(Ribbon, self).__init__(modType='Ribbon', name=name, character=character, 
-                                     mirror=mirror)
+                                     mirror=mirror, side=side)
 
         self.parent = parent
         self.startJoint = startJoint
@@ -35,23 +35,23 @@ class Ribbon(module.Module):
         self.skinnedPlane = self.buildSkinnedPlane(self.startJoint, self.endJoint)
         if self.addDeformers:
             self.deformerPlane = self.buildDeformerPlane(self.startJoint, self.endJoint, self.skinnedPlane)
-        self.followJoints = self.makeFollowJoints(self.skinnedPlane)
-        self.driveJoints = self.makeDriveJoints(self.skinnedPlane)
+        self.followJoints = self.makeFollowJoints(self.skinnedPlane, self.startJoint)
+        self.driveJoints = self.makeDriveJoints(self.skinnedPlane, self.startJoint)
         self.bindJoints = self.makeBindJoints(self.startJoint, self.followJoints)
         self.followControls = self.makeFollowJointControls(self.bindJoints, self.followJoints)
         self.skinDriverJointsToPlane(self.driveJoints, self.skinnedPlane)
         self.driveControls = self.makeDriverControls(self.startJoint, self.driveJoints)
         self.addVisibilitySwitches()
 
-    def buildRibbon(self, startJoint, endJoint, name, twist=True, sine=False, attrPrefix=''):
+    def buildRibbon(self, startJoint, endJoint, name, twist=True, sine=False, identifier=''):
         self.name = name
         skinnedPlane = self.buildSkinnedPlane(startJoint, endJoint)
         if self.addDeformers:
             deformerPlane = self.buildDeformerPlane(startJoint, endJoint, skinnedPlane, twist=twist,
-                                                    sine=sine, attrPrefix=attrPrefix)
-        followJoints = self.makeFollowJoints(skinnedPlane)
-        driveJoints = self.makeDriveJoints(skinnedPlane)
-        bindJoints = self.makeBindJoints(startJoint, followJoints)
+                                                    sine=sine, identifier=identifier)
+        followJoints = self.makeFollowJoints(skinnedPlane, startJoint, identifier)
+        driveJoints = self.makeDriveJoints(skinnedPlane, startJoint, identifier)
+        bindJoints = self.makeBindJoints(startJoint, followJoints, identifier)
         followControls = self.makeFollowJointControls(bindJoints, followJoints)
         self.skinDriverJointsToPlane(driveJoints, skinnedPlane)
         driveControls = self.makeDriverControls(startJoint, driveJoints)
@@ -82,9 +82,9 @@ class Ribbon(module.Module):
 
         return skinnedPlane
 
-    def buildDeformerPlane(self, startJoint, endJoint, skinnedPlane, twist=True, sine=True, attrPrefix=''):
+    def buildDeformerPlane(self, startJoint, endJoint, skinnedPlane, twist=True, sine=True, identifier=''):
         deformerPlane = cmds.duplicate(skinnedPlane,
-                        name='{0}_{1}_deformerPlane'.format(self.name, self.side))[0]
+                                       name='{0}{1}_{2}_deformerPlane'.format(self.name, identifier, self.side))[0]
 
         cmds.makeIdentity(deformerPlane, apply=True, t=1, r=1, s=1, pn=1)
 
@@ -100,10 +100,10 @@ class Ribbon(module.Module):
                         aimVector=[0,-1,0], upVector=[1,0,0], worldUpType='None'))
 
             # module attribute names won't be unique if we're making multiple ribbons on a parent module
-            attrNames = {'twistStart': attrPrefix + 'TwistStart',
-                        'twistEnd': attrPrefix + 'TwistEnd',
-                        'twistStartOffset': attrPrefix + 'TwistStartOffset',
-                        'twistEndOffset': attrPrefix + 'TwistEndOffset'}
+            attrNames = {'twistStart': identifier + 'TwistStart',
+                        'twistEnd': identifier + 'TwistEnd',
+                        'twistStartOffset': identifier + 'TwistStartOffset',
+                        'twistEndOffset': identifier + 'TwistEndOffset'}
 
             cmds.addAttr(self.node, longName=attrNames['twistStart'], attributeType='float', keyable=True)
             cmds.addAttr(self.node, longName=attrNames['twistEnd'], attributeType='float', keyable=True)
@@ -124,7 +124,7 @@ class Ribbon(module.Module):
             cmds.connectAttr(startPma + '.output', twistDeformer + '.startAngle')
             cmds.connectAttr(endPma + '.output', twistDeformer + '.endAngle')
 
-            self.messageConnect(self.node, twistDeformer, (attrPrefix + 'TwistDeformer'), 'module')
+            self.messageConnect(self.node, twistDeformer, (identifier + 'TwistDeformer'), 'module')
 
         if sine:
             # SINE deformer
@@ -158,10 +158,10 @@ class Ribbon(module.Module):
 
         return deformerPlane
 
-    def makeFollowJoints(self, skinnedPlane):
+    def makeFollowJoints(self, skinnedPlane, startJoint, identifier=''):
 
         followJoints = []
-        self.followJointGrp = cmds.group(empty=True, name=self.name + '_followJoints')
+        self.followJointGrp = cmds.group(empty=True, name=self.name + identifier + '_followJoints')
         cmds.parent(self.followJointGrp, self.componentsGrp)
         cmds.hide(self.followJointGrp)
 
@@ -170,7 +170,7 @@ class Ribbon(module.Module):
         for i in range(self.jointAmount):
             cmds.select(cl=1)
 
-            joint = cmds.joint(name="{0}_{1}_{2}_FOLLOW".format(self.name, str(i).zfill(2), self.side))
+            joint = cmds.joint(name = self.findJointName(startJoint, identifier=identifier, count=i, suffix='FOLLOW'))
             # we actually want the follow joints to be xyz rotate order
             cmds.setAttr(joint + '.rotateOrder', 0)
 
@@ -211,7 +211,7 @@ class Ribbon(module.Module):
 
         return followJoints
 
-    def makeDriveJoints(self, skinnedPlane):
+    def makeDriveJoints(self, skinnedPlane, startJoint, identifier=''):
 
         driveJoints = []
         driverJointsGrp = cmds.group(empty=True, name=self.name + "_driverJoints")
@@ -219,7 +219,7 @@ class Ribbon(module.Module):
         for i in range(self.controlAmount):
             cmds.select(cl=1)
 
-            joint = cmds.joint(name="{0}_{1}_{2}_DRIVER".format(self.name, str(i).zfill(2), self.side))
+            joint = cmds.joint(name=self.findJointName(startJoint, identifier=identifier, count=i, suffix='DRIVER'))
             cmds.setAttr(joint + '.rotateOrder', 4)
 
             infoNode = cmds.createNode("pointOnSurfaceInfo", name=joint + "_POINTONSURFACE")
@@ -279,13 +279,13 @@ class Ribbon(module.Module):
 
         return driveJoints
 
-    def makeBindJoints(self, parentJoint, followJoints):
+    def makeBindJoints(self, parentJoint, followJoints, identifier=''):
         bindJoints = []
         
         for i in range(len(followJoints)):
             followJnt = followJoints[i]
 
-            bindJnt = cmds.joint(name="{0}_{1}_{2}_JNT".format(self.name, str(i).zfill(2), self.side))
+            bindJnt = cmds.joint(name=self.findJointName(parentJoint, identifier=identifier, count=i, suffix='JNT'))
             cmds.setAttr(bindJnt + '.rotateOrder', 0)
 
             cmds.delete(cmds.parentConstraint(followJnt, bindJnt, mo=0))
@@ -307,7 +307,8 @@ class Ribbon(module.Module):
         cmds.parent(self.followControlGrp, self.componentsGrp)
 
         for i in range(len(followJoints)):
-            ctrl = shapelib.Shape(followJoints[i], 'square', jnt=followJoints[i], scale=1.15)
+            ctrl = shapelib.Shape(name=self.findControlName(followJoints[i], identifier='Follow'), 
+                                  shapeType='square', jnt=followJoints[i], scale=1.15)
 
             cmds.parent(ctrl.offsetGrp, self.followControlGrp)
 
@@ -340,7 +341,7 @@ class Ribbon(module.Module):
         cmds.parent(driverControlGrp, self.componentsGrp)
 
         for driveJnt in driveJoints:
-            ctrl = shapelib.Shape(driveJnt, 'cube', jnt=driveJnt)
+            ctrl = shapelib.Shape(name=self.findControlName(driveJnt, identifier='Driver'), shapeType='cube', jnt=driveJnt)
 
             cmds.parent(ctrl.offsetGrp, self.componentsGrp)
 
