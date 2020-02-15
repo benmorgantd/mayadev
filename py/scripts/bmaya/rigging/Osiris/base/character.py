@@ -38,7 +38,11 @@ class Character(Asset):
     
     @property
     def controls(self):
-        return cmds.sets(self.allControls, query=True) or []
+        return cmds.sets(self.ctrlSet, query=True) or []
+
+    @property
+    def influences(self):
+        return cmds.sets(self.bindSet, query=True) or []
 
     def addModule(self, moduleDict):
         # pass it the dictionary representation of the module
@@ -51,9 +55,11 @@ class Character(Asset):
     def buildLayout(self):
         layoutMod = layout.Layout(character=self)
         layoutMod.build()
-        return layoutMod.dict
+        return layoutMod.dict, layoutMod.components
 
     def buildRig(self):
+
+        startTime = time.time()
 
         self.modules = []
         self.allControls = []
@@ -69,7 +75,9 @@ class Character(Asset):
         
         buildList = []
 
-        self.modules.append(self.buildLayout())
+        layoutDict, layoutComponents = self.buildLayout()
+        self.modules.append(layoutDict)
+        self.allControls += [comp.ctrl for comp in layoutComponents]
 
         # unflatten tree
         def addChildren(mod):
@@ -120,8 +128,7 @@ class Character(Asset):
 
         self.modules += mirrorModules
         
-        self.componentSet = cmds.sets(self.allControls, name='CTRL_set')
-        cmds.sets(self.componentSet, include='MASTER_set')
+        self.ctrlSet = cmds.sets(self.allControls, name='CTRL_set')
 
         # skinning after the components have been built allows us to create bind joints
         self.skin()
@@ -132,12 +139,18 @@ class Character(Asset):
             if cmds.objExists(mod['name'] + '_MOD'):
                 cmds.connectAttr(self.node + '.modules', mod['name'] + '_MOD.character')
 
-        shapeio.load(self.cvs.fullPath)
+        shapeio.load(self.componentPathFromType('cvs'))
 
-        weightRoot = os.path.join(self.rootDir, self.weights.fullPath)
+        weightsDir = self.componentPathFromType('weights')
+        weightFiles = self.findFilesOfType(weightsDir, 'weights')
 
-        for weightPath in self.weights.files:
-            weightio.load(os.path.join(weightRoot, os.path.basename(weightPath)))
+        for f in weightFiles:
+            weightio.load(os.path.join(weightsDir, f))
+
+        # create influences set
+        self.bindSet = self.makeBindSet()
+
+        self.colorControls()
 
         # scene cleanup:
         self.setupMeshReferencing()
@@ -148,6 +161,9 @@ class Character(Asset):
         cmds.file(rename=self.animRig.fullPath)
         cmds.file(save=True, type='mayaAscii', force=True)
         self.versionFile(self.animRig.fullPath)
+
+        endTime = time.time()
+        print "Rig built in {0:.2f} seconds.".format(endTime - startTime)
 
     def makeNode(self):
         if not cmds.objExists(self.name + '_CHAR'):
@@ -254,11 +270,11 @@ class Character(Asset):
         cmds.setAttr(md + '.isHistoricallyInteresting', False)
         
         cmds.addAttr(self.node, longName='referenceMesh', attributeType='bool', defaultValue=True, keyable=True)
-        cmds.connectAttr(self.node + '.referenceMesh', md + '.input1')
+        cmds.connectAttr(self.node + '.referenceMesh', md + '.input1', force=True)
 
         for mesh in self.meshes:
             cmds.setAttr(mesh + '.overrideEnabled', 1)
-            cmds.connectAttr(md + '.output', mesh + '.overrideDisplayType')
+            cmds.connectAttr(md + '.output', mesh + '.overrideDisplayType', force=True)
 
     def lockMeshes(self):
 
@@ -306,3 +322,28 @@ class Character(Asset):
                 self.hideKeyableAttr('{0}.{1}'.format(constraint, attr))
             
 
+    def makeBindSet(self):
+        skelJoints = set(cmds.listRelatives('SKELETON', type='joint', ad=1))
+        skinClusterInfluences = set()
+
+        for mesh in self.meshes:
+            existingSkin = cmds.ls(cmds.listHistory(mesh), type='skinCluster')
+            if existingSkin:
+                members = cmds.skinCluster(existingSkin[0], query=True, influence=True)
+                for jnt in members:
+                    if jnt in skelJoints:
+                        skinClusterInfluences.add(jnt)
+        
+        bindSet = cmds.sets(list(skinClusterInfluences), name='BIND_set')
+
+    def colorControls(self):
+        for ctrl in self.controls:
+            if '_M_' in ctrl:
+                side = 22
+            elif '_L_' in ctrl:
+                side = 6
+            elif '_R_' in ctrl:
+                side = 13
+                
+            cmds.setAttr(ctrl + '.overrideEnabled', True)
+            cmds.setAttr(ctrl + '.overrideColor', side)

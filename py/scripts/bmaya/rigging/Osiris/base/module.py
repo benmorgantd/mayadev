@@ -22,7 +22,7 @@ class Module(object):
 
         self.name = name
         self.modType = modType
-        self.parent = parent
+        self.parent = self.determineParent(parent)
         self.side = side
         self.mirror = mirror
         self.shapeType = shapeType
@@ -196,9 +196,28 @@ class Module(object):
         else:
             return None
 
+    def determineParent(self, parent):
+        if parent and cmds.objExists(parent):
+            return parent
+        elif hasattr(self, 'startJoint'):
+            parentTransform = cmds.listRelatives(self.startJoint, parent=True, type='joint')
+            if parentTransform:
+                parentTransform = parentTransform[0]
+            else:
+                parentTransform = 'layout_02_M_ctrl'
+            
+            return parentTransform
+        else:
+            return 'layout_02_M_ctrl'
+
     def parentModule(self):
         # check if a specific joint parent was given. If not then check the parent of the startJoint
         # This means every module except Root will need a startJoint
+
+        if self.modType == 'Layout':
+            cmds.parent(self.componentsGrp, self.modGrp)
+            cmds.parent(self.modGrp, self.character.modulesGrp)
+            return
 
         # parent the whole module's group into the module group for the character
         cmds.parent(self.modGrp, self.character.modulesGrp)
@@ -212,7 +231,7 @@ class Module(object):
             if parentTransform:
                 parentTransform = parentTransform[0]
             else:
-                parentTransform = 'layout_03_M_ctrl'
+                parentTransform = 'layout_02_M_ctrl'
 
             # todo: this is where you could add a followSwitch option
             self.parentConstrain(parentTransform, self.modGrp, maintainOffset=True)
@@ -264,7 +283,7 @@ class Module(object):
             if not cmds.objExists(ctrl.ctrl + '.module'):
                 cmds.addAttr(ctrl.ctrl, longName='module', attributeType='message')
 
-            cmds.connectAttr(self.node + '.components', ctrl.ctrl + '.module')
+            cmds.connectAttr(self.node + '.components', ctrl.ctrl + '.module', force=True)
 
             self.lockTransforms(ctrl.offsetGrp)
 

@@ -8,6 +8,7 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 
 from . import weightutils
+from bmaya.core import asset
 
 def getJointsFromXML(weightsDir):
   tree = ElementTree.parse(weightsDir)
@@ -41,11 +42,18 @@ def save(weightsDir):
 
         skin = cmds.ls(cmds.listHistory(dagName), type='skinCluster') or []
 
+        filename = os.path.join(weightsDir, dagName + '.weights')
+        if os.path.exists(filename):
+            # version the file
+            asset.Asset.versionFile(filename)
+
         if skin:
             # exports by vertex index. Changes to the vert order will break this
             # with the new 'format' argument, this might not be backwards compatible... - _-
             cmds.deformerWeights("{0}.weights".format(dagName), deformer=skin[0],
                                  export=True, format='XML', path=weightsDir, method="index")
+        else:
+            print dagName, ' has no skin cluster to save.'
 
         print "Saved weights for {}".format(dagName)
 
@@ -74,12 +82,16 @@ def load(weightsPath):
         cmds.delete(existingSkinCluster)
 
     jointList = getJointsFromXML(weightsPath)
+
+    cmds.select(cl=1)
+
+    for jnt in jointList:
+        if not cmds.objExists(jnt):
+            newJnt = cmds.joint(name=jnt)
+            cmds.select(cl=1)
+
+    cmds.select(jointList)
     
-    try:
-        cmds.select(jointList)
-    except ValueError:
-        om.MGlobal.displayWarning('Joints went missing or have been renamed since weight data was last saved.')
-        return
     cmds.select(objName, add=True)
 
     # add the skin cluster

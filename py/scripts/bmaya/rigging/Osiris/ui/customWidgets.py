@@ -239,7 +239,6 @@ class BuildListItem(qtbase.TreeItem):
 
     def loadAttributeTemplates(self):
         from bmaya.rigging import rigModules
-        #reload(rigModules)
 
         attrData = rigModules.MODULE_ARGS[self.modType]
 
@@ -384,8 +383,8 @@ class AttributeLayout(QtWidgets.QWidget):
     def build(self):
 
         row = 0
-        
-        for attribute, value in self.attributes.items():
+
+        def addAttr(attribute, value, row):
             # create a new table widget item
             attrWidget = QtWidgets.QLabel(attribute)
             # makes the key not editable
@@ -395,6 +394,27 @@ class AttributeLayout(QtWidgets.QWidget):
             self.layout.addWidget(value.widget, row, 1)
 
             self.rows.append([attrWidget, value])
+
+        commonAttrs = ['startJoint', 'endJoint', 'parent', 'side', 'mirror', 'shapeType']
+
+        modAttrs = self.attributes.keys()
+
+        moduleCommonAttrs = []
+
+        for attr in commonAttrs:
+            if attr in modAttrs:
+                moduleCommonAttrs.append(attr)
+
+        for attribute in moduleCommonAttrs:
+            value = self.attributes[attribute]
+            addAttr(attribute, value, row)
+            row += 1
+
+        moduleUncommonAttrs = [attr for attr in modAttrs if attr not in moduleCommonAttrs]
+        
+        for attribute in moduleUncommonAttrs:
+            value = self.attributes[attribute]
+            addAttr(attribute, value, row)
 
             row += 1
 

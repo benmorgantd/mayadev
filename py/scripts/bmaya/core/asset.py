@@ -81,7 +81,8 @@ class Asset(object):
     def referenceFile(cls, path):
         if os.path.exists(path):
             if path.endswith('.ma'):
-                cmds.file(path, reference=True)
+                cmds.file(path, reference=True, 
+                          namespace=os.path.splitext(os.path.basename(path))[0])
         
 
     @classmethod
@@ -96,6 +97,10 @@ class Asset(object):
 
         else:
             return False
+
+    @classmethod
+    def findFilesOfType(cls, path, filetype):
+        return  [f for f in os.listdir(path) if f.endswith('.' + filetype)]
 
     def initComponents(self):
         # initialize the component objects for the asset
@@ -203,4 +208,5 @@ class Asset(object):
                 shutil.copy(componentFile, newVersionFolder)
 
         print '\n>> Asset versioned successfully to: ' + newVersionFolder
+    
     

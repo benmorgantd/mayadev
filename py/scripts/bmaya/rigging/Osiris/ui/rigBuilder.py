@@ -178,7 +178,6 @@ class RigBuilder(qtbase.DockableWidget):
             shapeio.save(componentPath)
         elif componentType == 'weights':
             from bmaya.rigging.weights import weightio
-            #reload(weightio)
             weightio.save(componentPath)
 
     def loadComponent(self):
@@ -193,7 +192,7 @@ class RigBuilder(qtbase.DockableWidget):
             shapeio.load(componentPath)
         elif componentType == 'weights':
             from bmaya.rigging.weights import weightio
-            weightFiles = os.listdir(componentPath)
+            weightFiles = self.assetInstance.findFilesOfType(componentPath, 'weights')
             for f in weightFiles:
                 weightio.load(os.path.join(componentPath, f))
 

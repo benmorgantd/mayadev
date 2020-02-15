@@ -74,3 +74,30 @@ def resetCharacter(ctrl):
 
     for module in modules:
         resetModule(module)
+
+
+def selectModule(ctrl):
+    mod = getModuleNode(ctrl)
+
+    components = cmds.listConnections(mod + '.components')
+
+    for ctrl in components:
+        cmds.select(ctrl, add=1)
+
+def keyAll(ctrl):
+    character = getCharacterNode(ctrl)
+
+    modules = getCharacterModules(character)
+
+    for mod in modules:
+        keyableAttrs = cmds.listAttr(mod, k=1) or []
+        for attr in keyableAttrs:
+            # set a keyframe
+            cmds.setKeyframe(mod + '.' + attr)
+
+        components = cmds.listConnections(mod + '.components')
+        for ctrl in components:
+            keyableAttrs = cmds.listAttr(ctrl, k=1) or []
+            for attr in keyableAttrs:
+                # set a keyframe
+                cmds.setKeyframe(ctrl + '.' + attr)

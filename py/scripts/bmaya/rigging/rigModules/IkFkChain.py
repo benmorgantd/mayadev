@@ -13,7 +13,7 @@ import FkChain
 class IkFkChain(FkChain.FkChain, IkChain.IkChain):
 
     def __init__(self, startJoint=None, endJoint=None, name='IkFkChain1', character=None, 
-                parent=None, mirror=False, upVector=[0,2,0], exclude=[], side='L'):
+                parent=None, mirror=False, upVector=[0,2,0], exclude=[], side='L', fkikDefault=0):
 
         IkChain.IkChain.__init__(self, startJoint=startJoint, endJoint=endJoint, name=name, 
                          character=character, parent=parent, mirror=mirror, upVector=upVector,
@@ -22,13 +22,16 @@ class IkFkChain(FkChain.FkChain, IkChain.IkChain):
         FkChain.FkChain.__init__(self, startJoint=startJoint, endJoint=endJoint, name=name, 
                         character=character, parent=parent, mirror=mirror, shapeType='cube', side=side)
 
+        self.modType = "IkFkChain"
         self.contract = [self.startJoint, self.endJoint]
+        self.fkikDefault = fkikDefault
 
     @wrapBuild
     def build(self):
         # build a single joint control on the given joint
 
         self.bindJoints = self.findHierarchyJoints()
+        self.driveJoints = self.createDriveJoints(label='DRIVER', constrain=True)
 
         self.buildFkIkSetup()
 
@@ -44,10 +47,10 @@ class IkFkChain(FkChain.FkChain, IkChain.IkChain):
         self.fkComponents = self.buildFkControls(self.fkDriveJoints)
 
         # add an attribute for blending
-        cmds.addAttr(self.node, longName='FKIK', attributeType='float', dv=0.0, 
+        cmds.addAttr(self.node, longName='FKIK', attributeType='float', dv=self.fkikDefault, 
                      min=0, max=1, keyable=True)
 
-        self.blendReverse = self.blendChains(self.fkDriveJoints, self.ikDriveJoints, self.bindJoints, self.node + '.FKIK')
+        self.blendReverse = self.blendChains(self.fkDriveJoints, self.ikDriveJoints, self.driveJoints, self.node + '.FKIK')
 
         # connect blend control to visibility
         cmds.connectAttr(self.blendReverse, '{0}.v'.format(self.fkComponents[0].offsetGrp))

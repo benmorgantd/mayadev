@@ -285,7 +285,10 @@ class Ribbon(module.Module):
         for i in range(len(followJoints)):
             followJnt = followJoints[i]
 
-            bindJnt = cmds.joint(name=self.findJointName(parentJoint, identifier=identifier, count=i, suffix='JNT'))
+            if identifier:
+                bindJnt = cmds.joint(name=self.findJointName(parentJoint, identifier=identifier, count=i, suffix='JNT'))
+            else:
+                bindJnt = cmds.joint(name='{0}_{1}_{2}_JNT'.format(self.name, str(i).zfill(2), self.side))
             cmds.setAttr(bindJnt + '.rotateOrder', 0)
 
             cmds.delete(cmds.parentConstraint(followJnt, bindJnt, mo=0))

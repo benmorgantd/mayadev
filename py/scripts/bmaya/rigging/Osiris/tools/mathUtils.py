@@ -43,24 +43,43 @@ def findPoleVector(joints, scaleFactor=1):
 
     return [poleVectorLocation.x, poleVectorLocation.y, poleVectorLocation.z]
 
-def setupIkTwist(twistJoint=None, startJoint=None, ikParent=None, twistJointParent=None, name=None):
-    dup1 = cmds.duplicate(twistJointParent, parentOnly=True, name=name + "_twist")[0]
-    dup2 = cmds.duplicate(twistJointParent, parentOnly=True, name=name + "_twistEnd")[0]
+def setupIkTwist(twistJoint=None, ikStartJoint=None, ikHandleParent=None, twistJointParent=None, name=None):
+    """
+    startJoint (str): Required for the scik method. This joint will be the base of or single chain IK system. 
+    ikParent (str): Required for the scik method. The resulting IK handle will eventually be the child of this joint.
+    * It's recommended that you don't use a "bind" joint for this. Try to keep your bind hierarchy clean :)
 
-    cmds.delete(cmds.parentConstraint(startJoint, dup1, mo=0))
-    cmds.parent(dup2, dup1)
+    twistJointParent (str): Required for the scik method. The parent joint of the base of the IK chain.
 
-    ik = cmds.ikHandle(sj=dup1, ee=dup2, solver="ikSCsolver", name=name + "_scikHandle")
+    mathUtils.setupIkTwist(twistJoint='leg_00_L_JNT', startJoint='leg_01_L_JNT', ikParent='pelvis_00_M_JNT', twistJointParent='leg_00_L_JNT', name='legTwist_L'
+    """
 
-    cmds.parent(dup1, twistJoint)
+    ikTwistStart = cmds.duplicate(twistJointParent, parentOnly=True, name=name + "_twist")[0]
+    ikTwistEnd = cmds.duplicate(twistJointParent, parentOnly=True, name=name + "_twistEnd")[0]
+
+    cmds.delete(cmds.parentConstraint(ikStartJoint, ikTwistStart, mo=0))
+    cmds.parent(ikTwistEnd, ikTwistStart)
+
+    ik = cmds.ikHandle(sj=ikTwistStart, ee=ikTwistEnd, solver="ikSCsolver", name=name + "_scikHandle")
+
+    cmds.parent(ikTwistStart, twistJoint)
+
+    ikGrp = cmds.group(empty=True, name=name + '_scikGrp')
+    cmds.delete(cmds.pointConstraint(ik[0], ikGrp, mo=0))
+    cmds.parent(ik[0], ikGrp)
     
-    if ikParent:
-        cmds.parent(ik[0], ikParent)
+    cmds.parentConstraint(ikHandleParent, ikGrp, mo=1)
 
-    cmds.hide(ik[0])
-    cmds.hide(dup1)
+    cmds.hide(ikTwistStart)
 
-    return [dup1, ik]
+    # # create a pole vector control
+    # pv = cmds.createNode('transform', name = name + '_rpikPoleVector')
+    # cmds.delete(cmds.parentConstraint(ikTwistStart, pv, mo=0))
+    # cmds.xform(pv, translation=(0,-25, 0), r=1, os=1)
+    # cmds.parentConstraint(ikHandleParent, pv, mo=1)
+    # cmds.poleVectorConstraint(pv, ik[0])
+
+    return ikTwistStart, ikGrp
 
 def setupQuatTwist(obj=None, twistAxis="X"):
     # quat twistExtractor

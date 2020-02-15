@@ -226,3 +226,27 @@ class Shape(object):
         cmds.xform(self.ctrl + '.cv[0:]',
                    translation=boundingBox.getBoundingBoxCenter(sceneBoundingBox),
                    relative=True)
+
+    @classmethod
+    def drawLine(cls, name, pointA, pointB, parentNode):
+        crv = cmds.curve(degree=1,p=[(0,0,0),(1,0,0)], name=name)
+        crvShape = cmds.listRelatives(crv, shapes=True)[0]
+        
+        decompA = cmds.shadingNode('decomposeMatrix', asUtility=True, name=name + '_decompMatrixA')
+        decompB = cmds.shadingNode('decomposeMatrix', asUtility=True, name=name + '_decompMatrixB')
+        cmds.connectAttr(pointA + '.worldMatrix[0]', decompA + '.inputMatrix')
+        cmds.connectAttr(pointB + '.worldMatrix[0]', decompB + '.inputMatrix')
+        
+        cmds.connectAttr(decompA + '.outputTranslate', crvShape + '.controlPoints[0]')
+        cmds.connectAttr(decompB + '.outputTranslate', crvShape + '.controlPoints[1]')
+        
+        cmds.parent(crv, parentNode, a=1)
+        cmds.setAttr(crv + '.inheritsTransform', 0)
+        cmds.setAttr(crvShape + '.template', 1)
+
+        cmds.xform(crv, translation=(0,0,0), a=1, ws=1)
+        cmds.xform(crv, rotation=(0,0,0), a=1, ws=1)
+        
+        cmds.select(cl=1)
+
+        return [crv, crvShape]

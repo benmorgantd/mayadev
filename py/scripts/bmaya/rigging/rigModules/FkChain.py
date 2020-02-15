@@ -28,8 +28,6 @@ class FkChain(module.Module):
 
     @wrapBuild
     def build(self):
-        print 'in fk chain build'
-
         # finds the joints that should belong in the chain
         self.bindJoints = self.findHierarchyJoints()
         self.driveJoints = self.createDriveJoints()
