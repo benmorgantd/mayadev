@@ -1,6 +1,6 @@
 import maya.cmds as cmds
 
-from bmaya.rigging.Osiris.base.decorators import wrapBuild
+from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 
 import IkChain
@@ -13,14 +13,16 @@ import FkChain
 class IkFkChain(FkChain.FkChain, IkChain.IkChain):
 
     def __init__(self, startJoint=None, endJoint=None, name='IkFkChain1', character=None, 
-                parent=None, mirror=False, upVector=[0,2,0], exclude=[], side='L', fkikDefault=0):
+                parent=None, mirror=False, upVector=[0,2,0], exclude=[], side='L', fkikDefault=0,
+                alignWorld=True):
 
         IkChain.IkChain.__init__(self, startJoint=startJoint, endJoint=endJoint, name=name, 
                          character=character, parent=parent, mirror=mirror, upVector=upVector,
                          exclude=exclude, side=side)
 
         FkChain.FkChain.__init__(self, startJoint=startJoint, endJoint=endJoint, name=name, 
-                        character=character, parent=parent, mirror=mirror, shapeType='cube', side=side)
+                        character=character, parent=parent, mirror=mirror, shapeType='cube', side=side,
+                        alignWorld=alignWorld)
 
         self.modType = "IkFkChain"
         self.contract = [self.startJoint, self.endJoint]

@@ -87,7 +87,7 @@ def load(cvsPath):
     
 def mirror(cvsPath):
 
-    mirrorDirections = ["L", "R"]
+    mirrorDirections = ["_L_", "_R_"]
 
     shapeData = None
 
@@ -147,25 +147,3 @@ def mirror(cvsPath):
 
 #########################################
 #########################################
-
-# def cvIO(mode="import"):
-#     if mode not in ["import","export","mirror"]:
-#         raise ValueError("Invalid mode for cvIO")
-    
-#     import os
-    
-#     from Osiris.lib.base.asset import Asset
-    
-#     if cmds.objExists("*_CHAR"):
-#         for char in cmds.ls("*_CHAR"):
-            
-#             rootDir = cmds.getAttr(char + ".rootDir")
-#             cvsDir = cmds.getAttr(char + ".cvsPath")
-            
-#             if mode == "import":
-#                 cvs.load(os.path.join(rootDir, cvsDir))
-#             elif mode == "export":
-#                 Asset.versionFile(os.path.join(rootDir, cvsDir))
-#                 cvs.save(os.path.join(rootDir, cvsDir))
-#             elif mode == "mirror":
-#                 cvs.mirror(os.path.join(rootDir, cvsDir))

@@ -10,9 +10,9 @@ from bmaya.rigging.components import *
 from bmaya.core import constants
 
 try:
-    PROJECT_ROOT = os.environ['OSIRIS_ROOT']
+    PROJECT_ROOT = os.environ['RIG_ROOT']
 except KeyError:
-    raise RuntimeError('OSIRIS_ROOT environment variable is not set.')
+    raise RuntimeError('RIG_ROOT environment variable is not set.')
 
 class Asset(object):
     def __init__(self, name, project, assetType):

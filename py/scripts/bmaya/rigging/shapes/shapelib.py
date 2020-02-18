@@ -1,4 +1,4 @@
-from bmaya.utils import boundingBox
+from bmaya.core import boundingBox
 
 import maya.cmds as cmds
 

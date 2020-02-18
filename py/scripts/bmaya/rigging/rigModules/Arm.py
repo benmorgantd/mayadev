@@ -1,21 +1,22 @@
 import maya.cmds as cmds
 
-from bmaya.rigging.Osiris.base.decorators import wrapBuild
+from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 
 import IkFkChain
 import Ribbon
 
-from bmaya.rigging.Osiris.tools import mathUtils
+from bmaya.rigging.rigBuilder.tools import mathUtils
 
 
 class Arm(IkFkChain.IkFkChain, Ribbon.Ribbon):
 
     def __init__(self, startJoint=None, endJoint=None, name='Arm1', character=None, 
-                 parent=None, mirror=False, side='L', fkikDefault=0):
+                 parent=None, mirror=False, side='L', fkikDefault=0, alignWorld=True):
 
         IkFkChain.IkFkChain.__init__(self, startJoint=startJoint, endJoint=endJoint, name=name + '_ikFkChain', 
-                                     character=character, parent=parent, mirror=mirror, side=side, fkikDefault=fkikDefault)
+                                     character=character, parent=parent, mirror=mirror, side=side, 
+                                     fkikDefault=fkikDefault, alignWorld=alignWorld)
         
         Ribbon.Ribbon.__init__(self, startJoint=startJoint, endJoint=endJoint, 
                               name=name + '_upperRibbon', character=character, parent=parent, side=side, 
@@ -64,6 +65,7 @@ class Arm(IkFkChain.IkFkChain, Ribbon.Ribbon):
         self.setupLowerTwist()
         self.setupUpperTwist()
         self.addFkGimbalControl()
+        self.addMiddleDriverControl()
 
         # connect the ik wrist to the ik end joint
         cmds.orientConstraint(self.ikComponents[1].ctrl, self.ikDriveJoints[2], mo=1)
@@ -117,3 +119,22 @@ class Arm(IkFkChain.IkFkChain, Ribbon.Ribbon):
         cmds.connectAttr(self.blendReverse, self.fkShoulderGimbal.offsetGrp + '.v')
 
         self.components.append(self.fkShoulderGimbal)
+
+    def addMiddleDriverControl(self):
+        self.midDriverControl = shapelib.Shape(name=self.findControlName(self.bindJoints[0], identifier='Mid'))
+        # doing some arm-limb specific logic here
+        cmds.delete(cmds.parentConstraint(self.ribbonDrivers[2].ctrl, self.midDriverControl.offsetGrp, mo=0))
+
+        driverParent = cmds.listRelatives(self.ribbonDrivers[2].offsetGrp, parent=True)[0]
+        cmds.parent(self.midDriverControl.offsetGrp, driverParent)
+
+        cmds.pointConstraint(self.midDriverControl.ctrl, self.ribbonDrivers[2].spaceGrp, mo=1)
+        cmds.pointConstraint(self.midDriverControl.ctrl, self.ribbonDrivers[3].spaceGrp, mo=1)
+
+        cmds.hide(self.ribbonDrivers[2].spaceGrp)
+        cmds.hide(self.ribbonDrivers[3].spaceGrp)
+
+        cmds.connectAttr(self.node + '.showDriverControls', self.midDriverControl.offsetGrp + '.v')
+
+        self.components.append(self.midDriverControl)
+

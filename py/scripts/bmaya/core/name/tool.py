@@ -2,7 +2,6 @@ import maya.cmds as cmds
 
 from bmaya.lib.Qt import QtWidgets
 from bmaya.core import qtbase
-from bmaya.utils import mayaQt
 
 import nameSelection
 
@@ -47,5 +46,5 @@ class NamingTool(qtbase.SimpleWindow):
 
 
 def run():
-    ui = NamingTool(parent=mayaQt.getMayaMainWindow())
+    ui = NamingTool(parent=qtbase.getMayaMainWindow())
     ui.show()

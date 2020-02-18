@@ -7,7 +7,7 @@ from xml.etree import ElementTree
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from . import weightutils
+import weightUtils
 from bmaya.core import asset
 
 def getJointsFromXML(weightsDir):

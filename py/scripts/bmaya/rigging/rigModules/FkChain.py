@@ -2,8 +2,8 @@
 
 import maya.cmds as cmds 
 
-from bmaya.rigging.Osiris.base import module
-from bmaya.rigging.Osiris.base.decorators import wrapBuild
+from bmaya.rigging.rigBuilder.base import module
+from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 
 #reload(module)
@@ -12,10 +12,11 @@ from bmaya.rigging.shapes import shapelib
 class FkChain(module.Module):
 
     def __init__(self, startJoint=None, endJoint=None, exclude=[], name='FkChain1',
-                 character=None, parent=None, shapeType='cube', mirror=False, side='L'):
+                 character=None, parent=None, shapeType='cube', mirror=False, side='L',
+                 alignWorld=False):
 
         module.Module.__init__(self, name=name, modType='FkChain', character=character, 
-                               shapeType=shapeType, mirror=mirror, side=side)
+                               shapeType=shapeType, mirror=mirror, side=side, alignWorld=alignWorld)
 
         self.parent = parent
         self.startJoint = startJoint
@@ -63,6 +64,8 @@ class FkChain(module.Module):
             cmds.addAttr(jnt, longName='driveCtrl', attributeType='message')
             cmds.addAttr(ctrl.ctrl, longName='driveJoint', attributeType='message')
             cmds.connectAttr(ctrl.ctrl + '.driveJoint', jnt + '.driveCtrl')
+
+        self.setupAlignWorld(components[0], defaultValue=self.alignWorld)
 
         return components
 

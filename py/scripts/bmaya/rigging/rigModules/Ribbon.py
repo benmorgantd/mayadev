@@ -1,9 +1,9 @@
 import maya.cmds as cmds
 
-from bmaya.rigging.Osiris.base import module
-from bmaya.rigging.Osiris.base.decorators import wrapBuild
+from bmaya.rigging.rigBuilder.base import module
+from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
-from bmaya.core import mathUtils
+from bmaya.core.transform import Transform
 
 
 class Ribbon(module.Module):
@@ -76,7 +76,8 @@ class Ribbon(module.Module):
         cmds.delete(cmds.aimConstraint(endJoint, skinnedPlane, 
                     aimVector=[1,0,0], upVector=[0,1,0], worldUpType='None'))
         
-        cmds.xform(skinnedPlane, scale=[mathUtils.getDistance(startJoint,endJoint), 1, 1])
+        cmds.xform(skinnedPlane, 
+            scale=[(Transform(startJoint).worldPosition - Transform(endJoint).worldPosition).length(), 1, 1])
 
         cmds.makeIdentity(skinnedPlane, apply=True, t=1, r=1, s=1, pn=1)
 
@@ -220,7 +221,8 @@ class Ribbon(module.Module):
             cmds.select(cl=1)
 
             joint = cmds.joint(name=self.findJointName(startJoint, identifier=identifier, count=i, suffix='DRIVER'))
-            cmds.setAttr(joint + '.rotateOrder', 4)
+            # cmds.setAttr(joint + '.rotateOrder', 4)
+            cmds.setAttr(joint + '.rotateOrder', 1)
 
             infoNode = cmds.createNode("pointOnSurfaceInfo", name=joint + "_POINTONSURFACE")
             cmds.connectAttr("{0}.worldSpace[0]".format(skinnedPlane), infoNode + ".inputSurface")
@@ -248,8 +250,8 @@ class Ribbon(module.Module):
             # make orient and sdk groups
             jointPosition = cmds.xform(joint, query=True, translation=True, worldSpace=True)
 
-            orientGrp = cmds.group(empty=True, name=joint + "_grp")
-            sdkGrp = cmds.group(empty=True, name=joint + "_sdk")
+            orientGrp = cmds.group(empty=True, name=joint + "_offsetGrp")
+            sdkGrp = cmds.group(empty=True, name=joint + "_sdkGrp")
 
             cmds.delete(cmds.parentConstraint(joint, orientGrp, mo=0))
             cmds.delete(cmds.parentConstraint(joint, orientGrp, mo=0))
@@ -348,7 +350,7 @@ class Ribbon(module.Module):
 
             cmds.parent(ctrl.offsetGrp, self.componentsGrp)
 
-            self.parentConstrain(ctrl.ctrl, driveJnt + '_grp', maintainOffset=True)
+            self.parentConstrain(ctrl.ctrl, driveJnt + '_offsetGrp', maintainOffset=True)
 
             cmds.parent(ctrl.offsetGrp, driverControlGrp)
 
@@ -365,3 +367,28 @@ class Ribbon(module.Module):
             cmds.addAttr(self.node, longName='showFollowControls', attributeType='bool', keyable=True)
 
         cmds.connectAttr(self.node + '.showFollowControls', self.followControlGrp + '.v')
+
+    def buildFkRibbonDriveControls(self, driveControls):
+
+        fkDriveControls = []
+
+        cmds.addAttr(self.node, longName='showFkDriverControls', dv=False, at='bool')
+
+        for i in range(len(driveControls)):
+            driveCtrl = driveControls[i]
+
+            fkCtrl = shapelib.Shape(name=self.findControlName(driveCtrl.ctrl, identifier='FK'), 
+                                    jnt=driveCtrl.ctrl, shapeType='cube')
+
+            driveParent = cmds.listRelatives(driveCtrl.offsetGrp, parent=True)[0]
+
+            if i == 0:
+                cmds.parent(fkCtrl.offsetGrp, driveParent)
+            else:
+                cmds.parent(fkCtrl.offsetGrp, fkDriveControls[i-1].ctrl)
+                
+            cmds.parent(driveCtrl.offsetGrp, fkCtrl.ctrl)
+
+            fkDriveControls.append(fkCtrl)
+
+        return fkDriveControls

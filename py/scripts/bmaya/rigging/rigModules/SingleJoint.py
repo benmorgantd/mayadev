@@ -1,15 +1,15 @@
 import maya.cmds as cmds
 
-from bmaya.rigging.Osiris.base import module
-from bmaya.rigging.Osiris.base.decorators import wrapBuild
+from bmaya.rigging.rigBuilder.base import module
+from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 
 class SingleJoint(module.Module):
 
     def __init__(self, startJoint=None, name='singleJoint1', character=None, parent=None, 
-                 shapeType='cube', mirror=False, side='L'):
+                 shapeType='cube', mirror=False, side='L', alignWorld=None):
         super(SingleJoint, self).__init__(modType='SingleJoint', name=name, character=character, 
-                                          shapeType=shapeType, mirror=mirror, side=side)
+                                          shapeType=shapeType, mirror=mirror, side=side, alignWorld=alignWorld)
 
         self.parent = parent
         self.startJoint = startJoint
@@ -34,4 +34,6 @@ class SingleJoint(module.Module):
         self.parentConstrain(ctrl.ctrl, self.startJointDriver, maintainOffset=True)
 
         cmds.parent(ctrl.offsetGrp, self.componentsGrp)
+
+        self.setupAlignWorld(ctrl, defaultValue=self.alignWorld)
 

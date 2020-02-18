@@ -1,10 +1,10 @@
 import maya.cmds as cmds
 
-from bmaya.rigging.Osiris.base import module
-from bmaya.rigging.Osiris.base.decorators import wrapBuild
+from bmaya.rigging.rigBuilder.base import module
+from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 
-from bmaya.rigging.Osiris.tools import mathUtils
+from bmaya.rigging.rigBuilder.tools import mathUtils
 
 #reload(module)
 

@@ -6,7 +6,6 @@ import maya.cmds as cmds
 import maya.mel
 
 
-
 def getSkinClusterName(dag):
     """A convenience function for finding the skinCluster deforming a mesh.
 
@@ -240,3 +239,115 @@ def bakeDeltaMushToSkinCluster(dag):
     cmds.delete(deltaMush)
 
     om.MGlobal.displayInfo('Converted Delta Mush to skinCluster weights')
+
+def pruneWeightList(weights, maxInfluence=4):
+    """Prunes the given list to have only four non-zero values"""
+
+    infCount = len(weights)
+    sortedWeights = list(weights)
+    sortedWeights.sort(reverse=True)
+    weightIndexPair = []
+
+    prunedWeights = [0.0] * infCount
+
+    if maxInfluence > 1:
+        for i in range(infCount):
+            if i > (maxInfluence - 1):
+                prunedWeights[weights.index(sortedWeights[i])] = 0.0
+            else:
+                prunedWeights[weights.index(sortedWeights[i])] = sortedWeights[i]
+    else:
+        prunedWeights[weights.index(sortedWeights[0])] = sortedWeights[0]
+
+    # normalize the list
+    prunedWeightsSum = sum(prunedWeights)
+    normalizedWeights = [value / prunedWeightsSum for value in prunedWeights]
+
+    return normalizedWeights
+
+def pruneSkinWeights(maxInfluence=4):
+    """Sets the weights for each vertex to the average of its neighbors."""
+
+    originalSel = om.MSelectionList()
+    om.MGlobal.getActiveSelectionList(originalSel)
+
+    cmds.select(cmds.polyListComponentConversion(toVertex=True))
+
+    # get the selected mesh and components
+    sel = om.MSelectionList()
+    om.MGlobal.getActiveSelectionList(sel)
+
+    if not sel.length():
+        return
+
+    selectedComponents = om.MObject()
+    dag = om.MDagPath()
+    sel.getDagPath(0, dag, selectedComponents)
+
+    dag.extendToShape()
+
+    if dag.apiType() != 296:
+        om.MGlobal.displayError("Selection must be a polygon mesh.")
+        return
+
+    # get the skin cluster object
+    skinCluster = getSkinClusterName(dag)
+    skinClusterObj = getSkinClusterObj(dag)
+
+    cmds.skinPercent(skinCluster, pruneWeights=0.005)
+
+    mFnSkinCluster = omAnim.MFnSkinCluster(skinClusterObj)
+    infObjects = om.MDagPathArray()
+    # returns a list of the DagPaths of the joints affecting the mesh
+    mFnSkinCluster.influenceObjects(infObjects)
+    infCountUtils = om.MScriptUtil(infObjects.length())
+    # c++ utility needed for the get/set weights functions
+    infCountPtr = infCountUtils.asUintPtr()
+    infCount = infCountUtils.asInt()
+    influenceIndices = om.MIntArray()
+    # create an MIntArray that just counts from 0 to infCount
+    for i in range(0, infCount):
+        influenceIndices.append(i)
+
+    oldWeights = om.MDoubleArray()
+    # don't use the selectedComponents MObject we made since we want to get the weights for each vertex 
+    # on this mesh, not just the selected one
+    emptyObj = om.MObject()
+    mFnSkinCluster.getWeights(dag, selectedComponents, oldWeights, infCountPtr)
+
+    # newWeights just starts as a copy of oldWeights
+    newWeights = om.MDoubleArray(oldWeights)
+
+    # iterate over the selected verts
+    itVerts = om.MItMeshVertex(dag, selectedComponents)
+    i = 0
+    numOverInfluenced = 0
+
+    while not itVerts.isDone():
+        thisVertWeightIndex = i * infCount
+        vertWeights = list(newWeights[thisVertWeightIndex: thisVertWeightIndex + infCount])
+
+        nonZeroCount = 0
+
+
+        for w in range(len(vertWeights)):
+            if vertWeights[w] > 0.0:
+                nonZeroCount += 1
+
+        if nonZeroCount > maxInfluence:
+            numOverInfluenced += 1
+            # makes the weights for the closest vertex equal to the outer vertex
+            newWeights[thisVertWeightIndex: thisVertWeightIndex + infCount] = pruneWeightList(vertWeights, maxInfluence)
+
+        i += 1
+        itVerts.next()
+
+    # set weights all at once
+    if numOverInfluenced:
+        mFnSkinCluster.setWeights(dag, selectedComponents, influenceIndices, newWeights, True, oldWeights)
+
+    om.MGlobal.setActiveSelectionList(originalSel)
+
+    om.MGlobal.displayInfo('Pruned {0} over-influenced vertices from {1}.'.format(numOverInfluenced, dag.partialPathName()))
+
+    return [mFnSkinCluster, dag, selectedComponents, influenceIndices, oldWeights, False, oldWeights]

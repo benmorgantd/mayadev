@@ -8,6 +8,9 @@ from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui
 
+def getMayaMainWindow():
+    return QtCompat.wrapInstance(long(omui.MQtUtil.mainWindow()),
+                                      QtWidgets.QWidget)
 
 class SimpleWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None, designerFile=None, title='Simple Widget'):
