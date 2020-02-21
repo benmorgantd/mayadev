@@ -10,7 +10,7 @@ from bmaya.core import constants
 
 from bmaya.rigging.shapes import shapelib, shapeio
 from bmaya.rigging.weights import weightio
-from bmaya.rigging.rigBuilder.tools.build import buildio
+from bmaya.rigging.rigBuilder.tools import buildio
 
 import layout
 

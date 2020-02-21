@@ -14,7 +14,7 @@ from bmaya.core import asset
 #reload(asset)
 from ..base import creator
 #reload(creator)
-from bmaya.rigging.rigBuilder.tools.build import buildio
+from bmaya.rigging.rigBuilder.tools import buildio
 #reload(buildio)
 
 

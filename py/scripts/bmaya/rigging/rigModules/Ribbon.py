@@ -3,7 +3,7 @@ import maya.cmds as cmds
 from bmaya.rigging.rigBuilder.base import module
 from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
-from bmaya.core.transform import Transform
+from bmaya.core.mayanode import Transform
 
 
 class Ribbon(module.Module):
