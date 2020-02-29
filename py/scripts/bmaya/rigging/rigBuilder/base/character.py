@@ -14,10 +14,10 @@ from bmaya.rigging.rigBuilder.tools import buildio
 
 import layout
 
-#reload(shapeio)
-#reload(weightio)
-#reload(buildio)
-#reload(layout)
+##reload(shapeio)
+##reload(weightio)
+##reload(buildio)
+##reload(layout)
 
 class Character(Asset):
     '''Character is the base class for all rigs created with RigBuilder'''

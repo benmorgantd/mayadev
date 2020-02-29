@@ -6,7 +6,7 @@ from bmaya.rigging.shapes import shapelib
 
 from bmaya.rigging.rigBuilder.tools import mathUtils
 
-#reload(module)
+##reload(module)
 
 class IkChain(module.Module):
 

@@ -9,7 +9,7 @@ from bmaya.rigging.shapes import shapelib
 
 from decorators import wrapBuild
 
-#reload(shapelib)
+##reload(shapelib)
 
 class Module(object):
 

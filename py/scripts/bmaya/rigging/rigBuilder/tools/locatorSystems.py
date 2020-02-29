@@ -2,49 +2,32 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 
 from bmaya.core import mayanode
-reload(mayanode)
+#reload(mayanode)
 
 """
-Locator Systems are functions that can be used to create module build data 
+Locator Systems are classes that can be used to create module build data 
 from scratch or from existing locators.
-
 """
 
 
 class LocatorSystem(object):
-    def __init__(self, moduleName, parentSystem, parentLocator, 
-                locatorData, side):
+    def __init__(self, moduleName, parentSystem=None, parentLocator=None, 
+                locatorData=None, side='L'):
         self.moduleName = moduleName
         self.parentSystem = parentSystem
+
+        self.parentLocator = None
         if parentLocator:
-            self.parentLocator = mayanode.Locator(parentLocator)
-        else:
-            self.parentLocator = mayanode.Transform('Locators')
+            if isinstance(parentLocator, basestring):
+                self.parentLocator = mayanode.Locator(parentLocator)
+            elif isinstance(parentLocator, mayanode.Locator):
+                self.parentLocator = parentLocator
         self.locatorData = locatorData
         self.side = side
         self.attachmentPoints = {}
         self.locators = {}
 
         self.setup()
-
-    def setup(self):
-        
-        # Create the system group node
-        if not cmds.objExists(self.moduleName):
-            systemGroup = cmds.createNode('transform', name=self.moduleName)
-        else:
-            systemGroup = self.moduleName
-
-        if self.locatorData and self.locatorData['systemGroup']:
-            self.systemGroup = self.makeTransform(self.locatorData['systemGroup'])
-        else:
-            self.systemGroup = mayanode.Transform(systemGroup)
-
-        self.locators['systemGroup'] = self.systemGroup
-
-        self.moduleType = self.__class__.__name__
-
-        # Subclasses would then declare their class's locators
 
     @property
     def moduleType(self):
@@ -68,8 +51,8 @@ class LocatorSystem(object):
             # get information from the Transform and Locator objects in self.locators
             thisLocatorDict = {}
             # the maya name for this locator
-            thisLocatorDict['name'] = self.locators[locator].shortName
-            thisLocatorDict['parent'] = self.locators[locator].parent.shortName
+            thisLocatorDict['name'] = self.locators[locator].name
+            thisLocatorDict['parent'] = self.locators[locator].parent.name or None
             worldPosition = self.locators[locator].worldPosition
             thisLocatorDict['worldPosition'] = [worldPosition.x, worldPosition.y, worldPosition.z]
             quaternion = self.locators[locator].quaternion
@@ -79,6 +62,25 @@ class LocatorSystem(object):
             data[locator] = thisLocatorDict
 
         return data
+
+    def setup(self):
+        
+        # Create the system group node
+        if not cmds.objExists(self.moduleName):
+            systemGroup = cmds.createNode('transform', name=self.moduleName)
+        else:
+            systemGroup = self.moduleName
+
+        if self.locatorData and self.locatorData['systemGroup']:
+            self.systemGroup = self.makeTransform(self.locatorData['systemGroup'])
+        else:
+            self.systemGroup = mayanode.Transform(systemGroup)
+
+        self.locators['systemGroup'] = self.systemGroup
+
+        self.moduleType = self.__class__.__name__
+
+        # Subclasses would then declare their class's locators
 
     def makeTransform(self, data):
         xform = mayanode.Transform(name=data['name'])
@@ -112,8 +114,8 @@ class LocatorSystem(object):
 
 
 class SingleJoint(LocatorSystem):
-    def __init__(self, moduleName, parentSystem, parentLocator, 
-                locatorData, side):
+    def __init__(self, moduleName, parentSystem=None, parentLocator=None, 
+                locatorData=None, side='L'):
         super(SingleJoint, self).__init__(moduleName, parentSystem, parentLocator, 
                                           locatorData, side)
 
@@ -128,7 +130,7 @@ class SingleJoint(LocatorSystem):
 
         self.locators['startLocator'] = self.startLocator
 
-    def toJoints(self):
+    def toJoints(self, rotateOrder='xyz'):
         """Make the resulting bind joints for this system"""
 
         if not cmds.objExists('SKELETON'):
@@ -137,12 +139,12 @@ class SingleJoint(LocatorSystem):
         cmds.select(clear=True)
 
         # we could always name these joints using a different convention now
-        startJoint = self.makeJoint(0, self.startLocator.name, rotateOrder='xyz')
+        startJoint = self.makeJoint(0, self.startLocator.name, rotateOrder=rotateOrder)
 
         # *** give the pairing of this new joint to what locator it was made from
         self.attachmentPoints[self.startLocator.name] = startJoint
 
-        if self.parentSystem:
+        if self.parentSystem and self.parentLocator:
             cmds.parent(startJoint, self.parentSystem.attachmentPoints[self.parentLocator.name])
         else:
             cmds.parent(startJoint, 'SKELETON')

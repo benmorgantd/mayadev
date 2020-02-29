@@ -1,13 +1,14 @@
 '''Custom widgets for rigBuilder'''
 
 import ast
-from collections import OrderedDict
 
 from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
 from bmaya.core import qtbase
+from bmaya.rigging.rigBuilder.tools import locatorSystems
 
 import maya.cmds as cmds
+import maya.OpenMaya as om
 
 
 class ModuleList(qtbase.List):
@@ -22,14 +23,14 @@ class ModuleList(qtbase.List):
     def setBuildList(self, listWidget):
         self.buildList = listWidget
 
-    def mouseDoubleClickEvent(self, event):
-        QtWidgets.QListWidget.mouseDoubleClickEvent(self, event)
+    def addModule(self):
+        # QtWidgets.QListWidget.mouseDoubleClickEvent(self, event)
 
         if self.buildList:
             currentRowIndex = self.currentRow()
 
             try:
-                selectedModType = self.item(currentRowIndex).text()
+                moduleType = self.item(currentRowIndex).text()
             except AttributeError:
                 # no row selected
                 return
@@ -37,13 +38,30 @@ class ModuleList(qtbase.List):
             # get the current item instead and add it as a child. If nothing is selected, 
             # add it to the top node
 
-            newMod = BuildListItem(modType=selectedModType, attributeContainer=self.attributeContainer)
+            # create a dialog and get the name
+            result = cmds.promptDialog(title='Module Name', message='Module Name')
 
-            currentItem = self.buildList.currentItem()
-            if currentItem:
-                currentItem.addChild(newMod)
+            if result == 'Confirm':
+                name = cmds.promptDialog(query=True, text=True)
+
+                if any(name == item.name for item in self.buildList.items):
+                    om.MGlobal.displayError('A module is already named ' + name)
+                    return None
+
+                newMod = BuildListItem(modType=moduleType, attributeContainer=self.attributeContainer,
+                                      name=name)
+
+                currentItem = self.buildList.currentItem()
+
+                if currentItem:
+                    currentItem.addChild(newMod)
+                else:
+                    self.buildList.addTopLevelItem(newMod)
+
+                return name
+
             else:
-                self.buildList.addTopLevelItem(newMod)
+                return None
             
 
 class BuildList(qtbase.Tree):
@@ -55,11 +73,11 @@ class BuildList(qtbase.Tree):
 
         self.setMaximumHeight(200)
         self.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked)
-        self.setDragEnabled(True)
-        self.setAcceptDrops(True)
-        self.setDragDropMode(QtWidgets.QTreeWidget.DragDropMode.DragDrop)
-        self.setDragDropOverwriteMode(False)
-        self.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
+        self.setDragEnabled(False)
+        self.setAcceptDrops(False)
+        # self.setDragDropMode(QtWidgets.QTreeWidget.DragDropMode.DragDrop)
+        # self.setDragDropOverwriteMode(False)
+        # self.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
         self.setIndentation(15)
 
         self.contextMenu = BuildListContextMenu(buildList=self)
@@ -104,6 +122,7 @@ class BuildList(qtbase.Tree):
             modData.pop('modType')
             modData.pop('name')
             modData.pop('children')
+            modData.pop('locators')
 
             listItem = BuildListItem(modType=modType, 
                                      attributeContainer=attributeLayoutContainer,
@@ -173,6 +192,11 @@ class BuildList(qtbase.Tree):
         else:
             self.takeTopLevelItem(self.indexOfTopLevelItem(currentItem))
 
+        try:
+            cmds.delete(currentItem.name)
+        except:
+            pass
+
         self.contextMenu.hide()
 
     def duplicateItem(self):
@@ -186,6 +210,7 @@ class BuildList(qtbase.Tree):
         customAttrs.pop('character')
         customAttrs.pop('modType')
         customAttrs.pop('name')
+        customAttrs.pop('locators')
 
         # create a new list item of the same type as the selection
         listItem = BuildListItem(modType=currentObject.modType, 
@@ -201,13 +226,16 @@ class BuildList(qtbase.Tree):
 
 
 class BuildListItem(qtbase.TreeItem):
-    def __init__(self, modType, customAttrs=None, attributeContainer=None):
+    def __init__(self, modType, customAttrs=None, attributeContainer=None, name=None):
         super(BuildListItem, self).__init__()
 
         self.attributeContainer = attributeContainer
         self.modType = modType
 
-        self.setText(0, self.modType)
+        if not name:
+            self.setText(0, self.modType)
+        else:
+            self.setText(0, name)
     
         # Put attribute data inside of the build layout item
         self.customAttrs = customAttrs
@@ -224,7 +252,7 @@ class BuildListItem(qtbase.TreeItem):
 
     @property
     def values(self):
-        attrValues = OrderedDict()
+        attrValues = {}
 
         for row in self.attributeLayout.rows:
             keyText = row[0].text()
@@ -433,4 +461,3 @@ class AttributeLayout(QtWidgets.QWidget):
         self.layout.addItem(verticalSpacer, row, 0)
 
         self.setVisible(False)
-

@@ -2,7 +2,7 @@
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui
 import CharacterPicker.modules.character_picker_model as model 
-#reload(model)
+##reload(model)
 import os
 
 from bmaya.lib.Qt import QtWidgets

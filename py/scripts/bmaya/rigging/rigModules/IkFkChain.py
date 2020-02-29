@@ -6,8 +6,8 @@ from bmaya.rigging.shapes import shapelib
 import IkChain
 import FkChain
 
-#reload(IkChain)
-#reload(FkChain)
+##reload(IkChain)
+##reload(FkChain)
 
 
 class IkFkChain(FkChain.FkChain, IkChain.IkChain):

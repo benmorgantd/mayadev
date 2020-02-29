@@ -36,7 +36,7 @@ class Transform(object):
         self.dagPath = om.MDagPath()
         sel.getDagPath(0, self.dagPath)
 
-        self.name = self.dagPath.fullPathName()
+        self.name = self.dagPath.partialPathName()
         self.shortName = self.dagPath.partialPathName()
     
     # MFnTransform properties
@@ -122,7 +122,33 @@ class Transform(object):
     def matrix(self):
         return self.transformationMatrix.asMatrix()
 
-    # MFnDagPath properties 
+    @property
+    def matrixVectors(self):
+        matrix = self.matrixList
+        matrixVectors = om.MVectorArray()
+
+        for vector in matrix:
+            matrixVectors.append(om.MVector(*vector))
+
+        return matrixVectors
+
+
+    @property
+    def matrixList(self):
+        matrix = self.matrix
+
+        util = om.MScriptUtil()
+
+        matrixList = []
+
+        for row in range(4):
+            rowList = []
+            for column in range(3):
+                rowList.append(util.getDoubleArrayItem(matrix[row], column))
+        
+            matrixList.append(rowList)
+
+        return matrixList
 
     @property 
     def fnDag(self):
@@ -131,7 +157,7 @@ class Transform(object):
     @property
     def parent(self):
         # return the Transform of the parent
-        parentName = cmds.listRelatives(self.fnDag.fullPathName(), parent=True)
+        parentName = cmds.listRelatives(self.name, parent=True)
 
         if parentName:
             return Transform(parentName[0])
@@ -143,7 +169,7 @@ class Transform(object):
         if not dagName:
             cmds.parent(self.name, world=True, absolute=True)
         else:
-            _shortName = self.shortName
+            _name = self.name
             try:
                 cmds.parent(self.name, dagName, absolute=True)
             except RuntimeError:
@@ -151,13 +177,12 @@ class Transform(object):
                 return 
             # update the dag path after changing parent
             sel = om.MSelectionList()
-            sel.add(_shortName)
+            sel.add(_name)
             dag = om.MDagPath()
             sel.getDagPath(0, dag)
 
             self.dagPath = dag
-            self.shortName = dag.partialPathName()
-            self.name = dag.fullPathName()
+            self.name = dag.partialPathName()
 
     @property
     def children(self):
@@ -221,7 +246,6 @@ class Locator(Transform):
     def __init__(self, name):
         if not cmds.objExists(name):
             cmds.spaceLocator(name=name)
-            
         super(Locator, self).__init__(name)
 
         self.localScale = .35
@@ -255,6 +279,11 @@ class Locator(Transform):
     def localScaleZ(self, value):
         cmds.setAttr(self.shape + '.localScaleZ', value)
 
+    @property
+    def localScale(self):
+        return list(cmds.getAttr(self.shape + '.localScale')[0])
+
+    @localScale.setter
     def localScale(self, value):
         for axis in ['X', 'Y', 'Z']:
             cmds.setAttr(self.shape + '.localScale' + axis, value)

@@ -214,3 +214,13 @@ class DockableWidget(SimpleWidget):
         )
 
 
+class Dialog(QtWidgets.QDialog):
+    def __init__(self, parent=None, windowTitle='Dialog'):
+        super(Dialog, self).__init__(parent)
+        
+        self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint)
+
+        self.hLayout = QtWidgets.QHBoxLayout(self)
+
+        self.setWindowTitle(windowTitle)
+

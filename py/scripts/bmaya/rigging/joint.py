@@ -149,5 +149,15 @@ def bestFitPlane():
 
     cmds.delete(aimLoc)
 
+def getDownAxis(joint):
+    matrix = cmds.getAttr(joint + '.matrix')
+
+    axis = ['x','y','z']
+
+    translates = [abs(x) for x in matrix[12:15]]
+
+    maxValue = max(translates)
+
+    return axis[translates.index(maxValue)]
 
     

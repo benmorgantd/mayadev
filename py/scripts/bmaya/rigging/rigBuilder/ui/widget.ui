@@ -128,47 +128,22 @@ font: 75 8pt &quot;MS Shell Dlg 2&quot;;</string>
           <string>Component</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="1" column="1">
-           <widget class="QPushButton" name="loadComponent">
-            <property name="maximumSize">
-             <size>
-              <width>50</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <weight>75</weight>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="text">
-             <string>Load </string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QPushButton" name="saveComponent">
-            <property name="font">
-             <font>
-              <weight>75</weight>
-              <italic>false</italic>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="text">
-             <string>Save Version</string>
-            </property>
-           </widget>
-          </item>
           <item row="1" column="0">
            <widget class="QComboBox" name="componentType">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="font">
              <font>
               <weight>50</weight>
               <bold>false</bold>
              </font>
             </property>
+            <item>
+             <property name="text">
+              <string>locators</string>
+             </property>
+            </item>
             <item>
              <property name="text">
               <string>skeleton</string>
@@ -196,25 +171,21 @@ font: 75 8pt &quot;MS Shell Dlg 2&quot;;</string>
             </item>
            </widget>
           </item>
-          <item row="1" column="3">
-           <widget class="QPushButton" name="referenceComponent">
-            <property name="font">
-             <font>
-              <weight>75</weight>
-              <italic>false</italic>
-              <bold>true</bold>
-             </font>
-            </property>
+          <item row="1" column="1">
+           <widget class="QPushButton" name="mirror">
             <property name="text">
-             <string>Reference</string>
+             <string>Mirror</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QPushButton" name="pushButton">
+            <property name="text">
+             <string>Sync</string>
             </property>
            </widget>
           </item>
          </layout>
-         <zorder>componentType</zorder>
-         <zorder>loadComponent</zorder>
-         <zorder>saveComponent</zorder>
-         <zorder>referenceComponent</zorder>
         </widget>
        </item>
       </layout>

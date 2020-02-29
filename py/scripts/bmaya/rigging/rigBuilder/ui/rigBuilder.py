@@ -5,17 +5,12 @@ import maya.cmds as cmds
 from bmaya.lib.Qt import QtWidgets, QtCore
 
 from bmaya.core import qtbase
-#reload(qtbase)
 from . import customWidgets, assetCreator
-#reload(customWidgets)
-#reload(assetCreator)
 
 from bmaya.core import asset
-#reload(asset)
 from ..base import creator
-#reload(creator)
+from ..tools import locatorSystems
 from bmaya.rigging.rigBuilder.tools import buildio
-#reload(buildio)
 
 
 class RigBuilder(qtbase.DockableWidget):
@@ -36,9 +31,10 @@ class RigBuilder(qtbase.DockableWidget):
         self.loadAssetTypes()
         self.loadAssets()
 
-        self.widget.loadComponent.setEnabled(False)
-        self.widget.saveComponent.setEnabled(False)
-        self.widget.referenceComponent.setEnabled(False)
+        # self.widget.loadComponent.setEnabled(False)
+        # self.widget.saveComponent.setEnabled(False)
+        # self.widget.referenceComponent.setEnabled(False)
+        self.widget.componentType.setEnabled(False)
         self.widget.build.setEnabled(False)
 
         self.newAsset = None
@@ -49,6 +45,8 @@ class RigBuilder(qtbase.DockableWidget):
 
         self.moduleList = customWidgets.ModuleList(
             attributeContainer=self.widget.attributeLayoutContainer)
+        # self.moduleList.itemDoubleClicked.connect(lambda item: self.addNewLocatorSystem(item))
+
         self.buildList = customWidgets.BuildList()
 
         self.widget.moduleListContainer.addWidget(
@@ -64,6 +62,7 @@ class RigBuilder(qtbase.DockableWidget):
 
         self.setupFileMenu()
         self.setupAssetMenu()
+        self.setupComponentMenu()
 
         self.widget.menuLayout.addWidget(self.menu)
 
@@ -100,6 +99,20 @@ class RigBuilder(qtbase.DockableWidget):
         versionAssetAction = assetMenu.addAction('Version Asset')
         versionAssetAction.triggered.connect(lambda: self.assetInstance.versionAsset())
 
+    def setupComponentMenu(self):
+        componentMenu = self.menu.addMenu('Component')
+
+        newAssetAction = componentMenu.addAction('Load')
+        newAssetAction.triggered.connect(self.loadComponent)
+
+        newAssetAction = componentMenu.addAction('Reference')
+        newAssetAction.triggered.connect(self.referenceComponent)
+
+        newAssetAction = componentMenu.addAction('Save New Version')
+        newAssetAction.triggered.connect(self.saveComponent)
+
+        
+    
     def openAssetInExplorer(self):
         self.assetInstance.openInExplorer(os.path.split(
             self.assetInstance.animRig.fullPath)[0])
@@ -116,9 +129,9 @@ class RigBuilder(qtbase.DockableWidget):
 
     def setupButtons(self):
         self.widget.loadCharacter.clicked.connect(lambda: self.initiateAsset())
-        self.widget.loadComponent.clicked.connect(lambda: self.loadComponent())
-        self.widget.saveComponent.clicked.connect(lambda: self.saveComponent())
-        self.widget.referenceComponent.clicked.connect(lambda: self.referenceComponent())
+        # self.widget.loadComponent.clicked.connect(lambda: self.loadComponent())
+        # self.widget.saveComponent.clicked.connect(lambda: self.saveComponent())
+        # self.widget.referenceComponent.clicked.connect(lambda: self.referenceComponent())
         self.widget.build.clicked.connect(lambda: self.buildCharacter())
 
     def loadProjects(self):
@@ -184,7 +197,9 @@ class RigBuilder(qtbase.DockableWidget):
 
         componentPath = self.assetInstance.componentPathFromType(componentType)
 
-        if componentType in ['skeleton', 'mesh', 'animRig']:
+        print componentPath
+
+        if componentType in ['skeleton', 'mesh', 'animRig', 'locators']:
             self.assetInstance.openFile(componentPath)
         elif componentType == 'cvs':
             from bmaya.rigging.shapes import shapeio
@@ -220,9 +235,10 @@ class RigBuilder(qtbase.DockableWidget):
 
             self.loadBuild(self.assetInstance.build.fullPath)
 
-            self.widget.loadComponent.setEnabled(True)
-            self.widget.saveComponent.setEnabled(True)
-            self.widget.referenceComponent.setEnabled(True)
+            # self.widget.loadComponent.setEnabled(True)
+            # self.widget.saveComponent.setEnabled(True)
+            # self.widget.referenceComponent.setEnabled(True)
+            self.widget.componentType.setEnabled(True)
             self.widget.build.setEnabled(True)
 
     def buildCharacter(self):
@@ -241,10 +257,10 @@ class RigBuilder(qtbase.DockableWidget):
         buildpath = asset.PROJECT_ROOT
 
         filepath = cmds.fileDialog2(okCaption=action,
-                                                fileMode=fileMode,
-                                                fileFilter='Build Files (*.json);;',
-                                                caption=action + ' Build File',
-                                                startingDirectory=buildpath)
+                                    fileMode=fileMode,
+                                    fileFilter='Build Files (*.json);;',
+                                    caption=action + ' Build File',
+                                    startingDirectory=buildpath)
 
         if not filepath:
             return
@@ -263,6 +279,8 @@ class RigBuilder(qtbase.DockableWidget):
 
         self.buildData = buildio.load(filepath)
 
+        # self.locatorSystems = buildio.initLocatorsFromData(self.buildData)
+
         self.buildList.loadList(self.buildData, 
             attributeLayoutContainer=self.widget.attributeLayoutContainer)
 
@@ -270,6 +288,8 @@ class RigBuilder(qtbase.DockableWidget):
 
     def saveBuild(self, filepath=None):
         jsonData = self.buildList.getAllValues()
+
+        # finalData = buildio.saveLocatorData(self.locatorSystems, jsonData)
 
         if not filepath:
             filepath = self.exploreToBuildPath(action='Save', fileMode=0)
@@ -300,10 +320,56 @@ class RigBuilder(qtbase.DockableWidget):
         self.buildList.hideAttrLayouts()
         self.buildList.clear()
 
+    def addNewLocatorSystem(self, item):
+        # add a new locator system from the given Module List item
 
-##############
-##############
+        currentModule = self.buildList.currentItem()
+
+        name = self.moduleList.addModule()
+        # the name is checked to be unique in addModule 
+
+        if name:
+            systemType = item.text()
+            if currentModule:
+                parentSystem = self.getLocatorSystemByName(currentModule.name)
+            else:
+                parentSystem = None
+
+            system = getattr(locatorSystems, systemType)(name, parentSystem=parentSystem)
+
+            if parentSystem:
+                # parent to the first attachment point for the parent module
+                system.systemGroup.parent = parentSystem.startLocator.name
+            else:
+                system.systemGroup.parent = 'Locators'
+
+            self.locatorSystems.append(system)
+
+    def getLocatorSystemByName(self, name):
+        for system in self.locatorSystems:
+            if system.moduleName == name:
+                return system
+
+
+######################################################################
+######################################################################
 
 def run():
     ui = RigBuilder(designerFile=os.path.join(os.path.dirname(__file__), 'widget.ui'))
     ui.dock()
+    return ui
+
+
+"""
+- save locator data with build (DONE)
+- mirror locator data
+- add locator system when you add a module (DONE)
+- what happens when you change the locator's parent?  (rename and reorder in Maya, update ui from there)
+    - UI can't be reordered (DONE)
+    - send order to ui
+    - this updates the parent for build data
+- what happens when you rename the module in the ui? in Maya? (^ same)
+        - ask for the name of the module during the double click event
+- changing side renames locators, 
+
+"""

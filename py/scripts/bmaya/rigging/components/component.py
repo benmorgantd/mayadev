@@ -6,7 +6,8 @@ TYPE_EXTENSIONS = {'mesh': '.ma',
                    'animRig': '.ma', 
                    'weights': '.weights', 
                    'build':'.json', 
-                   'components':''}
+                   'components':'',
+                   'locators':'.ma'}
 
 
 class Component(object):

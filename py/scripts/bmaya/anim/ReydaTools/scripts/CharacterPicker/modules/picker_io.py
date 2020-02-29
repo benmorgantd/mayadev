@@ -2,7 +2,7 @@ import json
 import os
 import maya.cmds as cmds
 import CharacterPicker.modules.custom_graphics_items as custom_graphics_items
-#reload(custom_graphics_items)
+##reload(custom_graphics_items)
 
 from bmaya.lib.Qt import QtWidgets, QtGui, QtCore
 

@@ -3,10 +3,10 @@ import os
 
 import maya.cmds as cmds
 from bmaya.core import mayanode
-reload(mayanode)
+#reload(mayanode)
 
 import locatorSystems
-reload(locatorSystems)
+#reload(locatorSystems)
 
 def load(filepath):
 
@@ -26,9 +26,7 @@ def save(filepath, data):
     with open(filepath, "w+") as f:
         json.dump(data, f, separators=(', ', ':'), indent=2, sort_keys=True)
 
-
-def initLocatorsFromData(filepath):
-    buildData = load(filepath)
+def initLocatorsFromData(buildData):
 
     cmds.file(new=True, force=True)
 
@@ -69,24 +67,28 @@ def initLocatorsFromData(filepath):
 
     return systems
 
-def saveLocatorData(locatorSystems, filepath):
-    buildData = load(filepath)
+def saveLocatorData(locatorSystems, buildData):
     modifiedData = buildData
 
-    def checkChildren(module, system):
+    def addChildren(module, system):
         for child in module['children']:
             if child['name'] == system.moduleName:
                 child['locators'] = system.data
                 return
             else:
-                checkChildren(child, system)
+                addChildren(child, system)
 
     for system in locatorSystems:
         for topLevelModule in modifiedData:
             if topLevelModule['name'] == system.moduleName:
                 topLevelModule['locators'] = system.data
             elif topLevelModule['children']:
-                checkChildren(topLevelModule, system)
+                addChildren(topLevelModule, system)
     
     return modifiedData
 
+def convertLocatorSystemsToJoints(locatorSystems):
+    for system in locatorSystems:
+        system.toJoints()
+
+    cmds.delete('Locators')

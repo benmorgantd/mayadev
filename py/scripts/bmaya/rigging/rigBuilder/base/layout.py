@@ -5,9 +5,9 @@ from decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 from bmaya.core import constants
 
-#reload(module)
-#reload(shapelib)
-#reload(constants)
+##reload(module)
+##reload(shapelib)
+##reload(constants)
 
 
 class Layout(module.Module):

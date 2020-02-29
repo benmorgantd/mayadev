@@ -14,7 +14,7 @@ def make_buttons():
   # blendshape combination system main menu
   cmds.shelfButton(p="ReydaTools",
                    iol="PKR",
-                   c="import CharacterPicker.modules.character_picker_view as view\n#reload(view)\nview.show_ui()",
+                   c="import CharacterPicker.modules.character_picker_view as view\n##reload(view)\nview.show_ui()",
                    stp="python",
                    i="pythonFamily.png",
                    style="iconAndTextVertical")
