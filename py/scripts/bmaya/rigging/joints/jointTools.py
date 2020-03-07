@@ -4,6 +4,10 @@ import math
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
+from bmaya.core import name
+from bmaya.core import mayanode
+
+
 
 def getSelectionCenter():
     cmds.select(cmds.polyListComponentConversion(toVertex=True))
@@ -149,5 +153,33 @@ def bestFitPlane():
 
     cmds.delete(aimLoc)
 
-
+def addTwistJoints(startJoint, endJoint, jointCount=3):
+    """Add twist joints as a child of the given joint.
+    The child of the given joint will be used as the end joint to determine length.
     
+    Args:
+        jnt (str): The joint start joint to use.
+        count=3 (int): The amount of twist joints to add
+        
+    Returns:
+        (list): An array of Joint classes
+        
+    """
+    
+    startJoint = mayanode.Joint(startJoint)
+    endJoint = mayanode.Joint(endJoint)
+    
+    jointVector = endJoint.vectorFromParent
+    
+    twistJoints = []
+    
+    for i in range(jointCount):
+        cmds.select(clear=True)
+        j = mayanode.Joint(name.findJointName(startJoint.shortName, identifier='Twist', count=i, suffix='JNT'))
+        j.worldPosition = startJoint.worldPosition + ((jointVector * i) / float(jointCount - 1))
+        j.parent = startJoint.name
+        j.orient = [0,0,0]
+        
+        twistJoints.append(j)
+    
+    return twistJoints

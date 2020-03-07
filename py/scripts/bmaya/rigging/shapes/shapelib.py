@@ -200,10 +200,13 @@ class Shape(object):
 
         self.groupHierarchy = [self.offsetGrp, self.targetGrp, self.spaceGrp]
 
+        
         if self.jnt:
-            for x in self.groupHierarchy + [self.ctrl]:
-                cmds.setAttr(x + '.rotateOrder',
-                            cmds.getAttr(self.jnt + '.rotateOrder'))
+            rotateOrder = cmds.getAttr(self.jnt + '.rotateOrder')
+
+            # have the hierarchy share the same rotate order
+            for grp in self.groupHierarchy + [self.ctrl]:
+                cmds.setAttr(grp + '.rotateOrder', rotateOrder)
 
         if self.shapeType == 'boundingBox':
             self.setupBoundingBox()

@@ -7,14 +7,14 @@ import maya.cmds as cmds
 from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 
-import Ribbon
+import _Ribbon
 
 
-class Spine(Ribbon.Ribbon):
+class Spine(_Ribbon.Ribbon):
     def __init__(self, startJoint=None, endJoint=None, controlAmount=3, jointAmount=4, 
                  name='Spine1', character=None, parent=None, startParent=None, endParent=None):
 
-        Ribbon.Ribbon.__init__(self, name=name, character=character, mirror=False, side='M',
+        _Ribbon.Ribbon.__init__(self, name=name, character=character, mirror=False, side='M',
                                     startJoint=startJoint, endJoint=endJoint, controlAmount=controlAmount, 
                                     jointAmount=jointAmount)
 
