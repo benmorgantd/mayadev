@@ -1,9 +1,8 @@
 import maya.OpenMaya as om
 import maya.OpenMayaMPx as omMPx
 
-# Custom Aim Constraint by Ben Morgan.
 
-class AimTransform(omMPx.MPxConstraint):
+class bmAimConstraint(omMPx.MPxConstraint):
     """Aim an object down an arbitrary with or without an up vector.
     
     Attributes:
@@ -11,6 +10,7 @@ class AimTransform(omMPx.MPxConstraint):
         objectMatrix (MObject): The worldMatrix of the object you want driven
         targetObjectMatrix (MObject): The worldMatrix of the object to aim at
         upObjectMatrix (MObject): The matrix of the object to serve as the up vector
+        offsetMatrix (MObject): The matrix of the object after connections get made
         downAxis (MObject): The axis to aim down
         upAxis (MObject): The axis to orient the up axis to
         rotateOrder (MObject): The rotate order to use in the euler conversion
@@ -27,11 +27,11 @@ class AimTransform(omMPx.MPxConstraint):
     objectMatrix = om.MObject()
     upObjectMatrix = om.MObject()
     targetObjectMatrix = om.MObject()
+    offsetMatrix = om.MObject()
 
     downAxis = om.MObject()
     upAxis = om.MObject()
     rotateOrder = om.MObject()
-    offset = om.MObject()
     upVectorType = om.MObject()
 
     # output attribute
@@ -45,21 +45,18 @@ class AimTransform(omMPx.MPxConstraint):
         """Maya calls your node's Mpxcompute() method when it determines that 
         one of your node's output attributes needs to be re-computed. """
 
-        if plug != AimTransform.outputRotate:
+        if plug != bmAimConstraint.outputRotate:
             return om.MStatus.kUnknownParameter
 
-        objectMatrix = dataBlock.inputValue(AimTransform.objectMatrix).asMatrix()
-        upObjectMatrix = dataBlock.inputValue(AimTransform.upObjectMatrix).asMatrix()
-        targetObjectMatrix = dataBlock.inputValue(AimTransform.targetObjectMatrix).asMatrix()
+        objectMatrix = dataBlock.inputValue(bmAimConstraint.objectMatrix).asMatrix()
+        upObjectMatrix = dataBlock.inputValue(bmAimConstraint.upObjectMatrix).asMatrix()
+        targetObjectMatrix = dataBlock.inputValue(bmAimConstraint.targetObjectMatrix).asMatrix()
+        offsetMatrix = dataBlock.inputValue(bmAimConstraint.offsetMatrix).asMatrix()
 
-        downAxis = int(dataBlock.inputValue(AimTransform.downAxis).asShort())
-        upAxis = int(dataBlock.inputValue(AimTransform.upAxis).asShort())
-        rotateOrder = int(dataBlock.inputValue(AimTransform.rotateOrder).asShort())
-        upVectorType = int(dataBlock.inputValue(AimTransform.upVectorType).asShort())
-
-        offsetVector = dataBlock.inputValue(AimTransform.offset).asFloatVector()
-        # convert degrees to radians
-        offsetVector = (offsetVector * 3.14159265359) / 180.0
+        downAxis = int(dataBlock.inputValue(bmAimConstraint.downAxis).asShort())
+        upAxis = int(dataBlock.inputValue(bmAimConstraint.upAxis).asShort())
+        rotateOrder = int(dataBlock.inputValue(bmAimConstraint.rotateOrder).asShort())
+        upVectorType = int(dataBlock.inputValue(bmAimConstraint.upVectorType).asShort())
 
         # warn if axis are the same
         if downAxis == upAxis or downAxis == (upAxis-3) or (downAxis-3) == upAxis:
@@ -169,19 +166,16 @@ class AimTransform(omMPx.MPxConstraint):
         # reorder the initial matrix to use the desired down and up axis
         reorderedMatrix = reorderMatrix * baseMatrix
 
-        # offset the matrix by the given rotation
-        offsetEuler = om.MEulerRotation(offsetVector.x, offsetVector.y, offsetVector.z, 
-                                        AimTransform.ROTATION_ORDERS[0])
-        offsetMatrix = offsetEuler.asMatrix()
+        # # offset the matrix by the original target object's matrix
         finalMatrix = offsetMatrix * reorderedMatrix
 
         euler = om.MTransformationMatrix(finalMatrix).eulerRotation()
-        euler = euler.reorder(AimTransform.ROTATION_ORDERS[rotateOrder])
+        euler = euler.reorder(bmAimConstraint.ROTATION_ORDERS[rotateOrder])
 
         # Set output values
-        hOutputX = dataBlock.outputValue(AimTransform.outputRotateX)
-        hOutputY = dataBlock.outputValue(AimTransform.outputRotateY)
-        hOutputZ = dataBlock.outputValue(AimTransform.outputRotateZ)
+        hOutputX = dataBlock.outputValue(bmAimConstraint.outputRotateX)
+        hOutputY = dataBlock.outputValue(bmAimConstraint.outputRotateY)
+        hOutputZ = dataBlock.outputValue(bmAimConstraint.outputRotateZ)
 
         hOutputX.setMAngle(om.MAngle(euler.x))
         hOutputY.setMAngle(om.MAngle(euler.y))
@@ -191,10 +185,9 @@ class AimTransform(omMPx.MPxConstraint):
 
         return
 
-
 def creator():
     # standard creator function for a Maya plugin
-    return omMPx.asMPxPtr(AimTransform())
+    return omMPx.asMPxPtr(bmAimConstraint())
 
 def initialize():
     nAttr = om.MFnNumericAttribute()
@@ -205,31 +198,39 @@ def initialize():
     ### Input Attributes ###
 
     # OBJECT MATRIX
-    AimTransform.objectMatrix = mAttr.create("objectMatrix", "om", om.MFnMatrixAttribute.kDouble)
+    bmAimConstraint.objectMatrix = mAttr.create("objectMatrix", "om", om.MFnMatrixAttribute.kDouble)
     mAttr.setKeyable(True)
     mAttr.setWritable(True)
     mAttr.setStorable(True)
     mAttr.setReadable(True)
-    AimTransform.addAttribute(AimTransform.objectMatrix)
+    bmAimConstraint.addAttribute(bmAimConstraint.objectMatrix)
 
     # AIM OBJECT MATRIX
-    AimTransform.targetObjectMatrix = mAttr.create("targetObjectMatrix", "tm", om.MFnMatrixAttribute.kDouble)
+    bmAimConstraint.targetObjectMatrix = mAttr.create("targetObjectMatrix", "tm", om.MFnMatrixAttribute.kDouble)
     mAttr.setKeyable(True)
     mAttr.setWritable(True)
     mAttr.setStorable(True)
     mAttr.setReadable(True)
-    AimTransform.addAttribute(AimTransform.targetObjectMatrix)
+    bmAimConstraint.addAttribute(bmAimConstraint.targetObjectMatrix)
 
     # UP OBJECT MATRIX
-    AimTransform.upObjectMatrix = mAttr.create("upObjectMatrix", "um", om.MFnMatrixAttribute.kDouble)
+    bmAimConstraint.upObjectMatrix = mAttr.create("upObjectMatrix", "um", om.MFnMatrixAttribute.kDouble)
     mAttr.setKeyable(True)
     mAttr.setWritable(True)
     mAttr.setStorable(True)
     mAttr.setReadable(True)
-    AimTransform.addAttribute(AimTransform.upObjectMatrix)
+    bmAimConstraint.addAttribute(bmAimConstraint.upObjectMatrix)
+
+    # OFFSET MATRIX
+    bmAimConstraint.offsetMatrix = mAttr.create("offsetMatrix", "off", om.MFnMatrixAttribute.kDouble)
+    mAttr.setKeyable(True)
+    mAttr.setWritable(True)
+    mAttr.setStorable(True)
+    mAttr.setReadable(True)
+    bmAimConstraint.addAttribute(bmAimConstraint.offsetMatrix)
 
     # DOWN AXIS
-    AimTransform.downAxis = eAttr.create("downAxis", "down")
+    bmAimConstraint.downAxis = eAttr.create("downAxis", "down")
     eAttr.addField("x", 0)
     eAttr.addField("y", 1)
     eAttr.addField("z", 2)
@@ -241,10 +242,10 @@ def initialize():
     eAttr.setWritable(True)
     eAttr.setStorable(True)
     eAttr.setReadable(True)
-    AimTransform.addAttribute(AimTransform.downAxis)
+    bmAimConstraint.addAttribute(bmAimConstraint.downAxis)
 
     # DOWN AXIS
-    AimTransform.upAxis = eAttr.create("upAxis", "up")
+    bmAimConstraint.upAxis = eAttr.create("upAxis", "up")
     eAttr.addField("x", 0)
     eAttr.addField("y", 1)
     eAttr.addField("z", 2)
@@ -256,10 +257,10 @@ def initialize():
     eAttr.setWritable(True)
     eAttr.setStorable(True)
     eAttr.setReadable(True)
-    AimTransform.addAttribute(AimTransform.upAxis)
+    bmAimConstraint.addAttribute(bmAimConstraint.upAxis)
 
     # UP VECTOR TYPE
-    AimTransform.upVectorType = eAttr.create("upVectorType", "upType")
+    bmAimConstraint.upVectorType = eAttr.create("upVectorType", "upType")
     eAttr.addField("object", 0)
     eAttr.addField("scene", 1)
     eAttr.addField("upObjectX", 2)
@@ -270,10 +271,10 @@ def initialize():
     eAttr.setWritable(True)
     eAttr.setStorable(True)
     eAttr.setReadable(True)
-    AimTransform.addAttribute(AimTransform.upVectorType)
+    bmAimConstraint.addAttribute(bmAimConstraint.upVectorType)
 
     # ROTATE ORDER
-    AimTransform.rotateOrder = eAttr.create("rotateOrder", "roo")
+    bmAimConstraint.rotateOrder = eAttr.create("rotateOrder", "roo")
     eAttr.addField("xyz", 0)
     eAttr.addField("yzx", 1)
     eAttr.addField("zxy", 2)
@@ -285,60 +286,53 @@ def initialize():
     eAttr.setWritable(True)
     eAttr.setStorable(True)
     eAttr.setReadable(True)
-    AimTransform.addAttribute(AimTransform.rotateOrder)
-
-    # OFFSET
-    AimTransform.offset = nAttr.createPoint('offset', 'off')
-    nAttr.setKeyable(True)
-    nAttr.setWritable(True)
-    nAttr.setStorable(True)
-    nAttr.setReadable(True)
-    AimTransform.addAttribute(AimTransform.offset)
+    bmAimConstraint.addAttribute(bmAimConstraint.rotateOrder)
 
     ### Output Attributes ###
     
     # OUTPUT ROTATE
-    AimTransform.outputRotateX = uAttr.create('outputRotateX', 'ox', om.MFnUnitAttribute.kAngle)
-    AimTransform.outputRotateY = uAttr.create('outputRotateY', 'oy', om.MFnUnitAttribute.kAngle)
-    AimTransform.outputRotateZ = uAttr.create('outputRotateZ', 'oz', om.MFnUnitAttribute.kAngle)
+    bmAimConstraint.outputRotateX = uAttr.create('outputRotateX', 'ox', om.MFnUnitAttribute.kAngle)
+    bmAimConstraint.outputRotateY = uAttr.create('outputRotateY', 'oy', om.MFnUnitAttribute.kAngle)
+    bmAimConstraint.outputRotateZ = uAttr.create('outputRotateZ', 'oz', om.MFnUnitAttribute.kAngle)
 
-    AimTransform.outputRotate = nAttr.create('outputRotate', 'or', 
-                                            AimTransform.outputRotateX, 
-                                            AimTransform.outputRotateY, 
-                                            AimTransform.outputRotateZ)
+    bmAimConstraint.outputRotate = nAttr.create('outputRotate', 'or', 
+                                            bmAimConstraint.outputRotateX, 
+                                            bmAimConstraint.outputRotateY, 
+                                            bmAimConstraint.outputRotateZ)
     nAttr.setWritable(False)
     nAttr.setStorable(False)
     nAttr.setReadable(True)
     nAttr.setChannelBox(True)
     # add the attribute to the node
-    AimTransform.addAttribute(AimTransform.outputRotate)
+    bmAimConstraint.addAttribute(bmAimConstraint.outputRotate)
 
     # establish attributeAffects relationships so that the node knows when to compute
-    AimTransform.attributeAffects(AimTransform.targetObjectMatrix, AimTransform.outputRotate)
-    AimTransform.attributeAffects(AimTransform.upObjectMatrix, AimTransform.outputRotate)
-    AimTransform.attributeAffects(AimTransform.downAxis, AimTransform.outputRotate)
-    AimTransform.attributeAffects(AimTransform.upAxis, AimTransform.outputRotate)
-    AimTransform.attributeAffects(AimTransform.rotateOrder, AimTransform.outputRotate)
-    AimTransform.attributeAffects(AimTransform.offset, AimTransform.outputRotate)
-    AimTransform.attributeAffects(AimTransform.upVectorType, AimTransform.outputRotate)
-    AimTransform.attributeAffects(AimTransform.objectMatrix, AimTransform.outputRotate)
+    bmAimConstraint.attributeAffects(bmAimConstraint.targetObjectMatrix, bmAimConstraint.outputRotate)
+    bmAimConstraint.attributeAffects(bmAimConstraint.upObjectMatrix, bmAimConstraint.outputRotate)
+    bmAimConstraint.attributeAffects(bmAimConstraint.downAxis, bmAimConstraint.outputRotate)
+    bmAimConstraint.attributeAffects(bmAimConstraint.upAxis, bmAimConstraint.outputRotate)
+    bmAimConstraint.attributeAffects(bmAimConstraint.rotateOrder, bmAimConstraint.outputRotate)
+    bmAimConstraint.attributeAffects(bmAimConstraint.upVectorType, bmAimConstraint.outputRotate)
+    bmAimConstraint.attributeAffects(bmAimConstraint.objectMatrix, bmAimConstraint.outputRotate)
+    bmAimConstraint.attributeAffects(bmAimConstraint.offsetMatrix, bmAimConstraint.outputRotate)
 
 def initializePlugin(obj):
     plugin = omMPx.MFnPlugin(obj, "Ben Morgan", "1.0", "Any")
     try:
-        plugin.registerNode("aimTransform", AimTransform.nodeId, creator, initialize)
+        plugin.registerNode("bm_aimConstraint", bmAimConstraint.nodeId, creator, initialize)
     except:
         raise RuntimeError("Failed to register node")
 
 def uninitializePlugin(obj):
     plugin = omMPx.MFnPlugin(obj)
     try:
-        plugin.deregisterNode(AimTransform.nodeId)
+        plugin.deregisterNode(bmAimConstraint.nodeId)
     except:
         raise RuntimeError("Failed to register node")
 
+
 """
-cmds.loadPlugin(r"D:\github\mayadev\py\scripts\bmaya\rigging\nodes\bm_aimConstraint.py")
+cmds.loadPlugin(r"your_directory_path\bm_aimConstraint.py")
 
 obj = cmds.spaceLocator(name='obj')[0]
 cmds.setAttr(obj + '.rotateOrder', 3)
@@ -351,7 +345,7 @@ cmds.setAttr(obj + '.displayLocalAxis',1)
 cmds.setAttr(target + '.displayLocalAxis',1)
 cmds.setAttr(up + '.displayLocalAxis',1)
 
-n = cmds.createNode('aimTransform')
+n = cmds.createNode('bm_aimConstraint')
 
 cmds.connectAttr(obj + '.worldMatrix[0]', n + '.objectMatrix')
 cmds.connectAttr(target + '.worldMatrix[0]', n + '.targetObjectMatrix')
@@ -360,4 +354,7 @@ cmds.connectAttr(up + '.worldMatrix[0]', n + '.upObjectMatrix')
 cmds.setAttr(n + '.rotateOrder', cmds.getAttr(obj + '.rotateOrder'))
 
 cmds.connectAttr(n + '.outputRotate', obj + '.rotate')
+
+
 """
+
