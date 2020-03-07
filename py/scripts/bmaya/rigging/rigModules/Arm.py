@@ -2,14 +2,13 @@ import maya.cmds as cmds
 
 from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
+from bmaya.core import name
 
 import IkFkChain
-import Ribbon
 
 from bmaya.rigging.rigBuilder.tools import mathUtils
 
-
-class Arm(IkFkChain.IkFkChain, Ribbon.Ribbon):
+class Arm(IkFkChain.IkFkChain):
 
     def __init__(self, startJoint=None, endJoint=None, name='Arm1', character=None, 
                  parent=None, mirror=False, side='L', fkikDefault=0, alignWorld=True):
@@ -18,10 +17,6 @@ class Arm(IkFkChain.IkFkChain, Ribbon.Ribbon):
                                      character=character, parent=parent, mirror=mirror, side=side, 
                                      fkikDefault=fkikDefault, alignWorld=alignWorld)
         
-        Ribbon.Ribbon.__init__(self, startJoint=startJoint, endJoint=endJoint, 
-                              name=name + '_upperRibbon', character=character, parent=parent, side=side, 
-                              mirror=mirror, controlAmount=3, jointAmount=3, addDeformers=True)
-
         self.modType = "Arm"
 
         self.contract = [self.startJoint, self.endJoint]
@@ -44,60 +39,84 @@ class Arm(IkFkChain.IkFkChain, Ribbon.Ribbon):
         self.components += self.ikComponents
         self.components += self.fkComponents
 
-        storedName = self.name
-        storedBindJoints = self.bindJoints
-
-        upperRibbonDict = self.buildRibbon(self.bindJoints[0], self.bindJoints[1], storedName + '_upperRibbon', twist=True, sine=False,
-                                           identifier='Upper')
-        # don't change bindJoint variable between instances!
-        lowerRibbonDict = self.buildRibbon(self.bindJoints[1], self.bindJoints[2], storedName + '_lowerRibbon', twist=True, sine=False,
-                                           identifier='Lower')
-        self.bindJoints = storedBindJoints
-        self.bindJoints += upperRibbonDict['bindJoints']
-        self.bindJoints += lowerRibbonDict['bindJoints'][1:]
-
-        self.ribbonDrivers = upperRibbonDict['driveControls'] + lowerRibbonDict['driveControls']
-        self.ribbonFollowControls = upperRibbonDict['followControls'] + lowerRibbonDict['followControls']
-        self.name = storedName
-
-        self.setupDriverControlVisSwitch()
-
-        self.setupLowerTwist()
         self.setupUpperTwist()
+        self.setupLowerTwist()
+        
         self.addFkGimbalControl()
-        self.addMiddleDriverControl()
 
         # connect the ik wrist to the ik end joint
         cmds.orientConstraint(self.ikComponents[1].ctrl, self.ikDriveJoints[2], mo=1)
 
-    def setupDriverControlVisSwitch(self):
-        cmds.addAttr(self.node, longName='showDriverControls', attributeType='bool', keyable=True)
-
-        for driverControl in self.ribbonDrivers:
-            cmds.connectAttr(self.node + '.showDriverControls', driverControl.offsetGrp + '.v')
-
-    def setupLowerTwist(self):
-        # extract twist from start and end joint and connect it to the twistOffset variables
-
-        # startQuat = mathUtils.setupQuatTwist(self.bindJoints[0], twistAxis='X')
-        # cmds.connectAttr(startQuat + '.outputRotateX', self.node + '.UpperTwistStartOffset')
-
-        endQuat = mathUtils.setupQuatTwist(self.driveJoints[2], twistAxis='X')
-        cmds.connectAttr(endQuat + '.outputRotateX', self.node + '.LowerTwistEndOffset')
-
-        # we need to negate the end result
-        unitConversion = cmds.listConnections(endQuat + '.outputRotateX')[0]
-        if self.side == 'L':
-            cmds.setAttr(unitConversion + '.conversionFactor', -57.296)
-
     def setupUpperTwist(self):
+        self.upperTwistJoints = self.findTwistJoints(self.bindJoints[0])
+        self.bindJoints += self.upperTwistJoints
+        self.upperTwistControls = []
+
+        upperTwistGrp = cmds.group(empty=True, name=self.name + 'upperTwistGrp')
+        cmds.parent(upperTwistGrp, self.componentsGrp)
+
+        for jnt in self.upperTwistJoints:
+            driveJnt = self.createDriveJoint(jnt, label='DRIVER', constrain=True)
+            self.driveJoints.append(driveJnt)
+            ctrl = shapelib.Shape(name=name.findControlName(driveJnt), shapeType='cube', jnt=driveJnt)
+            cmds.parent(ctrl.offsetGrp, upperTwistGrp)
+            cmds.parentConstraint(self.driveJoints[0], ctrl.offsetGrp, maintainOffset=True)
+            cmds.parentConstraint(ctrl.ctrl, driveJnt, maintainOffset=True)
+            self.upperTwistControls.append(ctrl)
+
         startTwistJoint, ikGrp = mathUtils.setupIkTwist(twistJoint=self.driveJoints[0], ikStartJoint=self.driveJoints[1], ikHandleParent=self.parent, twistJointParent=self.startJoint, name=self.name + 'upperTwist_' + self.side)
-        cmds.connectAttr(startTwistJoint + '.rotateX', self.node + '.UpperTwistStartOffset')
-        unitConversion = cmds.listConnections(startTwistJoint + '.rotateX')[0]
-        if self.side == 'L':
-            cmds.setAttr(unitConversion + '.conversionFactor', -57.296)
+
+        numTwistJoints = float(len(self.upperTwistJoints))
+
+        j = int(numTwistJoints - 1)
+
+        for i in range(int(numTwistJoints) - 1):
+            md = cmds.shadingNode('multDoubleLinear', asUtility=True, name=self.upperTwistControls[i].ctrl + '_md')
+            cmds.connectAttr(startTwistJoint + '.rotateX', md + '.input1')
+            cmds.setAttr(md + '.input2', j / (numTwistJoints -1))
+            cmds.connectAttr(md + '.output', self.upperTwistControls[i].spaceGrp + '.rotateX', force=True)
+
+            j -= 1
 
         cmds.parent(ikGrp, self.driverGrp)
+
+        cmds.addAttr(self.node, longName='upperTwistVisibility', attributeType='bool', keyable=True)
+        cmds.connectAttr(self.node + '.upperTwistVisibility', upperTwistGrp + '.visibility')
+
+        self.components += self.upperTwistControls
+
+    def setupLowerTwist(self):
+        self.lowerTwistJoints = self.findTwistJoints(self.bindJoints[1])
+        self.bindJoints += self.lowerTwistJoints
+        self.lowerTwistControls = []
+        lowerTwistGrp = cmds.group(empty=True, name=self.name + 'lowerTwistGrp')
+        cmds.parent(lowerTwistGrp, self.componentsGrp)
+
+        for jnt in self.lowerTwistJoints:
+            driveJnt = self.createDriveJoint(jnt, label='DRIVER', constrain=True)
+            self.driveJoints.append(driveJnt)
+            ctrl = shapelib.Shape(name=name.findControlName(driveJnt), shapeType='cube', jnt=driveJnt)
+            cmds.parent(ctrl.offsetGrp, lowerTwistGrp)
+            cmds.parentConstraint(self.driveJoints[1], ctrl.offsetGrp, maintainOffset=True)
+            cmds.parentConstraint(ctrl.ctrl, driveJnt, maintainOffset=True)
+            self.lowerTwistControls.append(ctrl)
+
+        # extract twist from start and end joint and connect it to the twistOffset variables
+
+        endQuat = mathUtils.setupQuatTwist(self.driveJoints[2], twistAxis='X')
+
+        numTwistJoints = float(len(self.lowerTwistJoints))
+
+        for i in range(1, int(numTwistJoints)):
+            md = cmds.shadingNode('multDoubleLinear', asUtility=True, name=self.lowerTwistControls[i].ctrl + '_md')
+            cmds.connectAttr(endQuat + '.outputRotateX', md + '.input1')
+            cmds.setAttr(md + '.input2', i / (numTwistJoints -1))
+            cmds.connectAttr(md + '.output', self.lowerTwistControls[i].spaceGrp + '.rotateX', force=True)
+
+        cmds.addAttr(self.node, longName='lowerTwistVisibility', attributeType='bool', keyable=True)
+        cmds.connectAttr(self.node + '.lowerTwistVisibility', lowerTwistGrp + '.visibility')
+
+        self.components += self.lowerTwistControls
 
     def addFkGimbalControl(self):
         # add a second control on top of the existing shoulder fk 
@@ -105,9 +124,8 @@ class Arm(IkFkChain.IkFkChain, Ribbon.Ribbon):
 
         shoulderFkOffset = self.fkComponents[0].offsetGrp
 
-        name = '{0}Gimbal_00_{1}_ctrl'.format(self.fkComponents[0].ctrl.split('_')[0], self.side)
-
-        self.fkShoulderGimbal = shapelib.Shape(name=name, shapeType='sphere', jnt=shoulderFkOffset)
+        ctrlName = name.findControlName(self.fkComponents[0].ctrl, identifier='Gimbal')
+        self.fkShoulderGimbal = shapelib.Shape(name=ctrlName, shapeType='sphere', jnt=shoulderFkOffset)
 
         # change its rotate order to zxy from that of the shoulder fk offset group
         cmds.setAttr(self.fkShoulderGimbal.ctrl + '.rotateOrder', 2)
@@ -119,22 +137,4 @@ class Arm(IkFkChain.IkFkChain, Ribbon.Ribbon):
         cmds.connectAttr(self.blendReverse, self.fkShoulderGimbal.offsetGrp + '.v')
 
         self.components.append(self.fkShoulderGimbal)
-
-    def addMiddleDriverControl(self):
-        self.midDriverControl = shapelib.Shape(name=self.findControlName(self.bindJoints[0], identifier='Mid'))
-        # doing some arm-limb specific logic here
-        cmds.delete(cmds.parentConstraint(self.ribbonDrivers[2].ctrl, self.midDriverControl.offsetGrp, mo=0))
-
-        driverParent = cmds.listRelatives(self.ribbonDrivers[2].offsetGrp, parent=True)[0]
-        cmds.parent(self.midDriverControl.offsetGrp, driverParent)
-
-        cmds.pointConstraint(self.midDriverControl.ctrl, self.ribbonDrivers[2].spaceGrp, mo=1)
-        cmds.pointConstraint(self.midDriverControl.ctrl, self.ribbonDrivers[3].spaceGrp, mo=1)
-
-        cmds.hide(self.ribbonDrivers[2].spaceGrp)
-        cmds.hide(self.ribbonDrivers[3].spaceGrp)
-
-        cmds.connectAttr(self.node + '.showDriverControls', self.midDriverControl.offsetGrp + '.v')
-
-        self.components.append(self.midDriverControl)
 

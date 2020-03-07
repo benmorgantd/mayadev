@@ -330,10 +330,7 @@ def uninitializePlugin(obj):
     except:
         raise RuntimeError("Failed to register node")
 
-
 """
-cmds.loadPlugin(r"your_directory_path\bm_aimConstraint.py")
-
 obj = cmds.spaceLocator(name='obj')[0]
 cmds.setAttr(obj + '.rotateOrder', 3)
 target = cmds.spaceLocator(name='target')[0]
@@ -341,20 +338,20 @@ up = cmds.spaceLocator(name='up')[0]
 cmds.xform(target, t=(5,0,0))
 cmds.xform(up, t=(0,5,0))
 
+cmds.loadPlugin(r"your_directory_path\bm_aimConstraint.py")
+obj = cmds.spaceLocator(name='obj')[0]
+cmds.setAttr(obj + '.rotateOrder', 3)
+target = cmds.spaceLocator(name='target')[0]
+up = cmds.spaceLocator(name='up')[0]
+cmds.xform(target, t=(5,0,0))
+cmds.xform(up, t=(0,5,0))
 cmds.setAttr(obj + '.displayLocalAxis',1)
 cmds.setAttr(target + '.displayLocalAxis',1)
 cmds.setAttr(up + '.displayLocalAxis',1)
-
 n = cmds.createNode('bm_aimConstraint')
-
 cmds.connectAttr(obj + '.worldMatrix[0]', n + '.objectMatrix')
 cmds.connectAttr(target + '.worldMatrix[0]', n + '.targetObjectMatrix')
 cmds.connectAttr(up + '.worldMatrix[0]', n + '.upObjectMatrix')
-
 cmds.setAttr(n + '.rotateOrder', cmds.getAttr(obj + '.rotateOrder'))
-
 cmds.connectAttr(n + '.outputRotate', obj + '.rotate')
-
-
 """
-

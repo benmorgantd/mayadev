@@ -36,7 +36,7 @@ class Transform(object):
         self.dagPath = om.MDagPath()
         sel.getDagPath(0, self.dagPath)
 
-        self.name = self.dagPath.partialPathName()
+        self.name = self.dagPath.fullPathName()
         self.shortName = self.dagPath.partialPathName()
     
     # MFnTransform properties
@@ -122,6 +122,7 @@ class Transform(object):
     def matrix(self):
         return self.transformationMatrix.asMatrix()
 
+<<<<<<< HEAD:py/scripts/bmaya/core/mayanode.py
     @property
     def matrixVectors(self):
         matrix = self.matrixList
@@ -149,6 +150,9 @@ class Transform(object):
             matrixList.append(rowList)
 
         return matrixList
+=======
+    # MFnDagPath properties 
+>>>>>>> revert-and-move-forward:py/scripts/bmaya/core/mayanode.py
 
     @property 
     def fnDag(self):
@@ -169,7 +173,11 @@ class Transform(object):
         if not dagName:
             cmds.parent(self.name, world=True, absolute=True)
         else:
+<<<<<<< HEAD:py/scripts/bmaya/core/mayanode.py
             _name = self.name
+=======
+            _shortName = self.shortName
+>>>>>>> revert-and-move-forward:py/scripts/bmaya/core/mayanode.py
             try:
                 cmds.parent(self.name, dagName, absolute=True)
             except RuntimeError:
@@ -177,12 +185,21 @@ class Transform(object):
                 return 
             # update the dag path after changing parent
             sel = om.MSelectionList()
+<<<<<<< HEAD:py/scripts/bmaya/core/mayanode.py
             sel.add(_name)
+=======
+            sel.add(_shortName)
+>>>>>>> revert-and-move-forward:py/scripts/bmaya/core/mayanode.py
             dag = om.MDagPath()
             sel.getDagPath(0, dag)
 
             self.dagPath = dag
+<<<<<<< HEAD:py/scripts/bmaya/core/mayanode.py
             self.name = dag.partialPathName()
+=======
+            self.shortName = dag.partialPathName()
+            self.name = dag.fullPathName()
+>>>>>>> revert-and-move-forward:py/scripts/bmaya/core/mayanode.py
 
     @property
     def children(self):
@@ -215,6 +232,26 @@ class Transform(object):
 
         cmds.setAttr(self.name + '.metadata', json.dumps(value), type='string')
 
+<<<<<<< HEAD:py/scripts/bmaya/core/mayanode.py
+=======
+    @property
+    def longAxis(self):
+        axis = ['X', 'Y', 'Z']
+        translate = cmds.getAttr(self.name + '.translate')[0]
+        return axis[translate.index(max(translate))]
+    
+    @property 
+    def vectorFromParent(self):
+        if self.parent:
+            return self.worldPosition - self.parent.worldPosition
+        else:
+            return self.worldPosition
+
+    @property
+    def distanceFromParent(self):
+        return self.vectorFromParent.length()
+
+>>>>>>> revert-and-move-forward:py/scripts/bmaya/core/mayanode.py
     def lockAttrs(self, attrs):
         axis = ['X','Y','Z']
         for attr in attrs:
@@ -246,6 +283,10 @@ class Locator(Transform):
     def __init__(self, name):
         if not cmds.objExists(name):
             cmds.spaceLocator(name=name)
+<<<<<<< HEAD:py/scripts/bmaya/core/mayanode.py
+=======
+            
+>>>>>>> revert-and-move-forward:py/scripts/bmaya/core/mayanode.py
         super(Locator, self).__init__(name)
 
         self.localScale = .35
@@ -279,6 +320,7 @@ class Locator(Transform):
     def localScaleZ(self, value):
         cmds.setAttr(self.shape + '.localScaleZ', value)
 
+<<<<<<< HEAD:py/scripts/bmaya/core/mayanode.py
     @property
     def localScale(self):
         return list(cmds.getAttr(self.shape + '.localScale')[0])
@@ -288,3 +330,39 @@ class Locator(Transform):
         for axis in ['X', 'Y', 'Z']:
             cmds.setAttr(self.shape + '.localScale' + axis, value)
     
+=======
+    def localScale(self, value):
+        for axis in ['X', 'Y', 'Z']:
+            cmds.setAttr(self.shape + '.localScale' + axis, value)
+
+
+class Joint(Transform):
+    def __init__(self, name):
+        if not cmds.objExists(name):
+            previousSelection = cmds.ls(sl=1)
+            cmds.select(clear=True)
+
+            cmds.joint(name=name)
+
+            if previousSelection:
+                cmds.select(previousSelection)
+
+        super(Joint, self).__init__(name)
+
+
+    @property
+    def radius(self):
+        return cmds.getAttr(self.name + '.radius')
+    
+    @radius.setter
+    def radius(self, value):
+        cmds.setAttr(self.name + '.radius', value)
+
+    @property
+    def orient(self):
+        return cmds.getAttr(self.name + '.jointOrient')[0]
+
+    @orient.setter
+    def orient(self, value):
+        cmds.setAttr(self.name + '.jointOrient', *value)
+>>>>>>> revert-and-move-forward:py/scripts/bmaya/core/mayanode.py

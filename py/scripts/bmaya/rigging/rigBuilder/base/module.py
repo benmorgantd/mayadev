@@ -4,12 +4,9 @@ import inspect
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-# from .character import Character
 from bmaya.rigging.shapes import shapelib
 
 from decorators import wrapBuild
-
-##reload(shapelib)
 
 class Module(object):
 
@@ -136,10 +133,12 @@ class Module(object):
         """Returns the mirrored node of the same type if it's in the scene.
         Else returns None"""
 
-        if not node:
-            print 'No mirror node found since given node was None'
+        if isinstance(node, (int, float)):
+            # TODO: we could be mirroring vectors here maybe
+            return node
+        elif not node:
             return None
-
+        
         mirrorSide = Module.mirrorPairs[self.side]
 
         if node in ['R', 'L']:
@@ -181,7 +180,6 @@ class Module(object):
                     mirrorList = []
                     for j in value:
                         mirrorList.append(self.findMirror(j))
-        
                     mirroredInitArgs[attr] = mirrorList
 
                 else:
@@ -191,12 +189,17 @@ class Module(object):
             mirroredInitArgs['name'] = self.name + '_' + mirroredInitArgs['side']
             mirroredInitArgs['mirror'] = False
 
-            mirrorSelf = self.__class__(**mirroredInitArgs)
-        
+            mirrorSelf = self.__class__()
+
+            for arg in mirroredInitArgs.keys():
+                if arg != 'parent':
+                    setattr(mirrorSelf, arg, mirroredInitArgs[arg])
+                else:
+                    setattr(mirrorSelf, arg, mirrorSelf.determineParent(mirroredInitArgs[arg]))
+
             mirrorSelf.build()
         
             return mirrorSelf
-
         else:
             return None
 
@@ -330,7 +333,7 @@ class Module(object):
 
             if jnt not in exclude:
                 if jnt != self.endJoint:
-                    jntChildren = cmds.listRelatives(jnt, type='joint', children=True, ad=1)
+                    jntChildren = cmds.listRelatives(jnt, type='joint', children=True, allDescendents=True) or []
                     if shortestDistance and self.endJoint not in jntChildren:
                         itDag.prune()
                     else:
@@ -347,34 +350,36 @@ class Module(object):
         
         return bindJoints
 
+    def createDriveJoint(self, jnt, label='Driver', constrain=True):
+        driver = cmds.duplicate(jnt, parentOnly=True, name=jnt.replace('JNT', label))[0]
+            
+        jointParent = cmds.listRelatives(jnt, parent=True, type='joint')
+        
+        if jointParent:
+            driverParent = jointParent[0].replace('JNT', label)
+            if cmds.objExists(driverParent):
+                cmds.parent(driver, driverParent, absolute=True)
+
+        if constrain:
+            self.parentConstrain(driver, jnt, maintainOffset=False)
+
+            # add a connection for driver and driven joint
+            # only add this attribute if it's a direct constraint
+            cmds.addAttr(jnt, longName='driver', attributeType='message')
+            cmds.addAttr(driver, longName='driven', attributeType='message')
+            cmds.connectAttr(driver + '.driven', jnt + '.driver')
+
+        return driver
+
     def createDriveJoints(self, label='DRIVER', constrain=True):
         driveJoints = []
 
         for joint in self.bindJoints:
-            driver = cmds.duplicate(joint, parentOnly=True, name=joint.replace('JNT', label))[0]
-            
-            jointParent = cmds.listRelatives(joint, parent=True, type='joint')
-            
-            if jointParent:
-                driverParent = jointParent[0].replace('JNT', label)
-                if cmds.objExists(driverParent):
-                    cmds.parent(driver, driverParent, absolute=True)
-
-            if constrain:
-                self.parentConstrain(driver, joint, maintainOffset=False)
-
-                # add a connection for driver and driven joint
-                # only add this attribute if it's a direct constraint
-                cmds.addAttr(joint, longName='driver', attributeType='message')
-                cmds.addAttr(driver, longName='driven', attributeType='message')
-                cmds.connectAttr(driver + '.driven', joint + '.driver')
-
-            driveJoints.append(driver)
+            driveJoints.append(self.createDriveJoint(joint, label=label, constrain=constrain))
 
         cmds.parent(driveJoints[0], self.driverGrp)
         
         return driveJoints
-
 
     def makeIkHandle(self, startJoint, endJoint, solverType, name):
 
@@ -497,3 +502,16 @@ class Module(object):
 
         cmds.connectAttr(component.ctrl + '.alignWorld', const + '.layout_02_M_ctrlW0')
 
+    def findTwistJoints(self, jnt):
+        children = cmds.listRelatives(jnt, type='joint', children=True)
+
+        twistJoints = []
+
+        for c in children:
+            if 'Twist' in c:
+                twistJoints.append(c)
+                
+        # will ascend 00 -> 0x
+        twistJoints.sort()
+
+        return twistJoints
