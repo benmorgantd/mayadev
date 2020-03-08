@@ -173,11 +173,7 @@ class Transform(object):
         if not dagName:
             cmds.parent(self.name, world=True, absolute=True)
         else:
-<<<<<<< HEAD:py/scripts/bmaya/core/mayanode.py
-            _name = self.name
-=======
             _shortName = self.shortName
->>>>>>> revert-and-move-forward:py/scripts/bmaya/core/mayanode.py
             try:
                 cmds.parent(self.name, dagName, absolute=True)
             except RuntimeError:
@@ -185,21 +181,13 @@ class Transform(object):
                 return 
             # update the dag path after changing parent
             sel = om.MSelectionList()
-<<<<<<< HEAD:py/scripts/bmaya/core/mayanode.py
-            sel.add(_name)
-=======
             sel.add(_shortName)
->>>>>>> revert-and-move-forward:py/scripts/bmaya/core/mayanode.py
             dag = om.MDagPath()
             sel.getDagPath(0, dag)
 
             self.dagPath = dag
-<<<<<<< HEAD:py/scripts/bmaya/core/mayanode.py
-            self.name = dag.partialPathName()
-=======
             self.shortName = dag.partialPathName()
             self.name = dag.fullPathName()
->>>>>>> revert-and-move-forward:py/scripts/bmaya/core/mayanode.py
 
     @property
     def children(self):
@@ -232,8 +220,6 @@ class Transform(object):
 
         cmds.setAttr(self.name + '.metadata', json.dumps(value), type='string')
 
-<<<<<<< HEAD:py/scripts/bmaya/core/mayanode.py
-=======
     @property
     def longAxis(self):
         axis = ['X', 'Y', 'Z']
@@ -251,7 +237,6 @@ class Transform(object):
     def distanceFromParent(self):
         return self.vectorFromParent.length()
 
->>>>>>> revert-and-move-forward:py/scripts/bmaya/core/mayanode.py
     def lockAttrs(self, attrs):
         axis = ['X','Y','Z']
         for attr in attrs:
