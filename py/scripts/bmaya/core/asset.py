@@ -106,13 +106,12 @@ class Asset(object):
         # initialize the component objects for the asset
         self.mesh = mesh.Mesh(self, 'mesh')
         self.skeleton = skeleton.Skeleton(self, 'skeleton')
-        self.locators = locators.Locators(self, 'locators')
         self.weights = weights.Weights(self, 'weights')
         self.cvs = cvs.Cvs(self, 'cvs')
         self.build = build.Build(self, 'build')
         self.animRig = animRig.AnimRig(self, 'animRig')
 
-        self.components += [self.mesh, self.skeleton, self.locators, self.weights, self.cvs, self.build, self.animRig]
+        self.components += [self.mesh, self.skeleton, self.weights, self.cvs, self.build, self.animRig]
 
     def initComponentFolders(self):
         """Creates the component folders for the asset"""
@@ -146,16 +145,6 @@ class Asset(object):
             self.versionFile(self.skeleton.fullPath)
         else:
             print '>> A working skeleton file already exists for ' + self.name
-
-        if not os.path.exists(self.locators.fullPath):
-            print ">> Creating a locators file."
-            cmds.file(new=True, force=True)
-            self.referenceFile(self.mesh.fullPath)
-            cmds.file(rename=self.locators.fullPath)
-            cmds.file(save=True, type="mayaAscii", force=True)
-            self.versionFile(self.locators.fullPath)
-        else:
-            print '>> A working locators file already exists for ' + self.name
 
         if not os.path.exists(self.cvs.fullPath):
             print ">> Creating cvs file."

@@ -5,7 +5,6 @@ import ast
 from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
 from bmaya.core import qtbase
-from bmaya.rigging.rigBuilder.tools import locatorSystems
 
 import maya.cmds as cmds
 import maya.OpenMaya as om
@@ -122,7 +121,6 @@ class BuildList(qtbase.Tree):
             modData.pop('modType')
             modData.pop('name')
             modData.pop('children')
-            modData.pop('locators')
 
             listItem = BuildListItem(modType=modType, 
                                      attributeContainer=attributeLayoutContainer,
@@ -210,7 +208,6 @@ class BuildList(qtbase.Tree):
         customAttrs.pop('character')
         customAttrs.pop('modType')
         customAttrs.pop('name')
-        customAttrs.pop('locators')
 
         # create a new list item of the same type as the selection
         listItem = BuildListItem(modType=currentObject.modType, 

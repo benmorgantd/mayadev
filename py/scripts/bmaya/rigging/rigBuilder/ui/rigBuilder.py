@@ -9,7 +9,6 @@ from . import customWidgets, assetCreator
 
 from bmaya.core import asset
 from ..base import creator
-from ..tools import locatorSystems
 from bmaya.rigging.rigBuilder.tools import buildio
 
 
@@ -62,7 +61,6 @@ class RigBuilder(qtbase.DockableWidget):
 
         self.setupFileMenu()
         self.setupAssetMenu()
-        self.setupComponentMenu()
 
         self.widget.menuLayout.addWidget(self.menu)
 
@@ -98,19 +96,6 @@ class RigBuilder(qtbase.DockableWidget):
 
         versionAssetAction = assetMenu.addAction('Version Asset')
         versionAssetAction.triggered.connect(lambda: self.assetInstance.versionAsset())
-
-    def setupComponentMenu(self):
-        componentMenu = self.menu.addMenu('Component')
-
-        newAssetAction = componentMenu.addAction('Load')
-        newAssetAction.triggered.connect(self.loadComponent)
-
-        newAssetAction = componentMenu.addAction('Reference')
-        newAssetAction.triggered.connect(self.referenceComponent)
-
-        newAssetAction = componentMenu.addAction('Save New Version')
-        newAssetAction.triggered.connect(self.saveComponent)
-
         
     
     def openAssetInExplorer(self):
@@ -129,9 +114,9 @@ class RigBuilder(qtbase.DockableWidget):
 
     def setupButtons(self):
         self.widget.loadCharacter.clicked.connect(lambda: self.initiateAsset())
-        # self.widget.loadComponent.clicked.connect(lambda: self.loadComponent())
-        # self.widget.saveComponent.clicked.connect(lambda: self.saveComponent())
-        # self.widget.referenceComponent.clicked.connect(lambda: self.referenceComponent())
+        self.widget.loadComponent.clicked.connect(lambda: self.loadComponent())
+        self.widget.saveComponent.clicked.connect(lambda: self.saveComponent())
+        self.widget.referenceComponent.clicked.connect(lambda: self.referenceComponent())
         self.widget.build.clicked.connect(lambda: self.buildCharacter())
 
     def loadProjects(self):
@@ -167,7 +152,7 @@ class RigBuilder(qtbase.DockableWidget):
         # sort them alphabetically 
         mods.sort()
         for mod in mods:
-            if mod.endswith('.py') and mod != '__init__.py':
+            if mod.endswith('.py') and not mod.startswith('_'):
                 self.moduleList.addItem(mod[0:-3])
 
     def saveComponent(self):
@@ -197,9 +182,7 @@ class RigBuilder(qtbase.DockableWidget):
 
         componentPath = self.assetInstance.componentPathFromType(componentType)
 
-        print componentPath
-
-        if componentType in ['skeleton', 'mesh', 'animRig', 'locators']:
+        if componentType in ['skeleton', 'mesh', 'animRig']:
             self.assetInstance.openFile(componentPath)
         elif componentType == 'cvs':
             from bmaya.rigging.shapes import shapeio
@@ -279,8 +262,6 @@ class RigBuilder(qtbase.DockableWidget):
 
         self.buildData = buildio.load(filepath)
 
-        # self.locatorSystems = buildio.initLocatorsFromData(self.buildData)
-
         self.buildList.loadList(self.buildData, 
             attributeLayoutContainer=self.widget.attributeLayoutContainer)
 
@@ -288,8 +269,6 @@ class RigBuilder(qtbase.DockableWidget):
 
     def saveBuild(self, filepath=None):
         jsonData = self.buildList.getAllValues()
-
-        # finalData = buildio.saveLocatorData(self.locatorSystems, jsonData)
 
         if not filepath:
             filepath = self.exploreToBuildPath(action='Save', fileMode=0)
@@ -320,37 +299,6 @@ class RigBuilder(qtbase.DockableWidget):
         self.buildList.hideAttrLayouts()
         self.buildList.clear()
 
-    def addNewLocatorSystem(self, item):
-        # add a new locator system from the given Module List item
-
-        currentModule = self.buildList.currentItem()
-
-        name = self.moduleList.addModule()
-        # the name is checked to be unique in addModule 
-
-        if name:
-            systemType = item.text()
-            if currentModule:
-                parentSystem = self.getLocatorSystemByName(currentModule.name)
-            else:
-                parentSystem = None
-
-            system = getattr(locatorSystems, systemType)(name, parentSystem=parentSystem)
-
-            if parentSystem:
-                # parent to the first attachment point for the parent module
-                system.systemGroup.parent = parentSystem.startLocator.name
-            else:
-                system.systemGroup.parent = 'Locators'
-
-            self.locatorSystems.append(system)
-
-    def getLocatorSystemByName(self, name):
-        for system in self.locatorSystems:
-            if system.moduleName == name:
-                return system
-
-
 ######################################################################
 ######################################################################
 
@@ -359,17 +307,3 @@ def run():
     ui.dock()
     return ui
 
-
-"""
-- save locator data with build (DONE)
-- mirror locator data
-- add locator system when you add a module (DONE)
-- what happens when you change the locator's parent?  (rename and reorder in Maya, update ui from there)
-    - UI can't be reordered (DONE)
-    - send order to ui
-    - this updates the parent for build data
-- what happens when you rename the module in the ui? in Maya? (^ same)
-        - ask for the name of the module during the double click event
-- changing side renames locators, 
-
-"""
