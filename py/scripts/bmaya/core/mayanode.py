@@ -122,7 +122,6 @@ class Transform(object):
     def matrix(self):
         return self.transformationMatrix.asMatrix()
 
-<<<<<<< HEAD:py/scripts/bmaya/core/mayanode.py
     @property
     def matrixVectors(self):
         matrix = self.matrixList
@@ -150,9 +149,6 @@ class Transform(object):
             matrixList.append(rowList)
 
         return matrixList
-=======
-    # MFnDagPath properties 
->>>>>>> revert-and-move-forward:py/scripts/bmaya/core/mayanode.py
 
     @property 
     def fnDag(self):
@@ -268,10 +264,7 @@ class Locator(Transform):
     def __init__(self, name):
         if not cmds.objExists(name):
             cmds.spaceLocator(name=name)
-<<<<<<< HEAD:py/scripts/bmaya/core/mayanode.py
-=======
             
->>>>>>> revert-and-move-forward:py/scripts/bmaya/core/mayanode.py
         super(Locator, self).__init__(name)
 
         self.localScale = .35
@@ -305,7 +298,6 @@ class Locator(Transform):
     def localScaleZ(self, value):
         cmds.setAttr(self.shape + '.localScaleZ', value)
 
-<<<<<<< HEAD:py/scripts/bmaya/core/mayanode.py
     @property
     def localScale(self):
         return list(cmds.getAttr(self.shape + '.localScale')[0])
@@ -315,7 +307,6 @@ class Locator(Transform):
         for axis in ['X', 'Y', 'Z']:
             cmds.setAttr(self.shape + '.localScale' + axis, value)
     
-=======
     def localScale(self, value):
         for axis in ['X', 'Y', 'Z']:
             cmds.setAttr(self.shape + '.localScale' + axis, value)
@@ -350,4 +341,3 @@ class Joint(Transform):
     @orient.setter
     def orient(self, value):
         cmds.setAttr(self.name + '.jointOrient', *value)
->>>>>>> revert-and-move-forward:py/scripts/bmaya/core/mayanode.py
