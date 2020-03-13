@@ -6,9 +6,6 @@ from bmaya.rigging.shapes import shapelib
 import IkChain
 import FkChain
 
-##reload(IkChain)
-##reload(FkChain)
-
 
 class IkFkChain(FkChain.FkChain, IkChain.IkChain):
 
@@ -40,12 +37,12 @@ class IkFkChain(FkChain.FkChain, IkChain.IkChain):
         self.components += self.ikComponents
         self.components += self.fkComponents
 
-    def buildFkIkSetup(self):
+    def buildFkIkSetup(self, worldAimTarget=None):
         # need to feed it our specific drive joints
         self.ikDriveJoints = self.createDriveJoints(label='IKDRIVER', constrain=False)
         self.fkDriveJoints = self.createDriveJoints(label='FKDRIVER', constrain=False)
 
-        self.ikComponents = self.buildIkControls(self.ikDriveJoints)
+        self.ikComponents = self.buildIkControls(self.ikDriveJoints, worldAimTarget=worldAimTarget)
         self.fkComponents = self.buildFkControls(self.fkDriveJoints)
 
         # add an attribute for blending

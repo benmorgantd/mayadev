@@ -22,47 +22,27 @@ class ModuleList(qtbase.List):
     def setBuildList(self, listWidget):
         self.buildList = listWidget
 
-    def addModule(self):
-        # QtWidgets.QListWidget.mouseDoubleClickEvent(self, event)
+    def mouseDoubleClickEvent(self, event):
+        QtWidgets.QListWidget.mouseDoubleClickEvent(self, event)
 
         if self.buildList:
             currentRowIndex = self.currentRow()
 
             try:
-                moduleType = self.item(currentRowIndex).text()
+                selectedModType = self.item(currentRowIndex).text()
             except AttributeError:
                 # no row selected
                 return
 
             # get the current item instead and add it as a child. If nothing is selected, 
             # add it to the top node
+            newMod = BuildListItem(modType=selectedModType, attributeContainer=self.attributeContainer)
 
-            # create a dialog and get the name
-            result = cmds.promptDialog(title='Module Name', message='Module Name')
-
-            if result == 'Confirm':
-                name = cmds.promptDialog(query=True, text=True)
-
-                if any(name == item.name for item in self.buildList.items):
-                    om.MGlobal.displayError('A module is already named ' + name)
-                    return None
-
-                newMod = BuildListItem(modType=moduleType, attributeContainer=self.attributeContainer,
-                                      name=name)
-
-                currentItem = self.buildList.currentItem()
-
-                if currentItem:
-                    currentItem.addChild(newMod)
-                else:
-                    self.buildList.addTopLevelItem(newMod)
-
-                return name
-
+            currentItem = self.buildList.currentItem()
+            if currentItem:
+                currentItem.addChild(newMod)
             else:
-                return None
-            
-
+                self.buildList.addTopLevelItem(newMod)
 class BuildList(qtbase.Tree):
     def __init__(self):
         super(BuildList, self).__init__()

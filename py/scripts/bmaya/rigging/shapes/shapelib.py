@@ -194,13 +194,14 @@ class Shape(object):
 
         # make offsetGrp>>spaceGrp>>targetGrp>>ctrl
 
-        self.targetGrp = cmds.group(self.ctrl, name=self.name + '_targetGrp', absolute=True)
-        self.spaceGrp = cmds.group(self.targetGrp, name=self.name + '_spaceGrp', absolute=True)
-        self.offsetGrp = cmds.group(self.spaceGrp, name=self.name + '_offsetGrp', absolute=True)
+        self.offsetGrp = cmds.group(empty=True, name=self.name + '_offsetGrp')
+        self.spaceGrp = cmds.group(empty=True, name=self.name + '_spaceGrp', parent=self.offsetGrp)
+        self.targetGrp = cmds.group(empty=True, name=self.name + '_targetGrp', parent=self.spaceGrp)
+
+        cmds.parent(self.ctrl, self.targetGrp)
 
         self.groupHierarchy = [self.offsetGrp, self.targetGrp, self.spaceGrp]
 
-        
         if self.jnt:
             rotateOrder = cmds.getAttr(self.jnt + '.rotateOrder')
 

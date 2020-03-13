@@ -305,21 +305,24 @@ class Module(object):
 
             cmds.connectAttr(self.node + '.bindJoints', jnt + '.module')
 
-    def findHierarchyJoints(self, shortestDistance=False):
+    def findHierarchyJoints(self, shortestDistance=False, startJoint=None, endJoint=None):
         """Expands from a start joint and until it hits excluded joints."""
 
+        if not startJoint:
+            startJoint = self.startJoint
+        if not endJoint:
+            endJoint = self.endJoint
+
         sel = om.MSelectionList()
-
         bindJoints = []
-
         exclude = []
 
-        if not self.startJoint:
+        if not startJoint:
             raise RuntimeError('Need a start joint.')
         if hasattr(self, 'exclude'):
             exclude = self.exclude
 
-        sel.add(self.startJoint)
+        sel.add(startJoint)
         dag = om.MDagPath()
         sel.getDagPath(0, dag)
 
@@ -332,9 +335,9 @@ class Module(object):
             jnt = itDag.partialPathName()
 
             if jnt not in exclude:
-                if jnt != self.endJoint:
+                if jnt != endJoint:
                     jntChildren = cmds.listRelatives(jnt, type='joint', children=True, allDescendents=True) or []
-                    if shortestDistance and self.endJoint not in jntChildren:
+                    if shortestDistance and endJoint not in jntChildren:
                         itDag.prune()
                     else:
                         bindJoints.append(jnt)

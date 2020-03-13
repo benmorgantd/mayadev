@@ -1,4 +1,5 @@
 import maya.cmds as cmds
+import maya.OpenMaya as om
 
 from bmaya.rigging.rigBuilder.base import module
 from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
@@ -34,7 +35,7 @@ class IkChain(module.Module):
 
         self.components = self.buildIkControls(self.driveJoints)
         
-    def buildIkControls(self, driveJoints):
+    def buildIkControls(self, driveJoints, worldAimTarget=None):
         # letting components be a local variable here so that we can use this 
         # safer in child methods
         components = []
@@ -42,8 +43,25 @@ class IkChain(module.Module):
         startCtrl = shapelib.Shape(name=self.findControlName(driveJoints[0], identifier='Ik'), 
                                    shapeType='cube', jnt=driveJoints[0])
 
-        endCtrl = shapelib.Shape(self.findControlName(driveJoints[-1], identifier='Ik'), 
-                                shapeType='cube', jnt=driveJoints[-1])
+        if worldAimTarget:
+            endCtrl = shapelib.Shape(self.findControlName(driveJoints[-1], identifier='Ik'), shapeType='cube')
+
+            worldAlignVector = om.MVector(*cmds.xform(worldAimTarget, query=True, translation=True, worldSpace=True))
+            endCtrlVector = om.MVector(*cmds.xform(self.driveJoints[-1], query=True, translation=True, worldSpace=True))
+
+            U = om.MVector(0,1,0)
+            V = (worldAlignVector - endCtrlVector).normal()
+            W = (U ^ V).normal()
+            V = (U ^ W).normal()
+
+            cmds.xform(endCtrl.offsetGrp, matrix=[W.x, W.y, W.z, 0, 
+                                                  U.x, U.y, U.z, 0, 
+                                                  V.x, V.y, V.z, 0,
+                                                  endCtrlVector.x, endCtrlVector.y, endCtrlVector.z, 1])
+
+        else:
+            endCtrl = shapelib.Shape(self.findControlName(driveJoints[-1], identifier='Ik'), shapeType='cube',
+                                     jnt=driveJoints[-1])
 
         cmds.parent(endCtrl.offsetGrp, startCtrl.ctrl)
 
@@ -61,7 +79,6 @@ class IkChain(module.Module):
             cmds.xform(poleVectorCtrl.offsetGrp, translation=mathUtils.findPoleVector(driveJoints, scaleFactor=1.5), worldSpace=True)
             cmds.xform(poleVectorCtrl.offsetGrp, rotation=(0,0,0), absolute=1, worldSpace=True)
 
-        cmds.parent(poleVectorCtrl.offsetGrp, startCtrl.ctrl)
         cmds.pointConstraint(endCtrl.ctrl, poleVectorCtrl.offsetGrp, maintainOffset=True)
         cmds.poleVectorConstraint(poleVectorCtrl.ctrl, ik)
 
@@ -70,12 +87,14 @@ class IkChain(module.Module):
         cmds.parent(ikGrp, self.modGrp)
 
         components += [startCtrl, endCtrl, poleVectorCtrl]
-        self.ikHandles = ik
+        self.ikHandle = ik
+        self.ikHandleGrp = ikGrp
 
         # connect the controls to the joints and effectors
         self.parentConstrain(startCtrl.ctrl, driveJoints[0])
         self.parentConstrain(endCtrl.ctrl, ikGrp)
 
+        cmds.parent(poleVectorCtrl.offsetGrp, self.componentsGrp)
         cmds.parent(startCtrl.offsetGrp, self.componentsGrp)
 
         return components

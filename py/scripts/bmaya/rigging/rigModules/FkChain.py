@@ -1,5 +1,3 @@
-'''FkChain'''
-
 import maya.cmds as cmds 
 
 from bmaya.rigging.rigBuilder.base import module

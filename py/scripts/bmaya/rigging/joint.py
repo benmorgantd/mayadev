@@ -183,3 +183,16 @@ def addTwistJoints(startJoint, endJoint, jointCount=3):
         twistJoints.append(j)
     
     return twistJoints
+
+def orientToWorld(joints):
+
+    worldLoc = cmds.group(empty=True, name='worldSpace')
+    
+    # orient joints to world
+    for jnt in joints:
+        cmds.delete(cmds.orientConstraint(worldLoc, jnt, maintainOffset=False))
+        
+        cmds.makeIdentity(jnt, apply=True, rotate=True)
+        
+    cmds.delete(worldLoc)
+        
