@@ -97,14 +97,14 @@ class Character(Asset):
                 buildList.append(mod)
 
         # create the new class instance from the data
-        from bmaya.rigging import rigModules
+        from bmaya.rigging import modules
 
         for mod in buildList:
             # access the modType attribute from the module's dictionary
             modType = mod['modType']
 
             # create a new instance of that class
-            modInstance = rigModules.MODULE_CLASSES[modType].__new__(rigModules.MODULE_CLASSES[modType])
+            modInstance = modules.MODULE_CLASSES[modType].__new__(modules.MODULE_CLASSES[modType])
             modInstance.__init__(character=self)
 
             for key, value in mod.items():
@@ -162,7 +162,10 @@ class Character(Asset):
         cmds.file(save=True, type='mayaAscii', force=True)
         self.versionFile(self.animRig.fullPath)
 
+        cmds.viewFit(allObjects=True, fitFactor=1)
+
         endTime = time.time()
+
         print "Rig built in {0:.2f} seconds.".format(endTime - startTime)
 
     def makeNode(self):

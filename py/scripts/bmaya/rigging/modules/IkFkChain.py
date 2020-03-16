@@ -54,3 +54,4 @@ class IkFkChain(FkChain.FkChain, IkChain.IkChain):
         # connect blend control to visibility
         cmds.connectAttr(self.blendReverse, '{0}.v'.format(self.fkComponents[0].offsetGrp))
         cmds.connectAttr(self.node + '.FKIK', '{0}.v'.format(self.ikComponents[0].offsetGrp))
+        cmds.connectAttr(self.node + '.FKIK', '{0}.v'.format(self.ikComponents[-1].offsetGrp))

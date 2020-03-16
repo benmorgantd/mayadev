@@ -8,7 +8,7 @@ from bmaya.core.mayanode import Transform
 
 class Ribbon(module.Module):
 
-    def __init__(self, startJoint=None, endJoint=None, controlAmount=3, jointAmount=4, 
+    def __init__(self, startJoint=None, endJoint=None, controlAmount=3, 
                  name='Ribbon1', character=None, parent=None, side='L', mirror=False,
                  addDeformers=True):
         super(Ribbon, self).__init__(modType='Ribbon', name=name, character=character, 
@@ -19,25 +19,25 @@ class Ribbon(module.Module):
         self.endJoint = endJoint
 
         self.controlAmount = controlAmount
-        self.jointAmount = jointAmount
         self.addDeformers = addDeformers
 
         if self.controlAmount < 2:
             raise ValueError('Ribbons must have at least 2 controls')
-        if self.jointAmount < 2:
-            raise ValueError('Ribbons must have at least 2 bind joints')
 
         self.contract = [self.startJoint, self.endJoint]
 
     @wrapBuild
     def build(self):
 
+        self.bindJoints = self.findHierarchyJoints(startJoint=self.startJoint,
+                                                   endJoint=self.endJoint, shortestDistance=True)
+        self.jointAmount = len(self.bindJoints)
+
         self.skinnedPlane = self.buildSkinnedPlane(self.startJoint, self.endJoint)
         if self.addDeformers:
             self.deformerPlane = self.buildDeformerPlane(self.startJoint, self.endJoint, self.skinnedPlane)
         self.followJoints = self.makeFollowJoints(self.skinnedPlane, self.startJoint)
         self.driveJoints = self.makeDriveJoints(self.skinnedPlane, self.startJoint)
-        self.bindJoints = self.makeBindJoints(self.startJoint, self.followJoints)
         self.followControls = self.makeFollowJointControls(self.bindJoints, self.followJoints)
         self.skinDriverJointsToPlane(self.driveJoints, self.skinnedPlane)
         self.driveControls = self.makeDriverControls(self.startJoint, self.driveJoints)
@@ -45,13 +45,18 @@ class Ribbon(module.Module):
 
     def buildRibbon(self, startJoint, endJoint, name, twist=True, sine=False, identifier=''):
         self.name = name
+        bindJoints = self.findHierarchyJoints(startJoint=startJoint,
+                                              endJoint=endJoint, 
+                                              shortestDistance=True)
+        self.jointAmount = len(bindJoints)
         skinnedPlane = self.buildSkinnedPlane(startJoint, endJoint)
         if self.addDeformers:
             deformerPlane = self.buildDeformerPlane(startJoint, endJoint, skinnedPlane, twist=twist,
                                                     sine=sine, identifier=identifier)
         followJoints = self.makeFollowJoints(skinnedPlane, startJoint, identifier)
         driveJoints = self.makeDriveJoints(skinnedPlane, startJoint, identifier)
-        bindJoints = self.makeBindJoints(startJoint, followJoints, identifier)
+        
+                                              
         followControls = self.makeFollowJointControls(bindJoints, followJoints)
         self.skinDriverJointsToPlane(driveJoints, skinnedPlane)
         driveControls = self.makeDriverControls(startJoint, driveJoints)
@@ -281,28 +286,28 @@ class Ribbon(module.Module):
 
         return driveJoints
 
-    def makeBindJoints(self, parentJoint, followJoints, identifier=''):
-        bindJoints = []
+    # def makeBindJoints(self, parentJoint, followJoints, identifier=''):
+    #     bindJoints = []
         
-        for i in range(len(followJoints)):
-            followJnt = followJoints[i]
+    #     for i in range(len(followJoints)):
+    #         followJnt = followJoints[i]
 
-            if identifier:
-                bindJnt = cmds.joint(name=self.findJointName(parentJoint, identifier=identifier, count=i, suffix='JNT'))
-            else:
-                bindJnt = cmds.joint(name='{0}_{1}_{2}_JNT'.format(self.name, str(i).zfill(2), self.side))
-            cmds.setAttr(bindJnt + '.rotateOrder', 0)
+    #         if identifier:
+    #             bindJnt = cmds.joint(name=self.findJointName(parentJoint, identifier=identifier, count=i, suffix='JNT'))
+    #         else:
+    #             bindJnt = cmds.joint(name='{0}_{1}_{2}_JNT'.format(self.name, str(i).zfill(2), self.side))
+    #         cmds.setAttr(bindJnt + '.rotateOrder', 0)
 
-            cmds.delete(cmds.parentConstraint(followJnt, bindJnt, mo=0))
-            cmds.makeIdentity(bindJnt, apply=True, t=1,r=1,s=1,pn=1)
+    #         cmds.delete(cmds.parentConstraint(followJnt, bindJnt, mo=0))
+    #         cmds.makeIdentity(bindJnt, apply=True, t=1,r=1,s=1,pn=1)
 
-            self.messageConnect(followJnt, bindJnt, 'bindJoint', 'driveJoint')
+    #         self.messageConnect(followJnt, bindJnt, 'bindJoint', 'driveJoint')
 
-            cmds.parent(bindJnt, parentJoint)
+    #         cmds.parent(bindJnt, parentJoint)
 
-            bindJoints.append(bindJnt)
+    #         bindJoints.append(bindJnt)
 
-        return bindJoints
+    #     return bindJoints
 
     def makeFollowJointControls(self, bindJoints, followJoints):
 

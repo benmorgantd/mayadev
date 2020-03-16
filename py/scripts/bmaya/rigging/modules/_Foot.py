@@ -133,13 +133,13 @@ class Foot(object):
         cmds.parent(self.ballToToeIk, self.reverseHierarchy[-3])
     
     def createIkControls(self):
-        self.ballSwivelCtrl = shapelib.Shape(name=name.findControlName(self.reverseHierarchy[0]), jnt=self.reverseHierarchy[0], shapeType='square')
+        self.ballSwivelCtrl = shapelib.Shape(name=name.findControlName(self.reverseHierarchy[0]), jnt=self.reverseHierarchy[0], shapeType='circleArrow')
         cmds.setAttr(self.heel + '.rotateOrder', 2)
-        self.heelCtrl = shapelib.Shape(name=name.findControlName(self.heel), jnt=self.heel, shapeType='cube')
-        self.toeTipCtrl = shapelib.Shape(name=name.findControlName(self.toeTip), jnt=self.toeTip, shapeType='circle')
+        self.heelCtrl = shapelib.Shape(name=name.findControlName(self.heel), jnt=self.heel, shapeType='archedDoubleArrow')
+        self.toeTipCtrl = shapelib.Shape(name=name.findControlName(self.toeTip), jnt=self.toeTip, shapeType='archedDoubleArrow')
         self.ballRollCtrl = shapelib.Shape(name=name.findControlName(self.ball, identifier='IK'), jnt=self.ball, shapeType='circleStick')
-        self.bankOutCtrl = shapelib.Shape(name=name.findControlName(self.bankOut), jnt=self.bankOut, shapeType='cube')
-        self.bankInCtrl = shapelib.Shape(name=name.findControlName(self.bankIn), jnt=self.bankIn, shapeType='cube')
+        self.bankOutCtrl = shapelib.Shape(name=name.findControlName(self.bankOut), jnt=self.bankOut, shapeType='archedDoubleArrow')
+        self.bankInCtrl = shapelib.Shape(name=name.findControlName(self.bankIn), jnt=self.bankIn, shapeType='archedDoubleArrow')
 
         cmds.parent(self.ballRollCtrl.offsetGrp, self.toeTipCtrl.ctrl)
         cmds.parent(self.toeTipCtrl.offsetGrp, self.bankInCtrl.ctrl)

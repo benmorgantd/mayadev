@@ -71,9 +71,9 @@ def load(weightsPath):
     objName = os.path.basename(weightsPath).replace(".weights", "")
     weightsDirname = os.path.dirname(weightsPath)
 
-
     if not cmds.objExists(objName):
-        raise ValueError("<{0}.weights> doesn't have a matching object in scene.".format(objName))
+        om.MGlobal.displayInfo("{0} does not exist in scene.".format(objName))
+        return
     
     # look for and delete old clusters if they exist
     existingSkinCluster = cmds.ls(cmds.listHistory(objName), type="skinCluster") or []

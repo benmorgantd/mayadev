@@ -159,8 +159,6 @@ class Module(object):
     def doMirror(self):
 
         if self.mirror:
-            print '>>> Mirroring ' + self.name
-
             # get all the arguments needed to build self and find their mirrors 
             # before creating the instance
         
@@ -186,7 +184,7 @@ class Module(object):
                     mirroredInitArgs[attr] = value
 
             # we don't want to worry about a name convention for mirrored modules
-            mirroredInitArgs['name'] = self.name + '_' + mirroredInitArgs['side']
+            mirroredInitArgs['name'] = self.name + '_Mirror'
             mirroredInitArgs['mirror'] = False
 
             mirrorSelf = self.__class__()
@@ -194,8 +192,9 @@ class Module(object):
             for arg in mirroredInitArgs.keys():
                 if arg != 'parent':
                     setattr(mirrorSelf, arg, mirroredInitArgs[arg])
-                else:
-                    setattr(mirrorSelf, arg, mirrorSelf.determineParent(mirroredInitArgs[arg]))
+
+            # set attribute manually for parent so that we know it has the startJoint variable set
+            setattr(mirrorSelf, 'parent', mirrorSelf.determineParent(mirrorSelf.parent))
 
             mirrorSelf.build()
         
@@ -206,6 +205,14 @@ class Module(object):
     def determineParent(self, parent):
         if parent and cmds.objExists(parent):
             return parent
+        # elif startJoint:
+        #     parentTransform = cmds.listRelatives(startJoint, parent=True, type='joint')
+        #     if parentTransform:
+        #         parentTransform = parentTransform[0]
+        #     else:
+        #         parentTransform = 'layout_02_M_ctrl'
+            
+        #     return parentTransform
         elif hasattr(self, 'startJoint'):
             parentTransform = cmds.listRelatives(self.startJoint, parent=True, type='joint')
             if parentTransform:
@@ -499,6 +506,8 @@ class Module(object):
 
         const = cmds.orientConstraint('layout_02_M_ctrl', component.spaceGrp, mo=1)[0]
         cmds.setAttr(const + '.interpType', 2)
+
+        print 'setting up world align for', component.ctrl
 
         cmds.addAttr(component.ctrl, longName='alignWorld', defaultValue=defaultValue,
                      attributeType='bool', keyable=True)

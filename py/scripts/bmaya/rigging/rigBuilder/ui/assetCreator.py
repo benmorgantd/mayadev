@@ -44,22 +44,22 @@ class AssetCreator(QtWidgets.QMainWindow):
             self.rigBuilder.assetInstance = creator.initiate(name, project, assetType,
                                              standalone=False)
 
-            if self.rigBuilder:
-                self.rigBuilder.loadBuild(self.rigBuilder.assetInstance.build.fullPath)
-                self.rigBuilder.resetAssetBoxes()
-                self.rigBuilder.buildList.reset()
+            # if self.rigBuilder:
+            #     self.rigBuilder.loadBuild(self.rigBuilder.assetInstance.build.fullPath)
+            #     self.rigBuilder.resetAssetBoxes()
+            #     self.rigBuilder.buildList.reset()
 
-                self.rigBuilder.widget.loadComponent.setEnabled(True)
-                self.rigBuilder.widget.saveComponent.setEnabled(True)
-                self.rigBuilder.widget.build.setEnabled(True)
+            #     self.rigBuilder.widget.loadComponent.setEnabled(True)
+            #     self.rigBuilder.widget.saveComponent.setEnabled(True)
+            #     self.rigBuilder.widget.build.setEnabled(True)
 
-                projectindex = self.rigBuilder.widget.projectName.findText(project)
-                self.rigBuilder.widget.projectName.setCurrentIndex(projectindex)
+            #     projectindex = self.rigBuilder.widget.projectName.findText(project)
+            #     self.rigBuilder.widget.projectName.setCurrentIndex(projectindex)
 
-                typeindex = self.rigBuilder.widget.assetType.findText(assetType)
-                self.rigBuilder.widget.assetType.setCurrentIndex(typeindex)
+            #     typeindex = self.rigBuilder.widget.assetType.findText(assetType)
+            #     self.rigBuilder.widget.assetType.setCurrentIndex(typeindex)
 
-                nameindex = self.rigBuilder.widget.assetName.findText(name)
-                self.rigBuilder.widget.assetName.setCurrentIndex(nameindex)
+            #     nameindex = self.rigBuilder.widget.assetName.findText(name)
+            #     self.rigBuilder.widget.assetName.setCurrentIndex(nameindex)
             
             self.close()

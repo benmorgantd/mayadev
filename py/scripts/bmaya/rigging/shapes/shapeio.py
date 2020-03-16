@@ -12,7 +12,7 @@ def save(cvsPath):
 
     objIter = om.MItSelectionList(sel)
 
-    cvPoints = {}
+    shapeData = {}
 
     # get cv point data
     while not objIter.isDone():
@@ -30,21 +30,19 @@ def save(cvsPath):
         for i in range(points.length()):
             pointArray.append([points[i].x,points[i].y,points[i].z]) 
 
-        cvPoints[str(dag.partialPathName())] = pointArray
+        shapeData[str(dag.partialPathName())] = pointArray
 
         fnNurbs.updateCurve()
 
         objIter.next()
 
     with open(cvsPath, "w+") as f:
-        jsonData = json.dumps(cvPoints, indent=4)
+        jsonData = json.dumps(shapeData, indent=4)
         f.write(jsonData)
 
+    om.MGlobal.displayInfo("Shape data exported.")
 
-    om.MGlobal.displayInfo("Shape data exported to json format.")
-    print ">>> Shape data saved to " + cvsPath
-
-    return cvPoints
+    return shapeData
 
 def load(cvsPath):
 
@@ -145,5 +143,24 @@ def mirror(cvsPath):
 
     save(cvsPath)    
 
-#########################################
-#########################################
+def removeShapeData(cvsPath, controls=[]):
+    """Remove the data for the given controls from the cv file"""
+
+    shapeData = None
+
+    with open(cvsPath, "r") as f:
+        shapeData = json.load(f)
+
+    modifiedShapeData = shapeData
+
+    shapeDataKeys = modifiedShapeData.keys()
+
+    for control in controls:
+        if control in shapeDataKeys:
+            modifiedShapeData.pop(control)
+
+    with open(cvsPath, "w+") as f:
+        jsonData = json.dumps(modifiedShapeData, indent=4)
+        f.write(jsonData)
+
+    om.MGlobal.displayInfo("Shape data removed for {0}".format(controls))

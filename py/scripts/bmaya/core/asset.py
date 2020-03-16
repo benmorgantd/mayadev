@@ -100,7 +100,56 @@ class Asset(object):
 
     @classmethod
     def findFilesOfType(cls, path, filetype):
-        return  [f for f in os.listdir(path) if f.endswith('.' + filetype)]
+        if os.path.exists(path):
+            return [f for f in os.listdir(path) if f.endswith('.' + filetype)]
+        else:
+            return []
+
+
+        return  
+
+    @classmethod
+    def splitpath(cls, filepath):
+        """split a path into all of its components"""
+
+        result = []
+
+        while os.path.split(filepath)[1]:
+            splitname = os.path.split(filepath)
+            result.append(splitname[1])
+            filepath = splitname[0]
+
+        result.reverse()
+
+        return result
+
+
+    @classmethod
+    def getAssetArgsFromFile(cls, filepath):
+        """Given a path, derive from it the asset's name, type, and project"""
+
+        filepath = os.path.abspath(filepath)
+
+        assetName = None
+        assetProject = None
+        assetType = None
+
+        dirname = os.path.dirname(filepath)
+        basename = os.path.basename(filepath)
+
+        # see if it's in a subdirectory of PROJECT_ROOT
+
+        for directory, subdirectory, directoryFiles in os.walk(PROJECT_ROOT):
+            if dirname in directory and basename in directoryFiles:
+                # this file is within this asset's directory
+                rootDirectory = os.path.dirname(os.path.join(PROJECT_ROOT, 'projects'))
+                splitRootRelativePath = cls.splitpath(filepath.split(rootDirectory)[1])
+                assetName = splitRootRelativePath[2]
+                assetType = splitRootRelativePath[1]
+                assetProject = splitRootRelativePath[0]
+                
+        return assetName, assetProject, assetType
+
 
     def initComponents(self):
         # initialize the component objects for the asset

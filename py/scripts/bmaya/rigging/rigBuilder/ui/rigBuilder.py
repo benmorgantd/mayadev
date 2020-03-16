@@ -1,6 +1,9 @@
 import os
+import json
+from functools import partial
 
 import maya.cmds as cmds
+import maya.OpenMaya as om
 
 from bmaya.lib.Qt import QtWidgets, QtCore
 
@@ -26,13 +29,6 @@ class RigBuilder(qtbase.DockableWidget):
         self.setupButtons()
         self.loadModules()
 
-        self.loadProjects()
-        self.loadAssetTypes()
-        self.loadAssets()
-
-        # self.widget.loadComponent.setEnabled(False)
-        # self.widget.saveComponent.setEnabled(False)
-        # self.widget.referenceComponent.setEnabled(False)
         self.widget.componentType.setEnabled(False)
         self.widget.build.setEnabled(False)
 
@@ -44,7 +40,6 @@ class RigBuilder(qtbase.DockableWidget):
 
         self.moduleList = customWidgets.ModuleList(
             attributeContainer=self.widget.attributeLayoutContainer)
-        # self.moduleList.itemDoubleClicked.connect(lambda item: self.addNewLocatorSystem(item))
 
         self.buildList = customWidgets.BuildList()
 
@@ -53,9 +48,6 @@ class RigBuilder(qtbase.DockableWidget):
         self.widget.buildListContainer.addWidget(self.buildList)
 
         self.moduleList.setBuildList(self.buildList)
-
-        self.widget.projectName.currentIndexChanged.connect(lambda: self.loadAssetTypes())
-        self.widget.assetType.currentIndexChanged.connect(lambda: self.loadAssets())
 
         self.assetInstance = None
 
@@ -66,25 +58,38 @@ class RigBuilder(qtbase.DockableWidget):
 
     def setupFileMenu(self):
 
-        fileMenu = self.menu.addMenu('File')
+        buildMenu = self.menu.addMenu('Build')
 
-        actionNew = fileMenu.addAction('New Build')
+        actionNew = buildMenu.addAction('New Build')
         actionNew.triggered.connect(lambda: self.resetBuildList())
 
-        actionOpen = fileMenu.addAction('Open Build')
+        actionOpen = buildMenu.addAction('Open Build')
         actionOpen.triggered.connect(lambda: self.loadBuild())
 
-        fileMenu.addSeparator()
+        self.openRecentMenu = buildMenu.addMenu('Open Recent')
+        recentFiles = self.getConfigData()['recentFiles']
 
-        actionSave = fileMenu.addAction('Save Build')
+        i = 0
+        for f in recentFiles:
+            recentFileAction = self.openRecentMenu.addAction(f)
+            recentFileAction.triggered.connect(partial(self.loadBuild, f))
+
+            i += 1
+            if i > 10:
+                # only show 10 most recent files
+                break
+
+        buildMenu.addSeparator()
+
+        actionSave = buildMenu.addAction('Save Build')
         actionSave.triggered.connect(lambda: self.saveBuild(self.assetInstance.build.fullPath))
 
-        actionSave = fileMenu.addAction('Save Build As...')
+        actionSave = buildMenu.addAction('Save Build As...')
         actionSave.triggered.connect(lambda: self.saveBuild())
 
-        fileMenu.addSeparator()
+        buildMenu.addSeparator()
 
-        self.actionOpenInExplorer = fileMenu.addAction('Open In Explorer')
+        self.actionOpenInExplorer = buildMenu.addAction('Open In Explorer')
         self.actionOpenInExplorer.triggered.connect(lambda: self.openAssetInExplorer())
 
     def setupAssetMenu(self):
@@ -99,8 +104,11 @@ class RigBuilder(qtbase.DockableWidget):
         
     
     def openAssetInExplorer(self):
-        self.assetInstance.openInExplorer(os.path.split(
-            self.assetInstance.animRig.fullPath)[0])
+        try:
+            self.assetInstance.openInExplorer(os.path.split(
+                self.assetInstance.animRig.fullPath)[0])
+        except AttributeError:
+            om.MGlobal.displayWarning('An asset instance has not been established')
 
     def launchAssetWidget(self):
 
@@ -113,40 +121,16 @@ class RigBuilder(qtbase.DockableWidget):
         assetCreatorUI.activateWindow()
 
     def setupButtons(self):
-        self.widget.loadCharacter.clicked.connect(lambda: self.initiateAsset())
+        # self.widget.loadCharacter.clicked.connect(lambda: self.initiateAsset())
         self.widget.loadComponent.clicked.connect(lambda: self.loadComponent())
         self.widget.saveComponent.clicked.connect(lambda: self.saveComponent())
         self.widget.referenceComponent.clicked.connect(lambda: self.referenceComponent())
         self.widget.build.clicked.connect(lambda: self.buildCharacter())
 
-    def loadProjects(self):
-        projects = os.listdir(asset.PROJECT_ROOT)
-        for project in projects:
-            self.widget.projectName.addItem(project)
-
-    def loadAssetTypes(self):
-        assetTypes = os.listdir(os.path.join(asset.PROJECT_ROOT,
-                                self.widget.projectName.currentText()))
-
-        self.widget.assetType.clear()
-
-        for assetType in assetTypes:
-            self.widget.assetType.addItem(assetType)
-
-    def loadAssets(self):
-        assets = os.listdir(os.path.join(asset.PROJECT_ROOT,
-                            self.widget.projectName.currentText(),
-                            self.widget.assetType.currentText()))
-
-        self.widget.assetName.clear()
-
-        for assetName in assets:
-            self.widget.assetName.addItem(assetName)
-
     def loadModules(self):
-        import bmaya.rigging.rigModules as rigModules
+        from bmaya.rigging import modules
 
-        rigModsPath = os.path.dirname(os.path.abspath(rigModules.__file__))
+        rigModsPath = os.path.dirname(os.path.abspath(modules.__file__))
         # load every module from the rigMods folder
         mods = os.listdir(rigModsPath)
         # sort them alphabetically 
@@ -166,7 +150,7 @@ class RigBuilder(qtbase.DockableWidget):
         componentPath = self.assetInstance.componentPathFromType(componentType)
 
         if componentType in ['skeleton', 'mesh', 'animRig']:
-            print 'saving ' + componentType
+            om.MGlobal.displayInfo('Saving ' + componentType + ' ...')
             self.assetInstance.versionFile(componentPath)
             cmds.file(rename=componentPath)
             cmds.file(save=True, type="mayaAscii", force=True)
@@ -200,29 +184,7 @@ class RigBuilder(qtbase.DockableWidget):
         if componentType in ['skeleton', 'mesh', 'animRig']:
             self.assetInstance.referenceFile(componentPath)
         else:
-            print "Cannot reference component type " + componentType
-
-    def initiateAsset(self):
-        project = self.widget.projectName.currentText()
-        name = self.widget.assetName.currentText()
-        assetType = self.widget.assetType.currentText()
-
-        self.assetPath = asset.Asset.exists(project, name, assetType)
-
-        if self.assetPath:
-            self.setWindowTitle('Rig Builder: ' + self.assetPath)
-            self.assetInstance = creator.initiate(name, project, assetType, 
-            standalone=False)
-
-            self.buildList.reset()
-
-            self.loadBuild(self.assetInstance.build.fullPath)
-
-            # self.widget.loadComponent.setEnabled(True)
-            # self.widget.saveComponent.setEnabled(True)
-            # self.widget.referenceComponent.setEnabled(True)
-            self.widget.componentType.setEnabled(True)
-            self.widget.build.setEnabled(True)
+            om.MGlobal.displayInfo("Cannot reference component type " + componentType)
 
     def buildCharacter(self):
         if self.assetInstance:
@@ -241,7 +203,7 @@ class RigBuilder(qtbase.DockableWidget):
 
         filepath = cmds.fileDialog2(okCaption=action,
                                     fileMode=fileMode,
-                                    fileFilter='Build Files (*.json);;',
+                                    fileFilter='Build Files (build.json);;',
                                     caption=action + ' Build File',
                                     startingDirectory=buildpath)
 
@@ -257,15 +219,32 @@ class RigBuilder(qtbase.DockableWidget):
             filepath = self.exploreToBuildPath(action='Open', fileMode=1)
             if not filepath:
                 return
-        
+
+        # set our asset to the one derived from the path
+        assetArgs = asset.Asset.getAssetArgsFromFile(filepath)
+
+        print assetArgs
+        print filepath
+
+        if any(not arg for arg in assetArgs):
+            # we could set something in the ui saying we're not working on an asset
+            om.MGlobal.displayWarning('File is not a part of an asset. Building is disabled.')
+            self.widget.build.setEnabled(False)
+            self.widget.componentType.setEnabled(False)
+            self.widget.currentAssetLabel.setText('(No Asset Loaded).')
+        else:
+            self.assetInstance = creator.initiate(*assetArgs, standalone=False)
+
+            self.widget.componentType.setEnabled(True)
+            self.widget.build.setEnabled(True)
+            self.widget.currentAssetLabel.setText('{0}'.format(' | '.join([assetArgs[1], assetArgs[2], assetArgs[0]])))
+    
         self.resetBuildList()
-
         self.buildData = buildio.load(filepath)
-
         self.buildList.loadList(self.buildData, 
             attributeLayoutContainer=self.widget.attributeLayoutContainer)
 
-        self.widget.build.setEnabled(True)
+        self.addRecentFile(filepath)
 
     def saveBuild(self, filepath=None):
         jsonData = self.buildList.getAllValues()
@@ -278,20 +257,21 @@ class RigBuilder(qtbase.DockableWidget):
         try:
             self.assetInstance.versionFile(filepath)
         except AttributeError:
-            # no asset is loaded
-            pass
-        
+            assetArgs = asset.Asset.getAssetArgsFromFile(filepath)
+
+            if any(not arg for arg in assetArgs):
+                # file was not saved into an asset
+                return
+            else:
+                self.assetInstance = creator.initiate(*assetArgs, standalone=False)
+
+                self.widget.componentType.setEnabled(True)
+                self.widget.build.setEnabled(True)
+                self.widget.currentAssetLabel.setText('{0}'.format(' | '.join([assetArgs[1], assetArgs[2], assetArgs[0]])))
+
+                self.assetInstance.versionFile(filepath)
+
         buildio.save(filepath, jsonData)
-
-    def resetAssetBoxes(self):
-
-        self.widget.projectName.clear()
-        self.widget.assetType.clear()
-        self.widget.assetName.clear()
-
-        self.loadProjects()
-        self.loadAssetTypes()
-        self.loadAssets()
 
     def resetBuildList(self):
         
@@ -299,8 +279,30 @@ class RigBuilder(qtbase.DockableWidget):
         self.buildList.hideAttrLayouts()
         self.buildList.clear()
 
-######################################################################
-######################################################################
+
+    def getConfigData(self):
+        configFile = os.path.join(os.path.dirname(__file__), 'config.json')
+
+        with open(configFile, "r") as f:
+            configData = json.load(f)
+
+        return configData
+
+    def addRecentFile(self, filepath):
+        configFile = os.path.join(os.path.dirname(__file__), 'config.json')
+
+        with open(configFile, "r") as f:
+            configData = json.load(f)
+
+        recentFiles = configData['recentFiles']
+
+        if filepath not in recentFiles:
+            recentFiles.append(filepath)
+
+        configData['recentFiles'] = recentFiles
+
+        with open(configFile, "w") as f:
+            json.dump(configData, f, indent=4)
 
 def run():
     ui = RigBuilder(designerFile=os.path.join(os.path.dirname(__file__), 'widget.ui'))

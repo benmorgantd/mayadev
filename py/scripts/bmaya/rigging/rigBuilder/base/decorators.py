@@ -15,11 +15,10 @@ def wrapStandalone(fn):
 
 def wrapBuild(fn):
     def wrapper(self, *args, **kwargs):
-        print ">>> Building ",  self.__class__.__name__
+        print ">>> Building <{0}> {1}\n".format(self.__class__.__name__, self.name)
 
         self.checkContract()
         self.makeNode()
-        # self.side = self.side.upper()
 
         result = fn(self, *args, **kwargs)
 
@@ -37,8 +36,6 @@ def wrapBuild(fn):
 
         self.captureComponentDefaults()
         
-        print "\n"
-
         return result 
 
     return wrapper

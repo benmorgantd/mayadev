@@ -43,6 +43,8 @@ class ModuleList(qtbase.List):
                 currentItem.addChild(newMod)
             else:
                 self.buildList.addTopLevelItem(newMod)
+
+
 class BuildList(qtbase.Tree):
     def __init__(self):
         super(BuildList, self).__init__()
@@ -54,9 +56,9 @@ class BuildList(qtbase.Tree):
         self.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked)
         self.setDragEnabled(False)
         self.setAcceptDrops(False)
-        # self.setDragDropMode(QtWidgets.QTreeWidget.DragDropMode.DragDrop)
-        # self.setDragDropOverwriteMode(False)
-        # self.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
+        self.setDragDropMode(QtWidgets.QTreeWidget.DragDropMode.DragDrop)
+        self.setDragDropOverwriteMode(False)
+        self.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
         self.setIndentation(15)
 
         self.contextMenu = BuildListContextMenu(buildList=self)
@@ -158,6 +160,10 @@ class BuildList(qtbase.Tree):
         currentItem = self.currentItem()
         self.editItem(currentItem)
 
+    def disableItem(self):
+        currentObject = self.currentItem()
+        print 'here we would set an attribute to disable that tree'
+
     def deleteItem(self):
         # delete the currently selected item
         currentItem = self.currentItem()
@@ -201,7 +207,6 @@ class BuildList(qtbase.Tree):
         else:
             self.addTopLevelItem(listItem)
 
-
 class BuildListItem(qtbase.TreeItem):
     def __init__(self, modType, customAttrs=None, attributeContainer=None, name=None):
         super(BuildListItem, self).__init__()
@@ -243,9 +248,9 @@ class BuildListItem(qtbase.TreeItem):
         return attrValues
 
     def loadAttributeTemplates(self):
-        from bmaya.rigging import rigModules
+        from bmaya.rigging import modules
 
-        attrData = rigModules.MODULE_ARGS[self.modType]
+        attrData = modules.MODULE_ARGS[self.modType]
 
         return attrData
 
@@ -257,6 +262,9 @@ class BuildListContextMenu(QtWidgets.QMenu):
         renameAction = self.addAction('Rename')
         renameAction.triggered.connect(lambda: buildList.renameItem())
 
+        disableAction = self.addAction('Disable')
+        disableAction.triggered.connect(lambda: buildList.disableItem())
+
         deleteAction = self.addAction('Delete')
         deleteAction.triggered.connect(lambda: buildList.deleteItem())
 
@@ -264,6 +272,8 @@ class BuildListContextMenu(QtWidgets.QMenu):
 
         duplicateAction = self.addAction('Duplicate')
         duplicateAction.triggered.connect(lambda: buildList.duplicateItem())
+
+        
 
 class CustomLineEdit(QtWidgets.QLineEdit):
     def __init__(self, text, parent=None):
@@ -277,7 +287,7 @@ class CustomLineEdit(QtWidgets.QLineEdit):
         self.contextMenu.hide()
 
     def mousePressEvent(self, event):
-        # QtWidgets.QLineEdit.mousePressEvent(self, event)
+        QtWidgets.QLineEdit.mousePressEvent(self, event)
 
         # check if it's a right click
         if event.button() == QtCore.Qt.RightButton:

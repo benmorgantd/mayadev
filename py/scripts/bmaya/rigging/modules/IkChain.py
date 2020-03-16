@@ -7,8 +7,6 @@ from bmaya.rigging.shapes import shapelib
 
 from bmaya.rigging.rigBuilder.tools import mathUtils
 
-##reload(module)
-
 class IkChain(module.Module):
 
     def __init__(self, startJoint=None, endJoint=None, name='IkChain1', character=None, 
@@ -96,6 +94,8 @@ class IkChain(module.Module):
 
         cmds.parent(poleVectorCtrl.offsetGrp, self.componentsGrp)
         cmds.parent(startCtrl.offsetGrp, self.componentsGrp)
+
+        cmds.setAttr(poleVectorCtrl.offsetGrp + '.inheritsTransform', False)
 
         return components
 
