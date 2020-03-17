@@ -1,7 +1,7 @@
 import maya.cmds as cmds 
 
 from bmaya.rigging.shapes import shapelib
-from bmaya.core import name
+from bmaya.core import name, constants
 
 
 class Foot(object):
@@ -43,7 +43,7 @@ class Foot(object):
         
         cmds.select(clear=True)
         for jnt in [self.ankle, self.ball, self.toeTip]:
-            fkJnt = cmds.joint(name=jnt.replace('JNT', 'FOOTFK'))
+            fkJnt = cmds.joint(name=jnt.replace(constants.JOINT_SUFFIX, 'FOOTFK'))
             cmds.delete(cmds.parentConstraint(jnt, fkJnt, maintainOffset=False))
             cmds.makeIdentity(fkJnt, apply=True, rotate=True)
 
@@ -58,7 +58,7 @@ class Foot(object):
         
         cmds.select(clear=True)
         for jnt in [self.ankle, self.ball, self.toeTip]:
-            ikJnt = cmds.joint(name=jnt.replace('JNT', 'FOOTIK'))
+            ikJnt = cmds.joint(name=jnt.replace(constants.JOINT_SUFFIX, 'FOOTIK'))
             cmds.delete(cmds.parentConstraint(jnt, ikJnt, maintainOffset=False))
             cmds.makeIdentity(ikJnt, apply=True, rotate=True)
 
@@ -71,7 +71,7 @@ class Foot(object):
         
         cmds.select(clear=True)
         for jnt in [self.ankle, self.ball, self.toeTip]:
-            blendJnt = cmds.joint(name=jnt.replace('JNT', 'FOOTDRIVE'))
+            blendJnt = cmds.joint(name=jnt.replace(constants.JOINT_SUFFIX, 'FOOTDRIVE'))
             cmds.delete(cmds.parentConstraint(jnt, blendJnt, maintainOffset=False))
             cmds.makeIdentity(blendJnt, apply=True, rotate=True)
 

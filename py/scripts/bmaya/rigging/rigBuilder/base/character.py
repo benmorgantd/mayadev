@@ -6,7 +6,7 @@ import maya.cmds as cmds
 
 from bmaya.core.asset import Asset
 from bmaya.rigging.components import *
-from bmaya.core import constants
+from bmaya.core import constants, fileio
 
 from bmaya.rigging.shapes import shapelib, shapeio
 from bmaya.rigging.weights import weightio
@@ -160,7 +160,7 @@ class Character(Asset):
     
         cmds.file(rename=self.animRig.fullPath)
         cmds.file(save=True, type='mayaAscii', force=True)
-        self.versionFile(self.animRig.fullPath)
+        fileio.versionFile(self.animRig.fullPath)
 
         cmds.viewFit(allObjects=True, fitFactor=1)
 

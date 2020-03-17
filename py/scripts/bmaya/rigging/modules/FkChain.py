@@ -31,9 +31,9 @@ class FkChain(module.Module):
         self.bindJoints = self.findHierarchyJoints()
         self.driveJoints = self.createDriveJoints()
 
-        self.components = self.buildFkControls(self.driveJoints)
+        self.components = self.buildFkControls(self.driveJoints, setupAlignWorld=True)
 
-    def buildFkControls(self, driveJoints):
+    def buildFkControls(self, driveJoints, setupAlignWorld=False):
 
         components = []
 
@@ -63,7 +63,8 @@ class FkChain(module.Module):
             cmds.addAttr(ctrl.ctrl, longName='driveJoint', attributeType='message')
             cmds.connectAttr(ctrl.ctrl + '.driveJoint', jnt + '.driveCtrl')
 
-        self.setupAlignWorld(components[0], defaultValue=self.alignWorld)
+        if setupAlignWorld:
+            self.setupAlignWorld(components[0], defaultValue=self.alignWorld)
 
         return components
 

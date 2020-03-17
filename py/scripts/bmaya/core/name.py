@@ -1,11 +1,12 @@
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
+import constants
+
 def nameSelection(selection, name='joint', side='L', suffix='JNT'):
     
     if not selection:
         return
-        
     
     selLen = len(selection)
     
@@ -24,7 +25,7 @@ def findControlName(node, identifier=None):
 
         ctrlName = '_'.join(nodeSplit[0:-1])
         
-        ctrlName += '_ctrl'
+        ctrlName = '_'.join([ctrlName, constants.CTRL_SUFFIX])
 
         return ctrlName
 
@@ -63,11 +64,13 @@ class NamingTool(qtbase.SimpleWindow):
         self.mainLayout.addWidget(self.nameText)
 
         self.sideBox = QtWidgets.QComboBox()
-        self.sideBox.addItems(['L','R','M'])
+        self.sideBox.addItems([constants.SIDE_NAMES['left'],
+                              constants.SIDE_NAMES['right'],
+                              constants.SIDE_NAMES['middle']])
         self.mainLayout.addWidget(self.sideBox)
         
         self.typeBox = QtWidgets.QComboBox()
-        self.typeBox.addItems(['JNT','MESH','ctrl'])
+        self.typeBox.addItems([constant.JOINT_SUFFIX, cosntants.MESH_SUFFIX, constants.CTRL_SUFFIX])
         self.mainLayout.addWidget(self.typeBox)
 
         self.renameBtn = QtWidgets.QPushButton('Rename')

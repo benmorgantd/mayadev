@@ -4,6 +4,7 @@ import inspect
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
+from bmaya.core import constants
 from bmaya.rigging.shapes import shapelib
 
 from decorators import wrapBuild
@@ -205,24 +206,16 @@ class Module(object):
     def determineParent(self, parent):
         if parent and cmds.objExists(parent):
             return parent
-        # elif startJoint:
-        #     parentTransform = cmds.listRelatives(startJoint, parent=True, type='joint')
-        #     if parentTransform:
-        #         parentTransform = parentTransform[0]
-        #     else:
-        #         parentTransform = 'layout_02_M_ctrl'
-            
-        #     return parentTransform
         elif hasattr(self, 'startJoint'):
             parentTransform = cmds.listRelatives(self.startJoint, parent=True, type='joint')
             if parentTransform:
                 parentTransform = parentTransform[0]
             else:
-                parentTransform = 'layout_02_M_ctrl'
+                parentTransform = constants.TOP_LAYOUT_CONTROL
             
             return parentTransform
         else:
-            return 'layout_02_M_ctrl'
+            return constants.TOP_LAYOUT_CONTROL
 
     def parentModule(self):
         # check if a specific joint parent was given. If not then check the parent of the startJoint
@@ -245,7 +238,7 @@ class Module(object):
             if parentTransform:
                 parentTransform = parentTransform[0]
             else:
-                parentTransform = 'layout_02_M_ctrl'
+                parentTransform = constants.TOP_LAYOUT_CONTROL
 
             # todo: this is where you could add a followSwitch option
             self.parentConstrain(parentTransform, self.modGrp, maintainOffset=True)
@@ -361,12 +354,12 @@ class Module(object):
         return bindJoints
 
     def createDriveJoint(self, jnt, label='Driver', constrain=True):
-        driver = cmds.duplicate(jnt, parentOnly=True, name=jnt.replace('JNT', label))[0]
+        driver = cmds.duplicate(jnt, parentOnly=True, name=jnt.replace(constants.JOINT_SUFFIX, label))[0]
             
         jointParent = cmds.listRelatives(jnt, parent=True, type='joint')
         
         if jointParent:
-            driverParent = jointParent[0].replace('JNT', label)
+            driverParent = jointParent[0].replace(constants.JOINT_SUFFIX, label)
             if cmds.objExists(driverParent):
                 cmds.parent(driver, driverParent, absolute=True)
 
@@ -504,15 +497,13 @@ class Module(object):
         if self.alignWorld == None:
             return
 
-        const = cmds.orientConstraint('layout_02_M_ctrl', component.spaceGrp, mo=1)[0]
+        const = cmds.orientConstraint(constants.TOP_LAYOUT_CONTROL, component.spaceGrp, mo=1)[0]
         cmds.setAttr(const + '.interpType', 2)
-
-        print 'setting up world align for', component.ctrl
 
         cmds.addAttr(component.ctrl, longName='alignWorld', defaultValue=defaultValue,
                      attributeType='bool', keyable=True)
 
-        cmds.connectAttr(component.ctrl + '.alignWorld', const + '.layout_02_M_ctrlW0')
+        cmds.connectAttr(component.ctrl + '.alignWorld', const + '.' + constants.TOP_LAYOUT_CONTROL + 'W0')
 
     def findTwistJoints(self, jnt):
         children = cmds.listRelatives(jnt, type='joint', children=True)

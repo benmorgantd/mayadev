@@ -5,10 +5,6 @@ from decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 from bmaya.core import constants
 
-##reload(module)
-##reload(shapelib)
-##reload(constants)
-
 
 class Layout(module.Module):
     """Every rig must have a Layout module"""
@@ -65,14 +61,12 @@ class Layout(module.Module):
 
     def makeCtrls(self):
         # make a stack of offset controls
-        for i in range(3):
-            if i > 0:
-                shp = shapelib.Shape(name='layout_{0}_M_ctrl'.format(
-                    str(i).zfill(2)),shapeType=self.shapeType, scale=(1 - ((i - 1) * 0.15)))
-                cmds.parent(shp.offsetGrp, self.components[i - 2].ctrl)
+        for i in range(constants.COUNT_START, 3):
+            if i > constants.COUNT_START:
+                shp = shapelib.Shape(name='layout_{0:02d}_M_ctrl'.format(i),shapeType=self.shapeType, scale=(1 - ((i - 1) * 0.15)))
+                cmds.parent(shp.offsetGrp, self.components[i - 1].ctrl)
             else:
-                shp = shapelib.Shape(name='layout_{0}_M_ctrl'.format(
-                    str(i).zfill(2)), shapeType=self.shapeType)
+                shp = shapelib.Shape(name='layout_{0:02d}_M_ctrl'.format(i), shapeType=self.shapeType)
                 cmds.parent(shp.offsetGrp, self.modGrp)
 
             self.components.append(shp)

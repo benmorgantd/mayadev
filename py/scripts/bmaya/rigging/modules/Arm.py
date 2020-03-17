@@ -27,6 +27,8 @@ class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
 
         self.addFkGimbalControl()
 
+        self.setupAlignWorld(self.fkShoulderGimbal, defaultValue=self.alignWorld)
+
     def addFkGimbalControl(self):
         # add a second control on top of the existing shoulder fk 
         # that has zxy (2) rotation order

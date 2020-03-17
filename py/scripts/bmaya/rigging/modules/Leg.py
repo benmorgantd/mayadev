@@ -56,11 +56,12 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
         cmds.connectAttr(self.node + '.FKIK', '{0}.v'.format(self.footIkComponents[0].offsetGrp))
 
         self.addFkGimbalControl()
+        self.setupAlignWorld(self.fkShoulderGimbal, defaultValue=self.alignWorld)
 
         # connect ankle to ik handle
 
     def addFkGimbalControl(self):
-        # add a second control on top of the existing shoulder fk 
+        # add a second control on top of the existing leg fk 
         # that has zxy (2) rotation order
 
         shoulderFkOffset = self.fkComponents[0].offsetGrp

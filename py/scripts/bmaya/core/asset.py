@@ -8,6 +8,7 @@ import maya.cmds as cmds
 
 from bmaya.rigging.components import *
 from bmaya.core import constants
+from bmaya.core import fileio
 
 try:
     PROJECT_ROOT = os.environ['RIG_ROOT']
@@ -47,35 +48,6 @@ class Asset(object):
                 cmds.file(path, open=True, force=True)
             else:
                 os.startfile(path)
-
-    @classmethod
-    def versionFile(cls, path):
-        """Versions the given file to a subfolder in its directory called
-        <basename>.versions.
-
-         """
-
-        if not os.path.exists(path):
-            return
-
-        dirname = os.path.dirname(path)
-
-        filename, extension = os.path.splitext(os.path.basename(path))
-
-        versionFolder = os.path.join(dirname, (filename + ".Versions"))
-
-        # create the version folder if it doesn't exist
-        if not os.path.exists(versionFolder):
-            os.mkdir(versionFolder)
-
-        numVersions = len(os.listdir(versionFolder))
-
-        versionFilename = os.path.join(versionFolder, "{0}_{1:04d}{2}".format(
-            filename, (numVersions + 1), extension))
-
-        shutil.copy(path, versionFilename)
-
-        print ">> Versioned file to {0}".format(versionFilename)
 
     @classmethod
     def referenceFile(cls, path):
@@ -180,7 +152,7 @@ class Asset(object):
             cmds.file(new=True, force=True)
             cmds.file(rename=self.mesh.fullPath)
             cmds.file(save=True, type="mayaAscii", force=True)
-            self.versionFile(self.mesh.fullPath)
+            fileio.versionFile(self.mesh.fullPath)
         else:
             print '>> A working mesh file already exists for ' + self.name
 
@@ -191,7 +163,7 @@ class Asset(object):
             cmds.joint(name=constants.ROOT_JOINT)
             cmds.file(rename=self.skeleton.fullPath)
             cmds.file(save=True, type="mayaAscii", force=True)
-            self.versionFile(self.skeleton.fullPath)
+            fileio.versionFile(self.skeleton.fullPath)
         else:
             print '>> A working skeleton file already exists for ' + self.name
 
@@ -199,7 +171,7 @@ class Asset(object):
             print ">> Creating cvs file."
             with open(self.cvs.fullPath, "w") as f:
                 json.dump({}, f)
-            self.versionFile(self.cvs.fullPath)
+            fileio.versionFile(self.cvs.fullPath)
         else:
             print '>> A working cvs file already exists for ' + self.name
 
@@ -215,7 +187,7 @@ class Asset(object):
             with open(self.build.fullPath, "w") as f:
                 f.write(layoutRigData)
 
-            self.versionFile(self.build.fullPath)
+            fileio.versionFile(self.build.fullPath)
 
     def componentPathFromType(self, componentType):
         for component in self.components:

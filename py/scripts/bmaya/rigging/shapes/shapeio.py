@@ -3,6 +3,8 @@ import json
 import maya.OpenMaya as om
 import maya.cmds as cmds
 
+from bmaya.core import fileio
+
 def save(cvsPath):
 
     cmds.select(cmds.ls("*_ctrl"))
@@ -35,6 +37,8 @@ def save(cvsPath):
         fnNurbs.updateCurve()
 
         objIter.next()
+
+    fileio.versionFile(cvsPath)
 
     with open(cvsPath, "w+") as f:
         jsonData = json.dumps(shapeData, indent=4)
@@ -158,6 +162,8 @@ def removeShapeData(cvsPath, controls=[]):
     for control in controls:
         if control in shapeDataKeys:
             modifiedShapeData.pop(control)
+
+    fileio.versionFile(cvsPath)
 
     with open(cvsPath, "w+") as f:
         jsonData = json.dumps(modifiedShapeData, indent=4)

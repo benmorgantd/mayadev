@@ -1,6 +1,7 @@
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
+from bmaya.core import constants
 from bmaya.rigging.rigBuilder.base import module
 from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
@@ -101,7 +102,7 @@ class IkChain(module.Module):
 
     def setupIkSpaces(self, ikCtrl, defaultValue=1):
         # parent to world and add switch
-        const = cmds.parentConstraint('layout_02_M_ctrl', ikCtrl.spaceGrp, mo=1)[0]
+        const = cmds.parentConstraint(constants.TOP_LAYOUT_CONTROL, ikCtrl.spaceGrp, mo=1)[0]
         cmds.addAttr(ikCtrl.ctrl, longName='followWorld', defaultValue=defaultValue, attributeType='bool', keyable=True)
-        cmds.connectAttr(ikCtrl.ctrl + '.followWorld', const + '.layout_02_M_ctrlW0')
+        cmds.connectAttr(ikCtrl.ctrl + '.followWorld', const + '.' + constants.TOP_LAYOUT_CONTROL + 'W0')
         

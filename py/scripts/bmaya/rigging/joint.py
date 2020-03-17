@@ -3,9 +3,7 @@ import math
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from bmaya.core import name
-from bmaya.core import mayanode
-
+from bmaya.core import name, constants, mayanode
 
 
 def getSelectionCenter():
@@ -174,7 +172,7 @@ def addTwistJoints(startJoint, endJoint, jointCount=3):
     
     for i in range(jointCount):
         cmds.select(clear=True)
-        j = mayanode.Joint(name.findJointName(startJoint.shortName, identifier='Twist', count=i, suffix='JNT'))
+        j = mayanode.Joint(name.findJointName(startJoint.shortName, identifier='Twist', count=i, suffix=constants.JOINT_SUFFIX))
         j.worldPosition = startJoint.worldPosition + ((jointVector * i) / float(jointCount - 1))
         j.parent = startJoint.name
         j.orient = [0,0,0]

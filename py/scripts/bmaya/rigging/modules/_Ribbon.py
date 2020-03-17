@@ -4,6 +4,7 @@ from bmaya.rigging.rigBuilder.base import module
 from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 from bmaya.core.mayanode import Transform
+from bmaya.core import constants
 
 
 class Ribbon(module.Module):
@@ -285,29 +286,6 @@ class Ribbon(module.Module):
         cmds.setAttr(self.driverGrp + '.inheritsTransform', 0)
 
         return driveJoints
-
-    # def makeBindJoints(self, parentJoint, followJoints, identifier=''):
-    #     bindJoints = []
-        
-    #     for i in range(len(followJoints)):
-    #         followJnt = followJoints[i]
-
-    #         if identifier:
-    #             bindJnt = cmds.joint(name=self.findJointName(parentJoint, identifier=identifier, count=i, suffix='JNT'))
-    #         else:
-    #             bindJnt = cmds.joint(name='{0}_{1}_{2}_JNT'.format(self.name, str(i).zfill(2), self.side))
-    #         cmds.setAttr(bindJnt + '.rotateOrder', 0)
-
-    #         cmds.delete(cmds.parentConstraint(followJnt, bindJnt, mo=0))
-    #         cmds.makeIdentity(bindJnt, apply=True, t=1,r=1,s=1,pn=1)
-
-    #         self.messageConnect(followJnt, bindJnt, 'bindJoint', 'driveJoint')
-
-    #         cmds.parent(bindJnt, parentJoint)
-
-    #         bindJoints.append(bindJnt)
-
-    #     return bindJoints
 
     def makeFollowJointControls(self, bindJoints, followJoints):
 

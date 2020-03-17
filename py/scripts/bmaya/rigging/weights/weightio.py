@@ -8,7 +8,7 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 
 import weightUtils
-from bmaya.core import asset
+from bmaya.core import fileio
 
 def getJointsFromXML(weightsDir):
   tree = ElementTree.parse(weightsDir)
@@ -45,7 +45,7 @@ def save(weightsDir):
         filename = os.path.join(weightsDir, dagName + '.weights')
         if os.path.exists(filename):
             # version the file
-            asset.Asset.versionFile(filename)
+            fileio.versionFile(filename)
 
         if skin:
             # exports by vertex index. Changes to the vert order will break this

@@ -7,10 +7,9 @@ import maya.OpenMaya as om
 
 from bmaya.lib.Qt import QtWidgets, QtCore
 
-from bmaya.core import qtbase
+from bmaya.core import qtbase, fileio, asset
 from . import customWidgets, assetCreator
 
-from bmaya.core import asset
 from ..base import creator
 from bmaya.rigging.rigBuilder.tools import buildio
 
@@ -151,7 +150,7 @@ class RigBuilder(qtbase.DockableWidget):
 
         if componentType in ['skeleton', 'mesh', 'animRig']:
             om.MGlobal.displayInfo('Saving ' + componentType + ' ...')
-            self.assetInstance.versionFile(componentPath)
+            fileio.versionFile(componentPath)
             cmds.file(rename=componentPath)
             cmds.file(save=True, type="mayaAscii", force=True)
         elif componentType == 'cvs':
@@ -191,7 +190,7 @@ class RigBuilder(qtbase.DockableWidget):
             # save and version the build first
             buildPath = self.assetInstance.build.fullPath
 
-            self.assetInstance.versionFile(buildPath)
+            fileio.versionFile(buildPath)
 
             self.saveBuild(buildPath)
 
@@ -255,7 +254,7 @@ class RigBuilder(qtbase.DockableWidget):
                 return
 
         try:
-            self.assetInstance.versionFile(filepath)
+            fileio.versionFile(filepath)
         except AttributeError:
             assetArgs = asset.Asset.getAssetArgsFromFile(filepath)
 
@@ -269,7 +268,7 @@ class RigBuilder(qtbase.DockableWidget):
                 self.widget.build.setEnabled(True)
                 self.widget.currentAssetLabel.setText('{0}'.format(' | '.join([assetArgs[1], assetArgs[2], assetArgs[0]])))
 
-                self.assetInstance.versionFile(filepath)
+                fileio.versionFile(filepath)
 
         buildio.save(filepath, jsonData)
 
