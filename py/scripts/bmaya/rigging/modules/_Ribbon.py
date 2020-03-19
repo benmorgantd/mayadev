@@ -4,7 +4,7 @@ from bmaya.rigging.rigBuilder.base import module
 from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 from bmaya.core.mayanode import Transform
-from bmaya.core import constants
+from bmaya.core import constants, name
 
 
 class Ribbon(module.Module):
@@ -295,7 +295,7 @@ class Ribbon(module.Module):
         cmds.parent(self.followControlGrp, self.componentsGrp)
 
         for i in range(len(followJoints)):
-            ctrl = shapelib.Shape(name=self.findControlName(followJoints[i], identifier='Follow'), 
+            ctrl = shapelib.Shape(name=name.findControlName(followJoints[i], identifier='Follow'), 
                                   shapeType='square', jnt=followJoints[i], scale=1.15)
 
             cmds.parent(ctrl.offsetGrp, self.followControlGrp)
@@ -329,7 +329,7 @@ class Ribbon(module.Module):
         cmds.parent(driverControlGrp, self.componentsGrp)
 
         for driveJnt in driveJoints:
-            ctrl = shapelib.Shape(name=self.findControlName(driveJnt, identifier='Driver'), shapeType='cube', jnt=driveJnt)
+            ctrl = shapelib.Shape(name=name.findControlName(driveJnt, identifier='Driver'), shapeType='cube', jnt=driveJnt)
 
             cmds.parent(ctrl.offsetGrp, self.componentsGrp)
 
@@ -360,7 +360,7 @@ class Ribbon(module.Module):
         for i in range(len(driveControls)):
             driveCtrl = driveControls[i]
 
-            fkCtrl = shapelib.Shape(name=self.findControlName(driveCtrl.ctrl, identifier='FK'), 
+            fkCtrl = shapelib.Shape(name=name.findControlName(driveCtrl.ctrl, identifier='FK'), 
                                     jnt=driveCtrl.ctrl, shapeType='cube')
 
             driveParent = cmds.listRelatives(driveCtrl.offsetGrp, parent=True)[0]

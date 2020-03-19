@@ -3,6 +3,7 @@ import maya.cmds as cmds
 from bmaya.rigging.rigBuilder.base import module
 from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
+from bmaya.core import name
 
 class SingleJoint(module.Module):
 
@@ -26,7 +27,7 @@ class SingleJoint(module.Module):
 
         self.startJointDriver = self.getDriver(self.startJoint)
 
-        ctrl = shapelib.Shape(name=self.findControlName(self.startJointDriver), shapeType=self.shapeType,
+        ctrl = shapelib.Shape(name=name.findControlName(self.startJointDriver), shapeType=self.shapeType,
                               jnt=self.startJointDriver)
 
         self.components.append(ctrl)

@@ -3,7 +3,7 @@ import maya.cmds as cmds
 from . import module
 from decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
-from bmaya.core import constants
+from bmaya.core import constants, name
 
 
 class Layout(module.Module):
@@ -63,10 +63,10 @@ class Layout(module.Module):
         # make a stack of offset controls
         for i in range(constants.COUNT_START, 3):
             if i > constants.COUNT_START:
-                shp = shapelib.Shape(name='layout_{0:02d}_M_ctrl'.format(i),shapeType=self.shapeType, scale=(1 - ((i - 1) * 0.15)))
+                shp = shapelib.Shape(name='layout_{0:02d}_{1}_{2}'.format(i, constants.SIDE_NAMES['middle'], constants.CTRL_SUFFIX),shapeType=self.shapeType, scale=(1 - ((i - 1) * 0.15)))
                 cmds.parent(shp.offsetGrp, self.components[i - 1].ctrl)
             else:
-                shp = shapelib.Shape(name='layout_{0:02d}_M_ctrl'.format(i), shapeType=self.shapeType)
+                shp = shapelib.Shape(name='layout_{0:02d}_{1}_{2}'.format(i, constants.SIDE_NAMES['middle'], constants.CTRL_SUFFIX),shapeType=self.shapeType, scale=(1 - ((i - 1) * 0.15)))
                 cmds.parent(shp.offsetGrp, self.modGrp)
 
             self.components.append(shp)

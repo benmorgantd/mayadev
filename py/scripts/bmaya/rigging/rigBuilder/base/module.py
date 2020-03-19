@@ -4,7 +4,7 @@ import inspect
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from bmaya.core import constants
+from bmaya.core import constants, name
 from bmaya.rigging.shapes import shapelib
 
 from decorators import wrapBuild
@@ -466,17 +466,6 @@ class Module(object):
 
         cmds.setAttr(self.node + '.defaultValues', json.dumps(defaultValues), type='string')
     
-    def findControlName(self, node, identifier=None):
-        nodeSplit = node.split('_')
-        if identifier:
-            nodeSplit[0] += identifier
-
-        ctrlName = '_'.join(nodeSplit[0:-1])
-        
-        ctrlName += '_ctrl'
-
-        return ctrlName
-
     def findJointName(self, node, identifier=None, count=0, suffix='DRIVER'):
         nodeSplit = node.split('_')
         if identifier:

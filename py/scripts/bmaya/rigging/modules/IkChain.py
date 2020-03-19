@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from bmaya.core import constants
+from bmaya.core import constants, name
 from bmaya.rigging.rigBuilder.base import module
 from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
@@ -39,11 +39,11 @@ class IkChain(module.Module):
         # safer in child methods
         components = []
 
-        startCtrl = shapelib.Shape(name=self.findControlName(driveJoints[0], identifier='Ik'), 
+        startCtrl = shapelib.Shape(name=name.findControlName(driveJoints[0], identifier='Ik'), 
                                    shapeType='cube', jnt=driveJoints[0])
 
         if worldAimTarget:
-            endCtrl = shapelib.Shape(self.findControlName(driveJoints[-1], identifier='Ik'), shapeType='cube')
+            endCtrl = shapelib.Shape(name.findControlName(driveJoints[-1], identifier='Ik'), shapeType='cube')
 
             worldAlignVector = om.MVector(*cmds.xform(worldAimTarget, query=True, translation=True, worldSpace=True))
             endCtrlVector = om.MVector(*cmds.xform(self.driveJoints[-1], query=True, translation=True, worldSpace=True))
@@ -59,7 +59,7 @@ class IkChain(module.Module):
                                                   endCtrlVector.x, endCtrlVector.y, endCtrlVector.z, 1])
 
         else:
-            endCtrl = shapelib.Shape(self.findControlName(driveJoints[-1], identifier='Ik'), shapeType='cube',
+            endCtrl = shapelib.Shape(name.findControlName(driveJoints[-1], identifier='Ik'), shapeType='cube',
                                      jnt=driveJoints[-1])
 
         cmds.parent(endCtrl.offsetGrp, startCtrl.ctrl)
@@ -69,7 +69,7 @@ class IkChain(module.Module):
         ik, ikGrp = self.makeIkHandle(startJoint=driveJoints[0], endJoint=driveJoints[-1], 
                                       solverType='ikRPsolver', name=self.name + '_ikHandle')
 
-        poleVectorCtrl = shapelib.Shape(name=self.findControlName(driveJoints[0], identifier='IkAim'), shapeType='sphere', jnt=driveJoints[-1])
+        poleVectorCtrl = shapelib.Shape(name=name.findControlName(driveJoints[0], identifier='IkAim'), shapeType='sphere', jnt=driveJoints[-1])
         shapelib.Shape.drawLine(driveJoints[1] + '_pvLine', driveJoints[1], poleVectorCtrl.ctrl, startCtrl.offsetGrp)
 
         if len(driveJoints) < 3:
