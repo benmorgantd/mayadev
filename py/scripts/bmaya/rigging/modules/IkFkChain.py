@@ -18,8 +18,8 @@ class IkFkChain(FkChain.FkChain, IkChain.IkChain):
                          exclude=exclude, side=side)
 
         FkChain.FkChain.__init__(self, startJoint=startJoint, endJoint=endJoint, name=name, 
-                        character=character, parent=parent, mirror=mirror, shapeType='cube', side=side,
-                        alignWorld=alignWorld)
+                                 character=character, parent=parent, mirror=mirror, shapeType='cube', side=side,
+                                 alignWorld=alignWorld)
 
         self.modType = "IkFkChain"
         self.contract = [self.startJoint, self.endJoint]

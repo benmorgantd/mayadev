@@ -22,3 +22,4 @@ TOP_LAYOUT_CONTROL = 'layout_0{0}_{1}_{2}'.format(COUNT_START + 2, SIDE_NAMES['m
 
 MESH_SUFFIX = 'mesh'
 
+REQUIRED_PLUGINS = ['matrixNodes', 'quatNodes']

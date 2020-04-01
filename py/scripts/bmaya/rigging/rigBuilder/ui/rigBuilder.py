@@ -57,7 +57,7 @@ class RigBuilder(qtbase.DockableWidget):
 
     def setupFileMenu(self):
 
-        buildMenu = self.menu.addMenu('Build')
+        buildMenu = self.menu.addMenu('File')
 
         actionNew = buildMenu.addAction('New Build')
         actionNew.triggered.connect(lambda: self.resetBuildList())

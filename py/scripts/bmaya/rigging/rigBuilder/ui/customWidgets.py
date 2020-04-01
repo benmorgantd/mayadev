@@ -348,7 +348,7 @@ class AttributeLayoutValue(object):
 
         elif self.valueType in [unicode, str]:
             
-            if self.attribute == 'shapeType':
+            if self.attribute in ['shapeType', 'offsetShapeType']:
                 from bmaya.rigging.shapes import shapelib
 
                 widget = QtWidgets.QComboBox()

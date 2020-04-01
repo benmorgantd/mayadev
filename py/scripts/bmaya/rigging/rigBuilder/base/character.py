@@ -68,6 +68,9 @@ class Character(Asset):
         # create a new scene
         cmds.file(new=True, force=True)
 
+        # load required plugins
+        self.loadPlugins()
+
         self.makeNode()
         
         # open up the character's build file (json)
@@ -350,3 +353,7 @@ class Character(Asset):
                 
             cmds.setAttr(ctrl + '.overrideEnabled', True)
             cmds.setAttr(ctrl + '.overrideColor', side)
+
+    def loadPlugins(self):
+        for plugin in constants.REQUIRED_PLUGINS:
+            cmds.loadPlugin(plugin, quiet=True)
