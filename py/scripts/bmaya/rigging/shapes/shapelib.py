@@ -102,6 +102,12 @@ class Shape(object):
 
         self.build()
 
+    def __str__(self):
+        return self.ctrl
+
+    def __repr__(self):
+        return self.ctrl
+
     def build(self):
         if self.shapeType not in Shape.types.keys():
             print 'Given shape type is not valid. Defaulting to cube.'

@@ -14,12 +14,13 @@ from bmaya.rigging.rigBuilder.base import module
 
 class Spline(module.Module):
     def __init__(self, startJoint=None, endJoint=None, name='Spline1', 
-                 character=None, side='M', mirror=False, parent=None, setupTwist=True):
+                 character=None, side='M', mirror=False, parent=None, setupTwist=True, controlAmount=3):
         super(Spline, self).__init__(modType='Spline', name=name, character=character, mirror=mirror, side=side)
         
         self.startJoint = startJoint
         self.endJoint = endJoint
         self.setupTwist = setupTwist
+        self.controlAmount = controlAmount
 
         self.contract = [self.startJoint, self.endJoint]
 
@@ -38,6 +39,8 @@ class Spline(module.Module):
 
         if self.setupTwist:
             self.setupAdvancedTwist()
+
+        self.setupIkEndJoint()
 
         # add an attribute for blending
         cmds.addAttr(self.node, longName='FKIK', attributeType='float', dv=1, 
@@ -113,7 +116,6 @@ class Spline(module.Module):
 
             ikControls.append(ctrl)
 
-
         return ikControls
 
     def buildIkSpline(self):
@@ -147,8 +149,6 @@ class Spline(module.Module):
 
         splineDriverJoints = []
 
-        numControls = 3
-
         # create a temporary curveInfo node to give us positional information
         # along our spline curve
         curveShape = cmds.listRelatives(self.splineCurve, shapes=True)[0]
@@ -167,10 +167,10 @@ class Spline(module.Module):
         cmds.connectAttr(curveInfo + '.normalizedTangent.normalizedTangentY', temp4x4 + '.in01')
         cmds.connectAttr(curveInfo + '.normalizedTangent.normalizedTangentZ', temp4x4 + '.in02')
 
-        for i in range(numControls):
+        for i in range(self.controlAmount):
             cmds.select(clear=True)
             
-            cmds.setAttr(curveInfo + ".parameter", i / float(numControls - 1))
+            cmds.setAttr(curveInfo + ".parameter", i / float(self.controlAmount - 1))
 
             jnt = cmds.joint(name=name.findJointName(self.splineCurve, count=i, suffix='CURVEDRIVER'))
             cmds.setAttr(jnt + '.rotateOrder', 5)
@@ -218,3 +218,22 @@ class Spline(module.Module):
         cmds.connectAttr(self.ikComponents[0].ctrl + '.worldMatrix[0]', self.splineIkHandle + '.dWorldUpMatrix')
         cmds.connectAttr(self.ikComponents[-1].ctrl + '.worldMatrix[0]', self.splineIkHandle + '.dWorldUpMatrixEnd')
         
+    def setupIkEndJoint(self):
+        """Create a joint at the end of the ik chain that serves as more of an fk-style control"""
+        
+        cmds.select(clear=True)
+        jnt = cmds.joint(name=name.findJointName(self.ikDriveJoints[-1], count=len(self.ikDriveJoints), suffix='IKDRIVER'))
+        cmds.setAttr(jnt + '.rotateOrder', cmds.getAttr(self.ikDriveJoints[-1] + '.rotateOrder'))
+        cmds.delete(cmds.parentConstraint(self.ikDriveJoints[-1], jnt, maintainOffset=False))
+        
+        cmds.parent(jnt, self.ikDriveJoints[-2])
+        cmds.parentConstraint(self.ikComponents[-1], jnt, maintainOffset=True)
+
+        # remove the blend constraint on the end drive joint and replace it by
+        # being driven by this new joint instead
+        cmds.delete(cmds.listRelatives(self.driveJoints, type='constraint'))
+        cmds.parentConstraint(self.fkDriveJoints[-1], jnt, maintainOffset=True)
+
+        # just replace the end joint with this joint so when we setup the blend
+        # it just works
+        self.ikDriveJoints[-1] = jnt
