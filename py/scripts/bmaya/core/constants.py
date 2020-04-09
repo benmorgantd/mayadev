@@ -13,6 +13,10 @@ SIDE_NAMES = {'left':'L', 'right':'R', 'middle':'M'}
 
 JOINT_SUFFIX = 'JNT'
 
+DOWN_AXIS = 'X'
+
+UP_AXIS = 'Y'
+
 ROOT_JOINT = 'root_0{0}_{1}_{2}'.format(COUNT_START, SIDE_NAMES['middle'], JOINT_SUFFIX)
 
 CTRL_SUFFIX = 'ctrl'
@@ -23,3 +27,5 @@ TOP_LAYOUT_CONTROL = 'layout_0{0}_{1}_{2}'.format(COUNT_START + 2, SIDE_NAMES['m
 MESH_SUFFIX = 'mesh'
 
 REQUIRED_PLUGINS = ['matrixNodes', 'quatNodes']
+
+UNIT_VECTORS = {'X':[1,0,0], 'Y':[0,1,0], 'Z':[0,0,1]}

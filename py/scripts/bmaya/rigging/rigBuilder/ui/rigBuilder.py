@@ -141,9 +141,10 @@ class RigBuilder(qtbase.DockableWidget):
     def saveComponent(self):
         componentType = self.widget.componentType.currentText()
 
-        result = cmds.confirmDialog(message='Are you sure you would like to save ' + componentType + '?')
-
-        if not result:
+        result = cmds.confirmDialog(message='Are you sure you would like to save ' + componentType + '?',
+                                    button=['Yes', 'No'], defaultButton='Yes', cancelButton='No')
+                                    
+        if result in ['dismiss', 'No']:
             return
 
         componentPath = self.assetInstance.componentPathFromType(componentType)
@@ -162,6 +163,12 @@ class RigBuilder(qtbase.DockableWidget):
 
     def loadComponent(self):
         componentType = self.widget.componentType.currentText()
+
+        result = cmds.confirmDialog(message='Are you sure you would like to open ' + componentType + '?',
+                                    button=['Yes', 'No'], defaultButton='Yes', cancelButton='No')
+        
+        if result in ['dismiss', 'No']:
+            return
 
         componentPath = self.assetInstance.componentPathFromType(componentType)
 
