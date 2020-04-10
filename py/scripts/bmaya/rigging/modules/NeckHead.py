@@ -1,4 +1,5 @@
 import maya.cmds as cmds 
+import maya.OpenMaya as om
 
 from bmaya.rigging.modules import FkTwist
 from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
@@ -27,36 +28,28 @@ class NeckHead(FkTwist.FkTwist):
     def buildNeckHead(self):
         self.buildFkTwist()
 
+        startPoint = mayanode.Transform(self.components[0].ctrl).worldPosition
+        endPoint = mayanode.Transform(self.components[-1].ctrl).worldPosition
+        startEndDistance = (endPoint - startPoint).length()
+
         # add constraints for twist controls
         for i in range(1, len(self.components) - 1):
             twistCtrl = self.components[i]
 
-            # wtAddMatrix = cmds.shadingNode('wtAddMatrix', asUtility=True, name=twistCtrl.ctrl + '_wtAddMatrix')
+            twistPoint = om.MVector(*cmds.xform(twistCtrl.ctrl, query=True, translation=True, worldSpace=True))
+
+            # get the distance between the start and end component
+            startTwistDistance = (twistPoint - startPoint).length()
             
-            # cmds.connectAttr(self.components[0].ctrl + '.worldMatrix[0]', wtAddMatrix + '.wtMatrix[0].matrixIn')
-            # cmds.connectAttr(self.components[-1].ctrl + '.worldMatrix[0]', wtAddMatrix + '.wtMatrix[1].matrixIn')
+            # get the percentage it is along that distance
+            distancePercent = startTwistDistance / float(startEndDistance)
 
-            # startPoint = mayanode.Transform(self.components[0].ctrl)
-            # endPoint = mayanode.Transform(self.components[-1].ctrl)
-            # twistPoint = mayanode.Transform(twistCtrl.ctrl)
-
-            # print twistCtrl.ctrl
-            # print twistPoint.worldPosition.x, twistPoint.worldPosition.y, twistPoint.worldPosition.z
-
-            # # get the distance between the start and end component
-            # startEndDistance = (endPoint.worldPosition - startPoint.worldPosition).length()
-            # startTwistDistance = (twistPoint.worldPosition - startPoint.worldPosition).length()
-            
-            # # get the percentage it is along that distance
-            # distancePercent = startTwistDistance / float(startEndDistance)
-
-            # cmds.setAttr(wtAddMatrix + '.wtMatrix[0].weightIn', distancePercent)
-            # cmds.setAttr(wtAddMatrix + '.wtMatrix[1].weightIn', 1 - distancePercent)
-            
-            # # decompose and connect
-            # decomp = cmds.createNode('decomposeMatrix', name=twistCtrl.ctrl + '_matrixDecomp')
-            # cmds.connectAttr(wtAddMatrix + '.matrixSum', decomp + '.inputMatrix')
-            # cmds.connectAttr(decomp + '.outputTranslate', twistCtrl.spaceGrp + '.translate')
+            pConstraint = cmds.pointConstraint(self.components[0].ctrl, self.components[-1].ctrl, 
+                                              twistCtrl.spaceGrp, maintainOffset=False)[0]
+                                              
+            weightList = cmds.pointConstraint(pConstraint, query=True, weightAliasList=True)
+            cmds.setAttr('{0}.{1}'.format(pConstraint, weightList[0]), 1 - distancePercent)
+            cmds.setAttr('{0}.{1}'.format(pConstraint, weightList[1]), distancePercent)
 
             cmds.aimConstraint(self.components[-1].ctrl, twistCtrl.spaceGrp, 
                               aimVector=constants.UNIT_VECTORS[constants.DOWN_AXIS],
