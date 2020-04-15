@@ -6,7 +6,7 @@ import json
 
 import maya.cmds as cmds
 
-from bmaya.rigging.components import *
+from bmaya.core.components import *
 from bmaya.core import constants
 from bmaya.core import fileio
 
@@ -221,9 +221,14 @@ class Asset(object):
             print '>>> Versioning asset component ' + component.type
 
             if component.type == 'weights':
-                weightVersionFolder = os.mkdir(os.path.join(newVersionFolder, 'weights'))
-                for weightFile in component.files:
-                    shutil.copy(weightFile, weightVersionFolder)
+                weightsDir = os.path.join(newVersionFolder, 'weights')
+                os.mkdir(weightsDir)
+
+                weightFiles = [os.path.join(component.fullPath, f) for f in component.files if f.endswith('.weights')]
+
+                for weightFile in weightFiles:
+                    shutil.copy(weightFile, weightsDir)
+                    
             elif componentFile and os.path.exists(componentFile):
                 shutil.copy(componentFile, newVersionFolder)
 

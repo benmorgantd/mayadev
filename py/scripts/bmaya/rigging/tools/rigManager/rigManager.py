@@ -10,13 +10,13 @@ from bmaya.lib.Qt import QtWidgets, QtCore
 from bmaya.core import qtbase, fileio, asset
 from . import customWidgets, assetCreator
 
-from ..base import creator
-from bmaya.rigging.rigBuilder.tools import buildio
+from bmaya.rigging.base import creator
+from bmaya.rigging import buildio
 
 
-class RigBuilder(qtbase.DockableWidget):
-    def __init__(self, parent=None, designerFile=None, title='Rig Builder'):
-        super(RigBuilder, self).__init__(parent, designerFile, title)
+class RigManager(qtbase.DockableWidget):
+    def __init__(self, parent=None, designerFile=None, title='Rig Manager'):
+        super(RigManager, self).__init__(parent, designerFile, title)
 
         self.parent = parent
 
@@ -121,7 +121,7 @@ class RigBuilder(qtbase.DockableWidget):
     def launchAssetWidget(self):
 
         assetCreatorUI = assetCreator.AssetCreator(parent=qtbase.getMayaMainWindow(),
-                                                    rigBuilder=self,
+                                                    rigManager=self,
                                                     designerFile=os.path.join(
                                                         os.path.dirname(__file__),'assetCreator.ui'))
 
@@ -327,7 +327,7 @@ class RigBuilder(qtbase.DockableWidget):
         shapeio.removeShapeData(self.assetInstance.componentPathFromType('cvs'), cmds.ls(selection=True))
 
 def run():
-    ui = RigBuilder(designerFile=os.path.join(os.path.dirname(__file__), 'widget.ui'))
+    ui = RigManager(designerFile=os.path.join(os.path.dirname(__file__), 'rigManager.ui'))
     ui.dock()
     return ui
 

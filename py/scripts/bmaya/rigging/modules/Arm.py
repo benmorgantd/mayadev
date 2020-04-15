@@ -1,12 +1,10 @@
 import maya.cmds as cmds
 
-from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
+from bmaya.rigging.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 from bmaya.core import name
 
 import _ThreeJointIkFkTwist
-
-from bmaya.rigging.rigBuilder.tools import mathUtils
 
 class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
 

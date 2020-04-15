@@ -16,7 +16,7 @@ class Weights(Component):
         try:
             files = os.listdir(self.fullPath)
         except WindowsError:
-            files = list()
+            files = []
         
         return files
             

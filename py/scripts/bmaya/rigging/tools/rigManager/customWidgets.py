@@ -1,4 +1,4 @@
-'''Custom widgets for rigBuilder'''
+'''Custom widgets for rigManager'''
 
 import ast
 

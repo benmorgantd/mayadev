@@ -2,7 +2,7 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 
 from bmaya.rigging.modules import FkTwist
-from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
+from bmaya.rigging.base.decorators import wrapBuild
 from bmaya.core import name, constants, mayanode
 
 

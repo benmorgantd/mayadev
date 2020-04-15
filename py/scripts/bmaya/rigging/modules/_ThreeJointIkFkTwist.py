@@ -1,12 +1,10 @@
 import maya.cmds as cmds
 
-from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
+from bmaya.rigging.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
-from bmaya.core import name
+from bmaya.core import name, mathUtils
 
 import IkFkChain
-
-from bmaya.rigging.rigBuilder.tools import mathUtils
 
 class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
     def __init__(self, startJoint=None, endJoint=None, name='ThreeJointIkFkTwist1', character=None, 

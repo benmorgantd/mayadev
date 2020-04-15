@@ -7,9 +7,9 @@ import maya.OpenMaya as om
 
 from bmaya.core import name
 
-from bmaya.rigging.rigBuilder.base.decorators import wrapBuild
+from bmaya.rigging.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
-from bmaya.rigging.rigBuilder.base import module
+from bmaya.rigging.base import module
 
 
 class Spline(module.Module):

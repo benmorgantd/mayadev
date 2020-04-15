@@ -72,13 +72,6 @@ def setupIkTwist(twistJoint=None, ikStartJoint=None, ikHandleParent=None, twistJ
 
     cmds.hide(ikTwistStart)
 
-    # # create a pole vector control
-    # pv = cmds.createNode('transform', name = name + '_rpikPoleVector')
-    # cmds.delete(cmds.parentConstraint(ikTwistStart, pv, mo=0))
-    # cmds.xform(pv, translation=(0,-25, 0), r=1, os=1)
-    # cmds.parentConstraint(ikHandleParent, pv, mo=1)
-    # cmds.poleVectorConstraint(pv, ik[0])
-
     return ikTwistStart, ikGrp
 
 def setupQuatTwist(obj=None, twistAxis="X"):

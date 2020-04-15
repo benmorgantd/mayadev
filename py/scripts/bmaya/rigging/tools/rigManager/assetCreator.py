@@ -6,12 +6,12 @@ import maya.OpenMaya as om
 
 from bmaya.lib.Qt import QtWidgets, QtCompat
 
-from ..base import creator
+from bmaya.rigging.base import creator
 from bmaya.core import asset
 
 
 class AssetCreator(QtWidgets.QMainWindow):
-    def __init__(self, parent=None, designerFile=None, title='Asset Creator', rigBuilder=None):
+    def __init__(self, parent=None, designerFile=None, title='Asset Creator', rigManager=None):
         super(AssetCreator, self).__init__(parent)
 
         if designerFile and isinstance(designerFile, basestring):
@@ -24,7 +24,7 @@ class AssetCreator(QtWidgets.QMainWindow):
 
         self.setWindowTitle(title)
 
-        self.rigBuilder = rigBuilder
+        self.rigManager = rigManager
 
         self.widget.createAsset.clicked.connect(lambda: self.createAsset())
 
@@ -41,25 +41,7 @@ class AssetCreator(QtWidgets.QMainWindow):
             om.MGlobal.displayInfo('An asset of this description already exists')
             return
         else:
-            self.rigBuilder.assetInstance = creator.initiate(name, project, assetType,
+            self.rigManager.assetInstance = creator.initiate(name, project, assetType,
                                              standalone=False)
-
-            # if self.rigBuilder:
-            #     self.rigBuilder.loadBuild(self.rigBuilder.assetInstance.build.fullPath)
-            #     self.rigBuilder.resetAssetBoxes()
-            #     self.rigBuilder.buildList.reset()
-
-            #     self.rigBuilder.widget.loadComponent.setEnabled(True)
-            #     self.rigBuilder.widget.saveComponent.setEnabled(True)
-            #     self.rigBuilder.widget.build.setEnabled(True)
-
-            #     projectindex = self.rigBuilder.widget.projectName.findText(project)
-            #     self.rigBuilder.widget.projectName.setCurrentIndex(projectindex)
-
-            #     typeindex = self.rigBuilder.widget.assetType.findText(assetType)
-            #     self.rigBuilder.widget.assetType.setCurrentIndex(typeindex)
-
-            #     nameindex = self.rigBuilder.widget.assetName.findText(name)
-            #     self.rigBuilder.widget.assetName.setCurrentIndex(nameindex)
             
             self.close()

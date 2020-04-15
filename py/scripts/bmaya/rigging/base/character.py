@@ -5,22 +5,18 @@ import time
 import maya.cmds as cmds
 
 from bmaya.core.asset import Asset
-from bmaya.rigging.components import *
+from bmaya.core.components import *
 from bmaya.core import constants, fileio
 
 from bmaya.rigging.shapes import shapelib, shapeio
 from bmaya.rigging.weights import weightio
-from bmaya.rigging.rigBuilder.tools import buildio
+from bmaya.rigging import buildio
 
 import layout
 
-##reload(shapeio)
-##reload(weightio)
-##reload(buildio)
-##reload(layout)
 
 class Character(Asset):
-    '''Character is the base class for all rigs created with RigBuilder'''
+    '''Character is the base class for all rigs'''
 
     def __init__(self, name, project, assetType):
         super(Character, self).__init__(name, project, assetType)

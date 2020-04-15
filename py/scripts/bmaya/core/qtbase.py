@@ -184,7 +184,7 @@ class TreeItem(QtWidgets.QTreeWidgetItem):
                 
 
 class DockableWidget(SimpleWidget):
-    def __init__(self, parent=None, designerFile=None, title='RigBuilder'):
+    def __init__(self, parent=None, designerFile=None, title='rigManager'):
         super(DockableWidget, self).__init__(parent, designerFile, title)
 
 
