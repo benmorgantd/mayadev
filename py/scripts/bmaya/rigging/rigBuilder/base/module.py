@@ -185,7 +185,7 @@ class Module(object):
                     mirroredInitArgs[attr] = value
 
             # we don't want to worry about a name convention for mirrored modules
-            mirroredInitArgs['name'] = self.name + '_Mirror'
+            mirroredInitArgs['name'] = self.name + '_mirror'
             mirroredInitArgs['mirror'] = False
 
             mirrorSelf = self.__class__()

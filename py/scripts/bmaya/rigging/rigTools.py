@@ -16,15 +16,32 @@ def toggleSkinMode():
     sizeJoints()
 
 def sizeJoints():
-    skeletonJoints = set(cmds.listRelatives('SKELETON', type='joint', ad=1))
-    bindJoints = set(cmds.sets('BIND_set', q=1))
+    skeletonJoints = cmds.listRelatives('SKELETON', type='joint', allDescendents=True, fullPath=True)
+    bindJoints = cmds.sets('BIND_set', query=True)
 
-    for inf in bindJoints:
-        cmds.setAttr(inf + '.radius', 5)
+    for jnt in skeletonJoints:
+        if jnt in bindJoints:
+            if 'hand' in jnt:
+                cmds.setAttr(jnt + '.radius', 1)
+            else:
+                cmds.setAttr(jnt + '.radius', 3)
+        else:
+            cmds.setAttr(jnt + '.drawStyle', 0)
 
-    for jnt in list(set(skeletonJoints - bindJoints)):
-        cmds.setAttr(jnt + '.radius', .1)
+def labelJoints():
 
+    for jnt in cmds.ls(type='joint'):
+        jntSplit = jnt.split('_')
+        
+        if '_M_' in jnt:
+            cmds.setAttr(jnt + '.side', 0)
+        if '_L_' in jnt:
+            cmds.setAttr(jnt + '.side', 1)
+        if '_R_' in jnt:
+            cmds.setAttr(jnt + '.side', 2)
+
+        cmds.setAttr(jnt + '.type', 18)
+        cmds.setAttr(jnt + '.otherType', jntSplit[0] + jntSplit[1], type='string')
 
 def getModuleNode(ctrl):
     if 'module' not in cmds.listAttr(ctrl):

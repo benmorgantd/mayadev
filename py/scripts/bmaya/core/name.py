@@ -70,7 +70,7 @@ class NamingTool(qtbase.SimpleWindow):
         self.mainLayout.addWidget(self.sideBox)
         
         self.typeBox = QtWidgets.QComboBox()
-        self.typeBox.addItems([constant.JOINT_SUFFIX, cosntants.MESH_SUFFIX, constants.CTRL_SUFFIX])
+        self.typeBox.addItems([constants.JOINT_SUFFIX, constants.MESH_SUFFIX, constants.CTRL_SUFFIX])
         self.mainLayout.addWidget(self.typeBox)
 
         self.renameBtn = QtWidgets.QPushButton('Rename')

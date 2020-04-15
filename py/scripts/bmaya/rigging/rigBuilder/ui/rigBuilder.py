@@ -52,6 +52,7 @@ class RigBuilder(qtbase.DockableWidget):
 
         self.setupFileMenu()
         self.setupAssetMenu()
+        self.setupCVsMenu()
 
         self.widget.menuLayout.addWidget(self.menu)
 
@@ -101,6 +102,14 @@ class RigBuilder(qtbase.DockableWidget):
         versionAssetAction = assetMenu.addAction('Version Asset')
         versionAssetAction.triggered.connect(lambda: self.assetInstance.versionAsset())
         
+    def setupCVsMenu(self):
+        cvsMenu = self.menu.addMenu('CV Tools')
+
+        actionMirror = cvsMenu.addAction('Mirror')
+        actionRemoveData = cvsMenu.addAction('Remove Data (Selection)')
+
+        actionMirror.triggered.connect(lambda: self.mirrorCvData())
+        actionRemoveData.triggered.connect(lambda: self.removeSelectedCVData())
     
     def openAssetInExplorer(self):
         try:
@@ -229,9 +238,6 @@ class RigBuilder(qtbase.DockableWidget):
         # set our asset to the one derived from the path
         assetArgs = asset.Asset.getAssetArgsFromFile(filepath)
 
-        print assetArgs
-        print filepath
-
         if any(not arg for arg in assetArgs):
             # we could set something in the ui saying we're not working on an asset
             om.MGlobal.displayWarning('File is not a part of an asset. Building is disabled.')
@@ -309,6 +315,16 @@ class RigBuilder(qtbase.DockableWidget):
 
         with open(configFile, "w") as f:
             json.dump(configData, f, indent=4)
+
+    def mirrorCvData(self):
+        from bmaya.rigging.shapes import shapeio
+        shapeio.mirror(self.assetInstance.componentPathFromType('cvs'))
+
+    def removeSelectedCVData(self):
+        from bmaya.rigging.shapes import shapeio
+        import maya.cmds as cmds
+
+        shapeio.removeShapeData(self.assetInstance.componentPathFromType('cvs'), cmds.ls(selection=True))
 
 def run():
     ui = RigBuilder(designerFile=os.path.join(os.path.dirname(__file__), 'widget.ui'))

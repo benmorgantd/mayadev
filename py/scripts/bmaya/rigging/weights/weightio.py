@@ -74,6 +74,8 @@ def load(weightsPath):
     if not cmds.objExists(objName):
         om.MGlobal.displayInfo("{0} does not exist in scene.".format(objName))
         return
+
+    print 'Loading weights for <' + objName + '> ...'
     
     # look for and delete old clusters if they exist
     existingSkinCluster = cmds.ls(cmds.listHistory(objName), type="skinCluster") or []

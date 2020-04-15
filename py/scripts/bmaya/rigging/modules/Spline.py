@@ -47,6 +47,7 @@ class Spline(module.Module):
             self.setupAdvancedTwist()
 
         self.setupIkEndJoint()
+        self.setupIkHierarchy()
 
         # add an attribute for blending
         cmds.addAttr(self.node, longName='FKIK', attributeType='float', dv=1, 
@@ -268,3 +269,29 @@ class Spline(module.Module):
         # just replace the end joint with this joint so when we setup the blend
         # it just works
         self.ikDriveJoints[-1] = jnt
+
+    def setupIkHierarchy(self):
+        """Make a simple switch to make the ik hierarchy behave like an fk one"""
+
+        cmds.addAttr(self.node, longName='hybridIk', attributeType='bool', keyable=True, defaultValue=False)
+        
+        for i in range(len(self.ikComponents) - 1):
+            const = cmds.parentConstraint(self.ikComponents[i].ctrl, 
+                                          self.ikComponents[i + 1].offsetGrp, 
+                                          maintainOffset=True)[0]
+
+            cmds.connectAttr(self.node + '.hybridIk', 
+                             '{0}.{1}'.format(const, cmds.parentConstraint(const, query=True, weightAliasList=True)[0]))
+            
+
+        # switch off the base ik's constraint with this if there is one 
+        if self.startTwistParent:
+            rev = cmds.createNode('reverse', name=self.name + '_ikHybridReverse')
+            cmds.connectAttr(self.node + '.hybridIk', rev + '.inputX')
+            # get the parent constraint on the first ik component's offset group
+            const = cmds.ls(cmds.listRelatives(self.ikComponents[0].offsetGrp, children=True), type='parentConstraint')
+
+            if const:
+                # switch it off when we go into hybridIk mode
+                cmds.connectAttr(rev + '.outputX', 
+                             '{0}.{1}'.format(const[0], cmds.parentConstraint(const[0], query=True, weightAliasList=True)[0]))

@@ -47,6 +47,11 @@ class FkTwist(FkChain.FkChain):
         self.components.pop(1)
         
         self.twistComponents = [comp for comp in self.components if 'Twist' in comp.ctrl]
+        
+        cmds.addAttr(self.node, longName='showTwistControls', attributeType='bool', keyable=True)
+        
+        for comp in self.twistComponents:
+            cmds.connectAttr(self.node + '.showTwistControls', comp.offsetGrp + '.visibility')
 
         self.setupTwist()
 
