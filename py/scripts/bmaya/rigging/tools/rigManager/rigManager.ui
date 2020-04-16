@@ -49,19 +49,43 @@
       </layout>
      </item>
      <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QLabel" name="label">
+         <property name="font">
+          <font>
+           <family>Segoe UI Black</family>
+           <pointsize>14</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Rig Manager</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
       <widget class="QLabel" name="currentAssetLabel">
        <property name="font">
         <font>
+         <family>Segoe UI</family>
          <pointsize>8</pointsize>
-         <weight>50</weight>
-         <bold>false</bold>
+         <weight>75</weight>
+         <italic>false</italic>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
         <string>(No asset loaded)</string>
        </property>
        <property name="alignment">
-        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+        <set>Qt::AlignCenter</set>
        </property>
       </widget>
      </item>
@@ -69,6 +93,11 @@
       <layout class="QHBoxLayout" name="horizontalLayout" stretch="0">
        <item>
         <widget class="QGroupBox" name="groupBox">
+         <property name="font">
+          <font>
+           <family>Segoe UI</family>
+          </font>
+         </property>
          <property name="title">
           <string>Rig Component</string>
          </property>
@@ -153,6 +182,11 @@
            <height>200</height>
           </size>
          </property>
+         <property name="font">
+          <font>
+           <family>Segoe UI</family>
+          </font>
+         </property>
          <property name="title">
           <string>Module List</string>
          </property>
@@ -184,6 +218,11 @@
            <height>200</height>
           </size>
          </property>
+         <property name="font">
+          <font>
+           <family>Segoe UI</family>
+          </font>
+         </property>
          <property name="title">
           <string>Build List</string>
          </property>
@@ -202,6 +241,11 @@
      </item>
      <item>
       <widget class="QGroupBox" name="attributesBox">
+       <property name="font">
+        <font>
+         <family>Segoe UI</family>
+        </font>
+       </property>
        <property name="title">
         <string>Module Attributes</string>
        </property>

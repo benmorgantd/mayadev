@@ -10,7 +10,7 @@ from bmaya.lib.Qt import QtWidgets, QtCore
 from bmaya.core import qtbase, fileio, asset
 from . import customWidgets, assetCreator
 
-from bmaya.rigging.base import creator
+from bmaya.rigging.base import rig
 from bmaya.rigging import buildio
 
 
@@ -129,7 +129,6 @@ class RigManager(qtbase.DockableWidget):
         assetCreatorUI.activateWindow()
 
     def setupButtons(self):
-        # self.widget.loadCharacter.clicked.connect(lambda: self.initiateAsset())
         self.widget.loadComponent.clicked.connect(lambda: self.loadComponent())
         self.widget.saveComponent.clicked.connect(lambda: self.saveComponent())
         self.widget.referenceComponent.clicked.connect(lambda: self.referenceComponent())
@@ -210,7 +209,7 @@ class RigManager(qtbase.DockableWidget):
 
             self.saveBuild(buildPath)
 
-            creator.build(self.assetInstance, standalone=False)
+            self.assetInstance.buildRig()
 
     def exploreToBuildPath(self, action='Open', fileMode=1):
 
@@ -245,7 +244,7 @@ class RigManager(qtbase.DockableWidget):
             self.widget.componentType.setEnabled(False)
             self.widget.currentAssetLabel.setText('(No Asset Loaded).')
         else:
-            self.assetInstance = creator.initiate(*assetArgs, standalone=False)
+            self.assetInstance = rig.Rig(*assetArgs)
 
             self.widget.componentType.setEnabled(True)
             self.widget.build.setEnabled(True)
@@ -275,7 +274,7 @@ class RigManager(qtbase.DockableWidget):
                 # file was not saved into an asset
                 return
             else:
-                self.assetInstance = creator.initiate(*assetArgs, standalone=False)
+                self.assetInstance = rig.Rig(*assetArgs)
 
                 self.widget.componentType.setEnabled(True)
                 self.widget.build.setEnabled(True)

@@ -6,7 +6,7 @@ import maya.OpenMaya as om
 
 from bmaya.lib.Qt import QtWidgets, QtCompat
 
-from bmaya.rigging.base import creator
+from bmaya.rigging.base import rig
 from bmaya.core import asset
 
 
@@ -41,7 +41,6 @@ class AssetCreator(QtWidgets.QMainWindow):
             om.MGlobal.displayInfo('An asset of this description already exists')
             return
         else:
-            self.rigManager.assetInstance = creator.initiate(name, project, assetType,
-                                             standalone=False)
+            self.rigManager.assetInstance = rig.Rig(name, project, assetType)
             
             self.close()

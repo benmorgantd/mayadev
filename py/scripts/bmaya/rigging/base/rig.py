@@ -12,14 +12,15 @@ from bmaya.rigging.shapes import shapelib, shapeio
 from bmaya.rigging.weights import weightio
 from bmaya.rigging import buildio
 
+from decorators import wrapStandalone
 import layout
 
 
-class Character(Asset):
-    '''Character is the base class for all rigs'''
+class Rig(Asset):
+    '''Rig is the base class for all rigs'''
 
     def __init__(self, name, project, assetType):
-        super(Character, self).__init__(name, project, assetType)
+        super(Rig, self).__init__(name, project, assetType)
 
         self.skinClusters = []
         # an array of dictionary representations of our module classes
@@ -353,3 +354,70 @@ class Character(Asset):
     def loadPlugins(self):
         for plugin in constants.REQUIRED_PLUGINS:
             cmds.loadPlugin(plugin, quiet=True)
+
+    def initComponents(self):
+        # initialize the component objects for the asset
+        self.mesh = mesh.Mesh(self, 'mesh')
+        self.skeleton = skeleton.Skeleton(self, 'skeleton')
+        self.weights = weights.Weights(self, 'weights')
+        self.cvs = cvs.Cvs(self, 'cvs')
+        self.build = build.Build(self, 'build')
+        self.animRig = animRig.AnimRig(self, 'animRig')
+
+        self.components += [self.mesh, self.skeleton, self.weights, self.cvs, self.build, self.animRig]
+        
+    def initComponentFolders(self):
+        """Creates the component folders for the asset"""
+
+        for component in self.components:
+            dirpath = os.path.dirname(component.fullPath)
+            if not os.path.exists(dirpath):
+                os.makedirs(dirpath)
+
+        print ">> Initialized component folders"
+
+    
+    def initComponentFiles(self):
+
+        if not os.path.exists(self.mesh.fullPath):
+            print ">> Creating mesh file."
+            # mesh file is just a blank ma
+            cmds.file(new=True, force=True)
+            cmds.file(rename=self.mesh.fullPath)
+            cmds.file(save=True, type="mayaAscii", force=True)
+            fileio.versionFile(self.mesh.fullPath)
+        else:
+            print '>> A working mesh file already exists for ' + self.name
+
+        if not os.path.exists(self.skeleton.fullPath):
+            print ">> Creating skeleton file."
+            # create a single joint for the default skeleton file
+            cmds.file(new=True, force=True)
+            cmds.joint(name=constants.ROOT_JOINT)
+            cmds.file(rename=self.skeleton.fullPath)
+            cmds.file(save=True, type="mayaAscii", force=True)
+            fileio.versionFile(self.skeleton.fullPath)
+        else:
+            print '>> A working skeleton file already exists for ' + self.name
+
+        if not os.path.exists(self.cvs.fullPath):
+            print ">> Creating cvs file."
+            with open(self.cvs.fullPath, "w") as f:
+                json.dump({}, f)
+            fileio.versionFile(self.cvs.fullPath)
+        else:
+            print '>> A working cvs file already exists for ' + self.name
+
+        if not os.path.exists(self.build.fullPath):
+            print ">> Creating build file."
+            # give it a LayoutRig template
+            layoutRigPath = os.path.join(constants.TEMPLATES_PATH, "LayoutRig.json")
+
+            with open(layoutRigPath, "r") as f:
+                layoutRigData = f.read()
+            
+            # write the contents to this asset's build file
+            with open(self.build.fullPath, "w") as f:
+                f.write(layoutRigData)
+
+            fileio.versionFile(self.build.fullPath)
