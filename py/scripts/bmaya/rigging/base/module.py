@@ -211,11 +211,11 @@ class Module(object):
             if parentTransform:
                 parentTransform = parentTransform[0]
             else:
-                parentTransform = constants.TOP_LAYOUT_CONTROL
+                parentTransform = constants.BOTTOM_LAYOUT_CONTROL
             
             return parentTransform
         else:
-            return constants.TOP_LAYOUT_CONTROL
+            return constants.BOTTOM_LAYOUT_CONTROL
 
     def parentModule(self):
         # check if a specific joint parent was given. If not then check the parent of the startJoint
@@ -238,7 +238,7 @@ class Module(object):
             if parentTransform:
                 parentTransform = parentTransform[0]
             else:
-                parentTransform = constants.TOP_LAYOUT_CONTROL
+                parentTransform = constants.BOTTOM_LAYOUT_CONTROL
 
             # todo: this is where you could add a followSwitch option
             self.parentConstrain(parentTransform, self.modGrp, maintainOffset=True)
@@ -486,13 +486,13 @@ class Module(object):
         if self.alignWorld == None:
             return
 
-        const = cmds.orientConstraint(constants.TOP_LAYOUT_CONTROL, component.spaceGrp, mo=1)[0]
+        const = cmds.orientConstraint(constants.BOTTOM_LAYOUT_CONTROL, component.spaceGrp, mo=1)[0]
         cmds.setAttr(const + '.interpType', 2)
 
         cmds.addAttr(component.ctrl, longName='alignWorld', defaultValue=defaultValue,
                      attributeType='bool', keyable=True)
 
-        cmds.connectAttr(component.ctrl + '.alignWorld', const + '.' + constants.TOP_LAYOUT_CONTROL + 'W0')
+        cmds.connectAttr(component.ctrl + '.alignWorld', const + '.' + constants.BOTTOM_LAYOUT_CONTROL + 'W0')
 
     def findTwistJoints(self, jnt):
         children = cmds.listRelatives(jnt, type='joint', children=True)

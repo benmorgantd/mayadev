@@ -11,7 +11,7 @@ from bmaya.core import asset
 
 
 class AssetCreator(QtWidgets.QMainWindow):
-    def __init__(self, parent=None, designerFile=None, title='Asset Creator', rigManager=None):
+    def __init__(self, parent=None, designerFile=None, title='Asset Creator'):
         super(AssetCreator, self).__init__(parent)
 
         if designerFile and isinstance(designerFile, basestring):
@@ -24,16 +24,16 @@ class AssetCreator(QtWidgets.QMainWindow):
 
         self.setWindowTitle(title)
 
-        self.rigManager = rigManager
-
         self.widget.createAsset.clicked.connect(lambda: self.createAsset())
 
         self.resize(400, 150)
 
     def createAsset(self):
-        project = self.widget.projectName.text().strip().lower()
-        assetType = self.widget.assetType.text().strip().lower()
-        name = self.widget.assetName.text().strip().lower()
+        project = self.widget.projectName.text().strip()
+        assetType = self.widget.assetType.text().strip()
+        name = self.widget.assetName.text().strip()
+
+        assetId = '|'.join([project, assetType, name])
 
         assetPath = asset.Asset.exists(project, name, assetType)
 
@@ -41,6 +41,6 @@ class AssetCreator(QtWidgets.QMainWindow):
             om.MGlobal.displayInfo('An asset of this description already exists')
             return
         else:
-            self.rigManager.assetInstance = rig.Rig(name, project, assetType)
+            rig.Rig(assetId)
             
             self.close()

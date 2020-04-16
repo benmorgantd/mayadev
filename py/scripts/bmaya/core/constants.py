@@ -22,7 +22,8 @@ ROOT_JOINT = 'root_0{0}_{1}_{2}'.format(COUNT_START, SIDE_NAMES['middle'], JOINT
 CTRL_SUFFIX = 'ctrl'
 
 # the bottom of the layout stack, which should represent the character's "world" space
-TOP_LAYOUT_CONTROL = 'layout_0{0}_{1}_{2}'.format(COUNT_START + 2, SIDE_NAMES['middle'], CTRL_SUFFIX)
+TOP_LAYOUT_CONTROL = 'layout_{0}_{1}_{2}'.format(str(COUNT_START).zfill(2), SIDE_NAMES['middle'], CTRL_SUFFIX)
+BOTTOM_LAYOUT_CONTROL = 'layout_{0}_{1}_{2}'.format(str(COUNT_START + 2).zfill(2), SIDE_NAMES['middle'], CTRL_SUFFIX)
 
 MESH_SUFFIX = 'mesh'
 

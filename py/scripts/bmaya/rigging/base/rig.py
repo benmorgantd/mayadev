@@ -19,8 +19,12 @@ import layout
 class Rig(Asset):
     '''Rig is the base class for all rigs'''
 
-    def __init__(self, name, project, assetType):
-        super(Rig, self).__init__(name, project, assetType)
+    def __init__(self, assetId):
+        super(Rig, self).__init__(assetId)
+
+        self.initComponents()
+        self.initComponentFolders()
+        self.initComponentFiles()
 
         self.skinClusters = []
         # an array of dictionary representations of our module classes
@@ -374,7 +378,7 @@ class Rig(Asset):
             if not os.path.exists(dirpath):
                 os.makedirs(dirpath)
 
-        print ">> Initialized component folders"
+        print ">> Component folders initialized"
 
     
     def initComponentFiles(self):

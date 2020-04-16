@@ -94,13 +94,20 @@ class IkChain(module.Module):
         cmds.parent(poleVectorCtrl.offsetGrp, self.componentsGrp)
         cmds.parent(startCtrl.offsetGrp, self.componentsGrp)
 
-        cmds.setAttr(poleVectorCtrl.offsetGrp + '.inheritsTransform', False)
-
         return components
 
     def setupIkSpaces(self, ikCtrl, defaultValue=1):
         # parent to world and add switch
         const = cmds.parentConstraint(constants.TOP_LAYOUT_CONTROL, ikCtrl.spaceGrp, mo=1)[0]
         cmds.addAttr(ikCtrl.ctrl, longName='followWorld', defaultValue=defaultValue, attributeType='bool', keyable=True)
-        cmds.connectAttr(ikCtrl.ctrl + '.followWorld', const + '.' + constants.TOP_LAYOUT_CONTROL + 'W0')
+        cmds.connectAttr(ikCtrl.ctrl + '.followWorld', '{0}.{1}W0'.format(const, constants.TOP_LAYOUT_CONTROL))
         
+        # check if there's a point constraint on the offset group
+        poleVectorPointConstraint = cmds.ls(cmds.listRelatives(ikCtrl.offsetGrp, children=True), type='pointConstraint')
+        
+        if poleVectorPointConstraint:
+            rev = cmds.createNode('reverse', name=self.name + '_worldFollowReverse')
+            cmds.connectAttr(ikCtrl.ctrl + '.followWorld', rev + '.inputX')
+            weights = cmds.pointConstraint(poleVectorPointConstraint[0], query=True, weightAliasList=True)
+            cmds.connectAttr(rev + '.outputX', '{0}.{1}'.format(poleVectorPointConstraint[0], weights[0]))
+

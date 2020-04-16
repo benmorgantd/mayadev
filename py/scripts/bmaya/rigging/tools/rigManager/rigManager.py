@@ -121,9 +121,7 @@ class RigManager(qtbase.DockableWidget):
     def launchAssetWidget(self):
 
         assetCreatorUI = assetCreator.AssetCreator(parent=qtbase.getMayaMainWindow(),
-                                                    rigManager=self,
-                                                    designerFile=os.path.join(
-                                                        os.path.dirname(__file__),'assetCreator.ui'))
+                                                   designerFile=os.path.join(os.path.dirname(__file__),'assetCreator.ui'))
 
         assetCreatorUI.show()
         assetCreatorUI.activateWindow()
@@ -235,20 +233,19 @@ class RigManager(qtbase.DockableWidget):
                 return
 
         # set our asset to the one derived from the path
-        assetArgs = asset.Asset.getAssetArgsFromFile(filepath)
+        assetId = asset.Asset.getAssetIdFromFile(filepath)
 
-        if any(not arg for arg in assetArgs):
-            # we could set something in the ui saying we're not working on an asset
+        if not assetId:
             om.MGlobal.displayWarning('File is not a part of an asset. Building is disabled.')
             self.widget.build.setEnabled(False)
             self.widget.componentType.setEnabled(False)
-            self.widget.currentAssetLabel.setText('(No Asset Loaded).')
+            self.widget.currentAssetLabel.setText('No Asset Loaded')
         else:
-            self.assetInstance = rig.Rig(*assetArgs)
-
+            self.assetInstance = rig.Rig(assetId)
             self.widget.componentType.setEnabled(True)
             self.widget.build.setEnabled(True)
-            self.widget.currentAssetLabel.setText('{0}'.format(' | '.join([assetArgs[1], assetArgs[2], assetArgs[0]])))
+            self.widget.currentAssetLabel.setText('Project: {0}\nAsset Type: {1}\nName: {2}'.format(self.assetInstance.project,
+                                                  self.assetInstance.assetType, self.assetInstance.name))
     
         self.resetBuildList()
         self.buildData = buildio.load(filepath)
@@ -268,17 +265,18 @@ class RigManager(qtbase.DockableWidget):
         try:
             fileio.versionFile(filepath)
         except AttributeError:
-            assetArgs = asset.Asset.getAssetArgsFromFile(filepath)
+            assetId = asset.Asset.getAssetIdFromFile(filepath)
 
-            if any(not arg for arg in assetArgs):
+            if not assetId:
                 # file was not saved into an asset
                 return
             else:
-                self.assetInstance = rig.Rig(*assetArgs)
+                self.assetInstance = rig.Rig(assetId)
 
                 self.widget.componentType.setEnabled(True)
                 self.widget.build.setEnabled(True)
-                self.widget.currentAssetLabel.setText('{0}'.format(' | '.join([assetArgs[1], assetArgs[2], assetArgs[0]])))
+                self.widget.currentAssetLabel.setText('Project: {0}\nAsset Type: {1}\nName: {2}'.format(self.assetInstance.project,
+                                                  self.assetInstance.assetType, self.assetInstance.name))
 
                 fileio.versionFile(filepath)
 

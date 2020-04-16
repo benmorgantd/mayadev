@@ -16,17 +16,10 @@ except KeyError:
     raise RuntimeError('RIG_ROOT environment variable is not set.')
 
 class Asset(object):
-    def __init__(self, name=None, project=None, assetType=None):
-        # self.id, self.project, self.assetType, self.name = self.interpretId(id)
-        # self.id = id
-        self.name = name
-        self.assetType = assetType
-        self.project = project
-        self.components = []
+    def __init__(self, assetId):
+        self.assetId = Asset.validateId(assetId)
 
-        self.initComponents()
-        self.initComponentFolders()
-        self.initComponentFiles()
+        self.components = []
 
     @property
     def rootDir(self):
@@ -38,9 +31,38 @@ class Asset(object):
             os.makedirs(root)
             return root
 
+    @property
+    def project(self):
+        return self.assetId.split('|')[0]
+
+    @property
+    def assetType(self):
+        return self.assetId.split('|')[1]
+    
+    @property
+    def name(self):
+        return self.assetId.split('|')[2]
+
     @classmethod
-    def interpretId(cls, id):
+    def validateId(cls, assetId):
+        """Determine if the given id is acceptable. 
+        Ids should be a string in the format: project|type|name"""
+
+        assert isinstance(assetId, basestring)
+
+        if '|' not in assetId:
+            raise ValueError('Id should have tokens split by the pike character.')
+            
+        splitId = assetId.split('|')
+
+        if len(splitId) != 3:
+            raise ValueError('Id must be three tokens separated by pikes')
         
+        # check for illegal characters that may cause path errors
+        if any(not token.isalnum() for token in splitId):
+            raise ValueError('Id is not alphanumeric and contains illegal characters.')
+
+        return assetId
 
     @classmethod
     def openInExplorer(cls, path):
@@ -103,7 +125,7 @@ class Asset(object):
 
 
     @classmethod
-    def getAssetArgsFromFile(cls, filepath):
+    def getAssetIdFromFile(cls, filepath):
         """Given a path, derive from it the asset's name, type, and project"""
 
         filepath = os.path.abspath(filepath)
@@ -125,8 +147,11 @@ class Asset(object):
                 assetName = splitRootRelativePath[2]
                 assetType = splitRootRelativePath[1]
                 assetProject = splitRootRelativePath[0]
-                
-        return assetName, assetProject, assetType
+        
+        if assetProject and assetType and assetName:
+            return '|'.join([assetProject, assetType, assetName])
+        else:
+            return None
 
     def componentPathFromType(self, componentType):
         for component in self.components:
