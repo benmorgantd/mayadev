@@ -177,7 +177,7 @@ class Rig(Asset):
             self.node = cmds.createNode('network', name=self.name + '_CHAR')
 
             # create an attribute to glue other parts to the rig to
-            cmds.addAttr(self.node, longName='sock', attributeType='message')
+            cmds.addAttr(self.node, longName='connector', attributeType='message')
 
             print '>>> Created character node >> {0} <<'.format(self.node)
 
@@ -295,7 +295,7 @@ class Rig(Asset):
         
         if cmds.objExists(node):
             cmds.addAttr(node, longName='character', attributeType='message')
-            cmds.connectAttr(self.node + '.sock', node + '.character')
+            cmds.connectAttr(self.node + '.connector', node + '.character')
 
     def hideKeyableAttr(self, obj):
         if cmds.objExists(obj):

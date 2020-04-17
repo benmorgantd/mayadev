@@ -1,6 +1,10 @@
 import json
 import time
+from ast import literal_eval
+
 import maya.cmds as cmds
+
+from bmaya.core import mayanode, mathUtils
 
 
 def toggleSkinMode():
@@ -128,3 +132,47 @@ def keyAll(ctrl):
             for attr in keyableAttrs:
                 # set a keyframe
                 cmds.setKeyframe(ctrl + '.' + attr)
+
+
+def matchIkToFk(ctrl):
+    """Works on 2 or 3 joint ik setups"""
+
+    # get the module of the selection
+
+    mod = getModuleNode(ctrl)
+
+    # get the position of the fk joints
+    fkJoints = literal_eval(cmds.getAttr(mod + '.fkDriveJoints'))
+
+    # get the ik controls
+    ikControls = literal_eval(cmds.getAttr(mod + '.ikComponents'))
+
+    # match the ik start control to the first fk joint position
+    cmds.delete(cmds.pointConstraint(fkJoints[0], ikControls[0], maintainOffset=False))
+
+    # match the ik end control to the last fk joint position
+    cmds.delete(cmds.parentConstraint(fkJoints[2], ikControls[1], maintainOffset=False))
+    
+    # find the pole vector position for the fk joints
+    cmds.xform(ikControls[2], translation=mathUtils.findPoleVector(fkJoints, scaleFactor=1.5), worldSpace=True)
+    
+    cmds.setAttr(mod + '.FKIK', 1)
+
+def matchFkToIk(ctrl):
+    """Works on 2 or 3 joint ik setups"""
+
+    # get the module of the selection
+
+    mod = getModuleNode(ctrl)
+
+    # get the position of the fk joints
+    ikJoints = literal_eval(cmds.getAttr(mod + '.ikDriveJoints'))
+
+    # get the ik controls
+    fkControls = literal_eval(cmds.getAttr(mod + '.fkComponents'))
+
+    for i in range(len(ikJoints)):
+        cmds.delete(cmds.parentConstraint(ikJoints[i], fkControls[i], maintainOffset=False))
+    
+    cmds.setAttr(mod + '.FKIK', 0)
+
