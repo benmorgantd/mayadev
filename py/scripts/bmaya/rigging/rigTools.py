@@ -3,8 +3,11 @@ import time
 from ast import literal_eval
 
 import maya.cmds as cmds
+import maya.OpenMaya as om
 
 from bmaya.core import mayanode, mathUtils
+
+reload(mathUtils)
 
 
 def toggleSkinMode():
@@ -133,10 +136,28 @@ def keyAll(ctrl):
                 # set a keyframe
                 cmds.setKeyframe(ctrl + '.' + attr)
 
+def keyIk(ctrl):
+    mod = getModuleNode(ctrl)
+    ikControls = literal_eval(cmds.getAttr(mod + '.ikComponents'))
+
+    for ikCtrl in ikControls:
+        keyableAttrs = cmds.listAttr(ikCtrl, k=1) or []
+        for attr in keyableAttrs:
+            # set a keyframe
+            cmds.setKeyframe(ikCtrl + '.' + attr)
+
+def keyFk(ctrl):
+    mod = getModuleNode(ctrl)
+    ikControls = literal_eval(cmds.getAttr(mod + '.fkComponents'))
+
+    for fkCtrl in ikControls:
+        keyableAttrs = cmds.listAttr(fkCtrl, k=1) or []
+        for attr in keyableAttrs:
+            # set a keyframe
+            cmds.setKeyframe(fkCtrl + '.' + attr)
+
 
 def matchIkToFk(ctrl):
-    """Works on 2 or 3 joint ik setups"""
-
     # get the module of the selection
 
     mod = getModuleNode(ctrl)
@@ -147,20 +168,45 @@ def matchIkToFk(ctrl):
     # get the ik controls
     ikControls = literal_eval(cmds.getAttr(mod + '.ikComponents'))
 
-    # match the ik start control to the first fk joint position
-    cmds.delete(cmds.pointConstraint(fkJoints[0], ikControls[0], maintainOffset=False))
+    # this is a little more complicated if its a spline module
+    if cmds.getAttr(mod + '.modType') == 'Spline':
+        # we can easily match the start and end controls.
+        # This will give us start and end twist. 
+        cmds.delete(cmds.parentConstraint(fkJoints[0], ikControls[0], maintainOffset=False))
+        cmds.delete(cmds.parentConstraint(fkJoints[-1], ikControls[-1], maintainOffset=False))
+        
+        # now we need to make an approximation for the middle controls
+        # We'll do this by fitting a curve through the fk joints
+        fitCurve = mathUtils.fitCurveToPoints([cmds.xform(jnt, q=1, t=1, ws=1) for jnt in fkJoints])
 
-    # match the ik end control to the last fk joint position
-    cmds.delete(cmds.parentConstraint(fkJoints[2], ikControls[1], maintainOffset=False))
-    
-    # find the pole vector position for the fk joints
-    cmds.xform(ikControls[2], translation=mathUtils.findPoleVector(fkJoints, scaleFactor=1.5), worldSpace=True)
+        numMiddleControls = len(ikControls) - 2
+
+        startJointMatrix = cmds.getAttr(fkJoints[0] + '.worldMatrix[0]')
+        forwardVector = om.MVector(*startJointMatrix[4:7])
+
+        for i in range(1, numMiddleControls + 1):
+            # move each middle ik component to the percentage position it should be
+            # along the curve (assumes controls were created this way to begin)
+
+            matrix = mathUtils.getMatrixAlongCurve(fitCurve, i / float(numMiddleControls + 1), 
+                                                   forwardVector=forwardVector)
+            cmds.xform(ikControls[i], matrix=matrix, worldSpace=True)
+
+        cmds.delete(fitCurve)
+
+    else:
+        # match the ik start control to the first fk joint position
+        cmds.delete(cmds.pointConstraint(fkJoints[0], ikControls[0], maintainOffset=False))
+
+        # match the ik end control to the last fk joint position
+        cmds.delete(cmds.parentConstraint(fkJoints[2], ikControls[1], maintainOffset=False))
+        
+        # find the pole vector position for the fk joints
+        cmds.xform(ikControls[2], translation=mathUtils.findPoleVector(fkJoints, scaleFactor=1.5), worldSpace=True)
     
     cmds.setAttr(mod + '.FKIK', 1)
 
 def matchFkToIk(ctrl):
-    """Works on 2 or 3 joint ik setups"""
-
     # get the module of the selection
 
     mod = getModuleNode(ctrl)
@@ -172,7 +218,39 @@ def matchFkToIk(ctrl):
     fkControls = literal_eval(cmds.getAttr(mod + '.fkComponents'))
 
     for i in range(len(ikJoints)):
-        cmds.delete(cmds.parentConstraint(ikJoints[i], fkControls[i], maintainOffset=False))
+        # cmds.delete(cmds.parentConstraint(ikJoints[i], fkControls[i], maintainOffset=False))
+        cmds.xform(fkControls[i], matrix=cmds.getAttr(ikJoints[i] + '.worldMatrix[0]'), worldSpace=True)
     
     cmds.setAttr(mod + '.FKIK', 0)
 
+def bakeFkToIk(ctrl, bakeRange=None):
+    if bakeRange:
+        bakeStart = bakeRange[0]
+        bakeEnd = bakeRange[1]
+    else:
+        bakeStart = int(cmds.playbackOptions(query=True, minTime=True))
+        bakeEnd = int(cmds.playbackOptions(query=True, maxTime=True))
+    
+    mod = getModuleNode(ctrl)
+    fkControls = literal_eval(cmds.getAttr(mod + '.fkComponents'))
+
+    for i in range(bakeStart, bakeEnd):
+        cmds.currentTime(i)
+        matchFkToIk(ctrl)
+        keyFk(ctrl)
+
+def bakeIkToFk(ctrl, bakeRange=None):
+    if bakeRange:
+        bakeStart = bakeRange[0]
+        bakeEnd = bakeRange[1]
+    else:
+        bakeStart = int(cmds.playbackOptions(query=True, minTime=True))
+        bakeEnd = int(cmds.playbackOptions(query=True, maxTime=True))
+    
+    mod = getModuleNode(ctrl)
+    fkControls = literal_eval(cmds.getAttr(mod + '.ikComponents'))
+
+    for i in range(bakeStart, bakeEnd):
+        cmds.currentTime(i)
+        matchIkToFk(ctrl)
+        keyIk(ctrl)

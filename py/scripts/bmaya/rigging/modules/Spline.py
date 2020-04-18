@@ -5,7 +5,7 @@
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from bmaya.core import name
+from bmaya.core import name, mathUtils
 
 from bmaya.rigging.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
@@ -133,17 +133,9 @@ class Spline(module.Module):
         """
 
         jntLocs = [cmds.xform(jnt, q=1, t=1, ws=1) for jnt in self.ikDriveJoints]
-
-        linearCurve = cmds.curve(degree=1, point=jntLocs)
-
-        splineCurve = cmds.fitBspline(linearCurve, constructionHistory=False, tolerance=0.001,
-                                      name='{0}_00_{1}_SPLINE'.format(self.name, self.side))[0]
-                                      
-        cmds.setAttr(splineCurve + '.inheritsTransform', False)
         
-        cmds.delete(linearCurve)
-
-        cmds.parent(splineCurve, self.componentsGrp)
+        splineCurve = mathUtils.fitCurveToPoints(jntLocs)
+        cmds.setAttr(splineCurve + '.inheritsTransform', False)
 
         # the end effector for the splineIKHandle is one joint too early?
 
@@ -186,63 +178,29 @@ class Spline(module.Module):
 
         splineDriverJoints = []
 
-        # create a temporary curveInfo node to give us positional information
-        # along our spline curve
-        curveShape = cmds.listRelatives(self.splineCurve, shapes=True)[0]
-        curveInfo = cmds.createNode("pointOnCurveInfo")
-        cmds.connectAttr(curveShape + ".worldSpace[0]", curveInfo + ".inputCurve")
-        cmds.setAttr(curveInfo + ".turnOnPercentage", True)
-
-        # build a matrix from the curve into node
-        temp4x4 = cmds.createNode('fourByFourMatrix')
-        cmds.connectAttr(curveInfo + '.position.positionX', temp4x4 + '.in30')
-        cmds.connectAttr(curveInfo + '.position.positionY', temp4x4 + '.in31')
-        cmds.connectAttr(curveInfo + '.position.positionZ', temp4x4 + '.in32')
-
-        # align the down axis (x) to the tangent of the curve
-        cmds.connectAttr(curveInfo + '.normalizedTangent.normalizedTangentX', temp4x4 + '.in00')
-        cmds.connectAttr(curveInfo + '.normalizedTangent.normalizedTangentY', temp4x4 + '.in01')
-        cmds.connectAttr(curveInfo + '.normalizedTangent.normalizedTangentZ', temp4x4 + '.in02')
-
         for i in range(self.controlAmount):
             cmds.select(clear=True)
+
+            # use the forward vector of our start joint as the y axis value
+            # default forward axis is y (make this a variable)
+            # we could make this a variable to (to be the average vector, a
+            # specified vector, etc)
+            startJointMatrix = cmds.getAttr(self.startJoint + '.worldMatrix[0]')
+            forwardVector = om.MVector(*startJointMatrix[4:7])
+
             # make a control at a percentage distance along the curve
-            cmds.setAttr(curveInfo + ".parameter", i / float(self.controlAmount - 1))
+            matrix = mathUtils.getMatrixAlongCurve(self.splineCurve, i / float(self.controlAmount - 1), forwardVector)
 
             jnt = cmds.joint(name=name.findJointName(self.bindJoints[0], count=i, suffix='CURVEDRIVER'))
             cmds.setAttr(jnt + '.rotateOrder', 2)
             
-            # use the forward vector of our start joint as the y axis value
-            # default forward axis is y (make this a variable)
-            startJointMatrix = cmds.getAttr(self.startJoint + '.worldMatrix[0]')
-            forwardVector = om.MVector(*startJointMatrix[4:7])
-            # we could make this a variable to (to be the average vector, a
-            # specified vector, etc)
-
-            U = om.MVector(*cmds.getAttr(curveInfo + '.normalizedTangent')[0])
-            W = (U ^ forwardVector).normal()
-
-            # like an up vector in an aim, the forward vector may not always be 
-            # orthogonal to U (if the spline has any sort of curve to it)
-            forwardVector = (W ^ U).normal()
-
-            cmds.setAttr(temp4x4 + '.in10', forwardVector.x)
-            cmds.setAttr(temp4x4 + '.in11', forwardVector.y)
-            cmds.setAttr(temp4x4 + '.in12', forwardVector.z)
-
-            cmds.setAttr(temp4x4 + '.in20', W.x)
-            cmds.setAttr(temp4x4 + '.in21', W.y)
-            cmds.setAttr(temp4x4 + '.in22', W.z)
-
-            cmds.xform(jnt, matrix=cmds.getAttr(temp4x4 + '.output'))
+            cmds.xform(jnt, matrix=matrix, worldSpace=True)
 
             cmds.makeIdentity(jnt, apply=True)
 
             cmds.parent(jnt, self.componentsGrp)
 
             splineDriverJoints.append(jnt)
-
-        cmds.delete(curveInfo, temp4x4)
 
         return splineDriverJoints
 
