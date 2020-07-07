@@ -51,7 +51,7 @@ def save(weightsDir):
             # exports by vertex index. Changes to the vert order will break this
             # with the new 'format' argument, this might not be backwards compatible... - _-
             cmds.deformerWeights("{0}.weights".format(dagName), deformer=skin[0],
-                                 export=True, format='XML', path=weightsDir, method="index")
+                                 export=True, path=weightsDir, method="index")
         else:
             print dagName, ' has no skin cluster to save.'
 
@@ -97,15 +97,16 @@ def load(weightsPath):
     cmds.select(objName, add=True)
 
     # add the skin cluster
-    newCluster = cmds.skinCluster(maximumInfluences=4,
-                                 weightDistribution=1,
-                                 obeyMaxInfluences=True,
+    # Add in options to load from previous saved skin cluster's settings since
+    # we may not want 4 max influences or linear blending
+    newCluster = cmds.skinCluster(weightDistribution=1,
+                                 obeyMaxInfluences=False,
                                  toSelectedBones=True,
                                  skinMethod=0,
                                  bindMethod=1)
 
     cmds.deformerWeights("{0}.weights".format(objName), im=True, path=weightsDirname, 
-                        ignoreName=True, format='XML', method="index", deformer=newCluster[0])
+                        ignoreName=True, method="index", deformer=newCluster[0])
     cmds.select(objName)
     cmds.skinPercent(newCluster[0], normalize=True)
     om.MGlobal.displayInfo("Loaded skinCluster weights onto {0}".format(objName))

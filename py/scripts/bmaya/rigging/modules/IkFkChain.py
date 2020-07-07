@@ -29,7 +29,7 @@ class IkFkChain(FkChain.FkChain, IkChain.IkChain):
     def build(self):
         # build a single joint control on the given joint
 
-        self.bindJoints = self.findHierarchyJoints()
+        self.bindJoints = self.findHierarchyJoints(shortestDistance=True)
         self.driveJoints = self.createDriveJoints(label='DRIVER', constrain=True)
 
         self.buildFkIkSetup()
@@ -37,12 +37,12 @@ class IkFkChain(FkChain.FkChain, IkChain.IkChain):
         self.components += self.ikComponents
         self.components += self.fkComponents
 
-    def buildFkIkSetup(self, worldAimTarget=None):
+    def buildFkIkSetup(self, worldAimTarget=None, downAxis='X', upAxis='Y'):
         # need to feed it our specific drive joints
         self.ikDriveJoints = self.createDriveJoints(label='IKDRIVER', constrain=False)
         self.fkDriveJoints = self.createDriveJoints(label='FKDRIVER', constrain=False)
 
-        self.ikComponents = self.buildIkControls(self.ikDriveJoints, worldAimTarget=worldAimTarget)
+        self.ikComponents = self.buildIkControls(self.ikDriveJoints, worldAimTarget=worldAimTarget, downAxis=downAxis, upAxis=upAxis)
         self.fkComponents = self.buildFkControls(self.fkDriveJoints)
 
         # add an attribute for blending

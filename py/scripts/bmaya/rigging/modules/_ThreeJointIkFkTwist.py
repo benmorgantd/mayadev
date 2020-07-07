@@ -17,7 +17,7 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         self.modType = "ThreeJointIkFkTwist"
         self.contract = [self.startJoint, self.endJoint]
 
-    def build(self, startJoint, endJoint, worldAimTarget=None):
+    def build(self, startJoint, endJoint, worldAimTarget=None, downAxis='X', upAxis='Y'):
         self.bindJoints = self.findHierarchyJoints(shortestDistance=True, startJoint=startJoint, endJoint=endJoint)
         
         # force the bind joint start and ends to zyx rotate order 
@@ -27,7 +27,7 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
 
         self.driveJoints = self.createDriveJoints(label='DRIVER', constrain=True)
 
-        self.buildFkIkSetup(worldAimTarget=worldAimTarget)
+        self.buildFkIkSetup(worldAimTarget=worldAimTarget, downAxis=downAxis, upAxis=upAxis)
 
         self.components += self.ikComponents
         self.components += self.fkComponents

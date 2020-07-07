@@ -25,7 +25,7 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
 
     @wrapBuild
     def build(self):
-        _ThreeJointIkFkTwist.ThreeJointIkFkTwist.build(self, self.startJoint, self.ankle, worldAimTarget=self.ball)
+        _ThreeJointIkFkTwist.ThreeJointIkFkTwist.build(self, self.startJoint, self.ankle, worldAimTarget=self.ball, downAxis='Y', upAxis='X')
         _Foot.Foot.build(self)
 
         self.components += self.footComponents 
@@ -56,7 +56,7 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
         self.addFkGimbalControl()
         self.setupAlignWorld(self.fkShoulderGimbal, defaultValue=self.alignWorld)
 
-        # connect ankle to ik handle
+        self.addIkToeBend()
 
     def addFkGimbalControl(self):
         # add a second control on top of the existing leg fk 
@@ -77,4 +77,23 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
         cmds.connectAttr(self.blendReverse, self.fkShoulderGimbal.offsetGrp + '.v')
 
         self.components.append(self.fkShoulderGimbal)
+
+    def addIkToeBend(self):
+
+        # create a group in the ik reverse hierarchy that's the parent of the
+        # ball ik handle and has the pivot of the next joint in the hierarchy
+        toeJntNameSplit = self.toeTip.split('_')
+        ballIkGrpName = '{0}Wiggle_{1}_{2}_offsetGrp'.format(toeJntNameSplit[0], toeJntNameSplit[1], toeJntNameSplit[2])
+
+        ballIkGrp = cmds.group(empty=True, name=ballIkGrpName)
+
+        cmds.delete(cmds.parentConstraint(self.reverseHierarchy[1], ballIkGrp, maintainOffset=False))
+        
+        cmds.parent(ballIkGrp, self.reverseHierarchy[0])
+
+        cmds.parent(self.ballToToeIk, ballIkGrp)
+
+        self.toeBendCtrl = shapelib.Shape(name=name.findControlName(ballIkGrp), jnt=ballIkGrp, shapeType='cube')
+        cmds.parent(self.toeBendCtrl.offsetGrp, self.toeTipCtrl.ctrl)
+        cmds.parentConstraint(self.toeBendCtrl, ballIkGrp)
 

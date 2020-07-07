@@ -134,7 +134,7 @@ class Spline(module.Module):
 
         jntLocs = [cmds.xform(jnt, q=1, t=1, ws=1) for jnt in self.ikDriveJoints]
         
-        splineCurve = mathUtils.fitCurveToPoints(jntLocs)
+        splineCurve = mathUtils.fitCurveToPoints(jntLocs, name=self.name + '_spline')
         cmds.setAttr(splineCurve + '.inheritsTransform', False)
 
         # the end effector for the splineIKHandle is one joint too early?

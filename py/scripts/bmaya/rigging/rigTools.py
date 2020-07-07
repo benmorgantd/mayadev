@@ -48,7 +48,10 @@ def labelJoints():
             cmds.setAttr(jnt + '.side', 2)
 
         cmds.setAttr(jnt + '.type', 18)
-        cmds.setAttr(jnt + '.otherType', jntSplit[0] + jntSplit[1], type='string')
+        try:
+            cmds.setAttr(jnt + '.otherType', jntSplit[0] + jntSplit[1], type='string')
+        except IndexError:
+            print jnt + ' may be named incorrectly.'
 
 def getModuleNode(ctrl):
     if 'module' not in cmds.listAttr(ctrl):

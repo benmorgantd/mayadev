@@ -244,8 +244,7 @@ class RigManager(qtbase.DockableWidget):
             self.assetInstance = rig.Rig(assetId)
             self.widget.componentType.setEnabled(True)
             self.widget.build.setEnabled(True)
-            self.widget.currentAssetLabel.setText('Project: {0}\nAsset Type: {1}\nName: {2}'.format(self.assetInstance.project,
-                                                  self.assetInstance.assetType, self.assetInstance.name))
+            self.widget.currentAssetLabel.setText(assetId)
     
         self.resetBuildList()
         self.buildData = buildio.load(filepath)
@@ -275,8 +274,7 @@ class RigManager(qtbase.DockableWidget):
 
                 self.widget.componentType.setEnabled(True)
                 self.widget.build.setEnabled(True)
-                self.widget.currentAssetLabel.setText('Project: {0}\nAsset Type: {1}\nName: {2}'.format(self.assetInstance.project,
-                                                  self.assetInstance.assetType, self.assetInstance.name))
+                self.widget.currentAssetLabel.setText(assetId)
 
                 fileio.versionFile(filepath)
 

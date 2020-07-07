@@ -149,7 +149,7 @@ class Foot(object):
 
         cmds.parentConstraint(self.toeTipCtrl.ctrl, self.reverseHierarchy[-3], maintainOffset=True)
         cmds.parentConstraint(self.ballRollCtrl.ctrl, self.reverseHierarchy[-2], maintainOffset=True)
-
+        
         return [self.ballSwivelCtrl, self.heelCtrl, self.toeTipCtrl, self.ballRollCtrl, self.bankOutCtrl, self.bankInCtrl]
 
     def createFkControls(self):

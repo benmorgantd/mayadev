@@ -102,12 +102,12 @@ def setupQuatTwist(obj=None, twistAxis="X"):
     return quatToEuler
 
 
-def fitCurveToPoints(points):
+def fitCurveToPoints(points, name='fitCurve'):
     """[cmds.xform(jnt, q=1, t=1, ws=1) for jnt in joints]"""
 
     linearCurve = cmds.curve(degree=1, point=points)
     fitCurve = cmds.fitBspline(linearCurve, constructionHistory=False, tolerance=0.001,
-                               name='fitCurve')[0]
+                               name=name)[0]
 
     cmds.delete(linearCurve)
 
