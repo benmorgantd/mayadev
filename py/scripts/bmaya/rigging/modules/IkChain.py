@@ -152,7 +152,7 @@ class IkChain(module.Module):
         cmds.pointConstraint(endCtrl.ctrl, poleVectorCtrl.offsetGrp, maintainOffset=True)
         cmds.poleVectorConstraint(poleVectorCtrl.ctrl, ik)
 
-        self.setupIkSpaces(poleVectorCtrl, defaultValue=0)
+        self.setupIkSpaces(poleVectorCtrl, defaultValue=1)
 
         cmds.parent(ikGrp, self.modGrp)
 

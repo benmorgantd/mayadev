@@ -2,7 +2,7 @@ import maya.cmds as cmds
 
 from bmaya.rigging.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
-from bmaya.core import name
+from bmaya.core import name, constants 
 
 import _ThreeJointIkFkTwist
 import _Foot
@@ -57,6 +57,7 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
         self.setupAlignWorld(self.fkShoulderGimbal, defaultValue=self.alignWorld)
 
         self.addIkToeBend()
+        self.addStretchySetup()
 
     def addFkGimbalControl(self):
         # add a second control on top of the existing leg fk 
@@ -96,4 +97,80 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
         self.toeBendCtrl = shapelib.Shape(name=name.findControlName(ballIkGrp), jnt=ballIkGrp, shapeType='cube')
         cmds.parent(self.toeBendCtrl.offsetGrp, self.toeTipCtrl.ctrl)
         cmds.parentConstraint(self.toeBendCtrl, ballIkGrp)
+
+    def addStretchySetup(self):
+        """Build a simple stretchy leg setup using knee slide, pin, and stretch"""
+        
+        # get starting length of upper and lower ik limbs
+        upLimbLen = cmds.getAttr('{0}.translate{1}'.format(self.ikDriveJoints[1], constants.DOWN_AXIS.upper()))
+        loLimbLen = cmds.getAttr('{0}.translate{1}'.format(self.ikDriveJoints[2], constants.DOWN_AXIS.upper()))
+        
+        maxStretch = upLimbLen + loLimbLen
+
+        # create a distanceBetween node to track the distance between the upper
+        # and lower ik controls
+        ikDistance = cmds.createNode('distanceBetween', name='{0}_{1}_legIkLength'.format(self.name, self.side))
+        cmds.connectAttr(self.ikComponents[0].ctrl + '.worldMatrix[0]', ikDistance + '.inMatrix1')
+        cmds.connectAttr(self.ikComponents[1].ctrl + '.worldMatrix[0]', ikDistance + '.inMatrix2')
+        
+        # create a condition node to track if we're stretching
+        stretchCondition = cmds.createNode('condition', name='{0}_{1}_ikStretchCondition'.format(self.name, self.side))
+
+        # connect that distance to the first term of our conditional
+        cmds.connectAttr(ikDistance + '.distance', stretchCondition + '.firstTerm')
+        
+        # the second term should be maxStretch
+        cmds.setAttr(stretchCondition + '.secondTerm', maxStretch)
+
+        # if greater than
+        cmds.setAttr(stretchCondition + '.operation', 2)
+
+        # false conditions are the initial down axis values for the limbs
+        cmds.setAttr(stretchCondition + '.colorIfFalseR', upLimbLen)
+        cmds.setAttr(stretchCondition + '.colorIfFalseG', loLimbLen)
+
+        # true conditions are the amount we're stretching times the starting
+        # lengths
+        
+        # we need a multiply node to find that out
+        stretchFactor = cmds.shadingNode('multDoubleLinear', name='{0}_{1}_stretchFactor'.format(self.name, self.side), asUtility=True)
+        cmds.connectAttr(ikDistance + '.distance', stretchFactor + '.input1')
+        cmds.setAttr(stretchFactor + '.input2', float(1 / maxStretch))
+
+        # now we need a multiply node for each limb's length
+        upLimbStretchedLength = cmds.shadingNode('multDoubleLinear', name='{0}_{1}_upLimbStretchFactor'.format(self.name, self.side), asUtility=True)
+        cmds.connectAttr(stretchFactor + '.output', upLimbStretchedLength + '.input1')
+        cmds.setAttr(upLimbStretchedLength + '.input2', upLimbLen)
+
+        loLimbStretchedLength = cmds.shadingNode('multDoubleLinear', name='{0}_{1}_loLimbStretchFactor'.format(self.name, self.side), asUtility=True)
+        cmds.connectAttr(stretchFactor + '.output', loLimbStretchedLength + '.input1')
+        cmds.setAttr(loLimbStretchedLength + '.input2', loLimbLen)
+
+        # connect that to the true value of our conditional
+        cmds.connectAttr(upLimbStretchedLength + '.output', stretchCondition + '.colorIfTrueR')
+        cmds.connectAttr(loLimbStretchedLength + '.output', stretchCondition + '.colorIfTrueG')
+        
+        # this is where we could make another multiply node for knee slide
+
+        kneeSlideNode = cmds.shadingNode('multDoubleLinear', name='{0}_{1}_kneeSlideMultiplier'.format(self.name, self.side), asUtility=True)
+        # add an attribute to the limb for controlling this
+        cmds.addAttr(self.node, longName='kneeSlide', keyable=True, attributeType='float', defaultValue=1.0)
+        cmds.connectAttr(self.node + '.kneeSlide', kneeSlideNode + '.input1')
+        cmds.connectAttr(stretchCondition + '.outColorR', kneeSlideNode + '.input2')
+        
+
+        cmds.connectAttr(kneeSlideNode + '.output', '{0}.translate{1}'.format(self.ikDriveJoints[1], constants.DOWN_AXIS.upper()))
+        cmds.connectAttr(stretchCondition + '.outColorG', '{0}.translate{1}'.format(self.ikDriveJoints[2], constants.DOWN_AXIS.upper()))
+
+
+        # keep twist controls in their relative position by utilizing their
+        # space groups
+
+        for twistControl in self.upperTwistControls:
+            cmds.pointConstraint(self.ikDriveJoints[0], self.ikDriveJoints[1], twistControl.spaceGrp, maintainOffset=True)
+            
+        for twistControl in self.lowerTwistControls:
+            cmds.pointConstraint(self.ikDriveJoints[1], self.ikDriveJoints[2], twistControl.spaceGrp, maintainOffset=True)
+        
+
 
