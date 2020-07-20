@@ -24,7 +24,6 @@ class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
         _ThreeJointIkFkTwist.ThreeJointIkFkTwist.build(self, self.startJoint, self.endJoint)
 
         self.addFkGimbalControl()
-
         self.setupAlignWorld(self.fkShoulderGimbal, defaultValue=self.alignWorld)
 
     def addFkGimbalControl(self):
@@ -46,4 +45,3 @@ class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
         cmds.connectAttr(self.blendReverse, self.fkShoulderGimbal.offsetGrp + '.v')
 
         self.components.append(self.fkShoulderGimbal)
-

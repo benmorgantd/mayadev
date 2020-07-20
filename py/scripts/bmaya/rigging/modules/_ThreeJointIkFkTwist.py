@@ -2,7 +2,7 @@ import maya.cmds as cmds
 
 from bmaya.rigging.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
-from bmaya.core import name, mathUtils
+from bmaya.core import name, mathUtils, constants
 
 import IkFkChain
 
@@ -34,6 +34,7 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
 
         self.setupUpperTwist()
         self.setupLowerTwist()
+        self.addStretchySetup()
         
         # connect the ik wrist to the ik end joint
         cmds.orientConstraint(self.ikComponents[1].ctrl, self.ikDriveJoints[2], mo=1)
@@ -108,3 +109,98 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         cmds.connectAttr(self.node + '.lowerTwistVisibility', lowerTwistGrp + '.visibility')
 
         self.components += self.lowerTwistControls
+
+    def addStretchySetup(self):
+        """Build a simple stretchy limb setup"""
+        
+        # get starting length of upper and lower ik limbs
+        upLimbLen = cmds.getAttr('{0}.translate{1}'.format(self.ikDriveJoints[1], constants.DOWN_AXIS.upper()))
+        loLimbLen = cmds.getAttr('{0}.translate{1}'.format(self.ikDriveJoints[2], constants.DOWN_AXIS.upper()))
+        
+        maxStretch = abs(upLimbLen) + abs(loLimbLen)
+
+        # create a distanceBetween node to track the distance between the upper
+        # and lower ik controls
+        ikDistance = cmds.createNode('distanceBetween', name='{0}_{1}_legIkLength'.format(self.name, self.side))
+        cmds.connectAttr(self.ikComponents[0].ctrl + '.worldMatrix[0]', ikDistance + '.inMatrix1')
+        cmds.connectAttr(self.ikComponents[1].ctrl + '.worldMatrix[0]', ikDistance + '.inMatrix2')
+        
+        # create a condition node to track if we're stretching
+        stretchCondition = cmds.createNode('condition', name='{0}_{1}_ikStretchCondition'.format(self.name, self.side))
+
+        # connect that distance to the first term of our conditional
+        cmds.connectAttr(ikDistance + '.distance', stretchCondition + '.firstTerm')
+        
+        # the second term should be maxStretch
+        cmds.setAttr(stretchCondition + '.secondTerm', maxStretch)
+
+        # if greater than
+        cmds.setAttr(stretchCondition + '.operation', 2)
+
+        # false conditions are the initial down axis values for the limbs
+        cmds.setAttr(stretchCondition + '.colorIfFalseR', upLimbLen)
+        cmds.setAttr(stretchCondition + '.colorIfFalseG', loLimbLen)
+
+        # true conditions are the amount we're stretching times the starting
+        # lengths
+        
+        # we need a multiply node to find that out
+        stretchFactor = cmds.shadingNode('multDoubleLinear', name='{0}_{1}_stretchFactor'.format(self.name, self.side), asUtility=True)
+        cmds.connectAttr(ikDistance + '.distance', stretchFactor + '.input1')
+        cmds.setAttr(stretchFactor + '.input2', float(1 / maxStretch))
+
+        # now we need a multiply node for each limb's length
+        upLimbStretchedLength = cmds.shadingNode('multDoubleLinear', name='{0}_{1}_upLimbStretchFactor'.format(self.name, self.side), asUtility=True)
+        cmds.connectAttr(stretchFactor + '.output', upLimbStretchedLength + '.input1')
+        cmds.setAttr(upLimbStretchedLength + '.input2', upLimbLen)
+
+        loLimbStretchedLength = cmds.shadingNode('multDoubleLinear', name='{0}_{1}_loLimbStretchFactor'.format(self.name, self.side), asUtility=True)
+        cmds.connectAttr(stretchFactor + '.output', loLimbStretchedLength + '.input1')
+        cmds.setAttr(loLimbStretchedLength + '.input2', loLimbLen)
+
+        # connect that to the true value of our conditional
+        cmds.connectAttr(upLimbStretchedLength + '.output', stretchCondition + '.colorIfTrueR')
+        cmds.connectAttr(loLimbStretchedLength + '.output', stretchCondition + '.colorIfTrueG')
+        
+        # make another multiply node for controlling the length of the upper leg
+
+        upLimbLength = cmds.createNode('multiplyDivide', name='{0}_{1}_upLimbLengthMultiplier'.format(self.name, self.side))
+        # add an attribute to the limb for controlling this
+        cmds.addAttr(self.node, longName='upLimbLength', keyable=True, attributeType='float', defaultValue=1.0)
+        cmds.connectAttr(self.node + '.upLimbLength', upLimbLength + '.input1X')
+        cmds.connectAttr(stretchCondition + '.outColorR', upLimbLength + '.input2X')
+        # if stretch is off, multiply the value by the default limb length instead
+        cmds.setAttr(upLimbLength + '.input1Y', upLimbLen)
+        cmds.connectAttr(self.node + '.upLimbLength', upLimbLength + '.input2Y')
+        
+        # create a conditional that'll allow us to turn off stretch for the limb
+        stretchSwitchConditition = cmds.createNode('condition', name='{0}_{1}_ikStretchSwitchCondition'.format(self.name, self.side))
+        cmds.addAttr(self.node, longName='stretchyLimb', keyable=True, attributeType='bool', defaultValue=True)
+        cmds.connectAttr(self.node + '.stretchyLimb', stretchSwitchConditition + '.firstTerm')
+        cmds.setAttr(stretchSwitchConditition + '.secondTerm', 1)
+        # if equal to 1, use the values computer before. Otherwise use default
+        # limb lengths
+        cmds.setAttr(stretchSwitchConditition + '.operation', 0)
+        cmds.connectAttr(upLimbLength + '.outputX', stretchSwitchConditition + '.colorIfTrueR')
+        cmds.connectAttr(stretchCondition + '.outColorG', stretchSwitchConditition + '.colorIfTrueG')
+        # the first stretch conditional will keep that value not stretchy
+        cmds.connectAttr(upLimbLength + '.outputY', stretchSwitchConditition + '.colorIfFalseR')
+        cmds.connectAttr(stretchCondition + '.colorIfFalseG', stretchSwitchConditition + '.colorIfFalseG')
+        
+        cmds.connectAttr(stretchSwitchConditition + '.outColorR', '{0}.translate{1}'.format(self.ikDriveJoints[1], constants.DOWN_AXIS.upper()))
+        cmds.connectAttr(stretchSwitchConditition + '.outColorG', '{0}.translate{1}'.format(self.ikDriveJoints[2], constants.DOWN_AXIS.upper()))
+        
+        # keep twist controls in their relative position by utilizing their
+        # space groups
+
+        for twistControl in self.upperTwistControls:
+            const = cmds.pointConstraint(self.ikDriveJoints[0], self.ikDriveJoints[1], twistControl.spaceGrp, maintainOffset=True)
+            weights = cmds.pointConstraint(const[0], query=True, weightAliasList=True)
+            for w in weights:
+                cmds.connectAttr(self.node + '.FKIK', '{0}.{1}'.format(const[0], w))
+
+        for twistControl in self.lowerTwistControls:
+            const = cmds.pointConstraint(self.ikDriveJoints[1], self.ikDriveJoints[2], twistControl.spaceGrp, maintainOffset=True)
+            weights = cmds.pointConstraint(const[0], query=True, weightAliasList=True)
+            for w in weights:
+                cmds.connectAttr(self.node + '.FKIK', '{0}.{1}'.format(const[0], w))
