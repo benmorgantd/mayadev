@@ -161,6 +161,8 @@ class Rig(Asset):
         self.lockDownConstraints()
 
         cmds.hide(cmds.ls(type='ikHandle'))
+
+        self.runPostOps()
     
         cmds.file(rename=self.animRig.fullPath)
         cmds.file(save=True, type='mayaAscii', force=True)
@@ -367,8 +369,9 @@ class Rig(Asset):
         self.cvs = cvs.Cvs(self, 'cvs')
         self.build = build.Build(self, 'build')
         self.animRig = animRig.AnimRig(self, 'animRig')
+        self.postops = postops.PostOps(self, 'postops')
 
-        self.components += [self.mesh, self.skeleton, self.weights, self.cvs, self.build, self.animRig]
+        self.components += [self.mesh, self.skeleton, self.weights, self.cvs, self.build, self.animRig, self.postops]
         
     def initComponentFolders(self):
         """Creates the component folders for the asset"""
@@ -425,3 +428,19 @@ class Rig(Asset):
                 f.write(layoutRigData)
 
             fileio.versionFile(self.build.fullPath)
+        
+        if not os.path.exists(self.postops.fullPath):
+            print ">> Creating postops file"
+
+            # Write the template python file
+            with open(self.postops.fullPath, 'w') as f:
+                f.write(constants.POSTOPS_TEMPLATE)
+
+            fileio.versionFile(self.postops.fullPath)
+
+        
+    def runPostOps(self):
+        # run postops file
+        with open(self.postops.fullPath, 'r') as f:
+            code = f.read()
+            exec(code)

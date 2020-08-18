@@ -188,6 +188,9 @@ class RigManager(qtbase.DockableWidget):
             weightFiles = self.assetInstance.findFilesOfType(componentPath, 'weights')
             for f in weightFiles:
                 weightio.load(os.path.join(componentPath, f))
+        elif componentType == 'postops':
+            # can we open in VS Code?
+            print 'cannot open python files yet'
 
     def referenceComponent(self):
         componentType = self.widget.componentType.currentText()

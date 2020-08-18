@@ -30,3 +30,5 @@ MESH_SUFFIX = 'mesh'
 REQUIRED_PLUGINS = ['matrixNodes', 'quatNodes']
 
 UNIT_VECTORS = {'X':[1,0,0], 'Y':[0,1,0], 'Z':[0,0,1]}
+
+POSTOPS_TEMPLATE = "import maya.cmds as cmds\n\ndef postOps():\n    print('Finished with post operations')\npostOps()"
