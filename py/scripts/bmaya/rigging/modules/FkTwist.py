@@ -81,7 +81,7 @@ class FkTwist(FkChain.FkChain):
             # add an extra offset group to hold the transform
             upperTwistGrp = cmds.group(empty=True, name=ctrl.replace(constants.CTRL_SUFFIX, 'upperTwist'))
             cmds.setAttr(upperTwistGrp + '.rotateOrder', cmds.getAttr(ctrl + '.rotateOrder'))
-            cmds.delete(cmds.parentConstraint(self.twistComponents[i].offsetGrp, upperTwistGrp, maintainOffset=False))
+            mathUtils.matchTransforms(self.twistComponents[i].offsetGrp, upperTwistGrp)
             cmds.parent(upperTwistGrp, cmds.listRelatives(ctrl, parent=True)[0])
             cmds.parent(ctrl, upperTwistGrp)
 

@@ -7,8 +7,6 @@ import maya.OpenMaya as om
 
 from bmaya.core import mayanode, mathUtils
 
-reload(mathUtils)
-
 
 def toggleSkinMode():
     """Toggles skinning mode on the currently built rig."""
@@ -175,8 +173,8 @@ def matchIkToFk(ctrl):
     if cmds.getAttr(mod + '.modType') == 'Spline':
         # we can easily match the start and end controls.
         # This will give us start and end twist. 
-        cmds.delete(cmds.parentConstraint(fkJoints[0], ikControls[0], maintainOffset=False))
-        cmds.delete(cmds.parentConstraint(fkJoints[-1], ikControls[-1], maintainOffset=False))
+        mathUtils.matchTransforms(fkJoints[0], ikControls[0])
+        mathUtils.matchTransforms(fkJoints[-1], ikControls[-1])
         
         # now we need to make an approximation for the middle controls
         # We'll do this by fitting a curve through the fk joints
@@ -202,7 +200,7 @@ def matchIkToFk(ctrl):
         cmds.delete(cmds.pointConstraint(fkJoints[0], ikControls[0], maintainOffset=False))
 
         # match the ik end control to the last fk joint position
-        cmds.delete(cmds.parentConstraint(fkJoints[2], ikControls[1], maintainOffset=False))
+        mathUtils.matchTransforms(fkJoints[2], ikControls[1])
         
         # find the pole vector position for the fk joints
         cmds.xform(ikControls[2], translation=mathUtils.findPoleVector(fkJoints, scaleFactor=1.5), worldSpace=True)
@@ -221,7 +219,6 @@ def matchFkToIk(ctrl):
     fkControls = literal_eval(cmds.getAttr(mod + '.fkComponents'))
 
     for i in range(len(ikJoints)):
-        # cmds.delete(cmds.parentConstraint(ikJoints[i], fkControls[i], maintainOffset=False))
         cmds.xform(fkControls[i], matrix=cmds.getAttr(ikJoints[i] + '.worldMatrix[0]'), worldSpace=True)
     
     cmds.setAttr(mod + '.FKIK', 0)

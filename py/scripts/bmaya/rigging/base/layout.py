@@ -10,7 +10,7 @@ class Layout(module.Module):
     """Every rig must have a Layout module"""
 
     def __init__(self, character=None):
-        super(Layout, self).__init__(modType='Layout', shapeType='triangle', name='Layout', 
+        super(Layout, self).__init__(modType='Layout', shapeType='pointedCircle', name='Layout', 
                                    character=character)
 
     @wrapBuild
@@ -61,14 +61,18 @@ class Layout(module.Module):
 
     def makeCtrls(self):
         # make a stack of offset controls
-        for i in range(constants.COUNT_START, 3):
+        for i in range(constants.COUNT_START, constants.COUNT_START + constants.LAYOUT_CONTROL_COUNT):
             if i > constants.COUNT_START:
                 shp = shapelib.Shape(name='layout_{0:02d}_{1}_{2}'.format(i, constants.SIDE_NAMES['middle'], constants.CTRL_SUFFIX),shapeType=self.shapeType, scale=(1 - ((i - 1) * 0.15)))
-                cmds.parent(shp.offsetGrp, self.components[i - 1].ctrl)
+                cmds.parent(shp.offsetGrp, previous_ctrl.ctrl)
+                previous_ctrl = shp
             else:
                 shp = shapelib.Shape(name='layout_{0:02d}_{1}_{2}'.format(i, constants.SIDE_NAMES['middle'], constants.CTRL_SUFFIX),shapeType=self.shapeType, scale=(1 - ((i - 1) * 0.15)))
                 cmds.parent(shp.offsetGrp, self.modGrp)
-
+                previous_ctrl = shp
+           
+            pivot = self.addMoveablePivot(shp)
             self.components.append(shp)
+            self.components.append(pivot)
 
         cmds.parent(self.components[0].offsetGrp, self.componentsGrp)

@@ -116,10 +116,10 @@ class Spline(module.Module):
             ctrl = shapelib.Shape(name=name.findControlName(jnt, identifier='Ik'), shapeType=self.shapeType, jnt=jnt)
             
             cmds.parent(ctrl.offsetGrp, self.componentsGrp)
-            cmds.parentConstraint(ctrl.ctrl, jnt, maintainOffset=True)
+            self.parentConstrain(ctrl.ctrl, jnt, maintainOffset=True)
             
             if i == 0 and self.startTwistParent:
-                cmds.parentConstraint(self.startTwistParent, ctrl.offsetGrp, maintainOffset=True)
+                self.parentConstrain(self.startTwistParent, ctrl.offsetGrp, maintainOffset=True)
 
             ikControls.append(ctrl)
 
@@ -219,10 +219,10 @@ class Spline(module.Module):
         cmds.select(clear=True)
         jnt = cmds.joint(name=name.findJointName(self.ikDriveJoints[-1], count=len(self.ikDriveJoints), suffix='IKDRIVER'))
         cmds.setAttr(jnt + '.rotateOrder', cmds.getAttr(self.ikDriveJoints[-1] + '.rotateOrder'))
-        cmds.delete(cmds.parentConstraint(self.ikDriveJoints[-1], jnt, maintainOffset=False))
+        mathUtils.matchTransforms(self.ikDriveJoints[-1], jnt)
         
         cmds.parent(jnt, self.ikDriveJoints[-2])
-        cmds.parentConstraint(self.ikComponents[-1], jnt, maintainOffset=True)
+        self.parentConstrain(self.ikComponents[-1], jnt, maintainOffset=True)
 
         # just replace the end joint with this joint so when we setup the blend
         # it just works
@@ -234,9 +234,7 @@ class Spline(module.Module):
         cmds.addAttr(self.node, longName='hybridIk', attributeType='bool', keyable=True, defaultValue=False)
         
         for i in range(len(self.ikComponents) - 1):
-            const = cmds.parentConstraint(self.ikComponents[i].ctrl, 
-                                          self.ikComponents[i + 1].offsetGrp, 
-                                          maintainOffset=True)[0]
+            const = self.parentConstrain(self.ikComponents[i].ctrl, self.ikComponents[i + 1].offsetGrp)
 
             cmds.connectAttr(self.node + '.hybridIk', 
                              '{0}.{1}'.format(const, cmds.parentConstraint(const, query=True, weightAliasList=True)[0]))

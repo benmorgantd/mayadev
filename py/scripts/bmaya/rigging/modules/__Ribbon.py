@@ -140,7 +140,7 @@ class Ribbon(module.Module):
             sineDeformer, sineHandle = cmds.nonLinear(type='sine', name=deformerPlane + '_sineDef')
 
             sineHandleGrp = cmds.group(empty=True, name=sineHandle + '_grp')
-            cmds.delete(cmds.parentConstraint(sineHandle, sineHandleGrp, mo=0))
+            mathUtils.matchTransforms(sineHandle, sineHandleGrp)
             cmds.parent(sineHandleGrp, self.driverGrp)
             cmds.parent(sineHandle, sineHandleGrp)
             cmds.xform(sineHandle, scale=(1,1,1), absolute=True)
@@ -259,8 +259,8 @@ class Ribbon(module.Module):
             orientGrp = cmds.group(empty=True, name=joint + "_offsetGrp")
             sdkGrp = cmds.group(empty=True, name=joint + "_sdkGrp")
 
-            cmds.delete(cmds.parentConstraint(joint, orientGrp, mo=0))
-            cmds.delete(cmds.parentConstraint(joint, orientGrp, mo=0))
+            mathUtils.matchTransforms(joint, orientGrp)
+            mathUtils.matchTransforms(joint, orientGrp)
 
             cmds.parent(joint, sdkGrp)
             cmds.parent(sdkGrp, orientGrp)
@@ -341,7 +341,7 @@ class Ribbon(module.Module):
 
             driverControls.append(ctrl)
 
-        cmds.parentConstraint(startJoint, driverControlGrp, mo=1)
+        self.parentConstrain(startJoint, driverControlGrp)
 
         return driverControls
 

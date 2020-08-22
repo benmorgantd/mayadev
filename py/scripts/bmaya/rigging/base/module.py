@@ -4,7 +4,7 @@ import inspect
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from bmaya.core import constants, name
+from bmaya.core import constants, name, mathUtils
 from bmaya.rigging.shapes import shapelib
 
 from decorators import wrapBuild
@@ -246,13 +246,32 @@ class Module(object):
         elif self.modType != 'Layout':
             raise RuntimeError('Module must have a start joint.')
 
-    def parentConstrain(self, parent=None, childList=None, maintainOffset=True):
+    def parentConstrain(self, parent=None, child=None, maintainOffset=True):
+        if isinstance(parent, shapelib.Shape):
+            parent = parent.ctrl
+        if isinstance(child, shapelib.Shape):
+            child = child.ctrl
         
-        if isinstance(childList, basestring):
-            childList = [childList]
+        const = cmds.parentConstraint(parent, child, mo=maintainOffset)[0]
 
-        for child in childList:
-            cmds.parentConstraint(parent, child, mo=maintainOffset)
+        pivotCtrl = cmds.listConnections(parent + '.rotatePivot', type='transform', exactType=True)
+        
+        if pivotCtrl and not cmds.objExists(const + '_offsetVector'):
+            pivotCtrl = pivotCtrl[0]
+            # create a node to calculate the vector from the pivot to that
+            # transform's constraint start location
+            offsetVector = cmds.createNode('plusMinusAverage',  name=const + '_offsetVector')
+            # set the operation to subtract
+            cmds.setAttr(offsetVector + '.operation', 2)
+            cmds.connectAttr(pivotCtrl + '.translate', offsetVector + '.input3D[1]')
+            for i in xrange(len(cmds.parentConstraint(const, query=True, targetList=True))):
+                for axis in 'xyz':
+                    cmds.setAttr(offsetVector + '.input3D[0].input3D{0}'.format(axis), 
+                                cmds.getAttr(const + '.target[{0}].targetOffsetTranslate{1}'.format(i, axis.upper())))
+                                
+                cmds.connectAttr(offsetVector + '.output3D', const + '.target[{0}].targetOffsetTranslate'.format(i))
+
+        return const
 
     def lockTransforms(self, ctrls, attrs=['translate', 'rotate', 'scale'], lock=True):
         if isinstance(ctrls, basestring):
@@ -391,7 +410,7 @@ class Module(object):
 
         grp = cmds.group(empty=True, name=name + '_grp')
 
-        cmds.delete(cmds.parentConstraint(ik, grp, maintainOffset=False))
+        mathUtils.matchTransforms(ik, grp)
 
         cmds.parent(ik, grp)
 
@@ -507,3 +526,38 @@ class Module(object):
         twistJoints.sort()
 
         return twistJoints
+
+    @classmethod
+    def addMoveablePivot(cls, ctrl):
+        if isinstance(ctrl, shapelib.Shape):
+            ctrl = ctrl.ctrl
+
+        # add a new control that represents the pivot for this control
+        pivot = shapelib.Shape(name=name.findControlName(ctrl, identifier='Pivot'), shapeType='pivot')
+        cmds.parent(pivot.offsetGrp, ctrl)
+        cmds.connectAttr('{0}.translate'.format(pivot.ctrl), '{0}.rotatePivot'.format(ctrl))
+        cmds.connectAttr('{0}.translate'.format(pivot.ctrl), '{0}.scalePivot'.format(ctrl))
+
+        parentConstraints = list(set(cmds.listConnections(ctrl, type='parentConstraint') or []))
+        
+        # At the time of the pivot's creation, it could be that no child modules
+        # have been constrained to that control yet. 
+        for const in parentConstraints:
+            # create a node to calculate the vector from the pivot to that
+            # transform's constraint start location
+            offsetVector = cmds.createNode('plusMinusAverage',  name=const + '_offsetVector')
+            # set the operation to subtract
+            cmds.setAttr(offsetVector + '.operation', 2)
+            cmds.connectAttr(pivot.ctrl + '.translate', offsetVector + '.input3D[1]')
+            for i in xrange(len(cmds.parentConstraint(const, query=True, targetList=True))):
+                for axis in 'xyz':
+                    cmds.setAttr(offsetVector + '.input3D[0].input3D{0}'.format(axis), 
+                                cmds.getAttr(const + '.target[{0}].targetOffsetTranslate{1}'.format(i, axis.upper())))
+                                
+                cmds.connectAttr(offsetVector + '.output3D', const + '.target[{0}].targetOffsetTranslate'.format(i))
+                    
+        cmds.addAttr(ctrl, longName='showMoveablePivot', attributeType='bool', keyable=True, defaultValue=False)
+        cmds.connectAttr(ctrl + '.showMoveablePivot', pivot.ctrl + '.visibility')
+        
+        return pivot
+

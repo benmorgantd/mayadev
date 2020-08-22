@@ -32,7 +32,7 @@ class IkChain(module.Module):
 
         self.components = self.buildIkControls(self.driveJoints)
         
-    def buildIkControls(self, driveJoints, worldAimTarget=None, downAxis='X', upAxis='Y'):
+    def buildIkControls(self, driveJoints, worldAimTarget=None, downAxis='X', upAxis='Y', followWorld=True):
         # letting components be a local variable here so that we can use this 
         # safer in child methods
         components = []
@@ -135,7 +135,7 @@ class IkChain(module.Module):
 
         cmds.parent(endCtrl.offsetGrp, startCtrl.ctrl)
 
-        self.setupIkSpaces(endCtrl, defaultValue=1)
+        self.setupIkSpaces(endCtrl, defaultValue=followWorld)
 
         ik, ikGrp = self.makeIkHandle(startJoint=driveJoints[0], endJoint=driveJoints[-1], 
                                       solverType='ikRPsolver', name=self.name + '_ikHandle')
@@ -171,9 +171,9 @@ class IkChain(module.Module):
 
     def setupIkSpaces(self, ikCtrl, defaultValue=1):
         # parent to world and add switch
-        const = cmds.parentConstraint(constants.TOP_LAYOUT_CONTROL, ikCtrl.spaceGrp, mo=1)[0]
+        const = self.parentConstrain(constants.BOTTOM_LAYOUT_CONTROL, ikCtrl.spaceGrp)
         cmds.addAttr(ikCtrl.ctrl, longName='followWorld', defaultValue=defaultValue, attributeType='bool', keyable=True)
-        cmds.connectAttr(ikCtrl.ctrl + '.followWorld', '{0}.{1}W0'.format(const, constants.TOP_LAYOUT_CONTROL))
+        cmds.connectAttr(ikCtrl.ctrl + '.followWorld', '{0}.{1}W0'.format(const, constants.BOTTOM_LAYOUT_CONTROL))
         
         # check if there's a point constraint on the offset group
         poleVectorPointConstraint = cmds.ls(cmds.listRelatives(ikCtrl.offsetGrp, children=True), type='pointConstraint')

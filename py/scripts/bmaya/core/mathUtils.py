@@ -57,7 +57,7 @@ def setupIkTwist(twistJoint=None, ikStartJoint=None, ikHandleParent=None, twistJ
     ikTwistStart = cmds.duplicate(twistJointParent, parentOnly=True, name=name + "_twist")[0]
     ikTwistEnd = cmds.duplicate(twistJointParent, parentOnly=True, name=name + "_twistEnd")[0]
 
-    cmds.delete(cmds.parentConstraint(ikStartJoint, ikTwistStart, mo=0))
+    matchTransforms(ikStartJoint, ikTwistStart)
     cmds.parent(ikTwistEnd, ikTwistStart)
 
     ik = cmds.ikHandle(sj=ikTwistStart, ee=ikTwistEnd, solver="ikSCsolver", name=name + "_scikHandle")
@@ -100,7 +100,6 @@ def setupQuatTwist(obj=None, twistAxis="X"):
     cmds.connectAttr(obj + ".rotateOrder", quatToEuler + ".inputRotateOrder")
 
     return quatToEuler
-
 
 def fitCurveToPoints(points, name='fitCurve'):
     """[cmds.xform(jnt, q=1, t=1, ws=1) for jnt in joints]"""
@@ -155,3 +154,10 @@ def getMatrixAlongCurve(curve, parameter, forwardVector=[0,0,1]):
     cmds.delete(temp4x4, curveInfo)
 
     return matrix
+
+def matchTransforms(source, targets, translate=True, rotate=True, scale=True):
+    if isinstance(targets, basestring):
+        targets = [targets]
+
+    for target in targets:
+        cmds.delete(cmds.parentConstraint(source, target, maintainOffset=False))

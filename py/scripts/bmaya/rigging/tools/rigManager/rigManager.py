@@ -68,6 +68,7 @@ class RigManager(qtbase.DockableWidget):
 
         self.openRecentMenu = buildMenu.addMenu('Open Recent')
         recentFiles = self.getConfigData()['recentFiles']
+        recentFiles.reverse()
 
         i = 0
         for f in recentFiles:

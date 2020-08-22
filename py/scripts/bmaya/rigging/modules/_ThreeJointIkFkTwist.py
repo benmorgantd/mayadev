@@ -17,17 +17,17 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         self.modType = "ThreeJointIkFkTwist"
         self.contract = [self.startJoint, self.endJoint]
 
-    def build(self, startJoint, endJoint, worldAimTarget=None, downAxis='X', upAxis='Y'):
+    def build(self, startJoint, endJoint, worldAimTarget=None, downAxis='X', upAxis='Y', followWorld=True):
         self.bindJoints = self.findHierarchyJoints(shortestDistance=True, startJoint=startJoint, endJoint=endJoint)
         
-        # force the bind joint start and ends to zyx rotate order 
-        cmds.setAttr(self.bindJoints[0] + '.rotateOrder', 5)
-        cmds.setAttr(self.bindJoints[1] + '.rotateOrder', 0)
-        cmds.setAttr(self.bindJoints[2] + '.rotateOrder', 5)
+        # # force the bind joint start and ends to zyx rotate order 
+        # cmds.setAttr(self.bindJoints[0] + '.rotateOrder', 5)
+        # cmds.setAttr(self.bindJoints[1] + '.rotateOrder', 0)
+        # cmds.setAttr(self.bindJoints[2] + '.rotateOrder', 5)
 
         self.driveJoints = self.createDriveJoints(label='DRIVER', constrain=True)
 
-        self.buildFkIkSetup(worldAimTarget=worldAimTarget, downAxis=downAxis, upAxis=upAxis)
+        self.buildFkIkSetup(worldAimTarget=worldAimTarget, downAxis=downAxis, upAxis=upAxis, followWorld=followWorld)
 
         self.components += self.ikComponents
         self.components += self.fkComponents
@@ -52,8 +52,8 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
             self.driveJoints.append(driveJnt)
             ctrl = shapelib.Shape(name=name.findControlName(driveJnt), shapeType='cube', jnt=driveJnt)
             cmds.parent(ctrl.offsetGrp, upperTwistGrp)
-            cmds.parentConstraint(self.driveJoints[0], ctrl.offsetGrp, maintainOffset=True)
-            cmds.parentConstraint(ctrl.ctrl, driveJnt, maintainOffset=True)
+            self.parentConstrain(self.driveJoints[0], ctrl.offsetGrp, maintainOffset=True)
+            self.parentConstrain(ctrl.ctrl, driveJnt, maintainOffset=True)
             self.upperTwistControls.append(ctrl)
 
         startTwistJoint, ikGrp = mathUtils.setupIkTwist(twistJoint=self.driveJoints[0], ikStartJoint=self.driveJoints[1], ikHandleParent=self.parent, twistJointParent=self.startJoint, name=self.name + 'upperTwist_' + self.side)
@@ -89,8 +89,8 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
             self.driveJoints.append(driveJnt)
             ctrl = shapelib.Shape(name=name.findControlName(driveJnt), shapeType='cube', jnt=driveJnt)
             cmds.parent(ctrl.offsetGrp, lowerTwistGrp)
-            cmds.parentConstraint(self.driveJoints[1], ctrl.offsetGrp, maintainOffset=True)
-            cmds.parentConstraint(ctrl.ctrl, driveJnt, maintainOffset=True)
+            self.parentConstrain(self.driveJoints[1], ctrl.offsetGrp, maintainOffset=True)
+            self.parentConstrain(ctrl.ctrl, driveJnt, maintainOffset=True)
             self.lowerTwistControls.append(ctrl)
 
         # extract twist from start and end joint and connect it to the twistOffset variables

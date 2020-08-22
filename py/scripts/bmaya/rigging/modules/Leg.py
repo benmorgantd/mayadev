@@ -2,7 +2,7 @@ import maya.cmds as cmds
 
 from bmaya.rigging.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
-from bmaya.core import name 
+from bmaya.core import name, mathUtils
 
 import _ThreeJointIkFkTwist
 import _Foot
@@ -25,7 +25,7 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
 
     @wrapBuild
     def build(self):
-        _ThreeJointIkFkTwist.ThreeJointIkFkTwist.build(self, self.startJoint, self.ankle, worldAimTarget=self.ball, downAxis='Y', upAxis='X')
+        _ThreeJointIkFkTwist.ThreeJointIkFkTwist.build(self, self.startJoint, self.ankle, worldAimTarget=self.ball, downAxis='Y', upAxis='X', followWorld=1)
         _Foot.Foot.build(self)
 
         self.components += self.footComponents 
@@ -39,15 +39,15 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
         cmds.parent(self.footIkComponents[0].offsetGrp, self.componentsGrp)
         cmds.parent(self.footFkComponents[0].offsetGrp, self.fkComponents[-1].ctrl)
 
-        cmds.parentConstraint(self.ikComponents[1].ctrl, self.footIkComponents[0].offsetGrp, maintainOffset=True)
+        self.parentConstrain(self.ikComponents[1].ctrl, self.footIkComponents[0].offsetGrp, maintainOffset=True)
 
         # remove parent constraint on the drive (leg) ankle and make its driver the (foot) ankle
         for node in [self.driveJoints[2], self.ikHandleGrp, self.ball, self.ikDriveJoints[2]]:
             cmds.delete(cmds.listRelatives(node, type='constraint'))
 
-        cmds.parentConstraint(self.footDriveJoints[0], self.driveJoints[2], maintainOffset=True)
-        cmds.parentConstraint(self.ballRollCtrl.ctrl, self.ikHandleGrp, maintainOffset=True)
-        cmds.parentConstraint(self.footDriveJoints[1], self.ball, maintainOffset=True)
+        self.parentConstrain(self.footDriveJoints[0], self.driveJoints[2], maintainOffset=True)
+        self.parentConstrain(self.ballRollCtrl.ctrl, self.ikHandleGrp, maintainOffset=True)
+        self.parentConstrain(self.footDriveJoints[1], self.ball, maintainOffset=True)
 
         # hook up fk and ik foot control visibility
         cmds.connectAttr(self.blendReverse, '{0}.v'.format(self.footFkComponents[0].offsetGrp))
@@ -87,7 +87,7 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
 
         ballIkGrp = cmds.group(empty=True, name=ballIkGrpName)
 
-        cmds.delete(cmds.parentConstraint(self.reverseHierarchy[1], ballIkGrp, maintainOffset=False))
+        mathUtils.matchTransforms(self.reverseHierarchy[1], ballIkGrp)
         
         cmds.parent(ballIkGrp, self.reverseHierarchy[0])
 
@@ -95,5 +95,5 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
 
         self.toeBendCtrl = shapelib.Shape(name=name.findControlName(ballIkGrp), jnt=ballIkGrp, shapeType='cube')
         cmds.parent(self.toeBendCtrl.offsetGrp, self.toeTipCtrl.ctrl)
-        cmds.parentConstraint(self.toeBendCtrl, ballIkGrp)
+        self.parentConstrain(self.toeBendCtrl, ballIkGrp)
 

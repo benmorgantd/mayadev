@@ -21,14 +21,14 @@ class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
 
     @wrapBuild
     def build(self):
-        _ThreeJointIkFkTwist.ThreeJointIkFkTwist.build(self, self.startJoint, self.endJoint)
+        _ThreeJointIkFkTwist.ThreeJointIkFkTwist.build(self, self.startJoint, self.endJoint, followWorld=1)
 
         self.addFkGimbalControl()
         self.setupAlignWorld(self.fkShoulderGimbal, defaultValue=self.alignWorld)
 
     def addFkGimbalControl(self):
         # add a second control on top of the existing shoulder fk 
-        # that has zxy (2) rotation order
+        # that has xyz (0) rotation order
 
         shoulderFkOffset = self.fkComponents[0].offsetGrp
 
@@ -36,7 +36,7 @@ class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
         self.fkShoulderGimbal = shapelib.Shape(name=ctrlName, shapeType='sphere', jnt=shoulderFkOffset)
 
         # change its rotate order to zxy from that of the shoulder fk offset group
-        cmds.setAttr(self.fkShoulderGimbal.ctrl + '.rotateOrder', 2)
+        # cmds.setAttr(self.fkShoulderGimbal.ctrl + '.rotateOrder', 0)
 
         cmds.parent(self.fkShoulderGimbal.offsetGrp, self.componentsGrp, a=1)
         cmds.parent(self.fkComponents[0].offsetGrp, self.fkShoulderGimbal.ctrl, a=1)

@@ -1,7 +1,7 @@
 import maya.cmds as cmds 
 
 from bmaya.rigging.shapes import shapelib
-from bmaya.core import name, constants
+from bmaya.core import name, constants, mathUtils
 
 
 class Foot(object):
@@ -44,7 +44,7 @@ class Foot(object):
         cmds.select(clear=True)
         for jnt in [self.ankle, self.ball, self.toeTip]:
             fkJnt = cmds.joint(name=jnt.replace(constants.JOINT_SUFFIX, 'FOOTFK'))
-            cmds.delete(cmds.parentConstraint(jnt, fkJnt, maintainOffset=False))
+            mathUtils.matchTransforms(jnt, fkJnt)
             cmds.makeIdentity(fkJnt, apply=True, rotate=True)
 
             fkJoints.append(fkJnt)
@@ -59,7 +59,7 @@ class Foot(object):
         cmds.select(clear=True)
         for jnt in [self.ankle, self.ball, self.toeTip]:
             ikJnt = cmds.joint(name=jnt.replace(constants.JOINT_SUFFIX, 'FOOTIK'))
-            cmds.delete(cmds.parentConstraint(jnt, ikJnt, maintainOffset=False))
+            mathUtils.matchTransforms(jnt, ikJnt)
             cmds.makeIdentity(ikJnt, apply=True, rotate=True)
 
             ikJoints.append(ikJnt)
@@ -72,7 +72,7 @@ class Foot(object):
         cmds.select(clear=True)
         for jnt in [self.ankle, self.ball, self.toeTip]:
             blendJnt = cmds.joint(name=jnt.replace(constants.JOINT_SUFFIX, 'FOOTDRIVE'))
-            cmds.delete(cmds.parentConstraint(jnt, blendJnt, maintainOffset=False))
+            mathUtils.matchTransforms(jnt, blendJnt)
             cmds.makeIdentity(blendJnt, apply=True, rotate=True)
 
             driveJoints.append(blendJnt)
@@ -101,12 +101,12 @@ class Foot(object):
 
         for jnt in self.footHierarchy + [self.ankle]:
             revJnt = cmds.joint(name=jnt + '_Reverse')
-            cmds.delete(cmds.parentConstraint(jnt, revJnt, maintainOffset=False))
+            mathUtils.matchTransforms(jnt, revJnt)
             cmds.makeIdentity(revJnt, apply=True, rotate=True)
             cmds.setAttr(revJnt + '.rotateOrder', 2)
            
             if i == 4:
-                cmds.parentConstraint(revJnt, self.footHierarchy[i], maintainOffset=True)
+                self.parentConstrain(revJnt, self.footHierarchy[i])
 
             reverseHierarchy.append(revJnt)
 
@@ -147,8 +147,8 @@ class Foot(object):
         cmds.parent(self.bankOutCtrl.offsetGrp, self.heelCtrl.ctrl)
         cmds.parent(self.heelCtrl.offsetGrp, self.ballSwivelCtrl.ctrl)
 
-        cmds.parentConstraint(self.toeTipCtrl.ctrl, self.reverseHierarchy[-3], maintainOffset=True)
-        cmds.parentConstraint(self.ballRollCtrl.ctrl, self.reverseHierarchy[-2], maintainOffset=True)
+        self.parentConstrain(self.toeTipCtrl.ctrl, self.reverseHierarchy[-3])
+        self.parentConstrain(self.ballRollCtrl.ctrl, self.reverseHierarchy[-2])
         
         return [self.ballSwivelCtrl, self.heelCtrl, self.toeTipCtrl, self.ballRollCtrl, self.bankOutCtrl, self.bankInCtrl]
 
@@ -156,6 +156,6 @@ class Foot(object):
         jnt = self.footFkDriveJoints[1]
 
         ctrl = shapelib.Shape(name=name.findControlName(jnt, identifier='FK'), jnt=jnt, shapeType='cube')
-        cmds.parentConstraint(ctrl.ctrl, jnt, maintainOffset=False)
+        self.parentConstrain(ctrl.ctrl, jnt, maintainOffset=False)
 
         return [ctrl]
