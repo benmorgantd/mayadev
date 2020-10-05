@@ -5,18 +5,18 @@ import sys
 dirname = os.path.dirname(os.path.abspath(__file__))
 
 __all__ = [mod[0:-3] for mod in os.listdir(
-          dirname) if mod.endswith('.py') and not mod.startswith('_')]
+    dirname) if mod.endswith('.py') and not mod.startswith('_')]
 
 MODULE_CLASSES = {}
 MODULE_ARGS = {}
 
-
 for modType in __all__:
 
-    exec('import bmaya.rigging.modules.' + modType)
+    exec ('import bmaya.rigging.modules.' + modType)
 
     # find the classes in that file
-    modClasses = inspect.getmembers(sys.modules['bmaya.rigging.modules.' + modType], inspect.isclass)
+    modClasses = inspect.getmembers(
+        sys.modules['bmaya.rigging.modules.' + modType], inspect.isclass)
 
     ModClass = None
 

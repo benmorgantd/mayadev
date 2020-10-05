@@ -36,7 +36,7 @@ class Rig(Asset):
     @property
     def meshes(self):
         return cmds.sets(self.meshSet, query=True) or []
-    
+
     @property
     def controls(self):
         return cmds.sets(self.ctrlSet, query=True) or []
@@ -73,10 +73,10 @@ class Rig(Asset):
         self.loadPlugins()
 
         self.makeNode()
-        
+
         # open up the character's build file (json)
         self.buildData = buildio.load(self.build.fullPath)
-        
+
         buildList = []
 
         layoutDict, layoutComponents = self.buildLayout()
@@ -108,7 +108,8 @@ class Rig(Asset):
             modType = mod['modType']
 
             # create a new instance of that class
-            modInstance = modules.MODULE_CLASSES[modType].__new__(modules.MODULE_CLASSES[modType])
+            modInstance = modules.MODULE_CLASSES[modType].__new__(
+                modules.MODULE_CLASSES[modType])
             modInstance.__init__(character=self)
 
             for key, value in mod.items():
@@ -128,10 +129,11 @@ class Rig(Asset):
 
             if mirrorInstance:
                 mirrorModules.append(mirrorInstance.dict)
-                self.allControls += [comp.ctrl for comp in mirrorInstance.components]
+                self.allControls += [comp.ctrl for comp in
+                                     mirrorInstance.components]
 
         self.modules += mirrorModules
-        
+
         self.ctrlSet = cmds.sets(self.allControls, name='CTRL_set')
 
         # skinning after the components have been built allows us to create bind joints
@@ -140,8 +142,10 @@ class Rig(Asset):
         self.addNodeAttrs()
 
         for mod in self.modules:
-            if cmds.objExists(mod['name'] + '_MOD'):
-                cmds.connectAttr(self.node + '.modules', mod['name'] + '_MOD.character')
+            if cmds.objExists(mod['name'] + '_' + constants.MODULE_SUFFIX):
+                cmds.connectAttr(self.node + '.modules',
+                                 '{0}_{1}.character'.format(mod['name'],
+                                                            constants.MODULE_SUFFIX))
 
         shapeio.load(self.componentPathFromType('cvs'))
 
@@ -163,7 +167,7 @@ class Rig(Asset):
         cmds.hide(cmds.ls(type='ikHandle'))
 
         self.runPostOps()
-    
+
         cmds.file(rename=self.animRig.fullPath)
         cmds.file(save=True, type='mayaAscii', force=True)
         fileio.versionFile(self.animRig.fullPath)
@@ -179,14 +183,16 @@ class Rig(Asset):
             self.node = cmds.createNode('network', name=self.name + '_CHAR')
 
             # create an attribute to glue other parts to the rig to
-            cmds.addAttr(self.node, longName='connector', attributeType='message')
+            cmds.addAttr(self.node, longName='connector',
+                         attributeType='message')
 
             print '>>> Created character node >> {0} <<'.format(self.node)
 
     def addNodeAttrs(self):
 
         if not self.node:
-            raise RuntimeError('Character node does not exist yet for ' + self.name)
+            raise RuntimeError(
+                'Character node does not exist yet for ' + self.name)
 
         for attr in self.__dict__:
             attrVal = self.__dict__[attr]
@@ -210,7 +216,8 @@ class Rig(Asset):
                     elif type(val) is dict:
                         cleanDict = {}
                         for key in val:
-                            if type(val[key]) in [unicode, str, int, float, bool, None]:
+                            if type(val[key]) in [unicode, str, int, float,
+                                                  bool, None]:
                                 cleanDict[key] = val[key]
                             elif isinstance(val[key], shapelib.Shape):
                                 cleanDict[key] = val[key].ctrl
@@ -224,7 +231,8 @@ class Rig(Asset):
             elif attrType is dict:
                 cleanDict = {}
                 for key in attrVal:
-                    if type(attrVal[key]) in [unicode, str, int, float, bool, None]:
+                    if type(attrVal[key]) in [unicode, str, int, float, bool,
+                                              None]:
                         cleanDict[key] = attrVal[key]
                     elif isinstance(attrVal[key], shapelib.Shape):
                         cleanDict[key] = attrVal[key].ctrl
@@ -236,7 +244,8 @@ class Rig(Asset):
                 attrType = 'bool'
                 attrVal = attrVal
 
-            elif attrType in [animRig.AnimRig, build.Build, cvs.Cvs, mesh.Mesh, skeleton.Skeleton, weights.Weights]:
+            elif attrType in [animRig.AnimRig, build.Build, cvs.Cvs, mesh.Mesh,
+                              skeleton.Skeleton, weights.Weights]:
                 attrType = 'string'
                 attrVal = self.componentPathFromType(attr)
                 attr += 'Path'
@@ -249,9 +258,11 @@ class Rig(Asset):
 
             if attrType == 'string':
                 cmds.addAttr(self.node, ln=attr, dt='string', keyable=False)
-                cmds.setAttr(self.node + '.' + attr, str(attrVal), type='string')
+                cmds.setAttr(self.node + '.' + attr, str(attrVal),
+                             type='string')
             else:
-                cmds.addAttr(self.node, ln=attr, at=attrType, dv=attrVal, keyable=False)
+                cmds.addAttr(self.node, ln=attr, at=attrType, dv=attrVal,
+                             keyable=False)
 
             cmds.setAttr(self.node + '.' + attr, lock=True)
 
@@ -260,16 +271,20 @@ class Rig(Asset):
         # skin the root joint to all the meshes in the scene
 
         for mesh in self.meshes:
-            weightsPath = os.path.join(self.weights.fullPath, mesh + '.' + self.weights.extension)
+            weightsPath = os.path.join(self.weights.fullPath,
+                                       mesh + '.' + self.weights.extension)
             if os.path.exists(weightsPath):
                 weightio.load(weightsPath)
+            elif 'noSkin' not in cmds.listAttr(mesh):
+                # skin meshes not marked noSkin to the root joint
+                self.skinClusters.append(
+                    cmds.skinCluster(constants.ROOT_JOINT, mesh,
+                                     maximumInfluences=1,
+                                     bindMethod=1,
+                                     weightDistribution=1,
+                                     normalizeWeights=1)[0])
             else:
-                # skin the mesh to the root joint
-                self.skinClusters.append(cmds.skinCluster(constants.ROOT_JOINT, mesh,
-                                                        maximumInfluences=1,
-                                                        bindMethod=1,
-                                                        weightDistribution=1,
-                                                        normalizeWeights=1)[0])
+                print('Skipped applying weights on ' + mesh)
 
     def setupMeshReferencing(self):
 
@@ -277,13 +292,16 @@ class Rig(Asset):
         cmds.setAttr(md + '.input2', 2)
         # don't have it show up in the mesh's channel box
         cmds.setAttr(md + '.isHistoricallyInteresting', False)
-        
-        cmds.addAttr(self.node, longName='referenceMesh', attributeType='bool', defaultValue=True, keyable=True)
-        cmds.connectAttr(self.node + '.referenceMesh', md + '.input1', force=True)
+
+        cmds.addAttr(self.node, longName='referenceMesh', attributeType='bool',
+                     defaultValue=True, keyable=True)
+        cmds.connectAttr(self.node + '.referenceMesh', md + '.input1',
+                         force=True)
 
         for mesh in self.meshes:
             cmds.setAttr(mesh + '.overrideEnabled', 1)
-            cmds.connectAttr(md + '.output', mesh + '.overrideDisplayType', force=True)
+            cmds.connectAttr(md + '.output', mesh + '.overrideDisplayType',
+                             force=True)
 
     def lockMeshes(self):
 
@@ -292,9 +310,9 @@ class Rig(Asset):
 
             for i in range(verts):
                 cmds.setAttr('{0}.pt[{1}]'.format(mesh, i), lock=True)
-    
+
     def connectToCharacter(self, node):
-        
+
         if cmds.objExists(node):
             cmds.addAttr(node, longName='character', attributeType='message')
             cmds.connectAttr(self.node + '.connector', node + '.character')
@@ -304,7 +322,7 @@ class Rig(Asset):
             cmds.setAttr(obj, keyable=False, channelBox=False)
 
     def lockDownConstraints(self):
-         # manage constraints
+        # manage constraints
         for constraint in cmds.ls(type='constraint'):
             attrHideList = ['nodeState', 'interpType']
 
@@ -314,22 +332,24 @@ class Rig(Asset):
                 cmds.setAttr(constraint + '.interpType', 2)
                 attrHideList += ['rdtx', 'rdty', 'rdtz']
                 if constraintType == 'parentConstraint':
-                    weights = cmds.parentConstraint(constraint, query=True, weightAliasList=True)
+                    weights = cmds.parentConstraint(constraint, query=True,
+                                                    weightAliasList=True)
                 else:
-                    weights = cmds.orientConstraint(constraint, query=True, weightAliasList=True)
-                
+                    weights = cmds.orientConstraint(constraint, query=True,
+                                                    weightAliasList=True)
+
                 if weights:
                     for w in range(len(weights)):
                         attrHideList += ['w{0}'.format(w)]
             else:
-                weights = cmds.parentConstraint(constraint, query=True, weightAliasList=True)
+                weights = cmds.parentConstraint(constraint, query=True,
+                                                weightAliasList=True)
                 if weights:
                     for w in range(len(weights)):
                         attrHideList += ['w{0}'.format(w)]
-            
+
             for attr in attrHideList:
                 self.hideKeyableAttr('{0}.{1}'.format(constraint, attr))
-            
 
     def makeBindSet(self):
         skelJoints = set(cmds.listRelatives('SKELETON', type='joint', ad=1))
@@ -338,11 +358,12 @@ class Rig(Asset):
         for mesh in self.meshes:
             existingSkin = cmds.ls(cmds.listHistory(mesh), type='skinCluster')
             if existingSkin:
-                members = cmds.skinCluster(existingSkin[0], query=True, influence=True)
+                members = cmds.skinCluster(existingSkin[0], query=True,
+                                           influence=True)
                 for jnt in members:
                     if jnt in skelJoints:
                         skinClusterInfluences.add(jnt)
-        
+
         bindSet = cmds.sets(list(skinClusterInfluences), name='BIND_set')
 
     def colorControls(self):
@@ -353,7 +374,7 @@ class Rig(Asset):
                 side = 6
             elif '_R_' in ctrl:
                 side = 13
-                
+
             cmds.setAttr(ctrl + '.overrideEnabled', True)
             cmds.setAttr(ctrl + '.overrideColor', side)
 
@@ -371,8 +392,9 @@ class Rig(Asset):
         self.animRig = animRig.AnimRig(self, 'animRig')
         self.postops = postops.PostOps(self, 'postops')
 
-        self.components += [self.mesh, self.skeleton, self.weights, self.cvs, self.build, self.animRig, self.postops]
-        
+        self.components += [self.mesh, self.skeleton, self.weights, self.cvs,
+                            self.build, self.animRig, self.postops]
+
     def initComponentFolders(self):
         """Creates the component folders for the asset"""
 
@@ -383,7 +405,6 @@ class Rig(Asset):
 
         print ">> Component folders initialized"
 
-    
     def initComponentFiles(self):
 
         if not os.path.exists(self.mesh.fullPath):
@@ -418,17 +439,18 @@ class Rig(Asset):
         if not os.path.exists(self.build.fullPath):
             print ">> Creating build file."
             # give it a LayoutRig template
-            layoutRigPath = os.path.join(constants.TEMPLATES_PATH, "LayoutRig.json")
+            layoutRigPath = os.path.join(constants.TEMPLATES_PATH,
+                                         "LayoutRig.json")
 
             with open(layoutRigPath, "r") as f:
                 layoutRigData = f.read()
-            
+
             # write the contents to this asset's build file
             with open(self.build.fullPath, "w") as f:
                 f.write(layoutRigData)
 
             fileio.versionFile(self.build.fullPath)
-        
+
         if not os.path.exists(self.postops.fullPath):
             print ">> Creating postops file"
 
@@ -438,9 +460,8 @@ class Rig(Asset):
 
             fileio.versionFile(self.postops.fullPath)
 
-        
     def runPostOps(self):
         # run postops file
         with open(self.postops.fullPath, 'r') as f:
             code = f.read()
-            exec(code)
+            exec (code)

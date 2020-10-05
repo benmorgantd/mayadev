@@ -5,7 +5,7 @@ from ast import literal_eval
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from bmaya.core import mayanode, mathUtils
+from bmaya.core import mathUtils, constants
 
 
 def toggleSkinMode():
@@ -182,15 +182,14 @@ def matchIkToFk(ctrl):
 
         numMiddleControls = len(ikControls) - 2
 
-        startJointMatrix = cmds.getAttr(fkJoints[0] + '.worldMatrix[0]')
-        forwardVector = om.MVector(*startJointMatrix[4:7])
+        # startJointMatrix = cmds.getAttr(fkJoints[0] + '.worldMatrix[0]')
+        # forwardVector = om.MVector(*startJointMatrix[4:7])
 
         for i in range(1, numMiddleControls + 1):
             # move each middle ik component to the percentage position it should be
             # along the curve (assumes controls were created this way to begin)
 
-            matrix = mathUtils.getMatrixAlongCurve(fitCurve, i / float(numMiddleControls + 1), 
-                                                   forwardVector=forwardVector)
+            matrix = mathUtils.getMatrixAlongCurve(fitCurve, i / float(numMiddleControls + 1), downAxis=constants.SPINE_UP_AXIS)
             cmds.xform(ikControls[i], matrix=matrix, worldSpace=True)
 
         cmds.delete(fitCurve)
@@ -254,3 +253,13 @@ def bakeIkToFk(ctrl, bakeRange=None):
         cmds.currentTime(i)
         matchIkToFk(ctrl)
         keyIk(ctrl)
+
+
+def _getFirstSelection():
+
+    selection = cmds.ls(selection=True) or []
+
+    if not selection or 'module' not in cmds.listAttr(selection[0]):
+        raise ValueError('Please select at least one control.')
+    
+    return selection[0]

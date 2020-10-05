@@ -15,6 +15,8 @@ JOINT_SUFFIX = 'JNT'
 
 DOWN_AXIS = 'X'
 
+SPINE_UP_AXIS = 'Y'
+
 UP_AXIS = 'Y'
 
 ROOT_JOINT = 'root_0{0}_{1}_{2}'.format(COUNT_START, SIDE_NAMES['middle'], JOINT_SUFFIX)
@@ -34,3 +36,5 @@ UNIT_VECTORS = {'X':[1,0,0], 'Y':[0,1,0], 'Z':[0,0,1]}
 POSTOPS_TEMPLATE = "import maya.cmds as cmds\n\ndef postOps():\n    print('Finished with post operations')\npostOps()"
 
 LAYOUT_CONTROL_COUNT = 3
+
+MODULE_SUFFIX = 'LIMB'

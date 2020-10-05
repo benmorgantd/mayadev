@@ -2,15 +2,27 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="219e3806-7115-45c7-8016-0b1a0db1be49" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/py/scripts/averageVertexSkinWeightBrush.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/averageVertexSkinWeightBrush.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/Benjamin.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/mayadev.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/mayadev.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/constants.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/mathUtils.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/mathUtils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/module.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/module.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Arm.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Arm.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/FkChain.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/FkChain.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/FkTwist.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/FkTwist.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/IkChain.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/IkChain.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/IkFkChain.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/IkFkChain.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Leg.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Leg.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/NeckHead.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/NeckHead.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/SingleJoint.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/SingleJoint.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Spline.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Spline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/_Foot.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/_Foot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/_ThreeJointIkFkTwist.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/_ThreeJointIkFkTwist.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/rigTools.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/rigTools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/config.json" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/config.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/rigManager.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/rigManager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightio.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightio.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -20,12 +32,31 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/py/scripts/averageVertexSkinWeightBrush.py">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://D:/Documents/Jobs/Jump/JumpTools/scripts/jump/shelf.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state>
+            <state relative-caret-position="437">
+              <caret line="189" column="36" selection-start-line="189" selection-start-column="36" selection-end-line="189" selection-end-column="36" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://D:/projects/jump/character/hannah/rig/components/postops.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="473">
+              <caret line="48" column="39" selection-start-line="48" selection-start-column="38" selection-end-line="48" selection-end-column="39" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="541">
+              <caret line="286" column="60" lean-forward="true" selection-start-line="286" selection-start-column="60" selection-end-line="286" selection-end-column="60" />
               <folding>
-                <element signature="e#0#22#0" expanded="true" />
+                <element signature="e#0#11#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -42,36 +73,36 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>show*)</find>
-      <find>label</find>
-      <find>contract</find>
-      <find>mirr</find>
-      <find>findMirror</find>
-      <find>self.</find>
-      <find>self.contrac</find>
-      <find>self.contract</find>
-      <find>customWidgets</find>
-      <find>initiateAsset</find>
-      <find>AssetBuild</find>
-      <find>AssetCreator</find>
-      <find>QMainW</find>
-      <find>$Crea</find>
-      <find>dag</find>
-      <find>args</find>
+      <find>print(</find>
+      <find>getMatri</find>
+      <find>matrixFromLi</find>
+      <find>getMatrixAlongCurve</find>
+      <find>mayanode</find>
+      <find>ikTo</find>
+      <find>createMat</find>
+      <find>resetCon</find>
+      <find>longName</find>
+      <find>r</find>
+      <find>ik</find>
+      <find>wiggle</find>
+      <find>toeTipWig</find>
+      <find>wig</find>
+      <find>Wiggle</find>
+      <find>toeTip</find>
+      <find>ballRollCtrl</find>
       <find>_MOD</find>
-      <find>attrData</find>
-      <find>path</find>
-      <find>components</find>
-      <find>self.contract['startJoint']</find>
-      <find>bindJ</find>
-      <find>mesh</find>
-      <find>meshSEt</find>
-      <find>o</find>
-      <find>cmds.sets</find>
-      <find>build</find>
-      <find>meshSet</find>
-      <find>sets</find>
-      <find>MESH</find>
+      <find>getModule</find>
+      <find>matchik</find>
+      <find>matchTrans</find>
+      <find>alignWorld</find>
+      <find>setup</find>
+      <find>setupAlignWorld</find>
+      <find>bmaya</find>
+      <find>constan</find>
+      <find>constants</find>
+      <find>skinClu</find>
+      <find>quickSkin</find>
+      <find>typ</find>
     </findStrings>
     <replaceStrings>
       <replace>mayaAppDir</replace>
@@ -88,6 +119,7 @@
       <dir>D:\mayadev\py\scripts\bm\maya\utils</dir>
       <dir>D:\mayadev\py\scripts\bm\maya\Osiris\ui</dir>
       <dir>D:\mayadev\py\scripts\bm\maya\Osiris\base</dir>
+      <dir>D:\Documents\Jobs\Jump\JumpTools</dir>
     </dirStrings>
   </component>
   <component name="Git.Settings">
@@ -96,10 +128,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/py/scripts/bm/__init__.py" />
-        <option value="$PROJECT_DIR$/py/dragIntoMaya.mel" />
-        <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/tools/weights/io.py" />
-        <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/tools/shapes/io.py" />
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/utils/vectors.py" />
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/tools/build/io.py" />
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/decorators.py" />
@@ -130,12 +158,33 @@
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/module.py" />
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/creator.py" />
         <option value="$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/character.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/__init__.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/_Foot.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/_ThreeJointIkFkTwist.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/FkChain.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/FkTwist.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/IkChain.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/IkFkChain.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/NeckHead.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/SingleJoint.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/core/mathUtils.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Spline.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/rigTools.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Leg.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/core/constants.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Arm.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/module.py" />
+        <option value="D:/Documents/Jobs/Jump/JumpTools/install.py" />
+        <option value="D:/Documents/Jobs/Jump/JumpTools/scripts/jump/rigUtils.py" />
+        <option value="D:/Documents/Jobs/Jump/JumpTools/scripts/jump/shelf.py" />
+        <option value="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py" />
+        <option value="D:/projects/jump/character/hannah/rig/components/postops.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds">
     <option name="x" value="-10" />
-    <option name="width" value="1939" />
+    <option name="width" value="1940" />
     <option name="height" value="1040" />
   </component>
   <component name="ProjectLevelVcsManager">
@@ -152,18 +201,62 @@
           <expand>
             <path>
               <item name="mayadev" type="b2602c69:ProjectViewProjectNode" />
+              <item name="mayadev" type="47feb1d3:ProjectViewModuleNode" />
+            </path>
+            <path>
+              <item name="mayadev" type="b2602c69:ProjectViewProjectNode" />
+              <item name="mayadev" type="47feb1d3:ProjectViewModuleNode" />
               <item name="mayadev" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="mayadev" type="b2602c69:ProjectViewProjectNode" />
+              <item name="mayadev" type="47feb1d3:ProjectViewModuleNode" />
               <item name="mayadev" type="462c0819:PsiDirectoryNode" />
               <item name="py" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="mayadev" type="b2602c69:ProjectViewProjectNode" />
+              <item name="mayadev" type="47feb1d3:ProjectViewModuleNode" />
               <item name="mayadev" type="462c0819:PsiDirectoryNode" />
               <item name="py" type="462c0819:PsiDirectoryNode" />
               <item name="scripts" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="mayadev" type="b2602c69:ProjectViewProjectNode" />
+              <item name="mayadev" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="mayadev" type="462c0819:PsiDirectoryNode" />
+              <item name="py" type="462c0819:PsiDirectoryNode" />
+              <item name="scripts" type="462c0819:PsiDirectoryNode" />
+              <item name="bmaya" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="mayadev" type="b2602c69:ProjectViewProjectNode" />
+              <item name="mayadev" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="mayadev" type="462c0819:PsiDirectoryNode" />
+              <item name="py" type="462c0819:PsiDirectoryNode" />
+              <item name="scripts" type="462c0819:PsiDirectoryNode" />
+              <item name="bmaya" type="462c0819:PsiDirectoryNode" />
+              <item name="rigging" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="mayadev" type="b2602c69:ProjectViewProjectNode" />
+              <item name="mayadev" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="mayadev" type="462c0819:PsiDirectoryNode" />
+              <item name="py" type="462c0819:PsiDirectoryNode" />
+              <item name="scripts" type="462c0819:PsiDirectoryNode" />
+              <item name="bmaya" type="462c0819:PsiDirectoryNode" />
+              <item name="rigging" type="462c0819:PsiDirectoryNode" />
+              <item name="base" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="mayadev" type="b2602c69:ProjectViewProjectNode" />
+              <item name="mayadev" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="mayadev" type="462c0819:PsiDirectoryNode" />
+              <item name="py" type="462c0819:PsiDirectoryNode" />
+              <item name="scripts" type="462c0819:PsiDirectoryNode" />
+              <item name="bmaya" type="462c0819:PsiDirectoryNode" />
+              <item name="rigging" type="462c0819:PsiDirectoryNode" />
+              <item name="weights" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -173,18 +266,18 @@
   </component>
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/py/scripts/bm/maya/utils" />
-    <property name="settings.editor.selected.configurable" value="preferences.sourceCode" />
+    <property name="last_opened_file_path" value="D:/Documents/Jobs/Jump/JumpTools" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PythonContentEntriesConfigurable" />
   </component>
   <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="D:\mayadev\py\scripts\bm\maya\utils" />
-      <recent name="D:\mayadev\py\scripts\bm\qt" />
-    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\mayadev\py\scripts\lib" />
       <recent name="D:\mayadev\py\scripts\bm\maya" />
       <recent name="D:\mayadev\py\scripts\bm\maya\utils" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\mayadev\py\scripts\bm\maya\utils" />
+      <recent name="D:\mayadev\py\scripts\bm\qt" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -228,13 +321,13 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="0" width="1551" height="832" extended-state="0" />
+    <frame x="-8" y="0" width="1552" height="832" extended-state="0" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.21848185" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.18799472" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.32857144" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.3281027" />
       <window_info anchor="bottom" id="Run" order="2" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
@@ -255,41 +348,6 @@
     <option name="LAST_COMMIT_MESSAGE" value="Major module-level import revisions" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/__init__.py" />
-    <entry file="file://$PROJECT_DIR$/py/dragIntoMaya.mel">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="176">
-          <caret line="8" column="46" selection-start-line="8" selection-start-column="46" selection-end-line="8" selection-end-column="46" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/__init__.py" />
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/tools/build/io.py" />
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/tools/shapes/io.py" />
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/tools/weights/io.py" />
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/tools/weights/utils.py" />
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/tools/shapes/lib.py" />
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/utils/__init__.py" />
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/utils/boundingBox.py" />
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/lib/Qt.py" />
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/utils/vectors.py" />
-    <entry file="file://$PROJECT_DIR$/../Documents/Google Drive/Maya/bmTools/scripts/userSetup.py" />
-    <entry file="file://$PROJECT_DIR$/py/easyInstall.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="506">
-          <caret line="24" column="4" selection-start-line="24" selection-start-column="4" selection-end-line="24" selection-end-column="4" />
-          <folding>
-            <element signature="e#0#24#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/rigging/skin/bm_smoothSkinWeights.py" />
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/rigging/skin/averageVertexSkinWeightBrush.py" />
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/__init__.py" />
-    <entry file="file://$PROJECT_DIR$/../Documents/Google Drive/Maya/bmTools/scripts/GuiTools/RT_Picker/rtPicker_ui.py" />
-    <entry file="file://$PROJECT_DIR$/../Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/PoseStorage/modules/bm_poseStorage_ui.py" />
-    <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/__init__.py" />
     <entry file="file://$PROJECT_DIR$/../Documents/Google Drive/01 BFA/Thesis Project Local Files/Tools/ReydaTools/scripts/CharacterPicker/modules/character_picker_model.py" />
     <entry file="file://$PROJECT_DIR$/py/scripts/bm/qt/lib/Qt.py" />
     <entry file="file://$PROJECT_DIR$/py/scripts/bm/qt/lib/__init__.py" />
@@ -313,14 +371,271 @@
     <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/ui/rigBuilder.py" />
     <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/creator.py" />
     <entry file="file://$PROJECT_DIR$/py/scripts/bm/maya/Osiris/base/character.py" />
-    <entry file="file://$PROJECT_DIR$/py/scripts/averageVertexSkinWeightBrush.py">
+    <entry file="file://$PROJECT_DIR$/py/scripts/averageVertexSkinWeightBrush.py" />
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state>
+        <state relative-caret-position="486">
+          <caret line="27" column="27" selection-start-line="27" selection-start-column="27" selection-end-line="27" selection-end-column="27" />
           <folding>
-            <element signature="e#0#22#0" expanded="true" />
+            <element signature="e#0#9#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/__Ribbon.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="306">
+          <caret line="17" column="28" lean-forward="true" selection-start-line="17" selection-start-column="28" selection-end-line="17" selection-end-column="28" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/_ThreeJointIkFkTwist.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="432">
+          <caret line="43" column="43" selection-start-line="43" selection-start-column="43" selection-end-line="43" selection-end-column="43" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/IkChain.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="360">
+          <caret line="24" column="30" selection-start-line="24" selection-start-column="30" selection-end-line="24" selection-end-column="30" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/IkFkChain.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="432">
+          <caret line="29" column="38" selection-start-line="29" selection-start-column="38" selection-end-line="29" selection-end-column="38" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/NeckHead.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="432">
+          <caret line="28" column="20" selection-start-line="28" selection-start-column="20" selection-end-line="28" selection-end-column="20" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/SingleJoint.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="378">
+          <caret line="26" selection-start-line="26" selection-end-line="26" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/FkTwist.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/rigTools.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="657">
+          <caret line="191" column="127" selection-start-line="191" selection-start-column="114" selection-end-line="191" selection-end-column="127" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/nodes/bm_aimConstraint.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1143">
+          <caret line="91" column="32" selection-start-line="91" selection-start-column="23" selection-end-line="91" selection-end-column="32" />
+          <folding>
+            <element signature="e#0#26#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/core/mathUtils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="99">
+          <caret line="127" column="23" selection-start-line="127" selection-start-column="4" selection-end-line="127" selection-end-column="23" />
+          <folding>
+            <element signature="e#0#26#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Spline.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="91">
+          <caret line="220" column="14" selection-start-line="220" selection-start-column="14" selection-end-line="220" selection-end-column="14" />
+          <folding>
+            <element signature="e#197#221#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Leg.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="329">
+          <caret line="111" column="20" lean-forward="true" selection-start-line="111" selection-start-column="20" selection-end-line="111" selection-end-column="20" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/core/constants.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="239">
+          <caret line="20" lean-forward="true" selection-start-line="20" selection-end-line="20" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/_Foot.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="293">
+          <caret line="158" column="9" selection-start-line="158" selection-start-column="9" selection-end-line="158" selection-end-column="9" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://D:/Documents/Jobs/Jump/JumpTools/scripts/jump/mathUtils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="217">
+          <caret line="177" column="4" selection-start-line="177" selection-start-column="4" selection-end-line="177" selection-end-column="4" />
+          <folding>
+            <element signature="e#0#26#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://D:/Documents/Jobs/Jump/JumpTools/scripts/jump/rigUtils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="18">
+          <caret line="8" selection-start-line="8" selection-end-line="8" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://D:/Documents/Jobs/Jump/JumpTools/scripts/userSetup.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Arm.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="414">
+          <caret line="29" selection-start-line="29" selection-end-line="29" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/base/module.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="9648">
+          <caret line="545" column="57" selection-start-line="545" selection-start-column="57" selection-end-line="545" selection-end-column="57" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://D:/Documents/Jobs/Jump/JumpTools/install.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="12" column="81" selection-start-line="12" selection-start-column="81" selection-end-line="12" selection-end-column="81" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/FkChain.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1242">
+          <caret line="74" column="11" selection-start-line="74" selection-start-column="11" selection-end-line="74" selection-end-column="11" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightUtils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="198">
+          <caret line="137" lean-forward="true" selection-start-line="137" selection-end-line="137" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightio.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="360">
+          <caret line="76" lean-forward="true" selection-start-line="76" selection-end-line="76" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://D:/Documents/Jobs/Jump/JumpTools/scripts/jump/shelf.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="437">
+          <caret line="189" column="36" selection-start-line="189" selection-start-column="36" selection-end-line="189" selection-end-column="36" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="541">
+          <caret line="286" column="60" lean-forward="true" selection-start-line="286" selection-start-column="60" selection-end-line="286" selection-end-column="60" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://D:/projects/jump/character/hannah/rig/components/postops.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="473">
+          <caret line="48" column="39" selection-start-line="48" selection-start-column="38" selection-end-line="48" selection-end-column="39" />
+        </state>
+      </provider>
+    </entry>
+  </component>
+  <component name="masterDetails">
+    <states>
+      <state key="Copyright.UI">
+        <settings>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+    </states>
   </component>
 </project>

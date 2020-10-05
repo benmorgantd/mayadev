@@ -1,21 +1,26 @@
-import maya.cmds as cmds 
+import maya.cmds as cmds
 
 from bmaya.rigging.base import module
 from bmaya.rigging.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 from bmaya.core import name
 
+
 ##reload(module)
 
 
 class FkChain(module.Module):
 
-    def __init__(self, startJoint=None, endJoint=None, exclude=[], name='FkChain1',
-                 character=None, parent=None, shapeType='cube', mirror=False, side='L',
+    def __init__(self, startJoint=None, endJoint=None, exclude=[],
+                 name='FkChain1',
+                 character=None, parent=None, shapeType='cube', mirror=False,
+                 side='L',
                  alignWorld=False):
 
-        module.Module.__init__(self, name=name, modType='FkChain', character=character, 
-                               shapeType=shapeType, mirror=mirror, side=side, alignWorld=alignWorld)
+        module.Module.__init__(self, name=name, modType='FkChain',
+                               character=character,
+                               shapeType=shapeType, mirror=mirror, side=side,
+                               alignWorld=alignWorld)
 
         self.parent = parent
         self.startJoint = startJoint
@@ -32,7 +37,8 @@ class FkChain(module.Module):
         self.bindJoints = self.findHierarchyJoints()
         self.driveJoints = self.createDriveJoints()
 
-        self.components = self.buildFkControls(self.driveJoints, setupAlignWorld=True)
+        self.components = self.buildFkControls(self.driveJoints,
+                                               setupAlignWorld=True)
 
     def buildFkControls(self, driveJoints, setupAlignWorld=False):
 
@@ -41,8 +47,9 @@ class FkChain(module.Module):
         for i in range(len(driveJoints)):
             jnt = driveJoints[i]
 
-            ctrl = shapelib.Shape(name=name.findControlName(jnt, identifier='Fk'),
-                                  shapeType=self.shapeType, jnt=jnt)
+            ctrl = shapelib.Shape(
+                name=name.findControlName(jnt, identifier='Fk'),
+                shapeType=self.shapeType, jnt=jnt)
 
             components.append(ctrl)
 
@@ -61,11 +68,11 @@ class FkChain(module.Module):
                     cmds.parent(ctrl.offsetGrp, components[0].ctrl)
 
             cmds.addAttr(jnt, longName='driveCtrl', attributeType='message')
-            cmds.addAttr(ctrl.ctrl, longName='driveJoint', attributeType='message')
+            cmds.addAttr(ctrl.ctrl, longName='driveJoint',
+                         attributeType='message')
             cmds.connectAttr(ctrl.ctrl + '.driveJoint', jnt + '.driveCtrl')
 
         if setupAlignWorld:
             self.setupAlignWorld(components[0], defaultValue=self.alignWorld)
 
         return components
-

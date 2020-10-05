@@ -5,12 +5,17 @@ from bmaya.rigging.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 from bmaya.core import name
 
+
 class SingleJoint(module.Module):
 
-    def __init__(self, startJoint=None, name='singleJoint1', character=None, parent=None, shapeType='cube',
-                 mirror=False, side='L', alignWorld=None, addOffsetControl=False, offsetShapeType='cube'):
-        super(SingleJoint, self).__init__(modType='SingleJoint', name=name, character=character, 
-                                          shapeType=shapeType, mirror=mirror, side=side, alignWorld=alignWorld)
+    def __init__(self, startJoint=None, name='singleJoint1', character=None,
+                 parent=None, shapeType='cube',
+                 mirror=False, side='L', alignWorld=None,
+                 addOffsetControl=False, offsetShapeType='cube'):
+        super(SingleJoint, self).__init__(modType='SingleJoint', name=name,
+                                          character=character,
+                                          shapeType=shapeType, mirror=mirror,
+                                          side=side, alignWorld=alignWorld)
 
         self.parent = parent
         self.startJoint = startJoint
@@ -30,21 +35,26 @@ class SingleJoint(module.Module):
 
         self.startJointDriver = self.getDriver(self.startJoint)
 
-        ctrl = shapelib.Shape(name=name.findControlName(self.startJointDriver), shapeType=self.shapeType,
+        ctrl = shapelib.Shape(name=name.findControlName(self.startJointDriver),
+                              shapeType=self.shapeType,
                               jnt=self.startJointDriver)
 
         self.components.append(ctrl)
 
         if self.addOffsetControl:
-            offsetCtrl = shapelib.Shape(name=name.findControlName(self.startJointDriver, identifier='Offset'), shapeType=self.offsetShapeType,
-                                        jnt=self.startJointDriver)
+            offsetCtrl = shapelib.Shape(
+                name=name.findControlName(self.startJointDriver,
+                                          identifier='Offset'),
+                shapeType=self.offsetShapeType,
+                jnt=self.startJointDriver)
             cmds.parent(offsetCtrl.offsetGrp, ctrl.ctrl)
-            self.parentConstrain(offsetCtrl.ctrl, self.startJointDriver, maintainOffset=True)
+            self.parentConstrain(offsetCtrl.ctrl, self.startJointDriver,
+                                 maintainOffset=True)
             self.components.append(offsetCtrl)
         else:
-            self.parentConstrain(ctrl.ctrl, self.startJointDriver, maintainOffset=True)
+            self.parentConstrain(ctrl.ctrl, self.startJointDriver,
+                                 maintainOffset=True)
 
         cmds.parent(ctrl.offsetGrp, self.componentsGrp)
 
         self.setupAlignWorld(ctrl, defaultValue=self.alignWorld)
-
