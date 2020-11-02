@@ -6,7 +6,7 @@ import maya.cmds as cmds
 
 from bmaya.core.asset import Asset
 from bmaya.core.components import *
-from bmaya.core import constants, fileio
+from bmaya.core import constants, fileio, qtbase
 
 from bmaya.rigging.shapes import shapelib, shapeio
 from bmaya.rigging.weights import weightio
@@ -62,22 +62,34 @@ class Rig(Asset):
 
         startTime = time.time()
 
+        progressWindow = qtbase.ProgressWindow(title='Building Rig')
+        progressWindow.show()
+
         self.modules = []
         self.allControls = []
         mirrorModules = []
 
+        progressWindow.setStatusTextAndIncrement('Creating blank scene...', 5)
+
         # create a new scene
         cmds.file(new=True, force=True)
 
+        progressWindow.setStatusTextAndIncrement('Loading plugins...', 5)
         # load required plugins
         self.loadPlugins()
 
+        progressWindow.setStatusTextAndIncrement('Making character node...', 5)
+
         self.makeNode()
+
+        progressWindow.setStatusTextAndIncrement('Reading build file...', 5)
 
         # open up the character's build file (json)
         self.buildData = buildio.load(self.build.fullPath)
 
         buildList = []
+
+        progressWindow.setStatusTextAndIncrement('Building layout rig...', 5)
 
         layoutDict, layoutComponents = self.buildLayout()
         self.modules.append(layoutDict)
@@ -92,6 +104,8 @@ class Rig(Asset):
             for child in mod['children']:
                 addChildren(child)
 
+        progressWindow.setStatusTextAndIncrement('Flattening build tree...', 5)
+
         for mod in self.buildData:
             if mod['children']:
                 addChildren(mod)
@@ -102,6 +116,8 @@ class Rig(Asset):
 
         # create the new class instance from the data
         from bmaya.rigging import modules
+
+        progressWindow.setStatusTextAndIncrement('Building limbs...', 5)
 
         for mod in buildList:
             # access the modType attribute from the module's dictionary
@@ -116,6 +132,7 @@ class Rig(Asset):
                 # transfer the values from the read file to the instance
                 setattr(modInstance, key, value)
 
+
             # build it!
             modInstance.build()
 
@@ -124,7 +141,7 @@ class Rig(Asset):
             # it'll mirror if its mirror attribute is True
             mirrorInstance = modInstance.doMirror()
 
-            # optional
+            # optional, adds time.
             # cmds.refresh(currentView=True)
 
             if mirrorInstance:
@@ -134,11 +151,17 @@ class Rig(Asset):
 
         self.modules += mirrorModules
 
-        self.ctrlSet = cmds.sets(self.allControls, name='CTRL_set')
+        progressWindow.setStatusTextAndIncrement('Making sets...', 5)
 
+        self.ctrlSet = cmds.sets(self.allControls, name='CTRL_set')
+        self.faceCtrlSet = cmds.sets(name='FACE_CTRL_set')
+        cmds.sets(self.faceCtrlSet, edit=True, forceElement=self.ctrlSet)
+
+        progressWindow.setStatusTextAndIncrement('Adding default skinning...', 5)
         # skinning after the components have been built allows us to create bind joints
         self.skin()
 
+        progressWindow.setStatusTextAndIncrement('Writing character node attributes...', 5)
         self.addNodeAttrs()
 
         for mod in self.modules:
@@ -147,8 +170,10 @@ class Rig(Asset):
                                  '{0}_{1}.character'.format(mod['name'],
                                                             constants.MODULE_SUFFIX))
 
+        progressWindow.setStatusTextAndIncrement('Loading control shapes...', 5)
         shapeio.load(self.componentPathFromType('cvs'))
 
+        progressWindow.setStatusTextAndIncrement('Loading weights...', 5)
         weightsDir = self.componentPathFromType('weights')
         weightFiles = self.findFilesOfType(weightsDir, 'weights')
 
@@ -158,15 +183,19 @@ class Rig(Asset):
         # create influences set
         self.bindSet = self.makeBindSet()
 
+        progressWindow.setStatusTextAndIncrement('Coloring controls...', 5)
         self.colorControls()
 
+        progressWindow.setStatusTextAndIncrement('Cleaning up...', 5)
         # scene cleanup:
         self.setupMeshReferencing()
         self.lockDownConstraints()
 
         cmds.hide(cmds.ls(type='ikHandle'))
 
+        progressWindow.setStatusTextAndIncrement('Running post operations...', 5)
         self.runPostOps()
+
 
         cmds.file(rename=self.animRig.fullPath)
         cmds.file(save=True, type='mayaAscii', force=True)
@@ -177,6 +206,10 @@ class Rig(Asset):
         endTime = time.time()
 
         print "Rig built in {0:.2f} seconds.".format(endTime - startTime)
+        progressWindow.setStatusTextAndIncrement('Finished building rig', 5)
+
+        progressWindow.hide()
+        del progressWindow
 
     def makeNode(self):
         if not cmds.objExists(self.name + '_CHAR'):
@@ -299,9 +332,12 @@ class Rig(Asset):
                          force=True)
 
         for mesh in self.meshes:
-            cmds.setAttr(mesh + '.overrideEnabled', 1)
-            cmds.connectAttr(md + '.output', mesh + '.overrideDisplayType',
-                             force=True)
+            try:
+                cmds.setAttr(mesh + '.overrideEnabled', 1)
+                cmds.connectAttr(md + '.output', mesh + '.overrideDisplayType',
+                                 force=True)
+            except RuntimeError:
+                pass
 
     def lockMeshes(self):
 
@@ -375,8 +411,12 @@ class Rig(Asset):
             elif '_R_' in ctrl:
                 side = 13
 
-            cmds.setAttr(ctrl + '.overrideEnabled', True)
-            cmds.setAttr(ctrl + '.overrideColor', side)
+            try:
+                cmds.setAttr(ctrl + '.overrideEnabled', True)
+                cmds.setAttr(ctrl + '.overrideColor', side)
+            except:
+                # for sets nested within the ctrl set
+                pass
 
     def loadPlugins(self):
         for plugin in constants.REQUIRED_PLUGINS:

@@ -77,7 +77,7 @@ def getCharacterModules(characterNode):
 
 def resetControl(ctrl):
     if 'defaultValues' not in cmds.listAttr(ctrl):
-        raise ValueError('Control {0} has no default value attribute'.format(ctrl))
+        print ValueError('Control {0} has no default value attribute'.format(ctrl))
     
     defaultValues = cmds.getAttr(ctrl + '.defaultValues')
     
@@ -93,7 +93,8 @@ def resetModule(mod):
         resetControl(component)
 
     if 'defaultValues' not in cmds.listAttr(mod):
-        raise ValueError('Module {0} has no default value attribute'.format(mod))
+        print('Module {0} has no default value attribute'.format(mod))
+        return
     
     defaultValues = cmds.getAttr(mod + '.defaultValues')
     

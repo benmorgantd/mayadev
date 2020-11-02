@@ -48,7 +48,7 @@ class NeckHead(FkTwist.FkTwist):
             startTwistDistance = (twistPoint - startPoint).length()
 
             # get the percentage it is along that distance
-            distancePercent = startTwistDistance / float(startEndDistance)
+            distancePercent = float(startTwistDistance / float(startEndDistance))
 
             pConstraint = cmds.pointConstraint(self.components[0].ctrl,
                                                self.components[-1].ctrl,

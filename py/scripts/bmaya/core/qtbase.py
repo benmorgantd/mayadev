@@ -2,6 +2,7 @@
 
 import os
 import ast
+import time
 
 from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
@@ -223,4 +224,38 @@ class Dialog(QtWidgets.QDialog):
         self.hLayout = QtWidgets.QHBoxLayout(self)
 
         self.setWindowTitle(windowTitle)
+
+
+class ProgressWindow(SimpleWindow):
+
+    windowSize = QtCore.QSize(350, 75)
+
+    def __init__(self, parent=None, designerFile=None, title='Simple Widget'):
+        super(ProgressWindow, self).__init__(parent=parent, designerFile=designerFile,
+                                             title=title)
+
+        self.progress = 0
+        self.minProgress = 0
+        self.maxProgress = 100
+
+        self.statusTextWidget = QtWidgets.QLabel('Doing Something...')
+
+        self.progressBarWidget = QtWidgets.QProgressBar()
+
+        self.mainLayout.addWidget(self.statusTextWidget)
+        self.mainLayout.addWidget(self.progressBarWidget)
+
+        self.setFixedSize(self.windowSize)
+        self.setWindowFlags(QtCore.Qt.Drawer)
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+
+
+    def setStatusTextAndIncrement(self, text, value):
+        self.statusTextWidget.setText(text)
+        self.progressBarWidget.setValue(self.progressBarWidget.value() + int(value))
+        print(text)
+
+    def setStatusText(self, text):
+        self.statusTextWidget.setText(text)
+        print(text)
 

@@ -184,12 +184,50 @@ def addTwistJoints(startJoint, endJoint, jointCount=3):
 def orientToWorld(joints):
 
     worldLoc = cmds.group(empty=True, name='worldSpace')
-    
+
+
     # orient joints to world
     for jnt in joints:
+        children = cmds.listRelatives(jnt, children=True)
+
+        if children:
+            cmds.parent(children, world=True)
+
         cmds.delete(cmds.orientConstraint(worldLoc, jnt, maintainOffset=False))
-        
+
         cmds.makeIdentity(jnt, apply=True, rotate=True)
+
+        if children:
+            cmds.parent(children, jnt, absolute=True)
         
     cmds.delete(worldLoc)
-        
+
+
+def orientToMesh(joints, mesh):
+    for jnt in joints:
+        cmds.delete(cmds.normalConstraint(mesh, jnt, aimVector=[0,0,1], worldUpType='scene'))
+        cmds.setAttr(jnt + '.rx', 0)
+        cmds.setAttr(jnt + '.rz', 0)
+        cmds.makeIdentity(jnt, apply=True, rotate=True)
+
+
+def mirrorFaceJoints(joints):
+
+    for jnt in joints:
+        jntChildren = cmds.listRelatives(jnt, children=True)
+        if not jntChildren:
+            mirror = cmds.mirrorJoint(jnt, mirrorYZ=True, mirrorBehavior=True,
+                                       searchReplace=['_L_', '_R_'])
+            cmds.xform(mirror, rotation=[180,180,0], objectSpace=True)
+            cmds.makeIdentity(mirror, apply=True, rotate=True)
+        else:
+            mirror = cmds.mirrorJoint(jnt, mirrorYZ=True, mirrorBehavior=True,
+                                      searchReplace=['_L_', '_R_'])
+            for mirrorJnt in mirror:
+                mirrorChildren = cmds.listRelatives(mirrorJnt, children=True)
+                if mirrorChildren:
+                    cmds.parent(mirrorChildren, world=True)
+                cmds.xform(mirrorJnt, rotation=[180, 180, 0], objectSpace=True)
+                cmds.makeIdentity(mirrorJnt, apply=True, rotate=True)
+                if mirrorChildren:
+                    cmds.parent(mirrorChildren, mirrorJnt)

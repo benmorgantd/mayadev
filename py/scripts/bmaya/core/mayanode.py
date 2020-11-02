@@ -3,25 +3,23 @@ import json
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
+rotationOrders = {'xyz': (0, om.MEulerRotation.kXYZ),
+                  'yzx': (1, om.MEulerRotation.kYZX),
+                  'zxy': (2, om.MEulerRotation.kZXY),
+                  'xzy': (3, om.MEulerRotation.kXZY),
+                  'yxz': (4, om.MEulerRotation.kYXZ),
+                  'zyx': (5, om.MEulerRotation.kZYX)}
 
-
-rotationOrders = {'xyz':(0, om.MEulerRotation.kXYZ),
-                 'yzx':(1, om.MEulerRotation.kYZX), 
-                 'zxy':(2, om.MEulerRotation.kZXY),
-                 'xzy':(3, om.MEulerRotation.kXZY),
-                 'yxz':(4, om.MEulerRotation.kYXZ), 
-                 'zyx':(5, om.MEulerRotation.kZYX)}
-
-displayColors = {'black':1,
-                'grey':3,
-                'blue':6,
-                'pink':9,
-                'red':13,
-                'lime':14,
-                'darkblue':15,
-                'white':16,
-                'yellow':17,
-                'green':23}
+displayColors = {'black': 1,
+                 'grey': 3,
+                 'blue': 6,
+                 'pink': 9,
+                 'red': 13,
+                 'lime': 14,
+                 'darkblue': 15,
+                 'white': 16,
+                 'yellow': 17,
+                 'green': 23}
 
 
 class Transform(object):
@@ -38,10 +36,10 @@ class Transform(object):
 
         self.name = self.dagPath.fullPathName()
         self.shortName = self.dagPath.partialPathName()
-    
+
     # MFnTransform properties
 
-    @property 
+    @property
     def fnTransform(self):
         return om.MFnTransform(self.dagPath)
 
@@ -71,20 +69,22 @@ class Transform(object):
     def worldRotation(self):
         vector = self.quaternion.asEulerRotation().asVector()
         vector *= (180.0 / 57.2957795131)
-        return om.MEulerRotation(vector.x, vector.y, vector.z, rotationOrders[self.rotationOrder][1])
+        return om.MEulerRotation(vector.x, vector.y, vector.z,
+                                 rotationOrders[self.rotationOrder][1])
 
     @worldRotation.setter
     def worldRotation(self, degreeRotation):
         rotX = om.MAngle(degreeRotation[0], om.MAngle.kDegrees).asRadians()
         rotY = om.MAngle(degreeRotation[1], om.MAngle.kDegrees).asRadians()
         rotZ = om.MAngle(degreeRotation[2], om.MAngle.kDegrees).asRadians()
-        rot = om.MEulerRotation(rotX, rotY, rotZ, rotationOrders[self.rotationOrder][1])
+        rot = om.MEulerRotation(rotX, rotY, rotZ,
+                                rotationOrders[self.rotationOrder][1])
         self.fnTransform.setRotation(rot)
-    
+
     @property
     def scale(self):
         return list(cmds.getAttr(self.name + '.scale')[0])
-    
+
     @scale.setter
     def scale(self, value):
         cmds.setAttr(self.name + '.scale', *value)
@@ -117,7 +117,7 @@ class Transform(object):
     @property
     def transformationMatrix(self):
         return self.fnTransform.transformation()
-    
+
     @property
     def matrix(self):
         return self.transformationMatrix.asMatrix()
@@ -132,7 +132,6 @@ class Transform(object):
 
         return matrixVectors
 
-
     @property
     def matrixList(self):
         matrix = self.matrix
@@ -145,12 +144,12 @@ class Transform(object):
             rowList = []
             for column in range(3):
                 rowList.append(util.getDoubleArrayItem(matrix[row], column))
-        
+
             matrixList.append(rowList)
 
         return matrixList
 
-    @property 
+    @property
     def fnDag(self):
         return om.MFnDagNode(self.dagPath)
 
@@ -174,8 +173,8 @@ class Transform(object):
                 cmds.parent(self.name, dagName, absolute=True)
             except RuntimeError:
                 # already a child of that node
-                return 
-            # update the dag path after changing parent
+                return
+                # update the dag path after changing parent
             sel = om.MSelectionList()
             sel.add(_shortName)
             dag = om.MDagPath()
@@ -187,7 +186,8 @@ class Transform(object):
 
     @property
     def children(self):
-        return cmds.listRelatives(self.name, children=True, type='transform') or []
+        return cmds.listRelatives(self.name, children=True,
+                                  type='transform') or []
 
     @property
     def displayColor(self):
@@ -200,7 +200,7 @@ class Transform(object):
             cmds.setAttr(self.name + '.overrideColor', displayColors[value])
         else:
             cmds.setAttr(self.name + '.overrideColor', value)
-    
+
     @property
     def metadata(self):
         if 'metadata' in cmds.listAttr(self.name):
@@ -221,8 +221,8 @@ class Transform(object):
         axis = ['X', 'Y', 'Z']
         translate = cmds.getAttr(self.name + '.translate')[0]
         return axis[translate.index(max(translate))]
-    
-    @property 
+
+    @property
     def vectorFromParent(self):
         if self.parent:
             return self.worldPosition - self.parent.worldPosition
@@ -234,28 +234,38 @@ class Transform(object):
         return self.vectorFromParent.length()
 
     def lockAttrs(self, attrs):
-        axis = ['X','Y','Z']
+        axis = ['X', 'Y', 'Z']
         for attr in attrs:
             if attr in ['translate', 'rotate', 'scale']:
                 for x in axis:
-                    cmds.setAttr(self.name + '.' + attr + x, keyable=False, lock=True, channelBox=False)
+                    cmds.setAttr(self.name + '.' + attr + x, keyable=False,
+                                 lock=True, channelBox=False)
             else:
-                cmds.setAttr(self.name + '.' + attr, keyable=False, lock=True, channelBox=False)
+                cmds.setAttr(self.name + '.' + attr, keyable=False, lock=True,
+                             channelBox=False)
 
-    def constrain(self, parents, constraintType='point', weights=None, maintainOffset=False):
+    def constrain(self, parents, constraintType='point', weights=None,
+                  maintainOffset=False):
         if not weights:
             weights = [1.0] * len(parents)
-        
+
         for i in range((len(parents))):
             parent = parents[i]
             if constraintType == 'point':
-                const = cmds.pointConstraint(parent, self.name, maintainOffset=maintainOffset, weight=weights[i])
+                const = cmds.pointConstraint(parent, self.name,
+                                             maintainOffset=maintainOffset,
+                                             weight=weights[i])
             elif constraintType == 'orient':
-                const = cmds.orientConstraint(parent, self.name, maintainOffset=maintainOffset, weight=weights[i])
+                const = cmds.orientConstraint(parent, self.name,
+                                              maintainOffset=maintainOffset,
+                                              weight=weights[i])
             elif constraintType == 'parent':
-                const = cmds.parentConstraint(parent, self.name, maintainOffset=maintainOffset, weight=weights[i])
+                const = cmds.parentConstraint(parent, self.name,
+                                              maintainOffset=maintainOffset,
+                                              weight=weights[i])
             else:
-                raise ValueError(constraintType + ' is not an accepted constraint type.')
+                raise ValueError(
+                    constraintType + ' is not an accepted constraint type.')
 
         return const
 
@@ -264,12 +274,11 @@ class Locator(Transform):
     def __init__(self, name):
         if not cmds.objExists(name):
             cmds.spaceLocator(name=name)
-            
+
         super(Locator, self).__init__(name)
 
         self.localScale = .35
 
-        
     @property
     def shape(self):
         return cmds.listRelatives(self.name, type='shape', children=True)[0]
@@ -277,7 +286,7 @@ class Locator(Transform):
     @property
     def localScaleX(self):
         return cmds.getAttr(self.shape + '.localScaleX')
-    
+
     @localScaleX.setter
     def localScaleX(self, value):
         cmds.setAttr(self.shape + '.localScaleX', value)
@@ -285,7 +294,7 @@ class Locator(Transform):
     @property
     def localScaleY(self):
         return cmds.getAttr(self.shape + '.localScaleY')
-    
+
     @localScaleY.setter
     def localScaleY(self, value):
         cmds.setAttr(self.shape + '.localScaleY', value)
@@ -293,7 +302,7 @@ class Locator(Transform):
     @property
     def localScaleZ(self):
         return cmds.getAttr(self.shape + '.localScaleZ')
-    
+
     @localScaleZ.setter
     def localScaleZ(self, value):
         cmds.setAttr(self.shape + '.localScaleZ', value)
@@ -306,7 +315,7 @@ class Locator(Transform):
     def localScale(self, value):
         for axis in ['X', 'Y', 'Z']:
             cmds.setAttr(self.shape + '.localScale' + axis, value)
-    
+
     def localScale(self, value):
         for axis in ['X', 'Y', 'Z']:
             cmds.setAttr(self.shape + '.localScale' + axis, value)
@@ -325,11 +334,10 @@ class Joint(Transform):
 
         super(Joint, self).__init__(name)
 
-
     @property
     def radius(self):
         return cmds.getAttr(self.name + '.radius')
-    
+
     @radius.setter
     def radius(self, value):
         cmds.setAttr(self.name + '.radius', value)
