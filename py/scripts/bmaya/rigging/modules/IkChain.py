@@ -30,7 +30,8 @@ class IkChain(module.Module):
     def build(self):
         # build a simple single chain ik system
 
-        self.bindJoints = self.findHierarchyJoints(shortestDistance=True)
+        self.bindJoints = self.findHierarchyJoints(shortestDistance=True,
+                                                   exclude=self.exclude)
 
         self.driveJoints = self.createDriveJoints()
 

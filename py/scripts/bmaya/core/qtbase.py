@@ -9,9 +9,11 @@ from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui
 
+
 def getMayaMainWindow():
     return QtCompat.wrapInstance(long(omui.MQtUtil.mainWindow()),
-                                      QtWidgets.QWidget)
+                                 QtWidgets.QWidget)
+
 
 class SimpleWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None, designerFile=None, title='Simple Widget'):
@@ -87,7 +89,7 @@ class Table(QtWidgets.QTableWidget):
             return item
 
     def toJson(self, dictionary):
-        
+
         jsonData = {}
 
         for key, value in dictionary.items():
@@ -152,7 +154,7 @@ class TreeItem(QtWidgets.QTreeWidgetItem):
         super(TreeItem, self).__init__(parent)
 
         self.setFlags(self.flags() | QtCore.Qt.ItemIsEditable)
-        self.setSizeHint(0, QtCore.QSize(50,20))
+        self.setSizeHint(0, QtCore.QSize(50, 20))
         self.setFirstColumnSpanned(True)
 
         self.setText(0, 'Tree Item')
@@ -165,7 +167,7 @@ class TreeItem(QtWidgets.QTreeWidgetItem):
 
         while item.parent():
             _parents.append(item.parent())
-        
+
         return _parents
 
     @property
@@ -182,15 +184,13 @@ class TreeItem(QtWidgets.QTreeWidgetItem):
     @property
     def name(self):
         return str(self.text(0))
-                
+
 
 class DockableWidget(SimpleWidget):
     def __init__(self, parent=None, designerFile=None, title='rigManager'):
         super(DockableWidget, self).__init__(parent, designerFile, title)
 
-
     def dock(self, width=385, height=735):
-
         dockControl = cmds.workspaceControl(
             self.title,
             tabToControl=["AttributeEditor", -1],
@@ -218,7 +218,7 @@ class DockableWidget(SimpleWidget):
 class Dialog(QtWidgets.QDialog):
     def __init__(self, parent=None, windowTitle='Dialog'):
         super(Dialog, self).__init__(parent)
-        
+
         self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint)
 
         self.hLayout = QtWidgets.QHBoxLayout(self)
@@ -227,11 +227,11 @@ class Dialog(QtWidgets.QDialog):
 
 
 class ProgressWindow(SimpleWindow):
-
     windowSize = QtCore.QSize(350, 75)
 
     def __init__(self, parent=None, designerFile=None, title='Simple Widget'):
-        super(ProgressWindow, self).__init__(parent=parent, designerFile=designerFile,
+        super(ProgressWindow, self).__init__(parent=parent,
+                                             designerFile=designerFile,
                                              title=title)
 
         self.progress = 0
@@ -249,13 +249,10 @@ class ProgressWindow(SimpleWindow):
         self.setWindowFlags(QtCore.Qt.Drawer)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 
+    def increment(self, value):
+        self.progressBarWidget.setValue(
+            self.progressBarWidget.value() + int(value))
 
-    def setStatusTextAndIncrement(self, text, value):
-        self.statusTextWidget.setText(text)
-        self.progressBarWidget.setValue(self.progressBarWidget.value() + int(value))
+    def setStatus(self, text):
+        self.statusTextWidget.setText(text.replace('...','') + '...')
         print(text)
-
-    def setStatusText(self, text):
-        self.statusTextWidget.setText(text)
-        print(text)
-

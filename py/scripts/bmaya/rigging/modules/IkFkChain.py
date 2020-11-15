@@ -34,7 +34,8 @@ class IkFkChain(FkChain.FkChain, IkChain.IkChain):
     def build(self):
         # build a single joint control on the given joint
 
-        self.bindJoints = self.findHierarchyJoints(shortestDistance=True)
+        self.bindJoints = self.findHierarchyJoints(shortestDistance=True,
+                                                   exclude=self.exclude)
         self.driveJoints = self.createDriveJoints(label='DRIVER',
                                                   constrain=True)
 

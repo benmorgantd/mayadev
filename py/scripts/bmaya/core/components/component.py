@@ -7,7 +7,8 @@ TYPE_EXTENSIONS = {'mesh': '.ma',
                    'weights': '.weights', 
                    'build':'.json', 
                    'components':'',
-                   'postops':'.py'}
+                   'postops':'.py',
+                   'facePoses':'.json'}
 
 class Component(object):
 

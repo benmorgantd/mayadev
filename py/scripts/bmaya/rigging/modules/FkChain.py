@@ -34,7 +34,7 @@ class FkChain(module.Module):
     @wrapBuild
     def build(self):
         # finds the joints that should belong in the chain
-        self.bindJoints = self.findHierarchyJoints()
+        self.bindJoints = self.findHierarchyJoints(exclude=self.exclude)
         self.driveJoints = self.createDriveJoints()
 
         self.components = self.buildFkControls(self.driveJoints,
@@ -44,12 +44,21 @@ class FkChain(module.Module):
 
         components = []
 
-        for i in range(len(driveJoints)):
+        for i in range(0, len(driveJoints)):
             jnt = driveJoints[i]
+
+            # easy naming override for face controls...
+            # TODO: This could be replaced if I ever made a shape swapping system
+            if 'Driver_' in jnt:
+                shapeTypeOverride = 'diamond'
+            elif 'Base_' in jnt:
+                shapeTypeOverride = 'circle'
+            else:
+                shapeTypeOverride = 'cube'
 
             ctrl = shapelib.Shape(
                 name=name.findControlName(jnt, identifier='Fk'),
-                shapeType=self.shapeType, jnt=jnt)
+                shapeType=shapeTypeOverride, jnt=jnt)
 
             components.append(ctrl)
 
@@ -60,7 +69,11 @@ class FkChain(module.Module):
             else:
                 parentJoint = cmds.listRelatives(
                     jnt, parent=True, type='joint')[0]
-                parentCtrl = cmds.listConnections(parentJoint + '.driveCtrl')
+
+                if cmds.objExists(parentJoint + '.driveCtrl'):
+                    parentCtrl = cmds.listConnections(parentJoint + '.driveCtrl')
+                else:
+                    parentCtrl = None
 
                 if parentCtrl:
                     cmds.parent(ctrl.offsetGrp, parentCtrl[0])

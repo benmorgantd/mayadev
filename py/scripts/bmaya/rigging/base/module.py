@@ -358,7 +358,7 @@ class Module(object):
             cmds.connectAttr(self.node + '.bindJoints', jnt + '.module')
 
     def findHierarchyJoints(self, shortestDistance=False, startJoint=None,
-                            endJoint=None):
+                            endJoint=None, exclude=[]):
         """Expands from a start joint and until it hits excluded joints."""
 
         if not startJoint:
@@ -368,18 +368,13 @@ class Module(object):
 
         sel = om.MSelectionList()
         bindJoints = []
-        exclude = []
 
         if not startJoint:
             raise RuntimeError('Need a start joint.')
-        if hasattr(self, 'exclude'):
-            exclude = self.exclude
 
         sel.add(startJoint)
         dag = om.MDagPath()
         sel.getDagPath(0, dag)
-
-        rootJnt = True
 
         itDag = om.MItDag(om.MItDag.kDepthFirst, om.MFn.kJoint)
         itDag.reset(dag, om.MItDag.kDepthFirst, om.MFn.kJoint)
@@ -400,7 +395,6 @@ class Module(object):
                     # add control on end joint then prune
                     bindJoints.append(jnt)
                     itDag.prune()
-                rootJnt = False
             else:
                 itDag.prune()
 
@@ -418,7 +412,8 @@ class Module(object):
         if jointParent:
             driverParent = jointParent[0].replace(constants.JOINT_SUFFIX, label)
             if cmds.objExists(driverParent):
-                cmds.parent(driver, driverParent, absolute=True)
+                if cmds.listRelatives(driver, parent=True)[0] != driverParent:
+                    cmds.parent(driver, driverParent, absolute=True)
 
         if constrain:
             self.parentConstrain(driver, jnt, maintainOffset=False)

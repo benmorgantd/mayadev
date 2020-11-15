@@ -297,11 +297,16 @@ class CustomLineEdit(QtWidgets.QLineEdit):
         else:
             QtWidgets.QLineEdit.mousePressEvent(self, event)
 
-    def addSelection(self):
+
+    def replaceWithSelection(self):
         sel = cmds.ls(sl=1)
 
         if sel:
-            self.setText(sel[0])
+            if len(sel) == 1:
+                self.setText(sel[0])
+
+            else:
+                self.setText(str([str(obj) for obj in sel]))
 
     def resetToDefault(self):
         self.setText(self.defaultValue)
@@ -310,8 +315,8 @@ class LineEditMenu(QtWidgets.QMenu):
     def __init__(self, lineEdit):
         super(LineEditMenu, self).__init__()
 
-        renameAction = self.addAction('Add Selection')
-        renameAction.triggered.connect(lambda: lineEdit.addSelection())
+        replaceWithSelection = self.addAction('Replace With Selection')
+        replaceWithSelection.triggered.connect(lambda: lineEdit.replaceWithSelection())
 
         resetAction = self.addAction('Reset To Default')
         resetAction.triggered.connect(lambda: lineEdit.resetToDefault())

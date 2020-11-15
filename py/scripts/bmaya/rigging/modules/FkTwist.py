@@ -32,7 +32,8 @@ class FkTwist(FkChain.FkChain):
 
     def buildFkTwist(self):
         # finds the joints that should belong in the chain
-        self.bindJoints = self.findHierarchyJoints(shortestDistance=True)
+        self.bindJoints = self.findHierarchyJoints(shortestDistance=True,
+                                                   exclude=self.exclude)
         # create base and twist drive joints separately so the controls can be too
         self.twistJoints = self.findTwistJoints(self.bindJoints[0])
 
