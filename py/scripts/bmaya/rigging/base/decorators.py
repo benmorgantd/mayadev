@@ -15,7 +15,7 @@ def wrapStandalone(fn):
 
 def wrapBuild(fn):
     def wrapper(self, *args, **kwargs):
-        print ">>> Building <{0}> {1}\n".format(self.__class__.__name__, self.name)
+        print(">>> Building limb type <{0}> : \'{1}\'\n".format(self.__class__.__name__, self.name))
 
         self.checkContract()
         self.makeNode()

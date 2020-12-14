@@ -54,6 +54,7 @@ def save(weightsDir):
                                  export=True, path=weightsDir, method="index")
         else:
             print dagName, ' has no skin cluster to save.'
+            itSel.next()
 
         print "Saved weights for {}".format(dagName)
 

@@ -351,3 +351,20 @@ def pruneSkinWeights(maxInfluence=4):
     om.MGlobal.displayInfo('Pruned {0} over-influenced vertices from {1}.'.format(numOverInfluenced, dag.partialPathName()))
 
     return [mFnSkinCluster, dag, selectedComponents, influenceIndices, oldWeights, False, oldWeights]
+
+def getSkinClusterWeightDict(skinClusterObj):
+    '''Return the weight dictionary for the given skin cluster'''
+
+
+    weights, influenceIndices, influenceObjects = getSkinClusterWeights(skinClusterObj)
+
+    # A single influence's weights is its column of the weight matrix
+
+    weightDict = {}
+    numInfluences = influenceIndices.length()
+
+    for i in xrange(numInfluences):
+        weightDict[influenceObjects[i].partialPathName()] = weights[i :: numInfluences]
+
+    return weightDict
+

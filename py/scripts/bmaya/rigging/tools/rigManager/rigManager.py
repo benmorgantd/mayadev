@@ -219,7 +219,7 @@ class RigManager(qtbase.DockableWidget):
 
         filepath = cmds.fileDialog2(okCaption=action,
                                     fileMode=fileMode,
-                                    fileFilter='Build Files (build.json);;',
+                                    fileFilter='Build Files (*.json);;',
                                     caption=action + ' Build File',
                                     startingDirectory=buildpath)
 

@@ -29,6 +29,7 @@ class Module(object):
 
         self.components = []
         self.bindJoints = []
+        self.driveJoints = []
 
     @property
     def dict(self):
@@ -363,7 +364,7 @@ class Module(object):
 
         if not startJoint:
             startJoint = self.startJoint
-        if not endJoint:
+        if not endJoint and hasattr(self, 'endJoint'):
             endJoint = self.endJoint
 
         sel = om.MSelectionList()
@@ -615,3 +616,54 @@ class Module(object):
                          pivot.ctrl + '.visibility')
 
         return pivot
+
+
+    def buildFkControls(self, driveJoints, setupAlignWorld=False):
+
+        components = []
+
+        for i in range(0, len(driveJoints)):
+            jnt = driveJoints[i]
+
+            # easy naming override for face controls...
+            # TODO: This could be replaced if I ever made a shape swapping system
+            if 'Driver_' in jnt:
+                shapeTypeOverride = 'diamond'
+            elif 'Base_' in jnt:
+                shapeTypeOverride = 'circle'
+            else:
+                shapeTypeOverride = 'cube'
+
+            ctrl = shapelib.Shape(
+                name=name.findControlName(jnt, identifier='Fk'),
+                shapeType=shapeTypeOverride, jnt=jnt)
+
+            components.append(ctrl)
+
+            self.parentConstrain(ctrl.ctrl, jnt, maintainOffset=True)
+
+            if i == 0:
+                cmds.parent(ctrl.offsetGrp, self.componentsGrp)
+            else:
+                parentJoint = cmds.listRelatives(
+                    jnt, parent=True, type='joint')[0]
+
+                if cmds.objExists(parentJoint + '.driveCtrl'):
+                    parentCtrl = cmds.listConnections(parentJoint + '.driveCtrl')
+                else:
+                    parentCtrl = None
+
+                if parentCtrl:
+                    cmds.parent(ctrl.offsetGrp, parentCtrl[0])
+                else:
+                    cmds.parent(ctrl.offsetGrp, components[0].ctrl)
+
+            cmds.addAttr(jnt, longName='driveCtrl', attributeType='message')
+            cmds.addAttr(ctrl.ctrl, longName='driveJoint',
+                         attributeType='message')
+            cmds.connectAttr(ctrl.ctrl + '.driveJoint', jnt + '.driveCtrl')
+
+        if setupAlignWorld:
+            self.setupAlignWorld(components[0], defaultValue=self.alignWorld)
+
+        return components

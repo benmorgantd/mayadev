@@ -188,7 +188,7 @@
           </font>
          </property>
          <property name="title">
-          <string>Module List</string>
+          <string>Limb Types</string>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
@@ -224,7 +224,7 @@
           </font>
          </property>
          <property name="title">
-          <string>Build List</string>
+          <string>Build Tree</string>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_7">
           <item>
@@ -247,7 +247,7 @@
         </font>
        </property>
        <property name="title">
-        <string>Module Attributes</string>
+        <string>Limb Attributes</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>

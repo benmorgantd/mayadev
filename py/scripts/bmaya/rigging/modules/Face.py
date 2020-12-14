@@ -14,7 +14,7 @@ class Face(module.Module):
 
     def __init__(self, character=None, name='face', parent=None,
                  upperHead=None, middleHead=None, lowerHead=None,
-                 jaw=None, eyeballs=[], eyelidBases=[], eyebrowBases=[],
+                 jaw=None, eyeballs=[], eyelidBase=None, eyebrowBase=None,
                  drivers=[]):
         module.Module.__init__(self, character=character, name=name,
                                modType='Face', parent=parent, side='M')
@@ -24,8 +24,8 @@ class Face(module.Module):
         self.lowerHead = lowerHead
         self.jaw = jaw
         self.eyeballs = eyeballs
-        self.eyelidBases = eyelidBases
-        self.eyebrowBases = eyebrowBases
+        self.eyelidBase = eyelidBase
+        self.eyebrowBase = eyebrowBase
         self.drivers = drivers
 
         self.contract = [self.character.facePoses,
@@ -34,10 +34,9 @@ class Face(module.Module):
                          self.lowerHead,
                          self.jaw,
                          self.eyeballs,
-                         self.eyelidBases,
-                         self.eyebrowBases,
+                         self.eyelidBase,
+                         self.eyebrowBase,
                          self.drivers]
-
 
         # # ----- Init Regions ------- #
         # # Upper Head
@@ -61,11 +60,8 @@ class Face(module.Module):
         #                          character=self.character,
         #                          exclude=[self.jaw])
 
-
-
     @wrapBuild
     def build(self):
-
         '''
         The "Face" module could do the work of building the different FKHierarchy
         modules sort of like how the Leg builds the Foot module as well.
@@ -101,3 +97,71 @@ class Face(module.Module):
 
         # Gather the hierarchy joints for each region, create their drive joints,
         # and build the fk controls
+
+        self.upperHeadBindJoints, \
+        self.upperHeadDriveJoints, \
+        self.upperHeadControls = self.buildFaceFkHierarchy(
+                startJoint=self.upperHead,
+                exclude=[self.eyebrowBase])
+
+        self.middleHeadBindJoints, \
+        self.middleHeadDriveJoints, \
+        self.middleHeadControls = self.buildFaceFkHierarchy(
+                startJoint=self.middleHead,
+                exclude=[self.eyelidBase] + self.eyeballs)
+
+        self.lowerHeadBindJoints, \
+        self.lowerHeadDriveJoints, \
+        self.lowerHeadControls = self.buildFaceFkHierarchy(
+                startJoint=self.lowerHead,
+                exclude=self.jaw)
+
+        self.eyebrowBindJoints, \
+        self.eyebrowDriveJoints, \
+        self.eyebrowControls = self.buildFaceFkHierarchy(
+                startJoint=self.eyebrowBase,
+                exclude=[])
+
+        self.parentConstrain(self.upperHeadControls[0],
+                             self.eyebrowControls[0],
+                             maintainOffset=True)
+
+        self.eyelidBindJoints, \
+        self.eyelidDriveJoints, \
+        self.eyelidControls = self.buildFaceFkHierarchy(
+                startJoint=self.eyelidBase,
+                exclude=[])
+
+        self.parentConstrain(self.middleHeadControls[0],
+                             self.eyelidControls[0],
+                             maintainOffset=True)
+
+        self.jawBindJoints, \
+        self.jawDriveJoints, \
+        self.jawControls = self.buildFaceFkHierarchy(
+                startJoint=self.jaw,
+                exclude=[])
+
+        self.parentConstrain(self.lowerHeadControls[0],
+                             self.jawControls[0],
+                             maintainOffset=True)
+
+    def buildFaceFkHierarchy(self, startJoint, exclude=[]):
+        bindJoints = self.findHierarchyJoints(startJoint=startJoint,
+                                              exclude=exclude,
+                                              shortestDistance=False)
+
+        self.bindJoints += bindJoints
+
+        driveJoints = []
+
+        for jnt in bindJoints:
+            driveJoints.append(self.createDriveJoint(jnt))
+
+        self.driveJoints += driveJoints
+
+        controls = self.buildFkControls(driveJoints=driveJoints)
+
+        self.components += controls
+
+        return bindJoints, driveJoints, controls
