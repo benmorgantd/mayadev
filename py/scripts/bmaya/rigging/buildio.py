@@ -1,10 +1,6 @@
 import json
 import os
 
-import maya.cmds as cmds
-from bmaya.core import mayanode
-#reload(mayanode)
-
 def load(filepath):
 
     if not os.path.exists(filepath):

@@ -2,13 +2,10 @@
 
 import os
 import shutil
-import json
 
 import maya.cmds as cmds
 
 from bmaya.core.components import *
-from bmaya.core import constants
-from bmaya.core import fileio
 
 try:
     PROJECT_ROOT = os.environ['RIG_ROOT']

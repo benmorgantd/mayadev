@@ -7,7 +7,7 @@ from xml.etree import ElementTree
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-import weightUtils
+import weightutils
 from bmaya.core import fileio
 
 def getJointsFromXML(weightsDir):
@@ -40,7 +40,7 @@ def save(weightsDir):
 
         dagName = str(dag.partialPathName())
 
-        skin = cmds.ls(cmds.listHistory(dagName), type='skinCluster') or []
+        skin = weightutils.getSkinCluster(dagName)
 
         filename = os.path.join(weightsDir, dagName + '.weights')
         if os.path.exists(filename):
@@ -79,7 +79,7 @@ def load(weightsPath):
     print 'Loading weights for <' + objName + '> ...'
     
     # look for and delete old clusters if they exist
-    existingSkinCluster = cmds.ls(cmds.listHistory(objName), type="skinCluster") or []
+    existingSkinCluster = weightutils.getSkinCluster(objName)
 
     if existingSkinCluster:
         cmds.delete(existingSkinCluster)

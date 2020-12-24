@@ -1,9 +1,10 @@
-import json
-
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as omAnim
 import maya.cmds as cmds
 import maya.mel
+
+from bmaya.core.mayanode import Transform
+
 
 
 def getSkinClusterName(dag):
@@ -16,16 +17,8 @@ def getSkinClusterName(dag):
         skinCluster (str), skinClusterObj (MObject)
     """
 
-    # gets the mesh's full name as a string
-    meshName = dag.fullPathName()
-
     # useful one-liner for finding a skinCluster on a mesh
-    skinClusterName = cmds.ls(cmds.listHistory(meshName), type="skinCluster")
-
-    if len(skinClusterName):
-        return skinClusterName[0]
-    else:
-        return None
+    return getSkinCluster(dag.fullPathName())
 
 def getSkinClusterObj(dag):
     """A convenience function for finding the skinCluster deforming a mesh.
@@ -37,7 +30,7 @@ def getSkinClusterObj(dag):
         skinCluster (str), skinClusterObj (MObject)
     """
 
-    skinClusterName = getSkinClusterName(dag)
+    skinClusterName = getSkinCluster(dag.fullPathName())
 
     if skinClusterName:
         # get the MObject for that skinCluster node if there is one
@@ -137,7 +130,7 @@ def quickSkin():
     meshes = list(set(sel) - set(joints))
 
     for mesh in meshes:
-        existingSkin = cmds.ls(cmds.listHistory(mesh), type='skinCluster')
+        existingSkin = getSkinCluster(mesh)
         
         if existingSkin:
             cmds.delete(existingSkin)
@@ -233,8 +226,9 @@ def bakeDeltaMushToSkinCluster(dag):
 
     setSkinClusterWeights(skinClusterObj, infIndices, deltaWeights)
 
-    cmds.select(dag.partialPathName())
-    cmds.skinPercent(getSkinClusterName(dag), normalize=True)
+    mesh = Transform(dag.fullPathName())
+
+    cmds.skinPercent(getSkinCluster(mesh.shape), normalize=True)
 
     cmds.delete(deltaMush)
 
@@ -291,8 +285,9 @@ def pruneSkinWeights(maxInfluence=4):
         return
 
     # get the skin cluster object
-    skinCluster = getSkinClusterName(dag)
-    skinClusterObj = getSkinClusterObj(dag)
+    skinCluster = getSkinCluster(dag.fullPathName())
+    # TODO do this ona more object oriented level
+    skinClusterObj = getSkinClusterObj(dag.fullPathName())
 
     cmds.skinPercent(skinCluster, pruneWeights=0.005)
 
@@ -367,4 +362,46 @@ def getSkinClusterWeightDict(skinClusterObj):
         weightDict[influenceObjects[i].partialPathName()] = weights[i :: numInfluences]
 
     return weightDict
+
+def getSkinCluster(shape):
+    '''
+
+    :param str shape: the mesh to search
+    :return: str
+
+    '''
+
+    sel = om.MSelectionList()
+    try:
+        sel.add(shape)
+    except RuntimeError:
+        raise RuntimeError('Object {0} does not exist'.format(shape))
+
+    mobj = om.MObject()
+    sel.getDependNode(0, mobj)
+
+    itDG = om.MItDependencyGraph(mobj,
+                                 om.MFn.kSkinClusterFilter,
+                                 om.MItDependencyGraph.kUpstream,
+                                 om.MItDependencyGraph.kDepthFirst,
+                                 om.MItDependencyGraph.kNodeLevel)
+
+    if itDG.isDone():
+        # No skin cluster. Are you sure you passed a mesh?
+        return None
+
+    skinClusterMObjArray = om.MObjectArray()
+
+    while not itDG.isDone():
+        currentNode = itDG.currentItem()
+        skinClusterMObjArray.append(currentNode)
+
+        itDG.next()
+
+    if skinClusterMObjArray.length():
+        # Return the first item in the array as a string. If there are multiple skin clusters in the object's history,
+        # that's a problem
+        fnDependNode = om.MFnDependencyNode(skinClusterMObjArray[0])
+        return fnDependNode.name()
+
 

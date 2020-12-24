@@ -6,32 +6,32 @@ import maya.cmds as cmds
 
 from bmaya.core.asset import Asset
 from bmaya.core.components import *
-from bmaya.core import constants, fileio, qtbase
+from bmaya.core import constants, fileio
 
 from bmaya.rigging.shapes import shapelib, shapeio
-from bmaya.rigging.weights import weightio
+from bmaya.rigging.weights import weightio, weightutils
 from bmaya.rigging import buildio
 
-from decorators import wrapStandalone
 import layout
 
 
 class Rig(Asset):
     '''Rig is the base class for all rigs'''
 
-    def __init__(self, assetId):
+    def __init__(self, assetId, hasFace=False):
         super(Rig, self).__init__(assetId)
 
-        self.initComponents()
-        self.initComponentFolders()
-        self.initComponentFiles()
-
+        self.hasFace = hasFace
         self.skinClusters = []
         # an array of dictionary representations of our module classes
         self.modules = []
         self.buildData = None
         self.componentsSet = None
         self.timeBuilt = time.strftime('%c', time.localtime())
+
+        self.initComponents()
+        self.initComponentFolders()
+        self.initComponentFiles()
 
     @property
     def meshes(self):
@@ -62,39 +62,39 @@ class Rig(Asset):
 
         startTime = time.time()
 
-        progressWindow = qtbase.ProgressWindow(title='Building Rig')
-        progressWindow.show()
+        #progressWindow = qtbase.ProgressWindow(title='Building Rig')
+        #progressWindow.show()
 
         self.modules = []
         self.allControls = []
         mirrorModules = []
 
-        progressWindow.setStatus('Creating blank scene')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Creating blank scene')
+        #progressWindow.increment(5)
 
         # create a new scene
         cmds.file(new=True, force=True)
 
-        progressWindow.setStatus('Loading plugins')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Loading plugins')
+        #progressWindow.increment(5)
         # load required plugins
         self.loadPlugins()
 
-        progressWindow.setStatus('Making character node')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Making character node')
+        #progressWindow.increment(5)
 
         self.makeNode()
 
-        progressWindow.setStatus('Reading build file')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Reading build file')
+        #progressWindow.increment(5)
 
         # open up the character's build file (json)
         self.buildData = buildio.load(self.build.fullPath)
 
         buildList = []
 
-        progressWindow.setStatus('Building layout rig')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Building layout rig')
+        #progressWindow.increment(5)
 
         layoutDict, layoutComponents = self.buildLayout()
         self.modules.append(layoutDict)
@@ -109,8 +109,8 @@ class Rig(Asset):
             for child in mod['children']:
                 addChildren(child)
 
-        progressWindow.setStatus('Flattening build tree')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Flattening build tree')
+        #progressWindow.increment(5)
 
         for mod in self.buildData:
             if mod['children']:
@@ -123,8 +123,8 @@ class Rig(Asset):
         # create the new class instance from the data
         from bmaya.rigging import modules
 
-        progressWindow.setStatus('Building limbs')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Building limbs')
+        #progressWindow.increment(5)
 
         for mod in buildList:
             # access the modType attribute from the module's dictionary
@@ -158,20 +158,21 @@ class Rig(Asset):
 
         self.modules += mirrorModules
 
-        progressWindow.setStatus('Making sets')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Making sets')
+        #progressWindow.increment(5)
 
         self.ctrlSet = cmds.sets(self.allControls, name='CTRL_set')
-        self.faceCtrlSet = cmds.sets(name='FACE_CTRL_set')
-        cmds.sets(self.faceCtrlSet, edit=True, forceElement=self.ctrlSet)
+        if self.hasFace:
+            self.faceCtrlSet = cmds.sets(name='FACE_CTRL_set')
+            cmds.sets(self.faceCtrlSet, edit=True, forceElement=self.ctrlSet)
 
-        progressWindow.setStatus('Adding default skinning')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Adding default skinning')
+        #progressWindow.increment(5)
         # skinning after the components have been built allows us to create bind joints
         self.skin()
 
-        progressWindow.setStatus('Writing character node attributes')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Writing character node attributes')
+        #progressWindow.increment(5)
         self.addNodeAttrs()
 
         for mod in self.modules:
@@ -180,12 +181,12 @@ class Rig(Asset):
                                  '{0}_{1}.character'.format(mod['name'],
                                                             constants.MODULE_SUFFIX))
 
-        progressWindow.setStatus('Loading control shapes')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Loading control shapes')
+        #progressWindow.increment(5)
         shapeio.load(self.componentPathFromType('cvs'))
 
-        progressWindow.setStatus('Loading weights')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Loading weights')
+        #progressWindow.increment(5)
         weightsDir = self.componentPathFromType('weights')
         weightFiles = self.findFilesOfType(weightsDir, 'weights')
 
@@ -195,22 +196,22 @@ class Rig(Asset):
         # create influences set
         self.bindSet = self.makeBindSet()
 
-        progressWindow.setStatus('Coloring controls')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Coloring controls')
+        #progressWindow.increment(5)
         self.colorControls()
 
-        progressWindow.setStatus('Cleaning up')
+        #progressWindow.setStatus('Cleaning up')
         # scene cleanup:
         self.setupMeshReferencing()
         self.lockDownConstraints()
 
         cmds.hide(cmds.ls(type='ikHandle'))
 
-        progressWindow.setStatus('Running post operations')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Running post operations')
+        #progressWindow.increment(5)
         self.runPostOps()
 
-        progressWindow.setStatus('Finished building rig')
+        #progressWindow.setStatus('Finished building rig')
 
         cmds.file(rename=self.animRig.fullPath)
         cmds.file(save=True, type='mayaAscii', force=True)
@@ -222,8 +223,8 @@ class Rig(Asset):
 
         print "Rig built in {0:.2f} seconds.".format(endTime - startTime)
 
-        progressWindow.hide()
-        del progressWindow
+        #progressWindow.hide()
+        #del progressWindow
 
     def makeNode(self):
         if not cmds.objExists(self.name + '_CHAR'):
@@ -406,7 +407,7 @@ class Rig(Asset):
         skinClusterInfluences = set()
 
         for mesh in self.meshes:
-            existingSkin = cmds.ls(cmds.listHistory(mesh), type='skinCluster')
+            existingSkin = weightutils.getSkinCluster(mesh)
             if existingSkin:
                 members = cmds.skinCluster(existingSkin[0], query=True,
                                            influence=True)
@@ -445,10 +446,14 @@ class Rig(Asset):
         self.build = build.Build(self, 'build')
         self.animRig = animRig.AnimRig(self, 'animRig')
         self.postops = postops.PostOps(self, 'postops')
-        self.facePoses = facePoses.FacePoses(self, 'facePoses')
+
+        if self.hasFace:
+            self.facePoses = facePoses.FacePoses(self, 'facePoses')
 
         self.components += [self.mesh, self.skeleton, self.weights, self.cvs,
                             self.build, self.animRig, self.postops]
+        if self.hasFace:
+            self.components.append(self.facePoses)
 
     def initComponentFolders(self):
         """Creates the component folders for the asset"""
@@ -515,13 +520,16 @@ class Rig(Asset):
 
             fileio.versionFile(self.postops.fullPath)
 
-        if not os.path.exists(self.facePoses.fullPath):
-            print(">> Creating facePoses file")
 
-            # write a blank json file
-            with open(self.facePoses.fullPath, "w") as f:
-                json.dump({}, f)
-            fileio.versionFile(self.facePoses.fullPath)
+        if self.hasFace:
+
+            if not os.path.exists(self.facePoses.fullPath):
+                print(">> Creating facePoses file")
+
+                # write a blank json file
+                with open(self.facePoses.fullPath, "w") as f:
+                    json.dump({}, f)
+                fileio.versionFile(self.facePoses.fullPath)
 
 
     def runPostOps(self):

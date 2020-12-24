@@ -34,8 +34,26 @@ class Transform(object):
         self.dagPath = om.MDagPath()
         sel.getDagPath(0, self.dagPath)
 
-        self.name = self.dagPath.fullPathName()
-        self.shortName = self.dagPath.partialPathName()
+    def __repr__(self):
+        return self.dagPath.fullPathName()
+
+    def __eq__(self, other):
+        if isinstance(other, Transform):
+            return self.mObject == other.mObject
+        else:
+            return False
+
+    @property
+    def mObject(self):
+        return self.dagPath.node()
+
+    @property
+    def name(self):
+        return self.dagPath.fullPathName()
+
+    @property
+    def shortName(self):
+        return self.dagPath.partialPathName()
 
     # MFnTransform properties
 
@@ -233,6 +251,20 @@ class Transform(object):
     def distanceFromParent(self):
         return self.vectorFromParent.length()
 
+    @property
+    def shape(self):
+        # get the transform's shape if it has one
+        try:
+            # Don't modify the node's existing dag path object
+            tempDag = om.MDagPath(self.dagPath)
+            # Only supports 1 shape
+            tempDag.extendToShapeDirectlyBelow(0)
+            return tempDag.partialPathName()
+        except RuntimeError:
+            # no shape
+            return None
+
+
     def lockAttrs(self, attrs):
         axis = ['X', 'Y', 'Z']
         for attr in attrs:
@@ -349,3 +381,6 @@ class Joint(Transform):
     @orient.setter
     def orient(self, value):
         cmds.setAttr(self.name + '.jointOrient', *value)
+
+class SkinCluster(object):
+    pass
