@@ -2,6 +2,7 @@ import json
 
 import maya.cmds as cmds
 import maya.OpenMaya as om
+import maya.OpenMayaAnim as omAnim
 
 rotationOrders = {'xyz': (0, om.MEulerRotation.kXYZ),
                   'yzx': (1, om.MEulerRotation.kYZX),
@@ -22,30 +23,72 @@ displayColors = {'black': 1,
                  'green': 23}
 
 
-class Transform(object):
+class DependencyNode(object):
     def __init__(self, name):
-        try:
-            # we only want to deal in objects that have unique names
-            sel = om.MSelectionList()
-            sel.add(name)
-        except RuntimeError:
-            raise RuntimeError('More than one object matches name: ' + name)
+        # I think many OpenMaya objects inherit from MObject, so we may want to directly check types instead
+        if isinstance(name, om.MObject):
+            self.mObject = om.MObject(name)
+        elif isinstance(name, basestring):
+            try:
+                # we only want to deal in objects that have unique names
+                sel = om.MSelectionList()
+                sel.add(name)
+                self.mObject = om.MObject()
+                sel.getDependNode(0, self.mObject)
+            except RuntimeError:
+                raise RuntimeError('0 or more than one object matches name: ' + name)
+        else:
+            raise RuntimeError('Given argument type {0} not supported.'.format(type(name)))
 
-        self.dagPath = om.MDagPath()
-        sel.getDagPath(0, self.dagPath)
+        # since an object's MObject is consistent, we can create its fn sets in the init
+        self.fnDependencyNode = om.MFnDependencyNode(self.mObject)
 
     def __repr__(self):
-        return self.dagPath.fullPathName()
+        return '<{0} {1} object {2}>'.format(__name__, type(self).__name__, self.fnDependencyNode.name())
+
+    def __eq__(self, other):
+        if isinstance(other, DependencyNode):
+            return self.mObject == other.mObject
+        else:
+            return False
+
+    @property
+    def name(self):
+        return self.fnDependencyNode.name()
+
+
+class DagNode(DependencyNode):
+    def __init__(self, name):
+        super(DagNode, self).__init__(name)
+
+    @property
+    def dagPath(self):
+        sel = om.MSelectionList()
+        # we create a cycle on Transforms if we reuse the object's dependency node fn set
+        fnDependencyNode = om.MFnDependencyNode(self.mObject)
+        sel.add(fnDependencyNode.name())
+        dag = om.MDagPath()
+        sel.getDagPath(0, dag)
+
+        return dag
+
+    @property
+    def fnDagNode(self):
+        return om.MFnDagNode(self.dagPath)
+
+
+class Transform(DagNode):
+    def __init__(self, name):
+        super(Transform, self).__init__(name)
+
+    def __repr__(self):
+        return '<{0} {1} object {2}>'.format(__name__, type(self).__name__, self.dagPath.fullPathName())
 
     def __eq__(self, other):
         if isinstance(other, Transform):
             return self.mObject == other.mObject
         else:
             return False
-
-    @property
-    def mObject(self):
-        return self.dagPath.node()
 
     @property
     def name(self):
@@ -259,18 +302,17 @@ class Transform(object):
             tempDag = om.MDagPath(self.dagPath)
             # Only supports 1 shape
             tempDag.extendToShapeDirectlyBelow(0)
-            return tempDag.partialPathName()
+            return Mesh(tempDag.node())
         except RuntimeError:
             # no shape
             return None
 
-
     def lockAttrs(self, attrs):
-        axis = ['X', 'Y', 'Z']
         for attr in attrs:
             if attr in ['translate', 'rotate', 'scale']:
-                for x in axis:
-                    cmds.setAttr(self.name + '.' + attr + x, keyable=False,
+                for axis in ['X', 'Y', 'Z']:
+                    # TODO do this with plugs
+                    cmds.setAttr(self.name + '.' + attr + axis, keyable=False,
                                  lock=True, channelBox=False)
             else:
                 cmds.setAttr(self.name + '.' + attr, keyable=False, lock=True,
@@ -300,6 +342,37 @@ class Transform(object):
                     constraintType + ' is not an accepted constraint type.')
 
         return const
+
+
+class Mesh(DagNode):
+    def __init__(self, name):
+        super(Mesh, self).__init__(name)
+
+        self.fnMesh = om.MFnMesh(self.mObject)
+
+    @property
+    def getSkinCluster(self):
+
+        itDG = om.MItDependencyGraph(self.mObject,
+                                     om.MFn.kSkinClusterFilter,
+                                     om.MItDependencyGraph.kUpstream,
+                                     om.MItDependencyGraph.kDepthFirst,
+                                     om.MItDependencyGraph.kNodeLevel)
+
+        if itDG.isDone():
+            # No skin cluster. Are you sure you passed a mesh?
+            return None
+
+        skinClusterMObjArray = om.MObjectArray()
+
+        while not itDG.isDone():
+            currentNode = itDG.currentItem()
+            skinClusterMObjArray.append(currentNode)
+
+            itDG.next()
+
+        # Return the first item in the array
+        return SkinCluster(skinClusterMObjArray[0])
 
 
 class Locator(Transform):
@@ -382,5 +455,55 @@ class Joint(Transform):
     def orient(self, value):
         cmds.setAttr(self.name + '.jointOrient', *value)
 
-class SkinCluster(object):
-    pass
+
+class SkinCluster(DependencyNode):
+    def __init__(self, name):
+        super(SkinCluster, self).__init__(name)
+
+        self.fnSkinCluster = omAnim.MFnSkinCluster(self.mObject)
+
+    @property
+    def outputGeometry(self):
+        outputGeometryArrayPlug = self.fnDependencyNode.findPlug('outputGeometry')
+        outputGeometryPlug = outputGeometryArrayPlug.elementByPhysicalIndex(0)
+        connectedMeshes = om.MPlugArray()
+        outputGeometryPlug.connectedTo(connectedMeshes, False, True)
+        # return the first connected mesh
+        return Mesh(connectedMeshes[0].node())
+
+    @property
+    def influenceObjects(self):
+        _influenceObjects = om.MDagPathArray()
+        # make this static for now so that we don't constantly calculate it
+        self.fnSkinCluster.influenceObjects(_influenceObjects)
+        return _influenceObjects
+
+    @property
+    def influenceCount(self):
+        return self.influenceObjects.length()
+
+    @property
+    def infCountPointer(self):
+        _infCount = om.MScriptUtil(self.influenceCount)
+        # c++ utility needed for the get weights function
+        _infCountPtr = _infCount.asUintPtr()
+        return _infCountPtr
+
+    def getWeights(self, components=None):
+        weights = om.MDoubleArray()
+
+        if not components:
+            components = om.MObject()
+
+        self.fnSkinCluster.getWeights(self.outputGeometry.dagPath, components, weights, self.infCountPointer)
+
+        return weights
+
+    def setWeights(self):
+        return True
+
+    def pruneWeights(self, maxInfluence=4):
+        return True
+
+    def getWeightDictionary(self):
+        return {}

@@ -2,28 +2,28 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="74bd15b0-e080-4c61-9a69-c2851a779195" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/Benjamin.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/mayadev.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/mayadev.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/asset.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/asset.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/mayanode.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/mayanode.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/lib/Qt.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/lib/Qt.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/buildio.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/buildio.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightio.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightio.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightutils.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightutils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/py/scripts/bmaya/core/mayanode.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/rigManager.py" root0="SKIP_INSPECTION" />
   </component>
   <component name="ProjectId" id="1ltwSOELVWed6zuQ0MqmpWOAFua" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
@@ -35,7 +35,7 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PythonContentEntriesConfigurable" />
+    <property name="settings.editor.selected.configurable" value="Errors" />
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
