@@ -11,6 +11,7 @@ from bmaya.core import constants, fileio
 from bmaya.rigging.shapes import shapelib, shapeio
 from bmaya.rigging.weights import weightio, weightutils
 from bmaya.rigging import buildio
+from bmaya import mayanode
 
 import layout
 
@@ -34,12 +35,22 @@ class Rig(Asset):
         self.initComponentFiles()
 
     @property
-    def meshes(self):
-        return cmds.sets(self.meshSet, query=True) or []
+    def meshShapes(self):
+        _setMeshes = cmds.sets(self.meshSet, query=True) or []
+        _meshShapes = []
+        for mesh in _setMeshes:
+            _meshShapes.append(mayanode.Transform(mesh).shape)
+
+        return _meshShapes
 
     @property
     def controls(self):
-        return cmds.sets(self.ctrlSet, query=True) or []
+        _controls = []
+        _setControls = cmds.sets(self.ctrlSet, query=True) or []
+        for control in _setControls:
+            _controls.append(mayanode.Transform(control))
+
+        return _controls
 
     @property
     def influences(self):
@@ -318,9 +329,9 @@ class Rig(Asset):
         # check for existing weights files. If not then skin to skeleton set
         # skin the root joint to all the meshes in the scene
 
-        for mesh in self.meshes:
+        for mesh in self.meshShapes:
             weightsPath = os.path.join(self.weights.fullPath,
-                                       mesh + '.' + self.weights.extension)
+                                       mesh.transform + '.' + self.weights.extension)
             if os.path.exists(weightsPath):
                 weightio.load(weightsPath)
             elif 'noSkin' not in cmds.listAttr(mesh):
@@ -346,7 +357,7 @@ class Rig(Asset):
         cmds.connectAttr(self.node + '.referenceMesh', md + '.input1',
                          force=True)
 
-        for mesh in self.meshes:
+        for mesh in self.meshShapes:
             try:
                 cmds.setAttr(mesh + '.overrideEnabled', 1)
                 cmds.connectAttr(md + '.output', mesh + '.overrideDisplayType',
@@ -356,11 +367,11 @@ class Rig(Asset):
 
     def lockMeshes(self):
 
-        for mesh in self.meshes:
-            verts = cmds.polyEvaluate(mesh, vertex=True)
+        for mesh in self.meshShapes:
+            numVerts = mesh.fnMesh.numVertices()
 
-            for i in range(verts):
-                cmds.setAttr('{0}.pt[{1}]'.format(mesh, i), lock=True)
+            for i in xrange(numVerts):
+                cmds.setAttr(mesh + '.pt[{0}]'.format(i), lock=True)
 
     def connectToCharacter(self, node):
 
@@ -406,14 +417,14 @@ class Rig(Asset):
         skelJoints = set(cmds.listRelatives('SKELETON', type='joint', ad=1))
         skinClusterInfluences = set()
 
-        for mesh in self.meshes:
-            existingSkin = weightutils.getSkinCluster(mesh)
+        for mesh in self.meshShapes:
+            existingSkin = mesh.getSkinCluster()
             if existingSkin:
-                members = cmds.skinCluster(existingSkin[0], query=True,
-                                           influence=True)
-                for jnt in members:
-                    if jnt in skelJoints:
-                        skinClusterInfluences.add(jnt)
+                members = existingSkin.influenceObjects
+
+                for i in xrange(members.length()):
+                    if members[i].partialPathName() in skelJoints:
+                        skinClusterInfluences.add(members[i].partialPathName())
 
         bindSet = cmds.sets(list(skinClusterInfluences), name='BIND_set')
 

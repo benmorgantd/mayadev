@@ -4,14 +4,14 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as omAnim
 
-rotationOrders = {'xyz': (0, om.MEulerRotation.kXYZ),
+ROTATION_ORDERS = {'xyz': (0, om.MEulerRotation.kXYZ),
                   'yzx': (1, om.MEulerRotation.kYZX),
                   'zxy': (2, om.MEulerRotation.kZXY),
                   'xzy': (3, om.MEulerRotation.kXZY),
                   'yxz': (4, om.MEulerRotation.kYXZ),
                   'zyx': (5, om.MEulerRotation.kZYX)}
 
-displayColors = {'black': 1,
+DISPLAY_COLORS = {'black': 1,
                  'grey': 3,
                  'blue': 6,
                  'pink': 9,
@@ -41,10 +41,23 @@ class DependencyNode(object):
             raise RuntimeError('Given argument type {0} not supported.'.format(type(name)))
 
         # since an object's MObject is consistent, we can create its fn sets in the init
-        self.fnDependencyNode = om.MFnDependencyNode(self.mObject)
+        try:
+            self.fnDependencyNode = om.MFnDependencyNode(self.mObject)
+        except RuntimeError:
+            raise RuntimeError('Given object type is not compatible')
 
     def __repr__(self):
-        return '<{0} {1} object {2}>'.format(__name__, type(self).__name__, self.fnDependencyNode.name())
+        # return '<{0} {1} object {2}>'.format(__name__, type(self).__name__, self.fnDependencyNode.name())
+        return self.fnDependencyNode.name()
+
+    def __str__(self):
+        return self.fnDependencyNode.name()
+
+    def __add__(self, other):
+        return self.fnDependencyNode.name() + other
+
+    def __radd__(self, other):
+        return other + self.fnDependencyNode.name()
 
     def __eq__(self, other):
         if isinstance(other, DependencyNode):
@@ -55,6 +68,18 @@ class DependencyNode(object):
     @property
     def name(self):
         return self.fnDependencyNode.name()
+    #
+    # @property
+    # def attributes(self):
+    #
+    #     _attributes = []
+    #     for i in xrange(self.fnDependencyNode.attributeCount()):
+    #         attributeMObject = self.fnDependencyNode.attribute(i)
+    #         plug = self.fnDependencyNode.findPlug(attributeMObject)
+    #         # These args return us the long name of the attribute without the node
+    #         _attributes.append(plug.partialName(False, False, False, False, False, True))
+    #
+    #     return _attributes
 
 
 class DagNode(DependencyNode):
@@ -76,19 +101,31 @@ class DagNode(DependencyNode):
     def fnDagNode(self):
         return om.MFnDagNode(self.dagPath)
 
+    def __repr__(self):
+        # return '<{0} {1} object {2}>'.format(__name__, type(self).__name__, self.fnDependencyNode.name())
+        return self.dagPath.fullPathName()
+
+    def __str__(self):
+        return self.dagPath.fullPathName()
+
+    def __add__(self, other):
+        return self.dagPath.fullPathName() + other
+
+    def __radd__(self, other):
+        return other + self.dagPath.fullPathName()
+
+    def __eq__(self, other):
+        if isinstance(other, DagNode):
+            return self.mObject == other.mObject
+        else:
+            return False
+
 
 class Transform(DagNode):
     def __init__(self, name):
         super(Transform, self).__init__(name)
 
-    def __repr__(self):
-        return '<{0} {1} object {2}>'.format(__name__, type(self).__name__, self.dagPath.fullPathName())
-
-    def __eq__(self, other):
-        if isinstance(other, Transform):
-            return self.mObject == other.mObject
-        else:
-            return False
+        self.fnDependencyNode = om.MFnDependencyNode(self.mObject)
 
     @property
     def name(self):
@@ -131,7 +168,7 @@ class Transform(DagNode):
         vector = self.quaternion.asEulerRotation().asVector()
         vector *= (180.0 / 57.2957795131)
         return om.MEulerRotation(vector.x, vector.y, vector.z,
-                                 rotationOrders[self.rotationOrder][1])
+                                 ROTATION_ORDERS[self.rotationOrder][1])
 
     @worldRotation.setter
     def worldRotation(self, degreeRotation):
@@ -139,7 +176,7 @@ class Transform(DagNode):
         rotY = om.MAngle(degreeRotation[1], om.MAngle.kDegrees).asRadians()
         rotZ = om.MAngle(degreeRotation[2], om.MAngle.kDegrees).asRadians()
         rot = om.MEulerRotation(rotX, rotY, rotZ,
-                                rotationOrders[self.rotationOrder][1])
+                                ROTATION_ORDERS[self.rotationOrder][1])
         self.fnTransform.setRotation(rot)
 
     @property
@@ -155,15 +192,15 @@ class Transform(DagNode):
         rotOrderNumber = cmds.getAttr(self.name + '.rotateOrder')
         stringRepresentation = 'xyz'
 
-        for order in rotationOrders.keys():
-            if rotationOrders[order] == rotOrderNumber:
+        for order in ROTATION_ORDERS.keys():
+            if ROTATION_ORDERS[order] == rotOrderNumber:
                 stringRepresentation = order
 
         return stringRepresentation
 
     @rotationOrder.setter
     def rotationOrder(self, order):
-        cmds.setAttr(self.name + '.rotateOrder', rotationOrders[order][0])
+        cmds.setAttr(self.name + '.rotateOrder', ROTATION_ORDERS[order][0])
 
     @property
     def localPosition(self):
@@ -257,8 +294,8 @@ class Transform(DagNode):
     @displayColor.setter
     def displayColor(self, value):
         cmds.setAttr(self.name + '.overrideEnabled', True)
-        if value in displayColors.keys():
-            cmds.setAttr(self.name + '.overrideColor', displayColors[value])
+        if value in DISPLAY_COLORS.keys():
+            cmds.setAttr(self.name + '.overrideColor', DISPLAY_COLORS[value])
         else:
             cmds.setAttr(self.name + '.overrideColor', value)
 
@@ -307,16 +344,27 @@ class Transform(DagNode):
             # no shape
             return None
 
-    def lockAttrs(self, attrs):
-        for attr in attrs:
-            if attr in ['translate', 'rotate', 'scale']:
-                for axis in ['X', 'Y', 'Z']:
-                    # TODO do this with plugs
-                    cmds.setAttr(self.name + '.' + attr + axis, keyable=False,
-                                 lock=True, channelBox=False)
-            else:
-                cmds.setAttr(self.name + '.' + attr, keyable=False, lock=True,
-                             channelBox=False)
+    def lockAttr(self, attrs):
+        if self.fnDependencyNode.hasAttribute(attr):
+            plug = self.fnDependencyNode.findPlug(attr)
+            plug.setLocked(True)
+
+    def unlockAttr(self, attr):
+        if self.fnDependencyNode.hasAttribute(attr):
+            plug = self.fnDependencyNode.findPlug(attr)
+            plug.setLocked(False)
+
+    def lockTransforms(self):
+        # This is not undoable
+        for attr in ['translate', 'rotate', 'scale']:
+            for axis in ['X', 'Y', 'Z']:
+                self.lockAttr(attr + axis)
+
+    def unlockTransforms(self):
+        # This is not undoable
+        for attr in ['translate', 'rotate', 'scale']:
+            for axis in ['X', 'Y', 'Z']:
+                self.unlockAttr(attr + axis)
 
     def constrain(self, parents, constraintType='point', weights=None,
                   maintainOffset=False):
@@ -348,7 +396,16 @@ class Mesh(DagNode):
     def __init__(self, name):
         super(Mesh, self).__init__(name)
 
-        self.fnMesh = om.MFnMesh(self.mObject)
+        try:
+            self.fnMesh = om.MFnMesh(self.mObject)
+        except RuntimeError:
+            raise RuntimeError('Given object type is not compatible. Did you pass a kTransform type?')
+
+    @property
+    def transform(self):
+        # return this mesh's transform
+        _dag = om.MDagPath(self.dagPath)
+        return Transform(_dag.transform())
 
     @property
     def getSkinCluster(self):
@@ -489,18 +546,36 @@ class SkinCluster(DependencyNode):
         _infCountPtr = _infCount.asUintPtr()
         return _infCountPtr
 
+    @property
+    def influenceIndices(self):
+        _influenceIndices = om.MIntArray()
+        # create an MIntArray that just counts from 0 to infCount
+        for i in xrange(self.influenceCount):
+            _influenceIndices.append(i)
+
+        return _influenceIndices
+
     def getWeights(self, components=None):
         weights = om.MDoubleArray()
 
         if not components:
             components = om.MObject()
+        else:
+            assert isinstance(components, om.MObject())
 
         self.fnSkinCluster.getWeights(self.outputGeometry.dagPath, components, weights, self.infCountPointer)
 
         return weights
 
-    def setWeights(self):
-        return True
+    def setWeights(self, weights, components=None):
+        if not components:
+            components = om.MObject()
+        else:
+            assert isinstance(components, om.MObject())
+
+        assert isinstance(weights, (om.MDoubleArray, list))
+
+        mFnSkinCluster.setWeights(self.outputGeometry.dagPath, components, self.influenceIndices, weights)
 
     def pruneWeights(self, maxInfluence=4):
         return True
