@@ -23,23 +23,24 @@ DISPLAY_COLORS = {'black': 1,
                   'green': 23}
 
 
+class Connections(object):
+    def __init__(self, plug):
+        plug = om.MPlug(plug)
+        self.inputs = om.MPlugArray()
+        self.outputs = om.MPlugArray()
+
+        if plug.isConnected():
+            plug.connectedTo(self.inputs, True, False)
+            plug.connectedTo(self.outputs, False, True)
+
+
 class DependencyNode(object):
     def __init__(self, name):
         # I think many OpenMaya objects inherit from MObject, so we may want to directly check types instead
         if isinstance(name, om.MObject):
             self.mObject = om.MObject(name)
         elif isinstance(name, basestring):
-            try:
-                # we only want to deal in objects that have unique names
-                sel = om.MSelectionList()
-                sel.add(name)
-                self.mObject = om.MObject()
-                sel.getDependNode(0, self.mObject)
-            except RuntimeError:
-                raise RuntimeError('0 or more than one object matches name: ' + name)
-        else:
-            raise RuntimeError('Given argument type {0} not supported.'.format(type(name)))
-
+            self.mObject = self.stringToMObject(name)
         # since an object's MObject is consistent, we can create its fn sets in the init
         try:
             self.fnDependencyNode = om.MFnDependencyNode(self.mObject)
@@ -66,32 +67,77 @@ class DependencyNode(object):
             return False
 
     def __getattr__(self, attribute):
-        if hasattr(self, 'fnDependencyNode'):
-            if self.fnDependencyNode.hasAttribute(attribute):
-                plug = self.fnDependencyNode.findPlug(attribute)
-                plugMObj = plug.attribute()
-                plugType = plugMObj.apiType()
+        if not hasattr(self, 'fnDependencyNode'):
+            # We're calling __getattr__ before the class has been fully initialized
+            return super(DependencyNode, self).__getattribute__(attribute)
 
-                if plugType in [om.MFn.kDoubleLinearAttribute, om.MFn.kNumericAttribute]:
-                    return plug.asDouble()
-                elif plugType == om.MFn.kAttribute3Double:
-                    _result = []
-                    for i in range(plug.numChildren()):
-                        _childPlug = plug.child(i)
-                        _result.append(_childPlug.asDouble())
-                    return _result
-                elif plugType == om.MFn.kTypedAttribute:
-                    # TODO
-                    raise AttributeError('getattr is currently not supported for this attribute type.')
-                elif plugType == om.MFn.kEnumAttribute:
+        if self.fnDependencyNode.hasAttribute(attribute):
+            plug = self.fnDependencyNode.findPlug(attribute)
+            plugMObj = plug.attribute()
+            plugType = plugMObj.apiType()
+            print(plugMObj.apiTypeStr())
+
+            if plugType == om.MFn.kDoubleLinearAttribute:
+                return plug.asDouble()
+            elif plugType == om.MFn.kDoubleAngleAttribute:
+                return plug.asMAngle()
+            elif plugType == om.MFn.kNumericAttribute:
+                # get data type
+                fnNumericAttr = om.MFnNumericAttribute(plugMObj)
+                unitType = fnNumericAttr.unitType()
+                if unitType == 1:
+                    return plug.asBool()
+                elif unitType == 3:
+                    return plug.asChar()
+                elif unitType == 4:
+                    return plug.asShort()
+                elif unitType == 7:
+                    return plug.asLong()
+                elif unitType == 8:
                     return plug.asInt()
+                elif unitType in [13, 14]:
+                    return plug.asFloat()
                 else:
-                    raise AttributeError('getattr is currently not supported for this attribute type.')
-                return True
+                    raise AttributeError('The given MFnNumericData type {0} is not supported.'.format(unitType))
+            elif plugType == om.MFn.kAttribute3Double:
+                _result = []
+                for i in range(plug.numChildren()):
+                    _childPlug = plug.child(i)
+                    _result.append(_childPlug.asDouble())
+                return _result
+            elif plugType == om.MFn.kTypedAttribute:
+                fnTypedAttr = om.MFnTypedAttribute(plugMObj)
+                typedAttrType = fnTypedAttr.attrType()
+                if typedAttrType == 5:
+                    # kMatrix type. Get matrix data without the MFnTransform
+                    if plug.isArray():
+                        # worldMatrix, worldInverseMatrix, parentMatrix, parentInverseMatrix
+                        plug = plug.elementByLogicalIndex(0)
+                        fnMatrixData = om.MFnMatrixData(plug.asMObject())
+                        return fnMatrixData.matrix()
+                    else:
+                        # matrix, inverseMatrix, xformMatrix
+                        # Can't use MDataHandle and MDataBlock to get the matrix attribute since
+                        # we'd need to do that in a node's compute method...
+                        return None
+
+                        # dataHandle = plug.constructHandle(om.MDataBlock())
+                        # TODO bug here with class argument type.
+                        # fnMatrixData = om.MFnMatrixData(dataHandle.data())
+                        # return fnMatrixData.matrix()
+
+                raise AttributeError('getattr is currently not supported for this attribute type.')
+            elif plugType == om.MFn.kEnumAttribute:
+                return plug.asInt()
+            elif plugType == om.MFn.kStringData:
+                return plug.asString()
+            elif plugType == om.MFn.kMessageAttribute:
+                raise AttributeError('getattr is currently not supported for this attribute type.')
             else:
                 raise AttributeError('getattr is currently not supported for this attribute type.')
+            return True
         else:
-            return super(DependencyNode, self).__getattr__(attribute)
+            return super(DependencyNode, self).__getattribute__(attribute)
 
     # TODO: supporting setattr is a lot more complicated and introduces possible cycles
     # def __setattr__(self, attribute, value):
@@ -117,9 +163,18 @@ class DependencyNode(object):
     #     else:
     #         super(DependencyNode, self).__setattr__(attribute, value)
 
+    def inputConnections(self, attribute):
+        return []
+
+    def outputConnections(self, attribute):
+        return []
+
     @property
     def name(self):
         return self.fnDependencyNode.name()
+    @name.setter
+    def name(self, value):
+        self.fnDependencyNode.setName(value)
     #
     # @property
     # def attributes(self):
@@ -133,10 +188,51 @@ class DependencyNode(object):
     #
     #     return _attributes
 
+    @classmethod
+    def stringToMObject(cls, str):
+        _mObject = None
+        if isinstance(str, basestring):
+            try:
+                # we only want to deal in objects that have unique names
+                _sel = om.MSelectionList()
+                _sel.add(str)
+                _mObject = om.MObject()
+                _sel.getDependNode(0, _mObject)
+            except RuntimeError:
+                return None
+        else:
+            return None
+
+        return _mObject
+
 
 class DagNode(DependencyNode):
     def __init__(self, name):
         super(DagNode, self).__init__(name)
+
+    def __repr__(self):
+        return self.dagPath.fullPathName()
+
+    def __str__(self):
+        return self.dagPath.fullPathName()
+
+    def __add__(self, other):
+        return self.dagPath.fullPathName() + other
+
+    def __radd__(self, other):
+        return other + self.dagPath.fullPathName()
+
+    @property
+    def name(self):
+        return self.dagPath.fullPathName()
+
+    @name.setter
+    def name(self, value):
+        self.fnDependencyNode.setName(value)
+
+    @property
+    def shortName(self):
+        return self.dagPath.partialPathName()
 
     @property
     def dagPath(self):
@@ -153,22 +249,59 @@ class DagNode(DependencyNode):
     def fnDagNode(self):
         return om.MFnDagNode(self.dagPath)
 
-    def __repr__(self):
-        # return '<{0} {1} object {2}>'.format(__name__, type(self).__name__, self.fnDependencyNode.name())
-        return self.dagPath.fullPathName()
+    @property
+    def parent(self):
+        # return the Transform of the parent
+        if self.dagPath.length() > 1:
+            return Transform(self.fnDagNode.parent(0))
+        else:
+            return None
 
-    def __str__(self):
-        return self.dagPath.fullPathName()
+    @parent.setter
+    def parent(self, dagName):
+        if not dagName:
+            cmds.parent(self.name, world=True, absolute=True)
+        else:
+            _shortName = self.shortName
+            try:
+                cmds.parent(self.name, dagName, absolute=True)
+            except RuntimeError:
+                # already a child of that node
+                return
+                # update the dag path after changing parent
+            sel = om.MSelectionList()
+            sel.add(_shortName)
+            dag = om.MDagPath()
+            sel.getDagPath(0, dag)
 
-    def __add__(self, other):
-        return self.dagPath.fullPathName() + other
+            self.dagPath = dag
+            self.shortName = dag.partialPathName()
+            self.name = dag.fullPathName()
 
-    def __radd__(self, other):
-        return other + self.dagPath.fullPathName()
+    @property
+    def children(self):
+        return cmds.listRelatives(self.name, children=True,
+                                  type='transform') or []
 
-    def __eq__(self, other):
-        if isinstance(other, DagNode):
-            return self.mObject == other.mObject
+    def hasParent(self, parent):
+        if isinstance(parent, DependencyNode):
+            parent = parent.mObject
+        elif isinstance(parent, basestring):
+            parent = self.stringToMObject(parent)
+
+        if parent:
+            return self.fnDagNode.hasParent(parent)
+        else:
+            return False
+
+    def hasChild(self, child):
+        if isinstance(child, DependencyNode):
+            child = child.mObject
+        elif isinstance(child, basestring):
+            child = self.stringToMObject(child)
+
+        if child:
+            return self.fnDagNode.hasChild(child)
         else:
             return False
 
@@ -177,15 +310,8 @@ class Transform(DagNode):
     def __init__(self, name):
         super(Transform, self).__init__(name)
 
+        # override the dependency node mobj
         self.fnDependencyNode = om.MFnDependencyNode(self.mObject)
-
-    @property
-    def name(self):
-        return self.dagPath.fullPathName()
-
-    @property
-    def shortName(self):
-        return self.dagPath.partialPathName()
 
     # MFnTransform properties
 
@@ -195,7 +321,8 @@ class Transform(DagNode):
 
     @property
     def worldPosition(self):
-        return self.fnTransform.getTranslation(om.MSpace.kWorld)
+        _worldMatrixList = self.worldMatrixList
+        return om.MVector(*_worldMatrixList[3])
 
     @worldPosition.setter
     def worldPosition(self, vector):
@@ -232,29 +359,6 @@ class Transform(DagNode):
         self.fnTransform.setRotation(rot)
 
     @property
-    def scale(self):
-        return list(cmds.getAttr(self.name + '.scale')[0])
-
-    @scale.setter
-    def scale(self, value):
-        cmds.setAttr(self.name + '.scale', *value)
-
-    @property
-    def rotationOrder(self):
-        rotOrderNumber = cmds.getAttr(self.name + '.rotateOrder')
-        stringRepresentation = 'xyz'
-
-        for order in ROTATION_ORDERS.keys():
-            if ROTATION_ORDERS[order] == rotOrderNumber:
-                stringRepresentation = order
-
-        return stringRepresentation
-
-    @rotationOrder.setter
-    def rotationOrder(self, order):
-        cmds.setAttr(self.name + '.rotateOrder', ROTATION_ORDERS[order][0])
-
-    @property
     def localPosition(self):
         return self.fnTransform.getTranslation(om.MSpace.kObject)
 
@@ -269,10 +373,6 @@ class Transform(DagNode):
         return self.fnTransform.transformation()
 
     @property
-    def matrix(self):
-        return self.transformationMatrix.asMatrix()
-
-    @property
     def matrixVectors(self):
         matrix = self.matrixList
         matrixVectors = om.MVectorArray()
@@ -284,60 +384,11 @@ class Transform(DagNode):
 
     @property
     def matrixList(self):
-        matrix = self.matrix
-
-        util = om.MScriptUtil()
-
-        matrixList = []
-
-        for row in range(4):
-            rowList = []
-            for column in range(3):
-                rowList.append(util.getDoubleArrayItem(matrix[row], column))
-
-            matrixList.append(rowList)
-
-        return matrixList
+        return self.matrixToList(self.matrix)
 
     @property
-    def fnDag(self):
-        return om.MFnDagNode(self.dagPath)
-
-    @property
-    def parent(self):
-        # return the Transform of the parent
-        parentName = cmds.listRelatives(self.name, parent=True)
-
-        if parentName:
-            return Transform(parentName[0])
-        else:
-            return None
-
-    @parent.setter
-    def parent(self, dagName):
-        if not dagName:
-            cmds.parent(self.name, world=True, absolute=True)
-        else:
-            _shortName = self.shortName
-            try:
-                cmds.parent(self.name, dagName, absolute=True)
-            except RuntimeError:
-                # already a child of that node
-                return
-                # update the dag path after changing parent
-            sel = om.MSelectionList()
-            sel.add(_shortName)
-            dag = om.MDagPath()
-            sel.getDagPath(0, dag)
-
-            self.dagPath = dag
-            self.shortName = dag.partialPathName()
-            self.name = dag.fullPathName()
-
-    @property
-    def children(self):
-        return cmds.listRelatives(self.name, children=True,
-                                  type='transform') or []
+    def worldMatrixList(self):
+        return self.matrixToList(self.worldMatrix)
 
     @property
     def displayColor(self):
@@ -395,6 +446,21 @@ class Transform(DagNode):
         except RuntimeError:
             # no shape
             return None
+
+    @classmethod
+    def matrixToList(cls, matrix):
+        util = om.MScriptUtil()
+
+        matrixList = []
+
+        for row in range(4):
+            rowList = []
+            for column in range(3):
+                rowList.append(util.getDoubleArrayItem(matrix[row], column))
+
+            matrixList.append(rowList)
+
+        return matrixList
 
     def lockAttr(self, attrs):
         if self.fnDependencyNode.hasAttribute(attr):
@@ -492,10 +558,6 @@ class Locator(Transform):
         super(Locator, self).__init__(name)
 
         self.localScale = .35
-
-    @property
-    def shape(self):
-        return cmds.listRelatives(self.name, type='shape', children=True)[0]
 
     @property
     def localScaleX(self):
