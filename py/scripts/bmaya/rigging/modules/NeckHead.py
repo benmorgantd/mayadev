@@ -1,9 +1,11 @@
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
+from bmaya import mayanode
+
 from bmaya.rigging.modules import FkTwist
 from bmaya.rigging.base.decorators import wrapBuild
-from bmaya.core import name, constants, mayanode
+from bmaya.core import name, constants
 
 
 class NeckHead(FkTwist.FkTwist):

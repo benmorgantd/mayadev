@@ -418,7 +418,7 @@ class Rig(Asset):
         skinClusterInfluences = set()
 
         for mesh in self.meshShapes:
-            existingSkin = mesh.getSkinCluster()
+            existingSkin = mesh.getSkinCluster
             if existingSkin:
                 members = existingSkin.influenceObjects
 
@@ -430,13 +430,14 @@ class Rig(Asset):
 
     def colorControls(self):
         for ctrl in self.controls:
-            if '_M_' in ctrl:
+            if '_M_' in ctrl.name:
                 side = 22
-            elif '_L_' in ctrl:
+            elif '_L_' in ctrl.name:
                 side = 6
-            elif '_R_' in ctrl:
+            elif '_R_' in ctrl.name:
                 side = 13
-
+            else:
+                side = 22
             try:
                 cmds.setAttr(ctrl + '.overrideEnabled', True)
                 cmds.setAttr(ctrl + '.overrideColor', side)

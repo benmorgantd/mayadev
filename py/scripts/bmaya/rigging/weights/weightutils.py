@@ -156,7 +156,7 @@ def bakeDeltaMushToSkinCluster(meshTransform):
     om.MGlobal.clearSelectionList()
     meshTransform = mayanode.Transform(meshTransform)
     meshShape = meshTransform.shape
-    skinCluster = meshShape.getSkinCluster()
+    skinCluster = meshShape.getSkinCluster
 
     originalWeights = skinCluster.getWeights()
     influenceObjects = skinCluster.influenceObjects

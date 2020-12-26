@@ -3,8 +3,12 @@
   <component name="ChangeListManager">
     <list default="true" id="74bd15b0-e080-4c61-9a69-c2851a779195" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/mayanode.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/mayanode.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/mayanode.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/mayanode.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/joint.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/joint.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/FkTwist.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/FkTwist.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/NeckHead.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/NeckHead.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/__Ribbon.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/__Ribbon.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightutils.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightutils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

@@ -3,8 +3,8 @@ import math
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from bmaya.core import name, constants, mayanode
-
+from bmaya.core import name, constants
+from bmaya import mayanode
 
 def getSelectionCenter():
     cmds.select(cmds.polyListComponentConversion(toVertex=True))

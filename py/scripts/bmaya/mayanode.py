@@ -5,22 +5,22 @@ import maya.OpenMaya as om
 import maya.OpenMayaAnim as omAnim
 
 ROTATION_ORDERS = {'xyz': (0, om.MEulerRotation.kXYZ),
-                  'yzx': (1, om.MEulerRotation.kYZX),
-                  'zxy': (2, om.MEulerRotation.kZXY),
-                  'xzy': (3, om.MEulerRotation.kXZY),
-                  'yxz': (4, om.MEulerRotation.kYXZ),
-                  'zyx': (5, om.MEulerRotation.kZYX)}
+                   'yzx': (1, om.MEulerRotation.kYZX),
+                   'zxy': (2, om.MEulerRotation.kZXY),
+                   'xzy': (3, om.MEulerRotation.kXZY),
+                   'yxz': (4, om.MEulerRotation.kYXZ),
+                   'zyx': (5, om.MEulerRotation.kZYX)}
 
 DISPLAY_COLORS = {'black': 1,
-                 'grey': 3,
-                 'blue': 6,
-                 'pink': 9,
-                 'red': 13,
-                 'lime': 14,
-                 'darkblue': 15,
-                 'white': 16,
-                 'yellow': 17,
-                 'green': 23}
+                  'grey': 3,
+                  'blue': 6,
+                  'pink': 9,
+                  'red': 13,
+                  'lime': 14,
+                  'darkblue': 15,
+                  'white': 16,
+                  'yellow': 17,
+                  'green': 23}
 
 
 class DependencyNode(object):
@@ -64,6 +64,58 @@ class DependencyNode(object):
             return self.mObject == other.mObject
         else:
             return False
+
+    def __getattr__(self, attribute):
+        if hasattr(self, 'fnDependencyNode'):
+            if self.fnDependencyNode.hasAttribute(attribute):
+                plug = self.fnDependencyNode.findPlug(attribute)
+                plugMObj = plug.attribute()
+                plugType = plugMObj.apiType()
+
+                if plugType in [om.MFn.kDoubleLinearAttribute, om.MFn.kNumericAttribute]:
+                    return plug.asDouble()
+                elif plugType == om.MFn.kAttribute3Double:
+                    _result = []
+                    for i in range(plug.numChildren()):
+                        _childPlug = plug.child(i)
+                        _result.append(_childPlug.asDouble())
+                    return _result
+                elif plugType == om.MFn.kTypedAttribute:
+                    # TODO
+                    raise AttributeError('getattr is currently not supported for this attribute type.')
+                elif plugType == om.MFn.kEnumAttribute:
+                    return plug.asInt()
+                else:
+                    raise AttributeError('getattr is currently not supported for this attribute type.')
+                return True
+            else:
+                raise AttributeError('getattr is currently not supported for this attribute type.')
+        else:
+            return super(DependencyNode, self).__getattr__(attribute)
+
+    # TODO: supporting setattr is a lot more complicated and introduces possible cycles
+    # def __setattr__(self, attribute, value):
+    #     if hasattr(self, 'fnDependencyNode'):
+    #         if self.fnDependencyNode.hasAttribute(attribute):
+    #             plug = self.fnDependencyNode.findPlug(attribute)
+    #             plugMObj = plug.attribute()
+    #             plugType = plugMObj.apiType()
+    #
+    #             if plugType in [om.MFn.kDoubleLinearAttribute, om.MFn.kNumericAttribute]:
+    #                 plug.setDouble(value)
+    #             elif plugType == om.MFn.kAttribute3Double:
+    #                 for i in range(plug.numChildren()):
+    #                     _childPlug = plug.child(i)
+    #                     _childPlug.setDouble(value[i])
+    #             elif plugType == om.MFn.kTypedAttribute:
+    #                 # TODO
+    #                 raise AttributeError('setattr is currently not supported for this attribute type.')
+    #             elif plugType == om.MFn.kEnumAttribute:
+    #                 plug.setInt(value)
+    #         else:
+    #             raise AttributeError('{0} has no attribute {1}'.format(self, attribute))
+    #     else:
+    #         super(DependencyNode, self).__setattr__(attribute, value)
 
     @property
     def name(self):
