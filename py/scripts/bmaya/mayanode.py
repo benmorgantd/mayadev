@@ -210,6 +210,8 @@ class DagNode(DependencyNode):
     def __init__(self, name):
         super(DagNode, self).__init__(name)
 
+        self.fnDagNode = om.MFnDagNode(self.dagPath)
+
     def __repr__(self):
         return self.dagPath.fullPathName()
 
@@ -246,10 +248,6 @@ class DagNode(DependencyNode):
         return dag
 
     @property
-    def fnDagNode(self):
-        return om.MFnDagNode(self.dagPath)
-
-    @property
     def parent(self):
         # return the Transform of the parent
         if self.dagPath.length() > 1:
@@ -258,30 +256,95 @@ class DagNode(DependencyNode):
             return None
 
     @parent.setter
-    def parent(self, dagName):
-        if not dagName:
-            cmds.parent(self.name, world=True, absolute=True)
-        else:
-            _shortName = self.shortName
-            try:
-                cmds.parent(self.name, dagName, absolute=True)
-            except RuntimeError:
-                # already a child of that node
-                return
-                # update the dag path after changing parent
-            sel = om.MSelectionList()
-            sel.add(_shortName)
-            dag = om.MDagPath()
-            sel.getDagPath(0, dag)
+    def parent(self, newParent):
+        if newParent == None and self.dagPath.length() > 1:
 
-            self.dagPath = dag
-            self.shortName = dag.partialPathName()
-            self.name = dag.fullPathName()
+            # _currentParent = self.parent
+            # while _currentParent:
+            #     _currentParent.fnDagNode.addChild(self.mObject)
+            #     _currentParent = _currentParent.parent
+
+            return
+        elif not isinstance(newParent, DagNode):
+            newParent = DagNode(newParent)
+
+        if self.parent and self.parent.mObject != newParent.mObject:
+            newParent.fnDagNode.addChild(self.mObject)
+        else:
+            om.MGlobal.displayWarning('{0} is already the parent of {1}'.format(newParent.shortName, self.shortName))
+
+        # if not dagName:
+        #     cmds.parent(self.name, world=True, absolute=True)
+        # else:
+        #     _shortName = self.shortName
+        #     try:
+        #         cmds.parent(self.name, dagName, absolute=True)
+        #     except RuntimeError:
+        #         # already a child of that node
+        #         return
+        #         # update the dag path after changing parent
+        #     sel = om.MSelectionList()
+        #     sel.add(_shortName)
+        #     dag = om.MDagPath()
+        #     sel.getDagPath(0, dag)
+        #
+        #     self.dagPath = dag
+        #     self.shortName = dag.partialPathName()
+        #     self.name = dag.fullPathName()
 
     @property
     def children(self):
-        return cmds.listRelatives(self.name, children=True,
-                                  type='transform') or []
+        '''Return child transforms'''
+
+        # Filters don't seem to work here
+        _itDag = om.MItDag(om.MItDag.kDepthFirst)
+        _itDag.reset(self.dagPath)
+
+        if _itDag.isDone():
+            return []
+        else:
+            # don't give ourself as the first item
+            _itDag.next()
+
+        _mObjArray = om.MObjectArray()
+
+        while not _itDag.isDone():
+            if _itDag.depth() == 1:
+                _currentMObject = _itDag.currentItem()
+                if _currentMObject.hasFn(om.MFn.kTransform):
+                    _mObjArray.append(_currentMObject)
+            _itDag.next()
+
+        _result = []
+        for i in xrange(_mObjArray.length()):
+            _result.append(Transform(_mObjArray[i]))
+        return _result
+
+    @property
+    def allChildren(self):
+        '''Return all descendent children transforms'''
+        # Filters don't seem to work here
+        _itDag = om.MItDag(om.MItDag.kDepthFirst)
+        _itDag.reset(self.dagPath)
+
+        if _itDag.isDone():
+            return []
+        else:
+            # don't give ourself as the first item
+            _itDag.next()
+
+        _mObjArray = om.MObjectArray()
+
+        while not _itDag.isDone():
+            _currentMObject = _itDag.currentItem()
+            if _currentMObject.hasFn(om.MFn.kTransform):
+                _mObjArray.append(_currentMObject)
+            _itDag.next()
+
+        _result = []
+        for i in xrange(_mObjArray.length()):
+            _result.append(Transform(_mObjArray[i]))
+        return _result
 
     def hasParent(self, parent):
         if isinstance(parent, DependencyNode):
