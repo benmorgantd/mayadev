@@ -43,12 +43,12 @@ class IkChain(module.Module):
         # safer in child methods
         components = []
 
-        startCtrl = shapelib.Shape(
+        startCtrl = shapelib.ControlCurve(
             name=name.findControlName(driveJoints[0], identifier='Ik'),
             shapeType='cube', jnt=driveJoints[0])
 
         if worldAimTarget:
-            endCtrl = shapelib.Shape(
+            endCtrl = shapelib.ControlCurve(
                 name.findControlName(driveJoints[-1], identifier='Ik'),
                 shapeType='cube')
 
@@ -146,7 +146,7 @@ class IkChain(module.Module):
             cmds.xform(endCtrl.offsetGrp, matrix=pythonMatrixList)
 
         else:
-            endCtrl = shapelib.Shape(
+            endCtrl = shapelib.ControlCurve(
                 name.findControlName(driveJoints[-1], identifier='Ik'),
                 shapeType='cube',
                 jnt=driveJoints[-1])
@@ -160,11 +160,11 @@ class IkChain(module.Module):
                                       solverType='ikRPsolver',
                                       name=self.name + '_ikHandle')
 
-        poleVectorCtrl = shapelib.Shape(
+        poleVectorCtrl = shapelib.ControlCurve(
             name=name.findControlName(driveJoints[0], identifier='IkAim'),
             shapeType='sphere', jnt=driveJoints[-1])
-        shapelib.Shape.drawLine(driveJoints[1] + '_pvLine', driveJoints[1],
-                                poleVectorCtrl.ctrl, startCtrl.offsetGrp)
+        shapelib.ControlCurve.drawLine(driveJoints[1] + '_pvLine', driveJoints[1],
+                                       poleVectorCtrl.ctrl, startCtrl.offsetGrp)
 
         if len(driveJoints) < 3:
             cmds.xform(poleVectorCtrl.offsetGrp, translation=self.upVector,

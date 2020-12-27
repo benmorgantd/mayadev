@@ -35,14 +35,14 @@ class SingleJoint(module.Module):
 
         self.startJointDriver = self.getDriver(self.startJoint)
 
-        ctrl = shapelib.Shape(name=name.findControlName(self.startJointDriver),
-                              shapeType=self.shapeType,
-                              jnt=self.startJointDriver)
+        ctrl = shapelib.ControlCurve(name=name.findControlName(self.startJointDriver),
+                                     shapeType=self.shapeType,
+                                     jnt=self.startJointDriver)
 
         self.components.append(ctrl)
 
         if self.addOffsetControl:
-            offsetCtrl = shapelib.Shape(
+            offsetCtrl = shapelib.ControlCurve(
                 name=name.findControlName(self.startJointDriver,
                                           identifier='Offset'),
                 shapeType=self.offsetShapeType,

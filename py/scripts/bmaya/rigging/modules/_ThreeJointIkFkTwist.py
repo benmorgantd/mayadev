@@ -64,8 +64,8 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
             driveJnt = self.createDriveJoint(jnt, label='DRIVER',
                                              constrain=True)
             self.driveJoints.append(driveJnt)
-            ctrl = shapelib.Shape(name=name.findControlName(driveJnt),
-                                  shapeType='cube', jnt=driveJnt)
+            ctrl = shapelib.ControlCurve(name=name.findControlName(driveJnt),
+                                         shapeType='cube', jnt=driveJnt)
             cmds.parent(ctrl.offsetGrp, upperTwistGrp)
             self.parentConstrain(self.driveJoints[0], ctrl.offsetGrp,
                                  maintainOffset=True)
@@ -112,8 +112,8 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
             driveJnt = self.createDriveJoint(jnt, label='DRIVER',
                                              constrain=True)
             self.driveJoints.append(driveJnt)
-            ctrl = shapelib.Shape(name=name.findControlName(driveJnt),
-                                  shapeType='cube', jnt=driveJnt)
+            ctrl = shapelib.ControlCurve(name=name.findControlName(driveJnt),
+                                         shapeType='cube', jnt=driveJnt)
             cmds.parent(ctrl.offsetGrp, lowerTwistGrp)
             self.parentConstrain(self.driveJoints[1], ctrl.offsetGrp,
                                  maintainOffset=True)

@@ -39,7 +39,7 @@ class Rig(Asset):
         _setMeshes = cmds.sets(self.meshSet, query=True) or []
         _meshShapes = []
         for mesh in _setMeshes:
-            _meshShapes.append(mayanode.Transform(mesh).shape)
+            _meshShapes.append(mayanode.DagNode(mesh).shape)
 
         return _meshShapes
 
@@ -48,7 +48,7 @@ class Rig(Asset):
         _controls = []
         _setControls = cmds.sets(self.ctrlSet, query=True) or []
         for control in _setControls:
-            _controls.append(mayanode.Transform(control))
+            _controls.append(mayanode.DagNode(control))
 
         return _controls
 
@@ -278,10 +278,10 @@ class Rig(Asset):
                             if type(val[key]) in [unicode, str, int, float,
                                                   bool, None]:
                                 cleanDict[key] = val[key]
-                            elif isinstance(val[key], shapelib.Shape):
+                            elif isinstance(val[key], shapelib.ControlCurve):
                                 cleanDict[key] = val[key].ctrl
                         cleanList.append(cleanDict)
-                    elif isinstance(val, shapelib.Shape):
+                    elif isinstance(val, shapelib.ControlCurve):
                         cleanList.append(val.ctrl)
 
                 attrType = 'string'
@@ -293,7 +293,7 @@ class Rig(Asset):
                     if type(attrVal[key]) in [unicode, str, int, float, bool,
                                               None]:
                         cleanDict[key] = attrVal[key]
-                    elif isinstance(attrVal[key], shapelib.Shape):
+                    elif isinstance(attrVal[key], shapelib.ControlCurve):
                         cleanDict[key] = attrVal[key].ctrl
 
                 attrType = 'string'

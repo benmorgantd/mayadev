@@ -154,7 +154,7 @@ def quickSkin():
 
 def bakeDeltaMushToSkinCluster(meshTransform):
     om.MGlobal.clearSelectionList()
-    meshTransform = mayanode.Transform(meshTransform)
+    meshTransform = mayanode.DagNode(meshTransform)
     meshShape = meshTransform.shape
     skinCluster = meshShape.getSkinCluster
 

@@ -358,7 +358,7 @@ class AttributeLayoutValue(object):
 
                 widget = QtWidgets.QComboBox()
 
-                for shapeType in shapelib.Shape.types.keys():
+                for shapeType in shapelib.ControlCurve.types.keys():
                     widget.addItem(shapeType)
 
                 widget.setCurrentIndex(widget.findText(self.defaultValue))

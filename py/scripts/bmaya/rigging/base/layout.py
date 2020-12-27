@@ -63,11 +63,11 @@ class Layout(module.Module):
         # make a stack of offset controls
         for i in range(constants.COUNT_START, constants.COUNT_START + constants.LAYOUT_CONTROL_COUNT):
             if i > constants.COUNT_START:
-                shp = shapelib.Shape(name='layout_{0:02d}_{1}_{2}'.format(i, constants.SIDE_NAMES['middle'], constants.CTRL_SUFFIX),shapeType=self.shapeType, scale=(1 - ((i - 1) * 0.15)))
+                shp = shapelib.ControlCurve(name='layout_{0:02d}_{1}_{2}'.format(i, constants.SIDE_NAMES['middle'], constants.CTRL_SUFFIX), shapeType=self.shapeType, scale=(1 - ((i - 1) * 0.15)))
                 cmds.parent(shp.offsetGrp, previous_ctrl.ctrl)
                 previous_ctrl = shp
             else:
-                shp = shapelib.Shape(name='layout_{0:02d}_{1}_{2}'.format(i, constants.SIDE_NAMES['middle'], constants.CTRL_SUFFIX),shapeType=self.shapeType, scale=(1 - ((i - 1) * 0.15)))
+                shp = shapelib.ControlCurve(name='layout_{0:02d}_{1}_{2}'.format(i, constants.SIDE_NAMES['middle'], constants.CTRL_SUFFIX), shapeType=self.shapeType, scale=(1 - ((i - 1) * 0.15)))
                 cmds.parent(shp.offsetGrp, self.modGrp)
                 previous_ctrl = shp
            

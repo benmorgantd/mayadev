@@ -80,7 +80,7 @@ class Module(object):
             for val in attr:
                 if isinstance(val, (basestring, int, float, bool)):
                     cleanList.append(val)
-                elif isinstance(val, shapelib.Shape):
+                elif isinstance(val, shapelib.ControlCurve):
                     cleanList.append(val.ctrl)
 
             mayaAttrType = 'string'
@@ -92,7 +92,7 @@ class Module(object):
             for key, value in attr.items():
                 if isinstance(value, (basestring, int, float, bool)):
                     cleanDict[key] = value
-                elif isinstance(value, shapelib.Shape):
+                elif isinstance(value, shapelib.ControlCurve):
                     cleanDict[key] = value.ctrl
 
             mayaAttrType = 'string'
@@ -102,7 +102,7 @@ class Module(object):
             mayaAttrType = 'string'
             mayaAttrVal = 'None'
 
-        elif isinstance(attr, shapelib.Shape):
+        elif isinstance(attr, shapelib.ControlCurve):
             mayaAttrType = 'string'
             mayaAttrVal = attr.ctrl
 
@@ -267,9 +267,9 @@ class Module(object):
             raise RuntimeError('Module must have a start joint.')
 
     def parentConstrain(self, parent=None, child=None, maintainOffset=True):
-        if isinstance(parent, shapelib.Shape):
+        if isinstance(parent, shapelib.ControlCurve):
             parent = parent.ctrl
-        if isinstance(child, shapelib.Shape):
+        if isinstance(child, shapelib.ControlCurve):
             child = child.ctrl
 
         const = cmds.parentConstraint(parent, child, mo=maintainOffset)[0]
@@ -570,11 +570,11 @@ class Module(object):
 
     @classmethod
     def addMoveablePivot(cls, ctrl):
-        if isinstance(ctrl, shapelib.Shape):
+        if isinstance(ctrl, shapelib.ControlCurve):
             ctrl = ctrl.ctrl
 
         # add a new control that represents the pivot for this control
-        pivot = shapelib.Shape(
+        pivot = shapelib.ControlCurve(
             name=name.findControlName(ctrl, identifier='Pivot'),
             shapeType='pivot')
         cmds.parent(pivot.offsetGrp, ctrl)
@@ -634,7 +634,7 @@ class Module(object):
             else:
                 shapeTypeOverride = 'cube'
 
-            ctrl = shapelib.Shape(
+            ctrl = shapelib.ControlCurve(
                 name=name.findControlName(jnt, identifier='Fk'),
                 shapeType=shapeTypeOverride, jnt=jnt)
 

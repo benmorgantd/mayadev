@@ -90,8 +90,8 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
 
         ctrlName = name.findControlName(self.fkComponents[0].ctrl,
                                         identifier='Gimbal')
-        self.fkHipGimbal = shapelib.Shape(name=ctrlName, shapeType='sphere',
-                                          jnt=shoulderFkOffset)
+        self.fkHipGimbal = shapelib.ControlCurve(name=ctrlName, shapeType='sphere',
+                                                 jnt=shoulderFkOffset)
 
         # change its rotate order to zxy from that of the shoulder fk offset group
         cmds.setAttr(self.fkHipGimbal.ctrl + '.rotateOrder', 2)
@@ -120,8 +120,8 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
 
         cmds.parent(self.ballToToeIk, ballIkGrp)
 
-        self.toeBendCtrl = shapelib.Shape(name=name.findControlName(ballIkGrp),
-                                          jnt=ballIkGrp, shapeType='cube')
+        self.toeBendCtrl = shapelib.ControlCurve(name=name.findControlName(ballIkGrp),
+                                                 jnt=ballIkGrp, shapeType='cube')
         cmds.parent(self.toeBendCtrl.offsetGrp, self.toeTipCtrl.ctrl)
         self.parentConstrain(self.toeBendCtrl, ballIkGrp)
         self.components.append(self.toeBendCtrl)

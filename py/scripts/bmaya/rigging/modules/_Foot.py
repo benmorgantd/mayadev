@@ -142,25 +142,25 @@ class Foot(object):
         cmds.parent(self.ballToToeIk, self.reverseHierarchy[-3])
 
     def createIkControls(self):
-        self.ballSwivelCtrl = shapelib.Shape(
+        self.ballSwivelCtrl = shapelib.ControlCurve(
             name=name.findControlName(self.reverseHierarchy[0]),
             jnt=self.reverseHierarchy[0], shapeType='circleArrow')
         cmds.setAttr(self.heel + '.rotateOrder', 2)
-        self.heelCtrl = shapelib.Shape(name=name.findControlName(self.heel),
-                                       jnt=self.heel,
-                                       shapeType='archedDoubleArrow')
-        self.toeTipCtrl = shapelib.Shape(name=name.findControlName(self.toeTip),
-                                         jnt=self.toeTip,
-                                         shapeType='archedDoubleArrow')
-        self.ballRollCtrl = shapelib.Shape(
+        self.heelCtrl = shapelib.ControlCurve(name=name.findControlName(self.heel),
+                                              jnt=self.heel,
+                                              shapeType='archedDoubleArrow')
+        self.toeTipCtrl = shapelib.ControlCurve(name=name.findControlName(self.toeTip),
+                                                jnt=self.toeTip,
+                                                shapeType='archedDoubleArrow')
+        self.ballRollCtrl = shapelib.ControlCurve(
             name=name.findControlName(self.ball, identifier='IK'),
             jnt=self.ball, shapeType='circleStick')
-        self.bankOutCtrl = shapelib.Shape(
+        self.bankOutCtrl = shapelib.ControlCurve(
             name=name.findControlName(self.bankOut), jnt=self.bankOut,
             shapeType='archedDoubleArrow')
-        self.bankInCtrl = shapelib.Shape(name=name.findControlName(self.bankIn),
-                                         jnt=self.bankIn,
-                                         shapeType='archedDoubleArrow')
+        self.bankInCtrl = shapelib.ControlCurve(name=name.findControlName(self.bankIn),
+                                                jnt=self.bankIn,
+                                                shapeType='archedDoubleArrow')
 
         cmds.parent(self.ballRollCtrl.offsetGrp, self.toeTipCtrl.ctrl)
         cmds.parent(self.toeTipCtrl.offsetGrp, self.bankInCtrl.ctrl)
@@ -177,8 +177,8 @@ class Foot(object):
     def createFkControls(self):
         jnt = self.footFkDriveJoints[1]
 
-        ctrl = shapelib.Shape(name=name.findControlName(jnt, identifier='FK'),
-                              jnt=jnt, shapeType='cube')
+        ctrl = shapelib.ControlCurve(name=name.findControlName(jnt, identifier='FK'),
+                                     jnt=jnt, shapeType='cube')
         self.parentConstrain(ctrl.ctrl, jnt, maintainOffset=False)
 
         return [ctrl]

@@ -34,8 +34,8 @@ class NeckHead(FkTwist.FkTwist):
     def buildNeckHead(self):
         self.buildFkTwist()
 
-        startPoint = mayanode.Transform(self.components[0].ctrl).worldPosition
-        endPoint = mayanode.Transform(self.components[-1].ctrl).worldPosition
+        startPoint = mayanode.DagNode(self.components[0].ctrl).worldPosition
+        endPoint = mayanode.DagNode(self.components[-1].ctrl).worldPosition
         startEndDistance = (endPoint - startPoint).length()
 
         # add constraints for twist controls

@@ -4,23 +4,16 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as omAnim
 
-ROTATION_ORDERS = {'xyz': (0, om.MEulerRotation.kXYZ),
-                   'yzx': (1, om.MEulerRotation.kYZX),
-                   'zxy': (2, om.MEulerRotation.kZXY),
-                   'xzy': (3, om.MEulerRotation.kXZY),
-                   'yxz': (4, om.MEulerRotation.kYXZ),
-                   'zyx': (5, om.MEulerRotation.kZYX)}
+# CONSTANTS #
 
-DISPLAY_COLORS = {'black': 1,
-                  'grey': 3,
-                  'blue': 6,
-                  'pink': 9,
-                  'red': 13,
-                  'lime': 14,
-                  'darkblue': 15,
-                  'white': 16,
-                  'yellow': 17,
-                  'green': 23}
+ROTATION_ORDERS = {'xyz': (0, om.MEulerRotation.kXYZ), 'yzx': (1, om.MEulerRotation.kYZX),
+                   'zxy': (2, om.MEulerRotation.kZXY), 'xzy': (3, om.MEulerRotation.kXZY),
+                   'yxz': (4, om.MEulerRotation.kYXZ), 'zyx': (5, om.MEulerRotation.kZYX)}
+
+DISPLAY_COLORS = {'black': 1, 'grey': 3, 'blue': 6, 'pink': 9, 'red': 13, 'lime': 14, 'darkblue': 15, 'white': 16,
+                  'yellow': 17, 'green': 23}
+
+SPACES = {'world': om.MSpace.kWorld, 'object': om.MSpace.kObject, 'local': om.MSpace.kTransform}
 
 
 class Connections(object):
@@ -41,11 +34,6 @@ class DependencyNode(object):
             self.mObject = om.MObject(name)
         elif isinstance(name, basestring):
             self.mObject = self.stringToMObject(name)
-        # since an object's MObject is consistent, we can create its fn sets in the init
-        try:
-            self.fnDependencyNode = om.MFnDependencyNode(self.mObject)
-        except RuntimeError:
-            raise RuntimeError('Given object type is not compatible')
 
     def __repr__(self):
         # return '<{0} {1} object {2}>'.format(__name__, type(self).__name__, self.fnDependencyNode.name())
@@ -67,15 +55,11 @@ class DependencyNode(object):
             return False
 
     def __getattr__(self, attribute):
-        if not hasattr(self, 'fnDependencyNode'):
-            # We're calling __getattr__ before the class has been fully initialized
-            return super(DependencyNode, self).__getattribute__(attribute)
-
         if self.fnDependencyNode.hasAttribute(attribute):
             plug = self.fnDependencyNode.findPlug(attribute)
             plugMObj = plug.attribute()
             plugType = plugMObj.apiType()
-            print(plugMObj.apiTypeStr())
+            # print(plugMObj.apiTypeStr())
 
             if plugType == om.MFn.kDoubleLinearAttribute:
                 return plug.asDouble()
@@ -121,10 +105,7 @@ class DependencyNode(object):
                         # we'd need to do that in a node's compute method...
                         return None
 
-                        # dataHandle = plug.constructHandle(om.MDataBlock())
-                        # TODO bug here with class argument type.
-                        # fnMatrixData = om.MFnMatrixData(dataHandle.data())
-                        # return fnMatrixData.matrix()
+                        # dataHandle = plug.constructHandle(om.MDataBlock())  # TODO bug here with class argument type.  # fnMatrixData = om.MFnMatrixData(dataHandle.data())  # return fnMatrixData.matrix()
 
                 raise AttributeError('getattr is currently not supported for this attribute type.')
             elif plugType == om.MFn.kEnumAttribute:
@@ -136,7 +117,9 @@ class DependencyNode(object):
             else:
                 raise AttributeError('getattr is currently not supported for this attribute type.')
             return True
-        else:
+
+        if not hasattr(self, attribute):
+            # We're calling __getattr__ before the class has been fully initialized
             return super(DependencyNode, self).__getattribute__(attribute)
 
     # TODO: supporting setattr is a lot more complicated and introduces possible cycles
@@ -163,18 +146,23 @@ class DependencyNode(object):
     #     else:
     #         super(DependencyNode, self).__setattr__(attribute, value)
 
-    def inputConnections(self, attribute):
-        return []
-
-    def outputConnections(self, attribute):
-        return []
 
     @property
     def name(self):
         return self.fnDependencyNode.name()
+
     @name.setter
     def name(self, value):
-        self.fnDependencyNode.setName(value)
+        self.fnDependencyNode.setName(self.makeShortNameUnique(value))
+
+    @property
+    def fnDependencyNode(self):
+        try:
+            _fnDependencyNode = om.MFnDependencyNode(self.mObject)
+            return _fnDependencyNode
+        except RuntimeError:
+            raise RuntimeError('Given object type is not compatible')
+
     #
     # @property
     # def attributes(self):
@@ -210,8 +198,6 @@ class DagNode(DependencyNode):
     def __init__(self, name):
         super(DagNode, self).__init__(name)
 
-        self.fnDagNode = om.MFnDagNode(self.dagPath)
-
     def __repr__(self):
         return self.dagPath.fullPathName()
 
@@ -223,6 +209,18 @@ class DagNode(DependencyNode):
 
     def __radd__(self, other):
         return other + self.dagPath.fullPathName()
+
+    @property
+    def fnDependencyNode(self):
+        try:
+            _fnDependencyNode = om.MFnDependencyNode(self.mObject)
+            return _fnDependencyNode
+        except RuntimeError:
+            raise RuntimeError('Given object type is not compatible')
+
+    @property
+    def fnDagNode(self):
+        return om.MFnDagNode(self.dagPath)
 
     @property
     def name(self):
@@ -238,59 +236,43 @@ class DagNode(DependencyNode):
 
     @property
     def dagPath(self):
-        sel = om.MSelectionList()
-        # we create a cycle on Transforms if we reuse the object's dependency node fn set
-        fnDependencyNode = om.MFnDependencyNode(self.mObject)
-        sel.add(fnDependencyNode.name())
-        dag = om.MDagPath()
-        sel.getDagPath(0, dag)
+        _sel = om.MSelectionList()
+        _fnDependencyNode = om.MFnDependencyNode(self.mObject)
+        # TODO: this doesn't work with shortName duplicates in a scene
+        try:
+            _sel.add(_fnDependencyNode.name())
+            _dag = om.MDagPath()
+            _sel.getDagPath(0, _dag)
+            return _dag
+        except RuntimeError:
+            # object's short name is not unique. Iterate through the dag until we find this mObject
+            raise RuntimeError('Object short name is not unique')
 
-        return dag
 
     @property
     def parent(self):
         # return the Transform of the parent
         if self.dagPath.length() > 1:
-            return Transform(self.fnDagNode.parent(0))
+            return DagNode(self.fnDagNode.parent(0))
         else:
             return None
 
     @parent.setter
     def parent(self, newParent):
         if newParent == None and self.dagPath.length() > 1:
-
-            # _currentParent = self.parent
-            # while _currentParent:
-            #     _currentParent.fnDagNode.addChild(self.mObject)
-            #     _currentParent = _currentParent.parent
-
+            # TODO find out how to parent to world
             return
         elif not isinstance(newParent, DagNode):
             newParent = DagNode(newParent)
 
-        if self.parent and self.parent.mObject != newParent.mObject:
+        if not self.parent:
+            newParent.fnDagNode.addChild(self.mObject)
+        elif self.parent and self.parent.mObject != newParent.mObject:
             newParent.fnDagNode.addChild(self.mObject)
         else:
             om.MGlobal.displayWarning('{0} is already the parent of {1}'.format(newParent.shortName, self.shortName))
 
-        # if not dagName:
-        #     cmds.parent(self.name, world=True, absolute=True)
-        # else:
-        #     _shortName = self.shortName
-        #     try:
-        #         cmds.parent(self.name, dagName, absolute=True)
-        #     except RuntimeError:
-        #         # already a child of that node
-        #         return
-        #         # update the dag path after changing parent
-        #     sel = om.MSelectionList()
-        #     sel.add(_shortName)
-        #     dag = om.MDagPath()
-        #     sel.getDagPath(0, dag)
-        #
-        #     self.dagPath = dag
-        #     self.shortName = dag.partialPathName()
-        #     self.name = dag.fullPathName()
+        # if not dagName:  #     cmds.parent(self.name, world=True, absolute=True)  # else:  #     _shortName = self.shortName  #     try:  #         cmds.parent(self.name, dagName, absolute=True)  #     except RuntimeError:  #         # already a child of that node  #         return  #         # update the dag path after changing parent  #     sel = om.MSelectionList()  #     sel.add(_shortName)  #     dag = om.MDagPath()  #     sel.getDagPath(0, dag)  #  #     self.dagPath = dag  #     self.shortName = dag.partialPathName()  #     self.name = dag.fullPathName()
 
     @property
     def children(self):
@@ -311,13 +293,13 @@ class DagNode(DependencyNode):
         while not _itDag.isDone():
             if _itDag.depth() == 1:
                 _currentMObject = _itDag.currentItem()
-                if _currentMObject.hasFn(om.MFn.kTransform):
+                if _currentMObject.hasFn(om.MFns.kTransform):
                     _mObjArray.append(_currentMObject)
             _itDag.next()
 
         _result = []
         for i in xrange(_mObjArray.length()):
-            _result.append(Transform(_mObjArray[i]))
+            _result.append(DagNode(_mObjArray[i]))
         return _result
 
     @property
@@ -343,40 +325,8 @@ class DagNode(DependencyNode):
 
         _result = []
         for i in xrange(_mObjArray.length()):
-            _result.append(Transform(_mObjArray[i]))
+            _result.append(DagNode(_mObjArray[i]))
         return _result
-
-    def hasParent(self, parent):
-        if isinstance(parent, DependencyNode):
-            parent = parent.mObject
-        elif isinstance(parent, basestring):
-            parent = self.stringToMObject(parent)
-
-        if parent:
-            return self.fnDagNode.hasParent(parent)
-        else:
-            return False
-
-    def hasChild(self, child):
-        if isinstance(child, DependencyNode):
-            child = child.mObject
-        elif isinstance(child, basestring):
-            child = self.stringToMObject(child)
-
-        if child:
-            return self.fnDagNode.hasChild(child)
-        else:
-            return False
-
-
-class Transform(DagNode):
-    def __init__(self, name):
-        super(Transform, self).__init__(name)
-
-        # override the dependency node mobj
-        self.fnDependencyNode = om.MFnDependencyNode(self.mObject)
-
-    # MFnTransform properties
 
     @property
     def fnTransform(self):
@@ -409,16 +359,14 @@ class Transform(DagNode):
     def worldRotation(self):
         vector = self.quaternion.asEulerRotation().asVector()
         vector *= (180.0 / 57.2957795131)
-        return om.MEulerRotation(vector.x, vector.y, vector.z,
-                                 ROTATION_ORDERS[self.rotationOrder][1])
+        return om.MEulerRotation(vector.x, vector.y, vector.z, ROTATION_ORDERS[self.rotationOrder][1])
 
     @worldRotation.setter
     def worldRotation(self, degreeRotation):
         rotX = om.MAngle(degreeRotation[0], om.MAngle.kDegrees).asRadians()
         rotY = om.MAngle(degreeRotation[1], om.MAngle.kDegrees).asRadians()
         rotZ = om.MAngle(degreeRotation[2], om.MAngle.kDegrees).asRadians()
-        rot = om.MEulerRotation(rotX, rotY, rotZ,
-                                ROTATION_ORDERS[self.rotationOrder][1])
+        rot = om.MEulerRotation(rotX, rotY, rotZ, ROTATION_ORDERS[self.rotationOrder][1])
         self.fnTransform.setRotation(rot)
 
     @property
@@ -454,21 +402,9 @@ class Transform(DagNode):
         return self.matrixToList(self.worldMatrix)
 
     @property
-    def displayColor(self):
-        return cmds.getAttr(self.name + '.overrideColor')
-
-    @displayColor.setter
-    def displayColor(self, value):
-        cmds.setAttr(self.name + '.overrideEnabled', True)
-        if value in DISPLAY_COLORS.keys():
-            cmds.setAttr(self.name + '.overrideColor', DISPLAY_COLORS[value])
-        else:
-            cmds.setAttr(self.name + '.overrideColor', value)
-
-    @property
     def metadata(self):
-        if 'metadata' in cmds.listAttr(self.name):
-            return json.loads(cmds.getAttr(self.name + '.metadata'))
+        if self.fnDependencyNode.hasAttribute('metadata'):
+            return json.loads(self.metadata)
         else:
             return {}
 
@@ -482,9 +418,9 @@ class Transform(DagNode):
 
     @property
     def longAxis(self):
+        _translate = self.translate
         axis = ['X', 'Y', 'Z']
-        translate = cmds.getAttr(self.name + '.translate')[0]
-        return axis[translate.index(max(translate))]
+        return axis[_translate.index(max(_translate))]
 
     @property
     def vectorFromParent(self):
@@ -502,13 +438,69 @@ class Transform(DagNode):
         # get the transform's shape if it has one
         try:
             # Don't modify the node's existing dag path object
-            tempDag = om.MDagPath(self.dagPath)
+            _dag = om.MDagPath(self.dagPath)
             # Only supports 1 shape
-            tempDag.extendToShapeDirectlyBelow(0)
-            return Mesh(tempDag.node())
+            _dag.extendToShapeDirectlyBelow(0)
+            # check what the shape's type is
+            _shapeMObj = _dag.node()
+            if _shapeMObj.hasFn(om.MFn.kMesh):
+                return Mesh(_shapeMObj)
+            elif _shapeMObj.hasFn(om.MFn.kNurbsCurve):
+                return Curve(_shapeMObj)
+            # TODO support more shape types
+            else:
+                return Shape(_shapeMObj)
+
         except RuntimeError:
             # no shape
             return None
+
+    @property
+    def worldTransforms(self):
+        return self.worldMatrix
+
+    @worldTransforms.setter
+    def worldTransforms(self, value):
+        # set translation
+        _xformMatrix = om.MTransformationMatrix(value)
+        self.fnTransform.setTranslation(_xformMatrix.getTranslation(om.MSpace.kWorld), om.MSpace.kWorld)
+        # Set rotation
+        _quat = _xformMatrix.rotation()
+        self.fnTransform.setRotationQuaternion(_quat.x,
+                                               _quat.y,
+                                               _quat.z,
+                                               _quat.w,
+                                               om.MSpace.kTransform)
+
+    @property
+    def scale(self):
+        plug = self.fnDependencyNode.findPlug('scale')
+        # type is om.MFn.kAttribute3Double
+        _result = []
+        for i in range(3):
+            _childPlug = plug.child(i)
+            _result.append(_childPlug.asDouble())
+        return _result
+
+    @scale.setter
+    def scale(self, value):
+        plug = self.fnDependencyNode.findPlug('scale')
+        # type is om.MFn.kAttribute3Double
+        for i in range(3):
+            _childPlug = plug.child(i)
+            _childPlug.setDouble(value[i])
+
+    @property
+    def rotateOrder(self):
+        plug = self.fnDependencyNode.findPlug('rotateOrder')
+        return plug.asInt()
+
+    @rotateOrder.setter
+    def rotateOrder(self, value):
+        plug = self.fnDependencyNode.findPlug('rotateOrder')
+        # type is om.MFn.kEnumAttribute
+        plug.setInt(value)
+
 
     @classmethod
     def matrixToList(cls, matrix):
@@ -524,6 +516,47 @@ class Transform(DagNode):
             matrixList.append(rowList)
 
         return matrixList
+
+    @classmethod
+    def makeShortNameUnique(cls, name):
+        _itDag = om.MItDag(om.MItDag.kDepthFirst, om.MFn.kTransform)
+        _dag = om.MDagPath()
+        _numDuplicates = 0
+        _possibleName = name
+
+        while not _itDag.isDone():
+            if _numDuplicates:
+                _possibleName = '{0}{1}'.format(name, _numDuplicates)
+            if _itDag.partialPathName() == _possibleName:
+                _numDuplicates += 1
+            _itDag.next()
+
+        if _numDuplicates:
+            return '{0}{1}'.format(name, _numDuplicates)
+        else:
+            return name
+
+    def hasParent(self, parent):
+        if isinstance(parent, DependencyNode):
+            parent = parent.mObject
+        elif isinstance(parent, basestring):
+            parent = self.stringToMObject(parent)
+
+        if parent:
+            return self.fnDagNode.hasParent(parent)
+        else:
+            return False
+
+    def hasChild(self, child):
+        if isinstance(child, DependencyNode):
+            child = child.mObject
+        elif isinstance(child, basestring):
+            child = self.stringToMObject(child)
+
+        if child:
+            return self.fnDagNode.hasChild(child)
+        else:
+            return False
 
     def lockAttr(self, attrs):
         if self.fnDependencyNode.hasAttribute(attr):
@@ -547,33 +580,36 @@ class Transform(DagNode):
             for axis in ['X', 'Y', 'Z']:
                 self.unlockAttr(attr + axis)
 
-    def constrain(self, parents, constraintType='point', weights=None,
-                  maintainOffset=False):
+    def constrain(self, parents, constraintType='point', weights=None, maintainOffset=False):
         if not weights:
             weights = [1.0] * len(parents)
 
         for i in range((len(parents))):
             parent = parents[i]
             if constraintType == 'point':
-                const = cmds.pointConstraint(parent, self.name,
-                                             maintainOffset=maintainOffset,
-                                             weight=weights[i])
+                const = cmds.pointConstraint(parent, self.name, maintainOffset=maintainOffset, weight=weights[i])
             elif constraintType == 'orient':
-                const = cmds.orientConstraint(parent, self.name,
-                                              maintainOffset=maintainOffset,
-                                              weight=weights[i])
+                const = cmds.orientConstraint(parent, self.name, maintainOffset=maintainOffset, weight=weights[i])
             elif constraintType == 'parent':
-                const = cmds.parentConstraint(parent, self.name,
-                                              maintainOffset=maintainOffset,
-                                              weight=weights[i])
+                const = cmds.parentConstraint(parent, self.name, maintainOffset=maintainOffset, weight=weights[i])
             else:
-                raise ValueError(
-                    constraintType + ' is not an accepted constraint type.')
+                raise ValueError(constraintType + ' is not an accepted constraint type.')
 
         return const
 
 
-class Mesh(DagNode):
+class Shape(DagNode):
+    def __init__(self, name):
+        super(Shape, self).__init__(name)
+
+    @property
+    def transform(self):
+        # return this shape's transform
+        _dag = om.MDagPath(self.dagPath)
+        return DagNode(_dag.transform())
+
+
+class Mesh(Shape):
     def __init__(self, name):
         super(Mesh, self).__init__(name)
 
@@ -583,19 +619,10 @@ class Mesh(DagNode):
             raise RuntimeError('Given object type is not compatible. Did you pass a kTransform type?')
 
     @property
-    def transform(self):
-        # return this mesh's transform
-        _dag = om.MDagPath(self.dagPath)
-        return Transform(_dag.transform())
-
-    @property
     def getSkinCluster(self):
 
-        itDG = om.MItDependencyGraph(self.mObject,
-                                     om.MFn.kSkinClusterFilter,
-                                     om.MItDependencyGraph.kUpstream,
-                                     om.MItDependencyGraph.kDepthFirst,
-                                     om.MItDependencyGraph.kNodeLevel)
+        itDG = om.MItDependencyGraph(self.mObject, om.MFn.kSkinClusterFilter, om.MItDependencyGraph.kUpstream,
+                                     om.MItDependencyGraph.kDepthFirst, om.MItDependencyGraph.kNodeLevel)
 
         if itDG.isDone():
             # No skin cluster. Are you sure you passed a mesh?
@@ -613,88 +640,69 @@ class Mesh(DagNode):
         return SkinCluster(skinClusterMObjArray[0])
 
 
-class Locator(Transform):
+class Curve(Shape):
     def __init__(self, name):
-        if not cmds.objExists(name):
-            cmds.spaceLocator(name=name)
-
-        super(Locator, self).__init__(name)
-
-        self.localScale = .35
+        super(Curve, self).__init__(name)
 
     @property
-    def localScaleX(self):
-        return cmds.getAttr(self.shape + '.localScaleX')
+    def fnNurbsCurve(self):
+        return om.MFnNurbsCurve(self.dagPath)
 
-    @localScaleX.setter
-    def localScaleX(self, value):
-        cmds.setAttr(self.shape + '.localScaleX', value)
+    def getPoints(self, space='world'):
+        space = SPACES.get(space)
+        if not space:
+            raise ValueError('Unsupported space type \'{0}\' given.'.format(space))
 
-    @property
-    def localScaleY(self):
-        return cmds.getAttr(self.shape + '.localScaleY')
+        _cvs = om.MPointArray()
+        self.fnNurbsCurve.getCVs(_cvs, space)
 
-    @localScaleY.setter
-    def localScaleY(self, value):
-        cmds.setAttr(self.shape + '.localScaleY', value)
+        return _cvs
 
-    @property
-    def localScaleZ(self):
-        return cmds.getAttr(self.shape + '.localScaleZ')
+    def setPoints(self, points, space='world'):
+        space = SPACES.get(space)
+        if not space:
+            raise ValueError('Unsupported space type \'{0}\' given.'.format(space))
 
-    @localScaleZ.setter
-    def localScaleZ(self, value):
-        cmds.setAttr(self.shape + '.localScaleZ', value)
+        _points = om.MPointArray()
+        _numCVs = self.fnNurbsCurve.numCVs()
 
-    @property
-    def localScale(self):
-        return list(cmds.getAttr(self.shape + '.localScale')[0])
+        if isinstance(points, list):
+            if len(points) != _numCVs:
+                raise ValueError('The number of points given does not match the number of CV points.')
+            for i in xrange(len(points)):
+                _points.append(om.MPoint(*points[i]))
+        elif isinstance(points, om.MPointArray):
+            if points.length() != _numCVs:
+                raise ValueError('The number of points given does not match the number of CV points.')
+            _points = points
 
-    @localScale.setter
-    def localScale(self, value):
-        for axis in ['X', 'Y', 'Z']:
-            cmds.setAttr(self.shape + '.localScale' + axis, value)
+        self.fnNurbsCurve.setCVs(_points, space)
+        self.fnNurbsCurve.updateCurve()
 
-    def localScale(self, value):
-        for axis in ['X', 'Y', 'Z']:
-            cmds.setAttr(self.shape + '.localScale' + axis, value)
+    @classmethod
+    def createLinearCurve(cls, points):
+        om.MGlobal.clearSelectionList()
+        _points = om.MPointArray()
+        _knots = om.MDoubleArray()
+        if not isinstance(points, om.MPointArray):
+            for i in xrange(len(points)):
+                _points.append(om.MPoint(*points[i]))
+                _knots.append(i)
+        else:
+            _points = points
 
+        _newCurveMObj = om.MFnNurbsCurve().create(_points, _knots, 1, om.MFnNurbsCurve.kOpen, False, False)
 
-class Joint(Transform):
-    def __init__(self, name):
-        if not cmds.objExists(name):
-            previousSelection = cmds.ls(sl=1)
-            cmds.select(clear=True)
-
-            cmds.joint(name=name)
-
-            if previousSelection:
-                cmds.select(previousSelection)
-
-        super(Joint, self).__init__(name)
-
-    @property
-    def radius(self):
-        return cmds.getAttr(self.name + '.radius')
-
-    @radius.setter
-    def radius(self, value):
-        cmds.setAttr(self.name + '.radius', value)
-
-    @property
-    def orient(self):
-        return cmds.getAttr(self.name + '.jointOrient')[0]
-
-    @orient.setter
-    def orient(self, value):
-        cmds.setAttr(self.name + '.jointOrient', *value)
+        return _newCurveMObj
 
 
 class SkinCluster(DependencyNode):
     def __init__(self, name):
         super(SkinCluster, self).__init__(name)
 
-        self.fnSkinCluster = omAnim.MFnSkinCluster(self.mObject)
+    @property
+    def fnSkinCluster(self):
+        return omAnim.MFnSkinCluster(self.mObject)
 
     @property
     def outputGeometry(self):
@@ -755,7 +763,7 @@ class SkinCluster(DependencyNode):
         mFnSkinCluster.setWeights(self.outputGeometry.dagPath, components, self.influenceIndices, weights)
 
     def pruneWeights(self, maxInfluence=4):
-        return True
+        raise RuntimeError('pruneWeights is not yet implemented')
 
     def getWeightDictionary(self):
-        return {}
+        raise RuntimeError('getWeightDictionary is not yet implemented')

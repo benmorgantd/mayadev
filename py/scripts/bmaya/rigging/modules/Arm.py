@@ -46,9 +46,9 @@ class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
 
         ctrlName = name.findControlName(self.fkComponents[0].ctrl,
                                         identifier='Gimbal')
-        self.fkShoulderGimbal = shapelib.Shape(name=ctrlName,
-                                               shapeType='sphere',
-                                               jnt=shoulderFkOffset)
+        self.fkShoulderGimbal = shapelib.ControlCurve(name=ctrlName,
+                                                      shapeType='sphere',
+                                                      jnt=shoulderFkOffset)
 
         # change its rotate order to zxy from that of the shoulder fk offset group
         # cmds.setAttr(self.fkShoulderGimbal.ctrl + '.rotateOrder', 0)

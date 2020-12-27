@@ -80,7 +80,7 @@ class Spline(module.Module):
         for i in range(len(self.fkDriveJoints)):
             jnt = self.fkDriveJoints[i]
 
-            ctrl = shapelib.Shape(
+            ctrl = shapelib.ControlCurve(
                 name=name.findControlName(jnt, identifier='Fk'),
                 shapeType=self.shapeType, jnt=jnt)
 
@@ -125,7 +125,7 @@ class Spline(module.Module):
         for i in range(len(self.splineDriverJoints)):
             jnt = self.splineDriverJoints[i]
 
-            ctrl = shapelib.Shape(
+            ctrl = shapelib.ControlCurve(
                 name=name.findControlName(jnt, identifier='Ik'),
                 shapeType=self.shapeType, jnt=jnt)
 
