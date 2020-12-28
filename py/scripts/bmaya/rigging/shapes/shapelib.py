@@ -32,7 +32,7 @@ class ControlCurve(mayanode.DagNode):
                 grp.rotateOrder = _jnt.rotateOrder
             self.rotateOrder = _jnt.rotateOrder
 
-            self.offsetGrp.worldTransforms = _jnt.worldTransforms
+            self.offsetGrp.matrix = _jnt.worldMatrix
 
         if shapeType == 'boundingBox':
             self.setupBoundingBox()

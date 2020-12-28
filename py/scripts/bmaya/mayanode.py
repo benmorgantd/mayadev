@@ -167,6 +167,11 @@ class DependencyNode(object):
                     # They cannot be directly connected, which means their values cannot be set
                     # outside of a node's compute function.
                     # Instead, read the data from the matrix and set attributes instead...
+                    # NOTE: you cannot set this attribute on anything but self.matrix
+
+                    if fnTypedAttr.isArray():
+                        self.matrix = value
+
                     _xformMatrix = om.MTransformationMatrix(value)
                     _translateVector = _xformMatrix.getTranslation(om.MSpace.kWorld)
                     _rotateQuaternion = _xformMatrix.rotation()
@@ -174,6 +179,9 @@ class DependencyNode(object):
                     _util.createFromDouble(1.0, 1.0, 1.0)
                     _scalePtr = _util.asDoublePtr()
                     _xformMatrix.getScale(_scalePtr, om.MSpace.kWorld)
+                    _shearPtr = _util.asDoublePtr()
+                    _xformMatrix.getShear(_shearPtr, om.MSpace.kWorld)
+
 
                     # call setattr from within setattr.. maybe a bad idea?
                     self.translate = _translateVector
@@ -181,17 +189,10 @@ class DependencyNode(object):
                     self.scale = [_util.getDoubleArrayItem(_scalePtr, 0),
                                   _util.getDoubleArrayItem(_scalePtr, 1),
                                   _util.getDoubleArrayItem(_scalePtr, 2)]
-                    # else:
-                    #     return
-                        # TODO this doesn't work
-                        # matrix, inverseMatrix, xformMatrix
+                    self.shear = [_util.getDoubleArrayItem(_shearPtr, 0),
+                                  _util.getDoubleArrayItem(_shearPtr, 1),
+                                  _util.getDoubleArrayItem(_shearPtr, 2)]
 
-                        # _fnMatrixData = om.MFnMatrixData()
-                        # _matrixMObj = _fnMatrixData.create(om.MTransformationMatrix(value))
-                        # _fnAttribute = om.MFnAttribute(attributeMObj)
-                        # _fnAttribute.setWritable(True)
-                        # plug.setMObject(_matrixMObj)
-                        # _fnAttribute.setWritable(False)
 
             elif plugType == om.MFn.kEnumAttribute:
                 plug.setInt(value)
@@ -500,30 +501,6 @@ class DagNode(DependencyNode):
         except RuntimeError:
             # no shape
             return None
-
-    @property
-    def worldTransforms(self):
-        return self.worldMatrix
-
-    @worldTransforms.setter
-    def worldTransforms(self, value):
-        # set translation
-        _xformMatrix = om.MTransformationMatrix(value)
-        self.fnTransform.setTranslation(_xformMatrix.getTranslation(om.MSpace.kWorld), om.MSpace.kWorld)
-        # set rotation
-        _quat = _xformMatrix.rotation()
-        self.fnTransform.setRotationQuaternion(_quat.x,
-                                               _quat.y,
-                                               _quat.z,
-                                               _quat.w,
-                                               om.MSpace.kWorld)
-        # set scale
-        _util = om.MScriptUtil()
-        _util.createFromDouble(1.0 ,1.0, 1.0)
-        _doublePtr = _util.asDoublePtr()
-        _xformMatrix.getScale(_doublePtr, om.MSpace.kWorld)
-        self.fnTransform.setScale(_doublePtr)
-
 
     @classmethod
     def matrixToList(cls, matrix):
