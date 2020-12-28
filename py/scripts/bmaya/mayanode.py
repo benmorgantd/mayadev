@@ -6,9 +6,8 @@ import maya.OpenMayaAnim as omAnim
 
 # CONSTANTS #
 
-ROTATION_ORDERS = {'xyz': (0, om.MEulerRotation.kXYZ), 'yzx': (1, om.MEulerRotation.kYZX),
-                   'zxy': (2, om.MEulerRotation.kZXY), 'xzy': (3, om.MEulerRotation.kXZY),
-                   'yxz': (4, om.MEulerRotation.kYXZ), 'zyx': (5, om.MEulerRotation.kZYX)}
+ROTATE_ORDERS = [om.MEulerRotation.kXYZ, om.MEulerRotation.kYZX, om.MEulerRotation.kZXY,
+                 om.MEulerRotation.kXZY, om.MEulerRotation.kYXZ, om.MEulerRotation.kZYX]
 
 DISPLAY_COLORS = {'black': 1, 'grey': 3, 'blue': 6, 'pink': 9, 'red': 13, 'lime': 14, 'darkblue': 15, 'white': 16,
                   'yellow': 17, 'green': 23}
@@ -57,8 +56,8 @@ class DependencyNode(object):
     def __getattr__(self, attribute):
         if self.fnDependencyNode.hasAttribute(attribute):
             plug = self.fnDependencyNode.findPlug(attribute)
-            plugMObj = plug.attribute()
-            plugType = plugMObj.apiType()
+            attributeMObj = plug.attribute()
+            plugType = attributeMObj.apiType()
             # print(plugMObj.apiTypeStr())
 
             if plugType == om.MFn.kDoubleLinearAttribute:
@@ -67,7 +66,7 @@ class DependencyNode(object):
                 return plug.asMAngle()
             elif plugType == om.MFn.kNumericAttribute:
                 # get data type
-                fnNumericAttr = om.MFnNumericAttribute(plugMObj)
+                fnNumericAttr = om.MFnNumericAttribute(attributeMObj)
                 unitType = fnNumericAttr.unitType()
                 if unitType == 1:
                     return plug.asBool()
@@ -90,22 +89,22 @@ class DependencyNode(object):
                     _result.append(_childPlug.asDouble())
                 return _result
             elif plugType == om.MFn.kTypedAttribute:
-                fnTypedAttr = om.MFnTypedAttribute(plugMObj)
+                fnTypedAttr = om.MFnTypedAttribute(attributeMObj)
                 typedAttrType = fnTypedAttr.attrType()
                 if typedAttrType == 5:
                     # kMatrix type. Get matrix data without the MFnTransform
                     if plug.isArray():
                         # worldMatrix, worldInverseMatrix, parentMatrix, parentInverseMatrix
-                        plug = plug.elementByLogicalIndex(0)
-                        fnMatrixData = om.MFnMatrixData(plug.asMObject())
-                        return fnMatrixData.matrix()
+                        _childPlug = plug.elementByLogicalIndex(0)
+                        fnMatrixData = om.MFnMatrixData(_childPlug.asMObject())
+                        fnAttribute = om.MFnAttribute(_childPlug.attribute())
+                        return fnMatrixData.transformation()
                     else:
+                        fnAttribute = om.MFnAttribute(plug.attribute())
                         # matrix, inverseMatrix, xformMatrix
-                        # Can't use MDataHandle and MDataBlock to get the matrix attribute since
-                        # we'd need to do that in a node's compute method...
-                        return None
-
-                        # dataHandle = plug.constructHandle(om.MDataBlock())  # TODO bug here with class argument type.  # fnMatrixData = om.MFnMatrixData(dataHandle.data())  # return fnMatrixData.matrix()
+                        _util = om.MScriptUtil()
+                        _fnMatrixData = om.MFnMatrixData(plug.asMObject())
+                        return _fnMatrixData.transformation()
 
                 raise AttributeError('getattr is currently not supported for this attribute type.')
             elif plugType == om.MFn.kEnumAttribute:
@@ -122,30 +121,105 @@ class DependencyNode(object):
             # We're calling __getattr__ before the class has been fully initialized
             return super(DependencyNode, self).__getattribute__(attribute)
 
-    # TODO: supporting setattr is a lot more complicated and introduces possible cycles
-    # def __setattr__(self, attribute, value):
-    #     if hasattr(self, 'fnDependencyNode'):
-    #         if self.fnDependencyNode.hasAttribute(attribute):
-    #             plug = self.fnDependencyNode.findPlug(attribute)
-    #             plugMObj = plug.attribute()
-    #             plugType = plugMObj.apiType()
-    #
-    #             if plugType in [om.MFn.kDoubleLinearAttribute, om.MFn.kNumericAttribute]:
-    #                 plug.setDouble(value)
-    #             elif plugType == om.MFn.kAttribute3Double:
-    #                 for i in range(plug.numChildren()):
-    #                     _childPlug = plug.child(i)
-    #                     _childPlug.setDouble(value[i])
-    #             elif plugType == om.MFn.kTypedAttribute:
-    #                 # TODO
-    #                 raise AttributeError('setattr is currently not supported for this attribute type.')
-    #             elif plugType == om.MFn.kEnumAttribute:
-    #                 plug.setInt(value)
-    #         else:
-    #             raise AttributeError('{0} has no attribute {1}'.format(self, attribute))
-    #     else:
-    #         super(DependencyNode, self).__setattr__(attribute, value)
+    def __setattr__(self, attribute, value):
 
+        if hasattr(self, 'fnDependencyNode') and self.fnDependencyNode.hasAttribute(attribute):
+            plug = self.fnDependencyNode.findPlug(attribute)
+            attributeMObj = plug.attribute()
+            plugType = attributeMObj.apiType()
+
+            if plugType == om.MFn.kDoubleLinearAttribute:
+                plug.setDouble(value)
+            elif plugType == om.MFn.kDoubleAngleAttribute:
+                plug.setMAngle(value)
+            elif plugType == om.MFn.kNumericAttribute:
+                # get data type
+                fnNumericAttr = om.MFnNumericAttribute(attributeMObj)
+                unitType = fnNumericAttr.unitType()
+                if unitType == 1:
+                    plug.setBool(value)
+                elif unitType == 3:
+                    plug.setChar(value)
+                elif unitType == 4:
+                    plug.setShort(value)
+                elif unitType == 7:
+                    plug.setLong(value)
+                elif unitType == 8:
+                    plug.setInt(value)
+                elif unitType in [13, 14]:
+                    plug.setFloat(value)
+                else:
+                    raise AttributeError('The given MFnNumericData type {0} is not supported.'.format(unitType))
+            elif plugType == om.MFn.kAttribute3Double:
+                if isinstance(value, om.MQuaternion):
+                    _eulerRot = value.asEulerRotation()
+                    _eulerRot = _eulerRot.reorder(ROTATE_ORDERS[self.rotateOrder])
+                    value = _eulerRot
+                for i in range(plug.numChildren()):
+                    _childPlug = plug.child(i)
+                    _childPlug.setDouble(value[i])
+
+            elif plugType == om.MFn.kTypedAttribute:
+                fnTypedAttr = om.MFnTypedAttribute(attributeMObj)
+                typedAttrType = fnTypedAttr.attrType()
+                if typedAttrType == 5:
+                    # Matrix attributes are not writable! You cannot write to them, only read from them.
+                    # They cannot be directly connected, which means their values cannot be set
+                    # outside of a node's compute function.
+                    # Instead, read the data from the matrix and set attributes instead...
+                    _xformMatrix = om.MTransformationMatrix(value)
+                    _translateVector = _xformMatrix.getTranslation(om.MSpace.kWorld)
+                    _rotateQuaternion = _xformMatrix.rotation()
+                    _util = om.MScriptUtil()
+                    _util.createFromDouble(1.0, 1.0, 1.0)
+                    _scalePtr = _util.asDoublePtr()
+                    _xformMatrix.getScale(_scalePtr, om.MSpace.kWorld)
+
+                    # call setattr from within setattr.. maybe a bad idea?
+                    self.translate = _translateVector
+                    self.rotate = _rotateQuaternion
+                    self.scale = [_util.getDoubleArrayItem(_scalePtr, 0),
+                                  _util.getDoubleArrayItem(_scalePtr, 1),
+                                  _util.getDoubleArrayItem(_scalePtr, 2)]
+                    # else:
+                    #     return
+                        # TODO this doesn't work
+                        # matrix, inverseMatrix, xformMatrix
+
+                        # _fnMatrixData = om.MFnMatrixData()
+                        # _matrixMObj = _fnMatrixData.create(om.MTransformationMatrix(value))
+                        # _fnAttribute = om.MFnAttribute(attributeMObj)
+                        # _fnAttribute.setWritable(True)
+                        # plug.setMObject(_matrixMObj)
+                        # _fnAttribute.setWritable(False)
+
+            elif plugType == om.MFn.kEnumAttribute:
+                plug.setInt(value)
+            elif plugType == om.MFn.kStringData:
+                plug.setString(value)
+            elif plugType == om.MFn.kMessageAttribute:
+                raise AttributeError('setattr is currently not supported for this attribute type.')
+            else:
+                raise AttributeError('setattr is currently not supported for this attribute type.')
+            return True
+
+        if not hasattr(self, attribute):
+            # We're calling __getattr__ before the class has been fully initialized
+            return super(DependencyNode, self).__setattr__(attribute, value)
+
+    def connectPlugs(self, sourcePlug, destPlug):
+        _sourceFnAttr = om.MFnAttribute(sourcePlug.attribute())
+        _destFnAttr = om.MFnAttribute(destPlug.attribute())
+
+        if not _sourceFnAttr.isConnectable() or not _destFnAttr.isConnectable():
+            raise ValueError('A given plug is not connectable.')
+
+        _sourceFnAttr.setWritable(True)
+        _destFnAttr.setWritable(True)
+
+        _dgMod = om.MDGModifier()
+        _dgMod.connect(sourcePlug, destPlug)
+        _dgMod.doIt()
 
     @property
     def name(self):
@@ -163,18 +237,19 @@ class DependencyNode(object):
         except RuntimeError:
             raise RuntimeError('Given object type is not compatible')
 
-    #
-    # @property
-    # def attributes(self):
-    #
-    #     _attributes = []
-    #     for i in xrange(self.fnDependencyNode.attributeCount()):
-    #         attributeMObject = self.fnDependencyNode.attribute(i)
-    #         plug = self.fnDependencyNode.findPlug(attributeMObject)
-    #         # These args return us the long name of the attribute without the node
-    #         _attributes.append(plug.partialName(False, False, False, False, False, True))
-    #
-    #     return _attributes
+    '''
+    @property
+    def attributes(self):
+
+        _attributes = []
+        for i in xrange(self.fnDependencyNode.attributeCount()):
+            attributeMObject = self.fnDependencyNode.attribute(i)
+            plug = self.fnDependencyNode.findPlug(attributeMObject)
+            # These args return us the long name of the attribute without the node
+            _attributes.append(plug.partialName(False, False, False, False, False, True))
+
+        return _attributes
+    '''
 
     @classmethod
     def stringToMObject(cls, str):
@@ -186,8 +261,8 @@ class DependencyNode(object):
                 _sel.add(str)
                 _mObject = om.MObject()
                 _sel.getDependNode(0, _mObject)
-            except RuntimeError:
-                return None
+            except:
+                raise
         else:
             return None
 
@@ -343,45 +418,16 @@ class DagNode(DependencyNode):
         self.fnTransform.setTranslation(_vector, om.MSpace.kWorld)
 
     @property
-    def quaternion(self):
+    def worldRotation(self):
+        print('getting')
         quat = om.MQuaternion()
-        # gets in transform space
         self.fnTransform.getRotation(quat, om.MSpace.kWorld)
         return quat
 
-    @quaternion.setter
-    def quaternion(self, quat):
-        # sets in transform space
-        quat = om.MQuaternion(quat[0], quat[1], quat[2], quat[3])
-        self.fnTransform.setRotation(quat, om.MSpace.kWorld)
-
-    @property
-    def worldRotation(self):
-        vector = self.quaternion.asEulerRotation().asVector()
-        vector *= (180.0 / 57.2957795131)
-        return om.MEulerRotation(vector.x, vector.y, vector.z, ROTATION_ORDERS[self.rotationOrder][1])
-
     @worldRotation.setter
-    def worldRotation(self, degreeRotation):
-        rotX = om.MAngle(degreeRotation[0], om.MAngle.kDegrees).asRadians()
-        rotY = om.MAngle(degreeRotation[1], om.MAngle.kDegrees).asRadians()
-        rotZ = om.MAngle(degreeRotation[2], om.MAngle.kDegrees).asRadians()
-        rot = om.MEulerRotation(rotX, rotY, rotZ, ROTATION_ORDERS[self.rotationOrder][1])
-        self.fnTransform.setRotation(rot)
-
-    @property
-    def localPosition(self):
-        return self.fnTransform.getTranslation(om.MSpace.kObject)
-
-    @localPosition.setter
-    def localPosition(self, vector):
-        # make a new vector here so we can pass in either an MVector or a list/tuple
-        _vector = om.MVector(vector[0], vector[1], vector[2])
-        self.fnTransform.setTranslation(_vector, om.MSpace.kObject)
-
-    @property
-    def transformationMatrix(self):
-        return self.fnTransform.transformation()
+    def worldRotation(self, rotation):
+        print('setting')
+        self.fnTransform.setRotation(rotation, om.MSpace.kWorld)
 
     @property
     def matrixVectors(self):
@@ -464,42 +510,19 @@ class DagNode(DependencyNode):
         # set translation
         _xformMatrix = om.MTransformationMatrix(value)
         self.fnTransform.setTranslation(_xformMatrix.getTranslation(om.MSpace.kWorld), om.MSpace.kWorld)
-        # Set rotation
+        # set rotation
         _quat = _xformMatrix.rotation()
         self.fnTransform.setRotationQuaternion(_quat.x,
                                                _quat.y,
                                                _quat.z,
                                                _quat.w,
-                                               om.MSpace.kTransform)
-
-    @property
-    def scale(self):
-        plug = self.fnDependencyNode.findPlug('scale')
-        # type is om.MFn.kAttribute3Double
-        _result = []
-        for i in range(3):
-            _childPlug = plug.child(i)
-            _result.append(_childPlug.asDouble())
-        return _result
-
-    @scale.setter
-    def scale(self, value):
-        plug = self.fnDependencyNode.findPlug('scale')
-        # type is om.MFn.kAttribute3Double
-        for i in range(3):
-            _childPlug = plug.child(i)
-            _childPlug.setDouble(value[i])
-
-    @property
-    def rotateOrder(self):
-        plug = self.fnDependencyNode.findPlug('rotateOrder')
-        return plug.asInt()
-
-    @rotateOrder.setter
-    def rotateOrder(self, value):
-        plug = self.fnDependencyNode.findPlug('rotateOrder')
-        # type is om.MFn.kEnumAttribute
-        plug.setInt(value)
+                                               om.MSpace.kWorld)
+        # set scale
+        _util = om.MScriptUtil()
+        _util.createFromDouble(1.0 ,1.0, 1.0)
+        _doublePtr = _util.asDoublePtr()
+        _xformMatrix.getScale(_doublePtr, om.MSpace.kWorld)
+        self.fnTransform.setScale(_doublePtr)
 
 
     @classmethod
@@ -558,7 +581,7 @@ class DagNode(DependencyNode):
         else:
             return False
 
-    def lockAttr(self, attrs):
+    def lockAttr(self, attr):
         if self.fnDependencyNode.hasAttribute(attr):
             plug = self.fnDependencyNode.findPlug(attr)
             plug.setLocked(True)
