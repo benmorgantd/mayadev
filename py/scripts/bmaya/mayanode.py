@@ -1,8 +1,12 @@
+import sys
+import inspect
 import json
 
 import maya.cmds as cmds
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as omAnim
+
+__all__ = [className for className, obj in inspect.getmembers(sys.modules[__name__]) if inspect.isclass(obj)]
 
 # CONSTANTS #
 
@@ -54,7 +58,7 @@ class DependencyNode(object):
             return False
 
     def __getattr__(self, attribute):
-        if self.fnDependencyNode.hasAttribute(attribute):
+        if hasattr('fnDependencyNode') and self.fnDependencyNode.hasAttribute(attribute):
             plug = self.fnDependencyNode.findPlug(attribute)
             attributeMObj = plug.attribute()
             plugType = attributeMObj.apiType()
@@ -115,8 +119,7 @@ class DependencyNode(object):
             else:
                 raise AttributeError('getattr is currently not supported for this attribute type.')
             return True
-
-        if not hasattr(self, attribute):
+        elif not hasattr(self, attribute):
             # We're calling __getattr__ before the class has been fully initialized
             return super(DependencyNode, self).__getattribute__(attribute)
 
@@ -207,7 +210,7 @@ class DependencyNode(object):
                 raise AttributeError('setattr is currently not supported for this attribute type.')
             return True
         else:
-            # We're calling __getattr__ before the class has been fully initialized
+            # We're calling __setattr__ before the class has been fully initialized
             return super(DependencyNode, self).__setattr__(attribute, value)
 
     def plug(self, plugString):
@@ -625,10 +628,13 @@ class Mesh(Shape):
     def __init__(self, name):
         super(Mesh, self).__init__(name)
 
+    @property
+    def fnMesh(self):
         try:
-            self.fnMesh = om.MFnMesh(self.mObject)
+            _fnMesh = om.MFnMesh(self.mObject)
+            return _fnMesh
         except RuntimeError:
-            raise RuntimeError('Given object type is not compatible. Did you pass a kTransform type?')
+            raise RuntimeError('Given object type is not compatible. Is the object a polygonal mesh?')
 
     @property
     def getSkinCluster(self):
@@ -763,16 +769,20 @@ class SkinCluster(DependencyNode):
         return _influenceIndices
 
     def getWeights(self, components=None):
-        weights = om.MDoubleArray()
+        _weights = om.MDoubleArray()
 
         if not components:
             components = om.MObject()
         else:
             assert isinstance(components, om.MObject())
 
-        self.fnSkinCluster.getWeights(self.outputGeometry.dagPath, components, weights, self.infCountPointer)
+        _outputGeometryDag = self.outputGeometry.dagPath
+        _influenceCountPtr = self.infCountPointer
 
-        return weights
+        # fails at Mesh.dagPath
+        self.fnSkinCluster.getWeights(_outputGeometryDag, components, _weights, _influenceCountPtr)
+
+        return _weights
 
     def setWeights(self, weights, components=None):
         if not components:
@@ -782,10 +792,29 @@ class SkinCluster(DependencyNode):
 
         assert isinstance(weights, (om.MDoubleArray, list))
 
-        mFnSkinCluster.setWeights(self.outputGeometry.dagPath, components, self.influenceIndices, weights)
+        self.mFnSkinCluster.setWeights(self.outputGeometry.dagPath, components, self.influenceIndices, weights)
 
     def pruneWeights(self, maxInfluence=4):
         raise RuntimeError('pruneWeights is not yet implemented')
 
     def getWeightDictionary(self):
-        raise RuntimeError('getWeightDictionary is not yet implemented')
+        '''Return the weight dictionary for the given skin cluster.
+        Each influence's short name is followed by its vertex weights.'''
+
+        weightDict = {}
+
+        _weights = self.getWeights()
+        _influenceIndices = self.influenceIndices
+        _influenceObjects = self.influenceObjects
+
+        numInfluences = _influenceIndices.length()
+
+        for i in xrange(numInfluences):
+            # A single influence's weights is its column of the weight matrix
+            weightDict[_influenceObjects[i].partialPathName()] = _weights[i:: numInfluences]
+
+        return weightDict
+
+    def smoothWeights(self, components):
+        raise RuntimeError('smoothWeights is not yet implemented')
+

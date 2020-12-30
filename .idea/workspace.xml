@@ -3,13 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="74bd15b0-e080-4c61-9a69-c2851a779195" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/asset.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/asset.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/constants.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/mayanode.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/mayanode.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/decorators.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/decorators.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/layout.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/layout.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/module.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/module.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/shapes/shapelib.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/shapes/shapelib.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -30,7 +25,6 @@
     <option name="IS_AUTOSCROLL_TO_SOURCE" value="true" />
   </component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$PROJECT_DIR$/py/scripts/bmaya/mayanode.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/rigManager.py" root0="SKIP_INSPECTION" />
   </component>
   <component name="ProjectId" id="1ltwSOELVWed6zuQ0MqmpWOAFua" />
@@ -47,8 +41,8 @@
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\benjamin\Documents\mayadev\py\scripts\bmaya" />
       <recent name="C:\Users\benjamin\Documents\mayadev\py\scripts\bmaya\mayanode" />
+      <recent name="C:\Users\benjamin\Documents\mayadev\py\scripts\bmaya" />
     </key>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />

@@ -9,7 +9,7 @@ ASSET_TYPES = ['prop', 'environment', 'character']
 
 # the integer joints and controls start counting up from
 COUNT_START = 0
-SIDE_NAMES = {'left':'L', 'right':'R', 'middle':'M'}
+SIDE_NAMES = {'left': 'L', 'right': 'R', 'middle': 'M'}
 
 JOINT_SUFFIX = 'JNT'
 
@@ -31,7 +31,7 @@ MESH_SUFFIX = 'mesh'
 
 REQUIRED_PLUGINS = ['matrixNodes', 'quatNodes']
 
-UNIT_VECTORS = {'X':[1,0,0], 'Y':[0,1,0], 'Z':[0,0,1]}
+UNIT_VECTORS = {'X': [1, 0, 0], 'Y': [0, 1, 0], 'Z': [0, 0, 1]}
 
 POSTOPS_TEMPLATE = "import maya.cmds as cmds\n\ndef postOps():\n    print('Finished with post operations')\npostOps()"
 
