@@ -27,12 +27,14 @@ def wrapBuild(fn):
         self.connectBindJoints()
         self.parentModule()
 
-        self.lockTransforms(self.modGrp)
-        self.lockTransforms([comp.ctrl for comp in self.components], attrs=["scale", "visibility"])
-
-        for comp in self.components:
-            for grp in comp.groupHierarchy:
-                self.lockTransforms(grp, lock=False, attrs=['translate', 'rotate', 'scale', 'visibility'])
+        self.modGrp.lockTransforms()
+        for ctrl in self.components:
+            for attr in ['scaleX', 'scaleY', 'scaleZ']:
+                ctrl.lockAttr(attr)
+            ctrl.lockAttr('visibility')
+            for grp in ctrl.groupHierarchy:
+                grp.lockTransforms()
+                grp.lockAttr('visibility')
 
         self.captureComponentDefaults()
         

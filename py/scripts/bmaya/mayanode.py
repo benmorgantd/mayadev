@@ -6,8 +6,8 @@ import maya.OpenMayaAnim as omAnim
 
 # CONSTANTS #
 
-ROTATE_ORDERS = [om.MEulerRotation.kXYZ, om.MEulerRotation.kYZX, om.MEulerRotation.kZXY,
-                 om.MEulerRotation.kXZY, om.MEulerRotation.kYXZ, om.MEulerRotation.kZYX]
+ROTATE_ORDERS = [om.MEulerRotation.kXYZ, om.MEulerRotation.kYZX, om.MEulerRotation.kZXY, om.MEulerRotation.kXZY,
+                 om.MEulerRotation.kYXZ, om.MEulerRotation.kZYX]
 
 DISPLAY_COLORS = {'black': 1, 'grey': 3, 'blue': 6, 'pink': 9, 'red': 13, 'lime': 14, 'darkblue': 15, 'white': 16,
                   'yellow': 17, 'green': 23}
@@ -58,7 +58,6 @@ class DependencyNode(object):
             plug = self.fnDependencyNode.findPlug(attribute)
             attributeMObj = plug.attribute()
             plugType = attributeMObj.apiType()
-            # print(plugMObj.apiTypeStr())
 
             if plugType == om.MFn.kDoubleLinearAttribute:
                 return plug.asDouble()
@@ -122,11 +121,14 @@ class DependencyNode(object):
             return super(DependencyNode, self).__getattribute__(attribute)
 
     def __setattr__(self, attribute, value):
-
         if hasattr(self, 'fnDependencyNode') and self.fnDependencyNode.hasAttribute(attribute):
             plug = self.fnDependencyNode.findPlug(attribute)
             attributeMObj = plug.attribute()
             plugType = attributeMObj.apiType()
+            fnAttr = om.MFnAttribute(attributeMObj)
+
+            if not plugType == om.MFn.kTypedAttribute and not fnAttr.isWritable():
+                raise AttributeError('Given attribute {0} is not writable.'.format(fnAttr.name()))
 
             if plugType == om.MFn.kDoubleLinearAttribute:
                 plug.setDouble(value)
@@ -170,28 +172,29 @@ class DependencyNode(object):
                     # NOTE: you cannot set this attribute on anything but self.matrix
 
                     if fnTypedAttr.isArray():
-                        self.matrix = value
+                        raise RuntimeError('{0}.DependencyNode : setattr is unsupported for Matrix Array attribute {1}'.format(__name__, plug.name()))
 
                     _xformMatrix = om.MTransformationMatrix(value)
                     _translateVector = _xformMatrix.getTranslation(om.MSpace.kWorld)
                     _rotateQuaternion = _xformMatrix.rotation()
-                    _util = om.MScriptUtil()
-                    _util.createFromDouble(1.0, 1.0, 1.0)
-                    _scalePtr = _util.asDoublePtr()
+                    _scaleUtil = om.MScriptUtil()
+                    _scaleUtil.createFromDouble(1.0, 1.0, 1.0)
+                    _scalePtr = _scaleUtil.asDoublePtr()
                     _xformMatrix.getScale(_scalePtr, om.MSpace.kWorld)
-                    _shearPtr = _util.asDoublePtr()
-                    _xformMatrix.getShear(_shearPtr, om.MSpace.kWorld)
+                    _scale = [_scaleUtil.getDoubleArrayItem(_scalePtr, 0),
+                              _scaleUtil.getDoubleArrayItem(_scalePtr, 1),
+                              _scaleUtil.getDoubleArrayItem(_scalePtr, 2)]
+                    _shearUtil = om.MScriptUtil()
+                    _shearPtr = _shearUtil.asDoublePtr()
+                    _xformMatrix.getShear(_shearPtr, om.MSpace.kTransform)
+                    _shear = [_shearUtil.getDoubleArrayItem(_shearPtr, 0),
+                              _shearUtil.getDoubleArrayItem(_shearPtr, 1),
+                              _shearUtil.getDoubleArrayItem(_shearPtr, 2)]
 
-
-                    # call setattr from within setattr.. maybe a bad idea?
-                    self.translate = _translateVector
-                    self.rotate = _rotateQuaternion
-                    self.scale = [_util.getDoubleArrayItem(_scalePtr, 0),
-                                  _util.getDoubleArrayItem(_scalePtr, 1),
-                                  _util.getDoubleArrayItem(_scalePtr, 2)]
-                    self.shear = [_util.getDoubleArrayItem(_shearPtr, 0),
-                                  _util.getDoubleArrayItem(_shearPtr, 1),
-                                  _util.getDoubleArrayItem(_shearPtr, 2)]
+                    setattr(self, 'translate', _translateVector)
+                    setattr(self, 'rotate', _rotateQuaternion)
+                    setattr(self, 'scale', _scale)
+                    setattr(self, 'shear', _shear)
 
 
             elif plugType == om.MFn.kEnumAttribute:
@@ -203,10 +206,15 @@ class DependencyNode(object):
             else:
                 raise AttributeError('setattr is currently not supported for this attribute type.')
             return True
-
-        if not hasattr(self, attribute):
+        else:
             # We're calling __getattr__ before the class has been fully initialized
             return super(DependencyNode, self).__setattr__(attribute, value)
+
+    def plug(self, plugString):
+        if self.fnDependencyNode.hasAttribute(plugString):
+            return self.fnDependencyNode.findPlug(plugString)
+        else:
+            raise AttributeError('Object {0} has no plug {1}'.format(self, plugString))
 
     def connectPlugs(self, sourcePlug, destPlug):
         _sourceFnAttr = om.MFnAttribute(sourcePlug.attribute())
@@ -262,8 +270,8 @@ class DependencyNode(object):
                 _sel.add(str)
                 _mObject = om.MObject()
                 _sel.getDependNode(0, _mObject)
-            except:
-                raise
+            except RuntimeError:
+                raise RuntimeError('Object {0} does not exist or is not unique.'.format(str))
         else:
             return None
 
@@ -324,31 +332,27 @@ class DagNode(DependencyNode):
             # object's short name is not unique. Iterate through the dag until we find this mObject
             raise RuntimeError('Object short name is not unique')
 
-
-    @property
-    def parent(self):
+    def getParent(self):
         # return the Transform of the parent
         if self.dagPath.length() > 1:
             return DagNode(self.fnDagNode.parent(0))
         else:
             return None
 
-    @parent.setter
-    def parent(self, newParent):
+    def setParent(self, newParent):
         if newParent == None and self.dagPath.length() > 1:
             # TODO find out how to parent to world
             return
         elif not isinstance(newParent, DagNode):
             newParent = DagNode(newParent)
 
-        if not self.parent:
+        _currentParent = self.getParent()
+        if not _currentParent:
             newParent.fnDagNode.addChild(self.mObject)
-        elif self.parent and self.parent.mObject != newParent.mObject:
+        elif _currentParent and _currentParent.mObject != newParent.mObject:
             newParent.fnDagNode.addChild(self.mObject)
         else:
             om.MGlobal.displayWarning('{0} is already the parent of {1}'.format(newParent.shortName, self.shortName))
-
-        # if not dagName:  #     cmds.parent(self.name, world=True, absolute=True)  # else:  #     _shortName = self.shortName  #     try:  #         cmds.parent(self.name, dagName, absolute=True)  #     except RuntimeError:  #         # already a child of that node  #         return  #         # update the dag path after changing parent  #     sel = om.MSelectionList()  #     sel.add(_shortName)  #     dag = om.MDagPath()  #     sel.getDagPath(0, dag)  #  #     self.dagPath = dag  #     self.shortName = dag.partialPathName()  #     self.name = dag.fullPathName()
 
     @property
     def children(self):
@@ -420,14 +424,12 @@ class DagNode(DependencyNode):
 
     @property
     def worldRotation(self):
-        print('getting')
         quat = om.MQuaternion()
         self.fnTransform.getRotation(quat, om.MSpace.kWorld)
         return quat
 
     @worldRotation.setter
     def worldRotation(self, rotation):
-        print('setting')
         self.fnTransform.setRotation(rotation, om.MSpace.kWorld)
 
     @property
@@ -471,8 +473,8 @@ class DagNode(DependencyNode):
 
     @property
     def vectorFromParent(self):
-        if self.parent:
-            return self.worldPosition - self.parent.worldPosition
+        if self.getParent():
+            return self.worldPosition - self.getParent().worldPosition
         else:
             return self.worldPosition
 
@@ -568,6 +570,16 @@ class DagNode(DependencyNode):
             plug = self.fnDependencyNode.findPlug(attr)
             plug.setLocked(False)
 
+    def hideAttr(self, attr):
+        if self.fnDependencyNode.hasAttribute(attr):
+            plug = self.fnDependencyNode.findPlug(attr)
+            plug.setKeyable(False)
+
+    def unhideAttr(self, attr):
+        if self.fnDependencyNode.hasAttribute(attr):
+            plug = self.fnDependencyNode.findPlug(attr)
+            plug.setKeyable(True)
+
     def lockTransforms(self):
         # This is not undoable
         for attr in ['translate', 'rotate', 'scale']:
@@ -658,7 +670,7 @@ class Curve(Shape):
 
         return _cvs
 
-    def setPoints(self, points, space='world'):
+    def setPoints(self, points, space='world', cvLimit=256):
         space = SPACES.get(space)
         if not space:
             raise ValueError('Unsupported space type \'{0}\' given.'.format(space))
@@ -666,21 +678,25 @@ class Curve(Shape):
         _points = om.MPointArray()
         _numCVs = self.fnNurbsCurve.numCVs()
 
+
         if isinstance(points, list):
-            if len(points) != _numCVs:
-                raise ValueError('The number of points given does not match the number of CV points.')
             for i in xrange(len(points)):
                 _points.append(om.MPoint(*points[i]))
+            _lastPoint = _points[len(points) - 1]
+            for j in xrange(len(points), cvLimit):
+                _points.append(om.MPoint(_lastPoint))
+
         elif isinstance(points, om.MPointArray):
-            if points.length() != _numCVs:
-                raise ValueError('The number of points given does not match the number of CV points.')
             _points = points
+            # TODO: this isn't fully supported yet
+            # if points.length() != _numCVs:
+            #     raise ValueError('The number of points given does not match the number of CV points.')
 
         self.fnNurbsCurve.setCVs(_points, space)
         self.fnNurbsCurve.updateCurve()
 
     @classmethod
-    def createLinearCurve(cls, points):
+    def createLinearCurve(cls, points, forceCvCount=False):
         om.MGlobal.clearSelectionList()
         _points = om.MPointArray()
         _knots = om.MDoubleArray()
@@ -688,6 +704,12 @@ class Curve(Shape):
             for i in xrange(len(points)):
                 _points.append(om.MPoint(*points[i]))
                 _knots.append(i)
+            if forceCvCount:
+                _lastPoint = _points[_points.length() - 1]
+                for j in range(len(points), forceCvCount):
+                    # make all the remaining CVs equal to the same as the last point
+                    _points.append(om.MPoint(_lastPoint))
+                    _knots.append(j)
         else:
             _points = points
 

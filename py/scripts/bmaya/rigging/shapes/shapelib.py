@@ -1,33 +1,39 @@
 from bmaya.core import boundingBox, mathUtils
 
 import maya.cmds as cmds
-import maya.OpenMaya as om
 
-from bmaya import mayanode
+from bmaya.mayanode import DagNode, Curve
 
 import shapedata
 
+# However, to give us plenty of room to spare, we'll set the max amount of cvs to 256
+CV_LIMIT = 128
 
-class ControlCurve(mayanode.DagNode):
+
+class ControlCurve(DagNode):
     def __init__(self, name='example_00_M_ctrl', shapeType='cube', scale=None, jnt=None):
-        _controlMObj = mayanode.Curve.createLinearCurve(shapedata.CONTROL_TYPES_AND_VALUES[shapeType])
+        _controlMObj = Curve.createLinearCurve(shapedata.CONTROL_TYPES_AND_VALUES[shapeType], CV_LIMIT)
         super(ControlCurve, self).__init__(_controlMObj)
-        self.name = mayanode.DagNode.makeShortNameUnique(name)
+        self.name = self.makeShortNameUnique(name)
+        self.ctrl = self.shortName
 
-        self.offsetGrp = mayanode.DagNode(cmds.group(empty=True, name=self.shortName + '_offsetGrp'))
-        self.spaceGrp = mayanode.DagNode(cmds.group(empty=True, name=self.shortName + '_spaceGrp'))
-        self.targetGrp = mayanode.DagNode(cmds.group(empty=True, name=self.shortName + '_targetGrp'))
+        self.offsetGrp = DagNode(cmds.group(empty=True, name=self.shortName + '_offsetGrp'))
+        self.spaceGrp = DagNode(cmds.group(empty=True, name=self.shortName + '_spaceGrp'))
+        self.targetGrp = DagNode(cmds.group(empty=True, name=self.shortName + '_targetGrp'))
 
-        self.targetGrp.parent = self.spaceGrp
-        self.spaceGrp.parent = self.offsetGrp
-        self.parent = self.targetGrp
+        self.targetGrp.setParent(self.spaceGrp)
+        self.spaceGrp.setParent(self.offsetGrp)
+        self.setParent(self.targetGrp)
 
         self.groupHierarchy = [self.offsetGrp, self.spaceGrp, self.targetGrp]
 
         if scale:
-            self.scale = scale
+            if isinstance(scale, list) and len(scale) == 3:
+                self.scale = scale
+            elif isinstance(scale, float):
+                self.scale = [scale, scale, scale]
         if jnt:
-            _jnt = mayanode.DagNode(jnt)
+            _jnt = DagNode(jnt)
             for grp in self.groupHierarchy:
                 grp.rotateOrder = _jnt.rotateOrder
             self.rotateOrder = _jnt.rotateOrder
@@ -36,6 +42,18 @@ class ControlCurve(mayanode.DagNode):
 
         if shapeType == 'boundingBox':
             self.setupBoundingBox()
+
+    @classmethod
+    def setControlShape(cls, ctrlName, shapeType):
+
+        _tempCurve = DagNode(ctrlName)
+
+        if shapeType in shapedata.CONTROL_TYPES_AND_VALUES.keys():
+            _tempCurve.shape.setPoints(shapedata.CONTROL_TYPES_AND_VALUES[shapeType], space='object', cvLimit=CV_LIMIT)
+        else:
+            raise ValueError('Given shape type {0} not a valid shape yet.'.format(shapeType))
+
+        del _tempCurve
 
     def setupBoundingBox(self):
         sceneBoundingBox = boundingBox.getSceneBoundingBox()

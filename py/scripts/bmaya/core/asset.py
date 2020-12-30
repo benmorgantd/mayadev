@@ -7,6 +7,7 @@ import maya.cmds as cmds
 
 from bmaya.core.components import *
 
+
 try:
     PROJECT_ROOT = os.environ['RIG_ROOT']
 except KeyError:

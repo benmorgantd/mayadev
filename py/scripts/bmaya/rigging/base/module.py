@@ -7,7 +7,7 @@ import maya.OpenMaya as om
 from bmaya.core import constants, name, mathUtils
 from bmaya.rigging.shapes import shapelib
 
-from decorators import wrapBuild
+from bmaya.mayanode import DagNode, DependencyNode
 
 
 class Module(object):
@@ -42,19 +42,15 @@ class Module(object):
 
     def makeNode(self):
         # create the module node before anything gets built. 
-        if not cmds.objExists(
-                '{0}_{1}'.format(self.name, constants.MODULE_SUFFIX)):
+        if not cmds.objExists('{0}_{1}'.format(self.name, constants.MODULE_SUFFIX)):
             # this creates a locator shape of the given name
-            self.node = cmds.createNode('network', name='{0}_{1}'.format(
-                self.name, constants.MODULE_SUFFIX))
+            self.node = cmds.createNode('network', name='{0}_{1}'.format(self.name, constants.MODULE_SUFFIX))
             # holds all the parts of the module. Not for transforming
-            self.modGrp = cmds.createNode('transform', name=self.name + '_GRP')
+            self.modGrp = DagNode(cmds.createNode('transform', name=self.name + '_GRP'))
             # holds the components of the node. Transform this should not result in double xforms
-            self.componentsGrp = cmds.createNode('transform',
-                                                 name=self.name + '_COMPONENTS')
+            self.componentsGrp = DagNode(cmds.createNode('transform', name=self.name + '_COMPONENTS'))
             # holds the driver joints for the node
-            self.driverGrp = cmds.createNode('transform',
-                                             name=self.name + '_DRIVERS')
+            self.driverGrp = DagNode(cmds.createNode('transform', name=self.name + '_DRIVERS'))
             cmds.hide(self.driverGrp)
             cmds.parent(self.driverGrp, self.componentsGrp)
 
@@ -302,36 +298,21 @@ class Module(object):
 
         return const
 
-    def lockTransforms(self, ctrls, attrs=['translate', 'rotate', 'scale'],
-                       lock=True):
-        if isinstance(ctrls, basestring):
-            ctrls = [ctrls]
-
-        for ctrl in ctrls:
-            for attr in attrs:
-                if attr in ['translate', 'rotate', 'scale']:
-                    for axis in ['X', 'Y', 'Z']:
-                        cmds.setAttr('{0}.{1}{2}'.format(ctrl, attr, axis),
-                                     lock=lock, keyable=False, channelBox=False)
-                else:
-                    cmds.setAttr('{0}.{1}'.format(ctrl, attr),
-                                 lock=lock, keyable=False, channelBox=False)
-
     def checkContract(self):
         # TODO: Check by attribute types
         return True
 
-        if not self.contract:
-            return True
-
-        nullValues = [v for v in self.contract if not v]
-
-        if nullValues:
-            raise RuntimeError(
-                'Contract for {0} not yet fulfilled.'.format(self.name))
-
-        print '>>> Contract for {0} fulfilled'.format(self.modType)
-        return True
+        # if not self.contract:
+        #     return True
+        #
+        # nullValues = [v for v in self.contract if not v]
+        #
+        # if nullValues:
+        #     raise RuntimeError(
+        #         'Contract for {0} not yet fulfilled.'.format(self.name))
+        #
+        # print '>>> Contract for {0} fulfilled'.format(self.modType)
+        # return True
 
     def connectComponents(self):
         """Connects the module's compenents to the module"""
@@ -344,7 +325,7 @@ class Module(object):
             cmds.connectAttr(self.node + '.components', ctrl.ctrl + '.module',
                              force=True)
 
-            self.lockTransforms(ctrl.offsetGrp)
+            ctrl.offsetGrp.lockTransforms()
 
     def connectBindJoints(self):
         """Connects the module's bind joints to their control"""
