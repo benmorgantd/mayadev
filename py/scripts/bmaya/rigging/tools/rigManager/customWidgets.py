@@ -5,9 +5,9 @@ import ast
 from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
 from bmaya.core import qtbase
+from bmaya.rigging.shapes import shapedata
 
 import maya.cmds as cmds
-import maya.OpenMaya as om
 
 
 class ModuleList(qtbase.List):
@@ -354,11 +354,9 @@ class AttributeLayoutValue(object):
         elif self.valueType in [unicode, str]:
             
             if self.attribute in ['shapeType', 'offsetShapeType']:
-                from bmaya.rigging.shapes import shapelib
-
                 widget = QtWidgets.QComboBox()
 
-                for shapeType in shapelib.ControlCurve.types.keys():
+                for shapeType in shapedata.CONTROL_TYPES_AND_VALUES.keys():
                     widget.addItem(shapeType)
 
                 widget.setCurrentIndex(widget.findText(self.defaultValue))

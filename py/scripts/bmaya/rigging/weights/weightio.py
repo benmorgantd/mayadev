@@ -7,8 +7,8 @@ from xml.etree import ElementTree
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-import weightutils
 from bmaya.core import fileio
+from bmaya import mayanode
 
 def getJointsFromXML(weightsDir):
   tree = ElementTree.parse(weightsDir)
@@ -21,6 +21,7 @@ def getJointsFromXML(weightsDir):
       joints.append(child.attrib["source"])
 
   return joints
+
 
 def save(weightsDir):
     # Saves each selected object to a file in the given directory
@@ -35,28 +36,27 @@ def save(weightsDir):
         os.makedirs(weightsDir)
 
     while not itSel.isDone():
-        dag = om.MDagPath()
-        itSel.getDagPath(dag)
+        current_mobj = om.MObject()
+        itSel.getDependNode(current_mobj)
+        meshTransform = mayanode.DagNode(current_mobj)
 
-        dagName = str(dag.partialPathName())
+        skinCluster = meshTransform.shape.getSkinCluster()
 
-        skin = weightutils.getSkinCluster(dagName)
-
-        filename = os.path.join(weightsDir, dagName + '.weights')
+        filename = os.path.join(weightsDir, meshTransform + '.weights')
         if os.path.exists(filename):
             # version the file
             fileio.versionFile(filename)
 
-        if skin:
+        if skinCluster:
             # exports by vertex index. Changes to the vert order will break this
             # with the new 'format' argument, this might not be backwards compatible... - _-
-            cmds.deformerWeights("{0}.weights".format(dagName), deformer=skin[0],
+            cmds.deformerWeights(meshTransform + ".weights", deformer=skinCluster,
                                  export=True, path=weightsDir, method="index")
         else:
-            print dagName, ' has no skin cluster to save.'
+            print meshTransform + ' has no skin cluster to save.'
             itSel.next()
 
-        print "Saved weights for {}".format(dagName)
+        print "Saved weights for {}".format(meshTransform)
 
         itSel.next()
 
@@ -76,10 +76,12 @@ def load(weightsPath):
         om.MGlobal.displayInfo("{0} does not exist in scene.".format(objName))
         return
 
-    print 'Loading weights for <' + objName + '> ...'
+    meshTransform = mayanode.DagNode(objName)
+
+    print 'Loading weights for <' + meshTransform + '> ...'
     
     # look for and delete old clusters if they exist
-    existingSkinCluster = weightutils.getSkinCluster(objName)
+    existingSkinCluster = meshTransform.shape.getSkinCluster()
 
     if existingSkinCluster:
         cmds.delete(existingSkinCluster)
@@ -94,23 +96,19 @@ def load(weightsPath):
             cmds.select(cl=1)
 
     cmds.select(jointList)
-    
-    cmds.select(objName, add=True)
+    cmds.select(meshTransform, add=True)
 
     # add the skin cluster
     # Add in options to load from previous saved skin cluster's settings since
     # we may not want 4 max influences or linear blending
-    newCluster = cmds.skinCluster(weightDistribution=1,
-                                 obeyMaxInfluences=False,
-                                 toSelectedBones=True,
-                                 skinMethod=0,
-                                 bindMethod=1)
+    newCluster = cmds.skinCluster(weightDistribution=1, obeyMaxInfluences=False, toSelectedBones=True, skinMethod=0,
+                                  bindMethod=1)
 
-    cmds.deformerWeights("{0}.weights".format(objName), im=True, path=weightsDirname, 
+    cmds.deformerWeights("{0}.weights".format(meshTransform), im=True, path=weightsDirname,
                         ignoreName=True, method="index", deformer=newCluster[0])
-    cmds.select(objName)
+    cmds.select(meshTransform)
     cmds.skinPercent(newCluster[0], normalize=True)
-    om.MGlobal.displayInfo("Loaded skinCluster weights onto {0}".format(objName))
+    om.MGlobal.displayInfo("Loaded skinCluster weights onto {0}".format(meshTransform))
 
     print ">>> Weight data loaded from {0}".format(weightsPath)
 

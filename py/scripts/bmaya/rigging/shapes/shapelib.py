@@ -2,7 +2,7 @@ from bmaya.core import boundingBox, mathUtils
 
 import maya.cmds as cmds
 
-from bmaya.mayanode import DagNode, Curve
+import bmaya.mayanode as mayanode
 
 import shapedata
 
@@ -10,16 +10,16 @@ import shapedata
 CV_LIMIT = 128
 
 
-class ControlCurve(DagNode):
+class ControlCurve(mayanode.DagNode):
     def __init__(self, name='example_00_M_ctrl', shapeType='cube', scale=None, jnt=None):
-        _controlMObj = Curve.createLinearCurve(shapedata.CONTROL_TYPES_AND_VALUES[shapeType], CV_LIMIT)
+        _controlMObj = mayanode.Curve.createLinearCurve(shapedata.CONTROL_TYPES_AND_VALUES[shapeType], CV_LIMIT)
         super(ControlCurve, self).__init__(_controlMObj)
         self.name = self.makeShortNameUnique(name)
         self.ctrl = self.shortName
 
-        self.offsetGrp = DagNode(cmds.group(empty=True, name=self.shortName + '_offsetGrp'))
-        self.spaceGrp = DagNode(cmds.group(empty=True, name=self.shortName + '_spaceGrp'))
-        self.targetGrp = DagNode(cmds.group(empty=True, name=self.shortName + '_targetGrp'))
+        self.offsetGrp = mayanode.DagNode(cmds.group(empty=True, name=self.shortName + '_offsetGrp'))
+        self.spaceGrp = mayanode.DagNode(cmds.group(empty=True, name=self.shortName + '_spaceGrp'))
+        self.targetGrp = mayanode.DagNode(cmds.group(empty=True, name=self.shortName + '_targetGrp'))
 
         self.targetGrp.setParent(self.spaceGrp)
         self.spaceGrp.setParent(self.offsetGrp)
@@ -33,7 +33,7 @@ class ControlCurve(DagNode):
             elif isinstance(scale, float):
                 self.scale = [scale, scale, scale]
         if jnt:
-            _jnt = DagNode(jnt)
+            _jnt = mayanode.DagNode(jnt)
             for grp in self.groupHierarchy:
                 grp.rotateOrder = _jnt.rotateOrder
             self.rotateOrder = _jnt.rotateOrder
@@ -46,7 +46,7 @@ class ControlCurve(DagNode):
     @classmethod
     def setControlShape(cls, ctrlName, shapeType):
 
-        _tempCurve = DagNode(ctrlName)
+        _tempCurve = mayanode.DagNode(ctrlName)
 
         if shapeType in shapedata.CONTROL_TYPES_AND_VALUES.keys():
             _tempCurve.shape.setPoints(shapedata.CONTROL_TYPES_AND_VALUES[shapeType], space='object', cvLimit=CV_LIMIT)

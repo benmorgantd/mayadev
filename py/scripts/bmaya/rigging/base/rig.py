@@ -9,7 +9,7 @@ from bmaya.core.components import *
 from bmaya.core import constants, fileio, qtbase
 
 from bmaya.rigging.shapes import shapelib, shapeio
-from bmaya.rigging.weights import weightio, weightutils
+from bmaya.rigging.weights import weightio
 from bmaya.rigging import buildio
 from bmaya import mayanode
 
@@ -73,39 +73,39 @@ class Rig(Asset):
 
         startTime = time.time()
 
-        progressWindow = qtbase.ProgressWindow(title='Building Rig')
-        progressWindow.show()
+        # progressWindow = qtbase.ProgressWindow(title='Building Rig')
+        #progressWindow.show()
 
         self.modules = []
         self.allControls = []
         mirrorModules = []
 
-        progressWindow.setStatus('Creating blank scene')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Creating blank scene')
+        #progressWindow.increment(5)
 
         # create a new scene
         cmds.file(new=True, force=True)
 
-        progressWindow.setStatus('Loading plugins')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Loading plugins')
+        #progressWindow.increment(5)
         # load required plugins
         self.loadPlugins()
 
-        progressWindow.setStatus('Making character node')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Making character node')
+        #progressWindow.increment(5)
 
         self.makeNode()
 
-        progressWindow.setStatus('Reading build file')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Reading build file')
+        #progressWindow.increment(5)
 
         # open up the character's build file (json)
         self.buildData = buildio.load(self.build.fullPath)
 
         buildList = []
 
-        progressWindow.setStatus('Building layout rig')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Building layout rig')
+        #progressWindow.increment(5)
 
         layoutDict, layoutComponents = self.buildLayout()
         self.modules.append(layoutDict)
@@ -120,8 +120,8 @@ class Rig(Asset):
             for child in mod['children']:
                 addChildren(child)
 
-        progressWindow.setStatus('Flattening build tree')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Flattening build tree')
+        #progressWindow.increment(5)
 
         for mod in self.buildData:
             if mod['children']:
@@ -131,21 +131,22 @@ class Rig(Asset):
                 self.addModule(mod)
                 buildList.append(mod)
 
-        print(buildList)
-
         # create the new class instance from the data
         from bmaya.rigging import modules
 
-        progressWindow.setStatus('Building limbs')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Building limbs')
+        #progressWindow.increment(5)
+
+        result = cmds.confirmDialog(title='Continue?', message='Continue?', button=['Yes', 'No'], defaultButton='Yes', cancelButton='No')
+        if result == 'No':
+            raise RuntimeError()
 
         for mod in buildList:
             # access the modType attribute from the module's dictionary
             modType = mod['modType']
 
             # create a new instance of that class
-            modInstance = modules.MODULE_CLASSES[modType].__new__(
-                modules.MODULE_CLASSES[modType])
+            modInstance = modules.MODULE_CLASSES[modType].__new__(modules.MODULE_CLASSES[modType])
             modInstance.__init__(character=self)
 
             for key, value in mod.items():
@@ -155,37 +156,64 @@ class Rig(Asset):
             # build it!
             modInstance.build()
 
+            print('built {0}'.format(modType))
+
+            if result == 'No':
+                raise RuntimeError()
+
             self.allControls += [comp.ctrl for comp in modInstance.components]
 
             # it'll mirror if its mirror attribute is True
             mirrorInstance = modInstance.doMirror()
 
             # optional, adds time.
-            cmds.refresh(currentView=True)
+            # cmds.refresh(currentView=True)
 
             if mirrorInstance:
                 mirrorModules.append(mirrorInstance.dict)
                 self.allControls += [comp.ctrl for comp in
                                      mirrorInstance.components]
 
+
         self.modules += mirrorModules
 
-        progressWindow.setStatus('Making sets')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Making sets')
+        #progressWindow.increment(5)
+
+        result = cmds.confirmDialog(title='Continue?', message='Continue?', button=['Yes', 'No'], defaultButton='Yes',
+                                    cancelButton='No')
+        if result == 'No':
+            raise RuntimeError()
 
         self.ctrlSet = cmds.sets(self.allControls, name='CTRL_set')
         if self.hasFace:
             self.faceCtrlSet = cmds.sets(name='FACE_CTRL_set')
             cmds.sets(self.faceCtrlSet, edit=True, forceElement=self.ctrlSet)
 
-        progressWindow.setStatus('Adding default skinning')
-        progressWindow.increment(5)
+        result = cmds.confirmDialog(title='Continue?', message='Continue?', button=['Yes', 'No'], defaultButton='Yes',
+                                    cancelButton='No')
+        if result == 'No':
+            raise RuntimeError()
+
+        #progressWindow.setStatus('Adding default skinning')
+        #progressWindow.increment(5)
         # skinning after the components have been built allows us to create bind joints
         self.skin()
 
-        progressWindow.setStatus('Writing character node attributes')
-        progressWindow.increment(5)
+        print('added skinning')
+        result = cmds.confirmDialog(title='Continue?', message='Continue?', button=['Yes', 'No'], defaultButton='Yes',
+                                    cancelButton='No')
+        if result == 'No':
+            raise RuntimeError()
+
+        #progressWindow.setStatus('Writing character node attributes')
+        #progressWindow.increment(5)
         self.addNodeAttrs()
+
+        result = cmds.confirmDialog(title='Continue?', message='Continue?', button=['Yes', 'No'], defaultButton='Yes',
+                                    cancelButton='No')
+        if result == 'No':
+            raise RuntimeError()
 
         for mod in self.modules:
             if cmds.objExists(mod['name'] + '_' + constants.MODULE_SUFFIX):
@@ -193,37 +221,57 @@ class Rig(Asset):
                                  '{0}_{1}.character'.format(mod['name'],
                                                             constants.MODULE_SUFFIX))
 
-        progressWindow.setStatus('Loading control shapes')
-        progressWindow.increment(5)
+        print('made connections')
+        result = cmds.confirmDialog(title='Continue?', message='Continue?', button=['Yes', 'No'], defaultButton='Yes',
+                                    cancelButton='No')
+        if result == 'No':
+            raise RuntimeError()
+
+        #progressWindow.setStatus('Loading control shapes')
+        #progressWindow.increment(5)
         shapeio.load(self.componentPathFromType('cvs'))
 
-        progressWindow.setStatus('Loading weights')
-        progressWindow.increment(5)
+        print('loaded control shapes')
+        result = cmds.confirmDialog(title='Continue?', message='Continue?', button=['Yes', 'No'], defaultButton='Yes',
+                                    cancelButton='No')
+        if result == 'No':
+            raise RuntimeError()
+
+        #progressWindow.setStatus('Loading weights')
+        #progressWindow.increment(5)
         weightsDir = self.componentPathFromType('weights')
         weightFiles = self.findFilesOfType(weightsDir, 'weights')
 
         for f in weightFiles:
             weightio.load(os.path.join(weightsDir, f))
 
+        print('loaded weights')
+        result = cmds.confirmDialog(title='Continue?', message='Continue?', button=['Yes', 'No'], defaultButton='Yes',
+                                    cancelButton='No')
+        if result == 'No':
+            raise RuntimeError()
+
         # create influences set
         self.bindSet = self.makeBindSet()
 
-        progressWindow.setStatus('Coloring controls')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Coloring controls')
+        #progressWindow.increment(5)
         self.colorControls()
 
-        progressWindow.setStatus('Cleaning up')
+        cmds.refresh(currentView=True)
+
+        #progressWindow.setStatus('Cleaning up')
         # scene cleanup:
         self.setupMeshReferencing()
         self.lockDownConstraints()
 
         cmds.hide(cmds.ls(type='ikHandle'))
 
-        progressWindow.setStatus('Running post operations')
-        progressWindow.increment(5)
+        #progressWindow.setStatus('Running post operations')
+        #progressWindow.increment(5)
         self.runPostOps()
 
-        progressWindow.setStatus('Finished building rig')
+        #progressWindow.setStatus('Finished building rig')
 
         cmds.file(rename=self.animRig.fullPath)
         cmds.file(save=True, type='mayaAscii', force=True)
@@ -235,8 +283,7 @@ class Rig(Asset):
 
         print "Rig built in {0:.2f} seconds.".format(endTime - startTime)
 
-        progressWindow.hide()
-        del progressWindow
+        #progressWindow.hide()
 
     def makeNode(self):
         if not cmds.objExists(self.name + '_CHAR'):
@@ -419,7 +466,7 @@ class Rig(Asset):
         skinClusterInfluences = set()
 
         for mesh in self.meshShapes:
-            existingSkin = mesh.getSkinCluster
+            existingSkin = mesh.getSkinCluster()
             if existingSkin:
                 members = existingSkin.influenceObjects
 

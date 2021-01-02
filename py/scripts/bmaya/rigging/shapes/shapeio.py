@@ -4,9 +4,10 @@ import maya.OpenMaya as om
 import maya.cmds as cmds
 
 from bmaya.core import fileio
+from bmaya import mayanode
+
 
 def save(cvsPath):
-
     cmds.select(cmds.ls("*_ctrl"))
 
     sel = om.MSelectionList()
@@ -18,23 +19,19 @@ def save(cvsPath):
 
     # get cv point data
     while not objIter.isDone():
-        points = om.MPointArray()
-        dag = om.MDagPath()
-        objIter.getDagPath(dag)
+        _mobj = om.MObject()
+        objIter.getDependNode(_mobj)
+        _ctrl = mayanode.DagNode(_mobj)
 
-        fnNurbs = om.MFnNurbsCurve(dag)
-
-        # gets the cvs in world space
-        fnNurbs.getCVs(points, om.MSpace.kWorld)
-        
+        points = _ctrl.shape.getPoints()
         pointArray = []
 
         for i in range(points.length()):
-            pointArray.append([points[i].x,points[i].y,points[i].z]) 
+            pointArray.append([points[i].x, points[i].y, points[i].z])
 
-        shapeData[str(dag.partialPathName())] = pointArray
+        shapeData[str(_ctrl.shortName)] = pointArray
 
-        fnNurbs.updateCurve()
+        # _ctrl.fnNurbs.updateCurve()
 
         objIter.next()
 
@@ -48,8 +45,8 @@ def save(cvsPath):
 
     return shapeData
 
-def load(cvsPath):
 
+def load(cvsPath):
     shapeData = None
 
     with open(cvsPath, "r") as f:
@@ -63,32 +60,28 @@ def load(cvsPath):
     om.MGlobal.getActiveSelectionList(sel)
 
     objIter = om.MItSelectionList(sel)
-    
+
     while not objIter.isDone():
-        dag = om.MDagPath()
-        objIter.getDagPath(dag)
-        full_name = dag.fullPathName()
+        _mobj = om.MObject()
+        objIter.getDependNode(_mobj)
+        _ctrl = mayanode.DagNode(_mobj)
 
-        fnNurbs = om.MFnNurbsCurve(dag)
-
-        storedPoints = shapeData[str(dag.partialPathName())]
+        storedPoints = shapeData[str(_ctrl.shortName)]
 
         finalPoints = om.MPointArray()
 
         for point in storedPoints:
             finalPoints.append(*point)
 
-        fnNurbs.setCVs(finalPoints, om.MSpace.kWorld)
-        
-        fnNurbs.updateCurve()
+        _ctrl.fnNurbsCurve.setPoints(finalPoints, space='world')
 
         objIter.next()
 
     cmds.select(cl=1)
     print ">>> Shape data loaded from " + cvsPath
-    
-def mirror(cvsPath):
 
+
+def mirror(cvsPath):
     mirrorDirections = ["_L_", "_R_"]
 
     shapeData = None
@@ -103,7 +96,7 @@ def mirror(cvsPath):
     om.MGlobal.getActiveSelectionList(sel)
 
     objIter = om.MItSelectionList(sel)
-    
+
     while not objIter.isDone():
         dag = om.MDagPath()
         objIter.getDagPath(dag)
@@ -130,7 +123,7 @@ def mirror(cvsPath):
                 finalPointArray.append(flippedX, point[1], point[2])
 
             fnNurbs.setCVs(finalPointArray, om.MSpace.kWorld)
-            
+
             fnNurbs.updateCurve()
 
             shapeData[mirrorName] = finalPointArray
@@ -140,12 +133,12 @@ def mirror(cvsPath):
             print "No mirror for control: " + dagName
             objIter.next()
 
-    
     cmds.select(cl=1)
 
     print('CV data mirrored.')
 
-    save(cvsPath)    
+    save(cvsPath)
+
 
 def removeShapeData(cvsPath, controls=[]):
     """Remove the data for the given controls from the cv file"""

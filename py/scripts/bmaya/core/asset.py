@@ -145,10 +145,11 @@ class Asset(object):
                 assetName = splitRootRelativePath[2]
                 assetType = splitRootRelativePath[1]
                 assetProject = splitRootRelativePath[0]
-        
+
         if assetProject and assetType and assetName:
             return '|'.join([assetProject, assetType, assetName])
         else:
+            print('NO ASSET FOUND')
             return None
 
     def componentPathFromType(self, componentType):

@@ -31,12 +31,21 @@ class Connections(object):
 
 
 class DependencyNode(object):
-    def __init__(self, name):
+    def __init__(self, seed):
+        self._initialized = False
         # I think many OpenMaya objects inherit from MObject, so we may want to directly check types instead
-        if isinstance(name, om.MObject):
-            self.mObject = om.MObject(name)
-        elif isinstance(name, basestring):
-            self.mObject = self.stringToMObject(name)
+        if isinstance(seed, om.MObject):
+            self.mObject = om.MObject(seed)
+        elif isinstance(seed, basestring):
+            self.mObject = self.stringToMObject(seed)
+        else:
+            raise RuntimeError(
+                'Cannot initialize a mayanode with the given seed {0} of type {1}'.format(seed, type(seed)))
+
+        self.fnDependencyNode = om.MFnDependencyNode(self.mObject)
+
+        self._initialized = True
+        print('initialized a mayanode')
 
     def __repr__(self):
         # return '<{0} {1} object {2}>'.format(__name__, type(self).__name__, self.fnDependencyNode.name())
@@ -58,160 +67,168 @@ class DependencyNode(object):
             return False
 
     def __getattr__(self, attribute):
-        if hasattr('fnDependencyNode') and self.fnDependencyNode.hasAttribute(attribute):
-            plug = self.fnDependencyNode.findPlug(attribute)
-            attributeMObj = plug.attribute()
-            plugType = attributeMObj.apiType()
+        # print('in getattr for {0}'.format(attribute))
+        if attribute != '_initialized' and hasattr(self, '_initialized') and self._initialized:
+            if hasattr(self, 'fnDependencyNode') and self.fnDependencyNode.hasAttribute(attribute):
+                plug = self.fnDependencyNode.findPlug(attribute)
+                attributeMObj = plug.attribute()
+                plugType = attributeMObj.apiType()
 
-            if plugType == om.MFn.kDoubleLinearAttribute:
-                return plug.asDouble()
-            elif plugType == om.MFn.kDoubleAngleAttribute:
-                return plug.asMAngle()
-            elif plugType == om.MFn.kNumericAttribute:
-                # get data type
-                fnNumericAttr = om.MFnNumericAttribute(attributeMObj)
-                unitType = fnNumericAttr.unitType()
-                if unitType == 1:
-                    return plug.asBool()
-                elif unitType == 3:
-                    return plug.asChar()
-                elif unitType == 4:
-                    return plug.asShort()
-                elif unitType == 7:
-                    return plug.asLong()
-                elif unitType == 8:
-                    return plug.asInt()
-                elif unitType in [13, 14]:
-                    return plug.asFloat()
-                else:
-                    raise AttributeError('The given MFnNumericData type {0} is not supported.'.format(unitType))
-            elif plugType == om.MFn.kAttribute3Double:
-                _result = []
-                for i in range(plug.numChildren()):
-                    _childPlug = plug.child(i)
-                    _result.append(_childPlug.asDouble())
-                return _result
-            elif plugType == om.MFn.kTypedAttribute:
-                fnTypedAttr = om.MFnTypedAttribute(attributeMObj)
-                typedAttrType = fnTypedAttr.attrType()
-                if typedAttrType == 5:
-                    # kMatrix type. Get matrix data without the MFnTransform
-                    if plug.isArray():
-                        # worldMatrix, worldInverseMatrix, parentMatrix, parentInverseMatrix
-                        _childPlug = plug.elementByLogicalIndex(0)
-                        fnMatrixData = om.MFnMatrixData(_childPlug.asMObject())
-                        fnAttribute = om.MFnAttribute(_childPlug.attribute())
-                        return fnMatrixData.transformation()
+                if plugType == om.MFn.kDoubleLinearAttribute:
+                    return plug.asDouble()
+                elif plugType == om.MFn.kDoubleAngleAttribute:
+                    return plug.asMAngle()
+                elif plugType == om.MFn.kNumericAttribute:
+                    # get data type
+                    fnNumericAttr = om.MFnNumericAttribute(attributeMObj)
+                    unitType = fnNumericAttr.unitType()
+                    if unitType == 1:
+                        return plug.asBool()
+                    elif unitType == 3:
+                        return plug.asChar()
+                    elif unitType == 4:
+                        return plug.asShort()
+                    elif unitType == 7:
+                        return plug.asLong()
+                    elif unitType == 8:
+                        return plug.asInt()
+                    elif unitType in [13, 14]:
+                        return plug.asFloat()
                     else:
-                        fnAttribute = om.MFnAttribute(plug.attribute())
-                        # matrix, inverseMatrix, xformMatrix
-                        _util = om.MScriptUtil()
-                        _fnMatrixData = om.MFnMatrixData(plug.asMObject())
-                        return _fnMatrixData.transformation()
+                        raise AttributeError('The given MFnNumericData type {0} is not supported.'.format(unitType))
+                elif plugType == om.MFn.kAttribute3Double:
+                    _result = []
+                    for i in range(plug.numChildren()):
+                        _childPlug = plug.child(i)
+                        _result.append(_childPlug.asDouble())
+                    return _result
+                elif plugType == om.MFn.kTypedAttribute:
+                    fnTypedAttr = om.MFnTypedAttribute(attributeMObj)
+                    typedAttrType = fnTypedAttr.attrType()
+                    if typedAttrType == 5:
+                        # kMatrix type. Get matrix data without the MFnTransform
+                        if plug.isArray():
+                            # worldMatrix, worldInverseMatrix, parentMatrix, parentInverseMatrix
+                            _childPlug = plug.elementByLogicalIndex(0)
+                            fnMatrixData = om.MFnMatrixData(_childPlug.asMObject())
+                            fnAttribute = om.MFnAttribute(_childPlug.attribute())
+                            return fnMatrixData.transformation()
+                        else:
+                            fnAttribute = om.MFnAttribute(plug.attribute())
+                            # matrix, inverseMatrix, xformMatrix
+                            _util = om.MScriptUtil()
+                            _fnMatrixData = om.MFnMatrixData(plug.asMObject())
+                            return _fnMatrixData.transformation()
 
-                raise AttributeError('getattr is currently not supported for this attribute type.')
-            elif plugType == om.MFn.kEnumAttribute:
-                return plug.asInt()
-            elif plugType == om.MFn.kStringData:
-                return plug.asString()
-            elif plugType == om.MFn.kMessageAttribute:
-                raise AttributeError('getattr is currently not supported for this attribute type.')
+                    raise AttributeError('getattr is currently not supported for this attribute type.')
+                elif plugType == om.MFn.kEnumAttribute:
+                    return plug.asInt()
+                elif plugType == om.MFn.kStringData:
+                    return plug.asString()
+                elif plugType == om.MFn.kMessageAttribute:
+                    raise AttributeError('getattr is currently not supported for this attribute type.')
+                else:
+                    raise AttributeError('getattr is currently not supported for this attribute type.')
+                return True
             else:
-                raise AttributeError('getattr is currently not supported for this attribute type.')
-            return True
-        elif not hasattr(self, attribute):
-            # We're calling __getattr__ before the class has been fully initialized
+                return super(DependencyNode, self).__getattribute__(attribute)
+        else:
             return super(DependencyNode, self).__getattribute__(attribute)
 
     def __setattr__(self, attribute, value):
-        if hasattr(self, 'fnDependencyNode') and self.fnDependencyNode.hasAttribute(attribute):
-            plug = self.fnDependencyNode.findPlug(attribute)
-            attributeMObj = plug.attribute()
-            plugType = attributeMObj.apiType()
-            fnAttr = om.MFnAttribute(attributeMObj)
+        # print('in setattr for {0} > {1}'.format(attribute, value))
+        if attribute != '_initialized' and hasattr(self, '_initialized') and self._initialized:
+            if hasattr(self, 'fnDependencyNode') and self.fnDependencyNode.hasAttribute(attribute):
+                plug = self.fnDependencyNode.findPlug(attribute)
+                attributeMObj = plug.attribute()
+                plugType = attributeMObj.apiType()
+                fnAttr = om.MFnAttribute(attributeMObj)
 
-            if not plugType == om.MFn.kTypedAttribute and not fnAttr.isWritable():
-                raise AttributeError('Given attribute {0} is not writable.'.format(fnAttr.name()))
+                if not plugType == om.MFn.kTypedAttribute and not fnAttr.isWritable():
+                    raise AttributeError('Given attribute {0} is not writable.'.format(fnAttr.name()))
 
-            if plugType == om.MFn.kDoubleLinearAttribute:
-                plug.setDouble(value)
-            elif plugType == om.MFn.kDoubleAngleAttribute:
-                plug.setMAngle(value)
-            elif plugType == om.MFn.kNumericAttribute:
-                # get data type
-                fnNumericAttr = om.MFnNumericAttribute(attributeMObj)
-                unitType = fnNumericAttr.unitType()
-                if unitType == 1:
-                    plug.setBool(value)
-                elif unitType == 3:
-                    plug.setChar(value)
-                elif unitType == 4:
-                    plug.setShort(value)
-                elif unitType == 7:
-                    plug.setLong(value)
-                elif unitType == 8:
+                if plugType == om.MFn.kDoubleLinearAttribute:
+                    plug.setDouble(value)
+                elif plugType == om.MFn.kDoubleAngleAttribute:
+                    plug.setMAngle(value)
+                elif plugType == om.MFn.kNumericAttribute:
+                    # get data type
+                    fnNumericAttr = om.MFnNumericAttribute(attributeMObj)
+                    unitType = fnNumericAttr.unitType()
+                    if unitType == 1:
+                        plug.setBool(value)
+                    elif unitType == 3:
+                        plug.setChar(value)
+                    elif unitType == 4:
+                        plug.setShort(value)
+                    elif unitType == 7:
+                        plug.setLong(value)
+                    elif unitType == 8:
+                        plug.setInt(value)
+                    elif unitType in [13, 14]:
+                        plug.setFloat(value)
+                    else:
+                        raise AttributeError('The given MFnNumericData type {0} is not supported.'.format(unitType))
+                elif plugType == om.MFn.kAttribute3Double:
+                    if isinstance(value, om.MQuaternion):
+                        _eulerRot = value.asEulerRotation()
+                        _eulerRot = _eulerRot.reorder(ROTATE_ORDERS[self.rotateOrder])
+                        value = _eulerRot
+                    for i in range(plug.numChildren()):
+                        _childPlug = plug.child(i)
+                        _childPlug.setDouble(value[i])
+
+                elif plugType == om.MFn.kTypedAttribute:
+                    fnTypedAttr = om.MFnTypedAttribute(attributeMObj)
+                    typedAttrType = fnTypedAttr.attrType()
+                    if typedAttrType == 5:
+                        # Matrix attributes are not writable! You cannot write to them, only read from them.
+                        # They cannot be directly connected, which means their values cannot be set
+                        # outside of a node's compute function.
+                        # Instead, read the data from the matrix and set attributes instead...
+                        # NOTE: you cannot set this attribute on anything but self.matrix
+
+                        if fnTypedAttr.isArray():
+                            raise RuntimeError(
+                                '{0}.DependencyNode : setattr is unsupported for Matrix Array attribute {1}'.format(
+                                    __name__, plug.name()))
+
+                        _xformMatrix = om.MTransformationMatrix(value)
+                        _translateVector = _xformMatrix.getTranslation(om.MSpace.kWorld)
+                        _rotateQuaternion = _xformMatrix.rotation()
+                        _scaleUtil = om.MScriptUtil()
+                        _scaleUtil.createFromDouble(1.0, 1.0, 1.0)
+                        _scalePtr = _scaleUtil.asDoublePtr()
+                        _xformMatrix.getScale(_scalePtr, om.MSpace.kWorld)
+                        _scale = [_scaleUtil.getDoubleArrayItem(_scalePtr, 0),
+                                  _scaleUtil.getDoubleArrayItem(_scalePtr, 1),
+                                  _scaleUtil.getDoubleArrayItem(_scalePtr, 2)]
+                        _shearUtil = om.MScriptUtil()
+                        _shearPtr = _shearUtil.asDoublePtr()
+                        _xformMatrix.getShear(_shearPtr, om.MSpace.kTransform)
+                        _shear = [_shearUtil.getDoubleArrayItem(_shearPtr, 0),
+                                  _shearUtil.getDoubleArrayItem(_shearPtr, 1),
+                                  _shearUtil.getDoubleArrayItem(_shearPtr, 2)]
+
+                        setattr(self, 'translate', _translateVector)
+                        setattr(self, 'rotate', _rotateQuaternion)
+                        setattr(self, 'scale', _scale)
+                        setattr(self, 'shear', _shear)
+
+
+                elif plugType == om.MFn.kEnumAttribute:
                     plug.setInt(value)
-                elif unitType in [13, 14]:
-                    plug.setFloat(value)
+                elif plugType == om.MFn.kStringData:
+                    plug.setString(value)
+                elif plugType == om.MFn.kMessageAttribute:
+                    raise AttributeError('setattr is currently not supported for this attribute type.')
                 else:
-                    raise AttributeError('The given MFnNumericData type {0} is not supported.'.format(unitType))
-            elif plugType == om.MFn.kAttribute3Double:
-                if isinstance(value, om.MQuaternion):
-                    _eulerRot = value.asEulerRotation()
-                    _eulerRot = _eulerRot.reorder(ROTATE_ORDERS[self.rotateOrder])
-                    value = _eulerRot
-                for i in range(plug.numChildren()):
-                    _childPlug = plug.child(i)
-                    _childPlug.setDouble(value[i])
-
-            elif plugType == om.MFn.kTypedAttribute:
-                fnTypedAttr = om.MFnTypedAttribute(attributeMObj)
-                typedAttrType = fnTypedAttr.attrType()
-                if typedAttrType == 5:
-                    # Matrix attributes are not writable! You cannot write to them, only read from them.
-                    # They cannot be directly connected, which means their values cannot be set
-                    # outside of a node's compute function.
-                    # Instead, read the data from the matrix and set attributes instead...
-                    # NOTE: you cannot set this attribute on anything but self.matrix
-
-                    if fnTypedAttr.isArray():
-                        raise RuntimeError('{0}.DependencyNode : setattr is unsupported for Matrix Array attribute {1}'.format(__name__, plug.name()))
-
-                    _xformMatrix = om.MTransformationMatrix(value)
-                    _translateVector = _xformMatrix.getTranslation(om.MSpace.kWorld)
-                    _rotateQuaternion = _xformMatrix.rotation()
-                    _scaleUtil = om.MScriptUtil()
-                    _scaleUtil.createFromDouble(1.0, 1.0, 1.0)
-                    _scalePtr = _scaleUtil.asDoublePtr()
-                    _xformMatrix.getScale(_scalePtr, om.MSpace.kWorld)
-                    _scale = [_scaleUtil.getDoubleArrayItem(_scalePtr, 0),
-                              _scaleUtil.getDoubleArrayItem(_scalePtr, 1),
-                              _scaleUtil.getDoubleArrayItem(_scalePtr, 2)]
-                    _shearUtil = om.MScriptUtil()
-                    _shearPtr = _shearUtil.asDoublePtr()
-                    _xformMatrix.getShear(_shearPtr, om.MSpace.kTransform)
-                    _shear = [_shearUtil.getDoubleArrayItem(_shearPtr, 0),
-                              _shearUtil.getDoubleArrayItem(_shearPtr, 1),
-                              _shearUtil.getDoubleArrayItem(_shearPtr, 2)]
-
-                    setattr(self, 'translate', _translateVector)
-                    setattr(self, 'rotate', _rotateQuaternion)
-                    setattr(self, 'scale', _scale)
-                    setattr(self, 'shear', _shear)
-
-
-            elif plugType == om.MFn.kEnumAttribute:
-                plug.setInt(value)
-            elif plugType == om.MFn.kStringData:
-                plug.setString(value)
-            elif plugType == om.MFn.kMessageAttribute:
-                raise AttributeError('setattr is currently not supported for this attribute type.')
+                    raise AttributeError('setattr is currently not supported for this attribute type.')
             else:
-                raise AttributeError('setattr is currently not supported for this attribute type.')
-            return True
+                # We're calling __setattr__ before the class has been fully initialized
+                super(DependencyNode, self).__setattr__(attribute, value)
         else:
-            # We're calling __setattr__ before the class has been fully initialized
-            return super(DependencyNode, self).__setattr__(attribute, value)
+            super(DependencyNode, self).__setattr__(attribute, value)
 
     def plug(self, plugString):
         if self.fnDependencyNode.hasAttribute(plugString):
@@ -233,6 +250,10 @@ class DependencyNode(object):
         _dgMod.connect(sourcePlug, destPlug)
         _dgMod.doIt()
 
+    # @property
+    # def fnDependencyNode(self):
+    #     return om.MFnDependencyNode(self.mObject)
+
     @property
     def name(self):
         return self.fnDependencyNode.name()
@@ -240,14 +261,6 @@ class DependencyNode(object):
     @name.setter
     def name(self, value):
         self.fnDependencyNode.setName(self.makeShortNameUnique(value))
-
-    @property
-    def fnDependencyNode(self):
-        try:
-            _fnDependencyNode = om.MFnDependencyNode(self.mObject)
-            return _fnDependencyNode
-        except RuntimeError:
-            raise RuntimeError('Given object type is not compatible')
 
     '''
     @property
@@ -282,8 +295,24 @@ class DependencyNode(object):
 
 
 class DagNode(DependencyNode):
-    def __init__(self, name):
-        super(DagNode, self).__init__(name)
+    def __init__(self, seed):
+        super(DagNode, self).__init__(seed)
+
+        self._initialized = False
+
+        _sel = om.MSelectionList()
+        try:
+            _sel.add(self.fnDependencyNode.name())
+            _dag = om.MDagPath()
+            _sel.getDagPath(0, _dag)
+            self.dagPath = _dag
+        except RuntimeError:
+            # object's short name is not unique. Iterate through the dag until we find this mObject
+            raise RuntimeError('Object short name is not unique')
+
+        self.fnDagNode = om.MFnDagNode(self.dagPath)
+
+        self._initialized = True
 
     def __repr__(self):
         return self.dagPath.fullPathName()
@@ -297,17 +326,17 @@ class DagNode(DependencyNode):
     def __radd__(self, other):
         return other + self.dagPath.fullPathName()
 
-    @property
-    def fnDependencyNode(self):
-        try:
-            _fnDependencyNode = om.MFnDependencyNode(self.mObject)
-            return _fnDependencyNode
-        except RuntimeError:
-            raise RuntimeError('Given object type is not compatible')
+    # @property
+    # def fnDependencyNode(self):
+    #     try:
+    #         _fnDependencyNode = om.MFnDependencyNode(self.mObject)
+    #         return _fnDependencyNode
+    #     except RuntimeError:
+    #         raise RuntimeError('Given object type is not compatible')
 
-    @property
-    def fnDagNode(self):
-        return om.MFnDagNode(self.dagPath)
+    # @property
+    # def fnDagNode(self):
+    #     return om.MFnDagNode(self.dagPath)
 
     @property
     def name(self):
@@ -321,19 +350,23 @@ class DagNode(DependencyNode):
     def shortName(self):
         return self.dagPath.partialPathName()
 
-    @property
-    def dagPath(self):
-        _sel = om.MSelectionList()
-        _fnDependencyNode = om.MFnDependencyNode(self.mObject)
-        # TODO: this doesn't work with shortName duplicates in a scene
-        try:
-            _sel.add(_fnDependencyNode.name())
-            _dag = om.MDagPath()
-            _sel.getDagPath(0, _dag)
-            return _dag
-        except RuntimeError:
-            # object's short name is not unique. Iterate through the dag until we find this mObject
-            raise RuntimeError('Object short name is not unique')
+    @shortName.setter
+    def shortName(self, value):
+        self.fnDependencyNode.setName(value)
+
+    # @property
+    # def dagPath(self):
+    #     _sel = om.MSelectionList()
+    #     # _fnDependencyNode = om.MFnDependencyNode(self.mObject)
+    #     # TODO: this doesn't work with shortName duplicates in a scene
+    #     try:
+    #         _sel.add(self.fnDependencyNode.name())
+    #         _dag = om.MDagPath()
+    #         _sel.getDagPath(0, _dag)
+    #         return _dag
+    #     except RuntimeError:
+    #         # object's short name is not unique. Iterate through the dag until we find this mObject
+    #         raise RuntimeError('Object short name is not unique')
 
     def getParent(self):
         # return the Transform of the parent
@@ -343,9 +376,17 @@ class DagNode(DependencyNode):
             return None
 
     def setParent(self, newParent):
-        if newParent == None and self.dagPath.length() > 1:
-            # TODO find out how to parent to world
-            return
+        if not newParent:
+            raise ValueError('Parenting to world not currently possible')
+            # if self.dagPath.length() > 1:
+            #     _currentParent = self.getParent()
+            #     while self.getParent():
+            #         _newParent = _currentParent.getParent()
+            #         self.setParent(_currentParent)
+            # else:
+            #     om.MGlobal.displayInfo('{0} is already a child of world'.format(self))
+
+            # return
         elif not isinstance(newParent, DagNode):
             newParent = DagNode(newParent)
 
@@ -496,9 +537,13 @@ class DagNode(DependencyNode):
             # check what the shape's type is
             _shapeMObj = _dag.node()
             if _shapeMObj.hasFn(om.MFn.kMesh):
-                return Mesh(_shapeMObj)
+                _mesh = Mesh(_shapeMObj)
+                if not _mesh.fnDagNode.isIntermediateObject():
+                    return _mesh
             elif _shapeMObj.hasFn(om.MFn.kNurbsCurve):
-                return Curve(_shapeMObj)
+                _curve = Curve(_shapeMObj)
+                if not _curve.fnDagNode.isIntermediateObject():
+                    return _curve
             # TODO support more shape types
             else:
                 return Shape(_shapeMObj)
@@ -614,8 +659,8 @@ class DagNode(DependencyNode):
 
 
 class Shape(DagNode):
-    def __init__(self, name):
-        super(Shape, self).__init__(name)
+    def __init__(self, seed):
+        super(Shape, self).__init__(seed)
 
     @property
     def transform(self):
@@ -625,8 +670,8 @@ class Shape(DagNode):
 
 
 class Mesh(Shape):
-    def __init__(self, name):
-        super(Mesh, self).__init__(name)
+    def __init__(self, seed):
+        super(Mesh, self).__init__(seed)
 
     @property
     def fnMesh(self):
@@ -636,7 +681,6 @@ class Mesh(Shape):
         except RuntimeError:
             raise RuntimeError('Given object type is not compatible. Is the object a polygonal mesh?')
 
-    @property
     def getSkinCluster(self):
 
         itDG = om.MItDependencyGraph(self.mObject, om.MFn.kSkinClusterFilter, om.MItDependencyGraph.kUpstream,
@@ -659,8 +703,8 @@ class Mesh(Shape):
 
 
 class Curve(Shape):
-    def __init__(self, name):
-        super(Curve, self).__init__(name)
+    def __init__(self, seed):
+        super(Curve, self).__init__(seed)
 
     @property
     def fnNurbsCurve(self):
@@ -676,14 +720,13 @@ class Curve(Shape):
 
         return _cvs
 
-    def setPoints(self, points, space='world', cvLimit=256):
+    def setPoints(self, points, space='world', cvLimit=128):
         space = SPACES.get(space)
         if not space:
             raise ValueError('Unsupported space type \'{0}\' given.'.format(space))
 
         _points = om.MPointArray()
         _numCVs = self.fnNurbsCurve.numCVs()
-
 
         if isinstance(points, list):
             for i in xrange(len(points)):
@@ -693,10 +736,7 @@ class Curve(Shape):
                 _points.append(om.MPoint(_lastPoint))
 
         elif isinstance(points, om.MPointArray):
-            _points = points
-            # TODO: this isn't fully supported yet
-            # if points.length() != _numCVs:
-            #     raise ValueError('The number of points given does not match the number of CV points.')
+            _points = points  # TODO: this isn't fully supported yet  # if points.length() != _numCVs:  #     raise ValueError('The number of points given does not match the number of CV points.')
 
         self.fnNurbsCurve.setCVs(_points, space)
         self.fnNurbsCurve.updateCurve()
@@ -725,8 +765,8 @@ class Curve(Shape):
 
 
 class SkinCluster(DependencyNode):
-    def __init__(self, name):
-        super(SkinCluster, self).__init__(name)
+    def __init__(self, seed):
+        super(SkinCluster, self).__init__(seed)
 
     @property
     def fnSkinCluster(self):
@@ -784,19 +824,6 @@ class SkinCluster(DependencyNode):
 
         return _weights
 
-    def setWeights(self, weights, components=None):
-        if not components:
-            components = om.MObject()
-        else:
-            assert isinstance(components, om.MObject())
-
-        assert isinstance(weights, (om.MDoubleArray, list))
-
-        self.mFnSkinCluster.setWeights(self.outputGeometry.dagPath, components, self.influenceIndices, weights)
-
-    def pruneWeights(self, maxInfluence=4):
-        raise RuntimeError('pruneWeights is not yet implemented')
-
     def getWeightDictionary(self):
         '''Return the weight dictionary for the given skin cluster.
         Each influence's short name is followed by its vertex weights.'''
@@ -815,6 +842,96 @@ class SkinCluster(DependencyNode):
 
         return weightDict
 
+    def setWeights(self, weights, components=None):
+        if not components:
+            components = om.MObject()
+        else:
+            assert isinstance(components, om.MObject)
+
+        assert isinstance(weights, (om.MDoubleArray, list))
+
+        self.fnSkinCluster.setWeights(self.outputGeometry.dagPath, components, self.influenceIndices, weights)
+
+    def pruneWeights(self, maxInfluence=4):
+        """Sets the weights for each vertex to the average of its neighbors."""
+
+        originalSel = om.MSelectionList()
+        om.MGlobal.getActiveSelectionList(originalSel)
+
+        sel = om.MSelectionList()
+
+        # if originalSel.length():
+        #     # TODO: do this with OpenMaya
+        #     cmds.select(cmds.polyListComponentConversion(toVertex=True))
+        #     om.MGlobal.getActiveSelectionList(sel)
+        # else:
+        sel.add(self.outputGeometry + '.vtx[:]')
+
+        selectedComponents = om.MObject()
+        _dag = om.MDagPath()
+        sel.getDagPath(0, _dag, selectedComponents)
+        meshTransform = DagNode(_dag.node())
+
+        # if type(meshTransform.shape) != Mesh:
+        #     om.MGlobal.displayError("Selection must be a polygon mesh.")
+        #     return
+
+        oldWeights = self.getWeights(components=selectedComponents)
+
+        # newWeights just starts as a copy of oldWeights
+        newWeights = om.MDoubleArray(oldWeights)
+
+        # iterate over the selected verts
+        itVerts = om.MItMeshVertex(meshTransform.dagPath, selectedComponents)
+        i = 0
+        numOverInfluenced = 0
+        infCount = self.influenceCount
+
+        while not itVerts.isDone():
+            vertWeightSliceStart = i * infCount
+            vertWeights = list(newWeights[vertWeightSliceStart: vertWeightSliceStart + infCount])
+            # Filter is nearly instant.
+            nonZeroCount = len(filter(lambda w: w > 0.0, vertWeights))
+
+            if nonZeroCount > maxInfluence:
+                numOverInfluenced += 1
+                # makes the weights for the closest vertex equal to the outer vertex
+                newWeights[vertWeightSliceStart: vertWeightSliceStart + infCount] = self.pruneVertexWeightList(
+                    vertWeights, influenceCount=infCount, maxInfluence=maxInfluence)
+
+            i += 1
+            itVerts.next()
+
+        if numOverInfluenced:
+            self.setWeights(newWeights, components=selectedComponents)
+
+        om.MGlobal.setActiveSelectionList(originalSel)
+
+        om.MGlobal.displayInfo(
+            'Pruned {0} over-influenced vertices from {1}.'.format(numOverInfluenced, meshTransform.shortName))
+
     def smoothWeights(self, components):
         raise RuntimeError('smoothWeights is not yet implemented')
 
+    @classmethod
+    def pruneVertexWeightList(cls, weights, influenceCount, maxInfluence=4, normalize=True):
+        """Prunes the given list to have only four non-zero values"""
+
+        sortedWeights = weights
+        sortedWeights.sort(reverse=True)
+        prunedWeights = [0.0] * influenceCount
+
+        if maxInfluence > 1:
+            for i in range(influenceCount):
+                if i > (maxInfluence - 1):
+                    prunedWeights[weights.index(sortedWeights[i])] = 0.0
+                else:
+                    prunedWeights[weights.index(sortedWeights[i])] = sortedWeights[i]
+        else:
+            prunedWeights[weights.index(sortedWeights[0])] = sortedWeights[0]
+
+        if normalize:
+            prunedWeightsSum = sum(prunedWeights)
+            prunedWeights = [value / prunedWeightsSum for value in prunedWeights]
+
+        return prunedWeights
