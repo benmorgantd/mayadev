@@ -226,12 +226,12 @@ def reorderMatrix(matrix, downAxis=0, upAxis=0):
 
 
 def listFromMatrix(matrix):
-    finalList = []
+    util = om.MScriptUtil()
 
-    matrixList = list(matrix)
+    matrixList = []
 
-    for i in range(4):
-        for j in range(4):
-            finalList.append(matrixList[i][j])
+    for row in range(4):
+        for column in range(4):
+            matrixList.append(util.getDoubleArrayItem(matrix[row], column))
 
-    return finalList
+    return matrixList

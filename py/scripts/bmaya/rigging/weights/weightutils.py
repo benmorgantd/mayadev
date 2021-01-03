@@ -346,3 +346,27 @@ def getSkinClusterWeightDict(skinClusterObj):
 
     return weightDict
 
+
+def getSkinClusterObjFromShape(shape):
+    sel = om.MSelectionList()
+    sel.add(shape)
+    mobj = om.MObject()
+    sel.getDependNode(0, mobj)
+
+    itDG = om.MItDependencyGraph(mobj, om.MFn.kSkinClusterFilter, om.MItDependencyGraph.kUpstream,
+                                 om.MItDependencyGraph.kDepthFirst, om.MItDependencyGraph.kNodeLevel)
+
+    if itDG.isDone():
+        # No skin cluster. Are you sure you passed a mesh?
+        return None
+
+    skinClusterMObjArray = om.MObjectArray()
+
+    while not itDG.isDone():
+        currentNode = itDG.currentItem()
+        skinClusterMObjArray.append(currentNode)
+
+        itDG.next()
+
+    # Return the first item in the array
+    return skinClusterMObjArray[0]

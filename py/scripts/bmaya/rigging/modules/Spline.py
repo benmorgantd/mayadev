@@ -35,8 +35,6 @@ class Spline(module.Module):
         self.ikDriveJoints = self.createDriveJoints(label='IKDRIVER', constrain=False)
         self.driveJoints = self.createDriveJoints(label='DRIVER', constrain=True)
 
-        print(len(self.fkDriveJoints))
-
         self.fkComponents = self.buildFkControls()
         self.ikComponents = self.buildIkControls()
 
@@ -61,31 +59,19 @@ class Spline(module.Module):
         self.components += self.fkComponents
         self.components += self.ikComponents
 
-        print('finished with build!')
-
     def buildFkControls(self):
 
         _components = []
 
-        for i in range(len(self.fkDriveJoints)):
+        for i in xrange(len(self.fkDriveJoints)):
             jnt = self.fkDriveJoints[i]
-            print('got joint index')
 
             ctrl = shapelib.ControlCurve(name=name.findControlName(jnt, identifier='Fk'), shapeType=self.shapeType,
                                          jnt=jnt)
-            print('made control')
-            print(ctrl)
-
-            # TODO there's something funky going on here with the following append statement...
-            # and it's _just_ in this module.
 
             _components.append(ctrl)
 
-            print('appended control')
-
             self.parentConstrain(ctrl.ctrl, jnt, maintainOffset=True)
-
-            print('did constraint')
 
             if i == 0:
                 cmds.parent(ctrl.offsetGrp, self.componentsGrp)
@@ -98,17 +84,13 @@ class Spline(module.Module):
                 else:
                     cmds.parent(ctrl.offsetGrp, _components[0].ctrl)
 
-            print('did parenting')
-
             cmds.addAttr(jnt, longName='driveCtrl', attributeType='message')
             cmds.addAttr(ctrl.ctrl, longName='driveJoint', attributeType='message')
             cmds.connectAttr(ctrl.ctrl + '.driveJoint', jnt + '.driveCtrl')
-            print('made it to end of loop')
 
         return _components
 
     def buildIkControls(self):
-
         self.splineIkHandle, self.splineCurve = self.buildIkSpline()
 
         self.splineDriverJoints = self.buildSplineDriverJoints()
@@ -121,7 +103,7 @@ class Spline(module.Module):
         ikControls = []
 
         # build the controls
-        for i in range(len(self.splineDriverJoints)):
+        for i in xrange(len(self.splineDriverJoints)):
             jnt = self.splineDriverJoints[i]
 
             ctrl = shapelib.ControlCurve(name=name.findControlName(jnt, identifier='Ik'), shapeType=self.shapeType,
@@ -151,9 +133,12 @@ class Spline(module.Module):
 
         # the end effector for the splineIKHandle is one joint too early?
 
-        splineIkHandle = \
-        cmds.ikHandle(name=self.name + '_splineIkHandle', solver='ikSplineSolver', startJoint=self.ikDriveJoints[0],
-                      endEffector=self.ikDriveJoints[-1], curve=splineCurve, createCurve=False)[0]
+        splineIkHandle = cmds.ikHandle(name=self.name + '_splineIkHandle',
+                                       solver='ikSplineSolver',
+                                       startJoint=self.ikDriveJoints[0],
+                                       endEffector=self.ikDriveJoints[-1],
+                                       curve=splineCurve,
+                                       createCurve=False)[0]
 
         if constants.SPINE_UP_AXIS == 'Y':
             # special attribute values for making a y up spine
@@ -203,7 +188,8 @@ class Spline(module.Module):
         # startJointMatrix = cmds.getAttr(self.startJoint + '.worldMatrix[0]')
         # forwardVector = om.MVector(*startJointMatrix[4:7])
 
-        for i in range(self.controlAmount):
+
+        for i in xrange(self.controlAmount):
             cmds.select(clear=True)
 
             # make a control at a percentage distance along the curve
@@ -224,6 +210,7 @@ class Spline(module.Module):
             cmds.parent(jnt, self.componentsGrp)
 
             splineDriverJoints.append(jnt)
+
 
         return splineDriverJoints
 

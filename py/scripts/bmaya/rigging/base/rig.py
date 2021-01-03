@@ -137,15 +137,12 @@ class Rig(Asset):
         progressWindow.setStatus('Building limbs')
         progressWindow.increment(5)
 
-        print(buildList)
         if not buildList:
             raise RuntimeError
 
         for mod in buildList:
             # access the modType attribute from the module's dictionary
             modType = mod['modType']
-            print(mod)
-            print(modType)
 
             # create a new instance of that class
             modInstance = modules.MODULE_CLASSES[modType].__new__(modules.MODULE_CLASSES[modType])
@@ -158,15 +155,13 @@ class Rig(Asset):
             # build it!
             modInstance.build()
 
-            print('built module')
-
             self.allControls += [comp.ctrl for comp in modInstance.components]
 
             # it'll mirror if its mirror attribute is True
             mirrorInstance = modInstance.doMirror()
 
             # optional, adds time.
-            # cmds.refresh(currentView=True)
+            cmds.refresh(currentView=True)
 
             if mirrorInstance:
                 mirrorModules.append(mirrorInstance.dict)
@@ -190,8 +185,6 @@ class Rig(Asset):
         # skinning after the components have been built allows us to create bind joints
         self.skin()
 
-        print('added skinning')
-
         progressWindow.setStatus('Writing character node attributes')
         progressWindow.increment(5)
         self.addNodeAttrs()
@@ -202,13 +195,9 @@ class Rig(Asset):
                                  '{0}_{1}.character'.format(mod['name'],
                                                             constants.MODULE_SUFFIX))
 
-        print('made connections')
-
         progressWindow.setStatus('Loading control shapes')
         progressWindow.increment(5)
         shapeio.load(self.componentPathFromType('cvs'))
-
-        print('loaded control shapes')
 
         progressWindow.setStatus('Loading weights')
         progressWindow.increment(5)
@@ -217,8 +206,6 @@ class Rig(Asset):
 
         for f in weightFiles:
             weightio.load(os.path.join(weightsDir, f))
-
-        print('loaded weights')
 
         # create influences set
         self.bindSet = self.makeBindSet()

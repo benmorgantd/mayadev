@@ -30,19 +30,20 @@ def wrapBuild(fn):
 
         for transform in ['translate', 'rotate', 'scale']:
             for axis in ['X', 'Y', 'Z']:
-                cmds.setAttr('{0}.{1}{2}'.format(self.modGrp, transform, axis), lock=True)
+                cmds.setAttr('{0}.{1}{2}'.format(self.modGrp, transform, axis), lock=True, keyable=False)
 
         for ctrl in self.components:
             for attr in ['scaleX', 'scaleY', 'scaleZ']:
-                cmds.setAttr('{0}.{1}'.format(ctrl.ctrl, attr, lock=True))
-            cmds.setAttr(ctrl.ctrl + '.visibility', lock=True)
+                cmds.setAttr('{0}.{1}'.format(ctrl.ctrl, attr, lock=True, keyable=False))
+            cmds.setAttr(ctrl.ctrl + '.visibility', lock=True, keyable=False)
+
             for grp in ctrl.groupHierarchy:
                 for transform in ['translate', 'rotate', 'scale']:
                     for axis in ['X', 'Y', 'Z']:
-                        cmds.setAttr('{0}.{1}{2}'.format(grp, transform, axis))
+                        cmds.setAttr('{0}.{1}{2}'.format(grp, transform, axis), lock=True, keyable=False)
 
         self.captureComponentDefaults()
-        
-        return result 
+
+        return result
 
     return wrapper
