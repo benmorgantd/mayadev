@@ -1,8 +1,6 @@
 import maya.OpenMaya as om
 import maya.cmds as cmds
 
-from bmaya import mayanode
-
 
 def findPoleVector(joints, scaleFactor=1):
     if len(joints) < 3:
@@ -165,13 +163,8 @@ def matchTransforms(source, targets, translate=True, rotate=True, scale=True):
     if isinstance(targets, basestring):
         targets = [targets]
 
-    _source = mayanode.DagNode(source)
-
     for target in targets:
-        # cmds.delete(cmds.parentConstraint(source, target, maintainOffset=False))
-        _target = mayanode.DagNode(target)
-        _target.matrix = _source.worldMatrix
-
+        cmds.delete(cmds.parentConstraint(source, target, maintainOffset=False))
 
 def getMMatrixFromList(matrixList):
     matrix = om.MMatrix()

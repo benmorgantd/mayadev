@@ -4,7 +4,7 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 
 from bmaya.core import name, constants
-from bmaya import mayanode
+
 
 def getSelectionCenter():
     cmds.select(cmds.polyListComponentConversion(toVertex=True))
@@ -162,21 +162,21 @@ def addTwistJoints(startJoint, endJoint, jointCount=3):
         (list): An array of Joint classes
         
     """
-    
-    startJoint = mayanode.Joint(startJoint)
-    endJoint = mayanode.Joint(endJoint)
-    
-    jointVector = endJoint.vectorFromParent
-    
+
+    startJointVector = om.MVector(*cmds.xform('skel:shoulder_00_L_JNT', query=True, translation=True, worldSpace=True))
+    endJointVector = om.MVector(*cmds.xform('skel:elbow_00_L_JNT', query=True, translation=True, worldSpace=True))
+
+    jointVector = om.MVector(endJointVector - startJointVector)
+
     twistJoints = []
-    
+
     for i in range(jointCount):
         cmds.select(clear=True)
-        j = mayanode.Joint(name.findJointName(startJoint.shortName, identifier='Twist', count=i, suffix=constants.JOINT_SUFFIX))
-        j.worldPosition = startJoint.worldPosition + ((jointVector * i) / float(jointCount - 1))
-        j.parent = startJoint.name
-        j.orient = [0,0,0]
-        
+        j = cmds.joint(name.findJointName(startJoint.shortName, identifier='Twist', count=i, suffix=constants.JOINT_SUFFIX))
+        newPosition = startJointVector + ((jointVector * i) / float(jointCount - 1))
+        cmds.xform(j, translation=newPosition)
+        cmds.parent(j, startJoint)
+
         twistJoints.append(j)
     
     return twistJoints

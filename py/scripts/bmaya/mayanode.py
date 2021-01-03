@@ -45,7 +45,7 @@ class DependencyNode(object):
         self.fnDependencyNode = om.MFnDependencyNode(self.mObject)
 
         self._initialized = True
-        print('initialized a mayanode')
+        print('initialized a mayanode called' + self)
 
     def __repr__(self):
         # return '<{0} {1} object {2}>'.format(__name__, type(self).__name__, self.fnDependencyNode.name())

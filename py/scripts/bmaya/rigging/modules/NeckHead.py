@@ -1,8 +1,6 @@
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from bmaya import mayanode
-
 from bmaya.rigging.modules import FkTwist
 from bmaya.rigging.base.decorators import wrapBuild
 from bmaya.core import name, constants
@@ -34,8 +32,8 @@ class NeckHead(FkTwist.FkTwist):
     def buildNeckHead(self):
         self.buildFkTwist()
 
-        startPoint = mayanode.DagNode(self.components[0].ctrl).worldPosition
-        endPoint = mayanode.DagNode(self.components[-1].ctrl).worldPosition
+        startPoint = om.MVector(*cmds.xform(self.components[0].ctrl, query=True, worldSpace=True, translation=True))
+        endPoint = om.MVector(*cmds.xform(self.components[-1].ctrl, query=True, worldSpace=True, translation=True))
         startEndDistance = (endPoint - startPoint).length()
 
         # add constraints for twist controls

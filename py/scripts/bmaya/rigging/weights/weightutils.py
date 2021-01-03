@@ -1,36 +1,40 @@
+import json
+
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as omAnim
 import maya.cmds as cmds
 import maya.mel
 
-from bmaya import mayanode
-
 
 def getSkinClusterName(dag):
     """A convenience function for finding the skinCluster deforming a mesh.
-
     params:
-        dag (MDagPath): A MDagPath for the mesh we want to investigate. 
-
+        dag (MDagPath): A MDagPath for the mesh we want to investigate.
     returns:
         skinCluster (str), skinClusterObj (MObject)
     """
 
+    # gets the mesh's full name as a string
+    meshName = dag.fullPathName()
+
     # useful one-liner for finding a skinCluster on a mesh
-    return getSkinCluster(dag.fullPathName())
+    skinClusterName = cmds.ls(cmds.listHistory(meshName), type="skinCluster")
+
+    if len(skinClusterName):
+        return skinClusterName[0]
+    else:
+        return None
 
 
 def getSkinClusterObj(dag):
     """A convenience function for finding the skinCluster deforming a mesh.
-
     params:
-        dag (MDagPath): A MDagPath for the mesh we want to investigate. 
-
+        dag (MDagPath): A MDagPath for the mesh we want to investigate.
     returns:
         skinCluster (str), skinClusterObj (MObject)
     """
 
-    skinClusterName = getSkinCluster(dag.fullPathName())
+    skinClusterName = getSkinClusterName(dag)
 
     if skinClusterName:
         # get the MObject for that skinCluster node if there is one
@@ -48,19 +52,16 @@ def getSkinClusterObj(dag):
 def getSkinClusterWeights(skinClusterObj, components=None):
     """Returns the weights from a skinCluster and any data necessary for setting
     the weights later down the road
-
     params:
         skinClusterObj (MObject) : The MObject for the skinCluster you want to get weights from
         components (MObject) : If given, the skinCluster will only gives weights for these verts
-
-
     """
 
     mFnSkinCluster = omAnim.MFnSkinCluster(skinClusterObj)
 
     # We can find the dag path for the object affected by the skinCluster this way.
-    # This assumes the first index in the outputGeometry plug is what we want. 
-    # I've never run into a situation where that's not the case. 
+    # This assumes the first index in the outputGeometry plug is what we want.
+    # I've never run into a situation where that's not the case.
     dag = om.MDagPath()
     mFnSkinCluster.getPathAtIndex(0, dag)
 
@@ -115,12 +116,8 @@ def skin(joints, mesh):
     cmds.select(joints)
     cmds.select(mesh, add=True)
 
-    cstr = cmds.skinCluster(obeyMaxInfluences=True,
-                            weightDistribution=2,
-                            skinMethod=0,
-                            normalizeWeights=1,
-                            dropoffRate=3.0,
-                            toSelectedBones=True)
+    cstr = cmds.skinCluster(obeyMaxInfluences=True, weightDistribution=2, skinMethod=0, normalizeWeights=1,
+                            dropoffRate=3.0, toSelectedBones=True)
 
     return cstr[0]
 
@@ -131,7 +128,7 @@ def quickSkin():
     meshes = list(set(sel) - set(joints))
 
     for mesh in meshes:
-        existingSkin = getSkinCluster(mesh)
+        existingSkin = cmds.ls(cmds.listHistory(mesh), type='skinCluster')
 
         if existingSkin:
             cmds.delete(existingSkin)
@@ -140,64 +137,52 @@ def quickSkin():
         cmds.select(joints)
         cmds.select(mesh, add=True)
 
-        cstr = cmds.skinCluster(joints, mesh,
-                                maximumInfluences=1,
-                                obeyMaxInfluences=True,
-                                weightDistribution=2,
-                                skinMethod=0,
-                                normalizeWeights=1,
-                                dropoffRate=3.0,
-                                toSelectedBones=True)
+        cstr = cmds.skinCluster(joints, mesh, maximumInfluences=1, obeyMaxInfluences=True, weightDistribution=2,
+                                skinMethod=0, normalizeWeights=1, dropoffRate=3.0, toSelectedBones=True)
 
         cmds.setAttr(cstr[0] + '.maxInfluences', 4)
 
 
-def bakeDeltaMushToSkinCluster(meshTransform):
-    om.MGlobal.clearSelectionList()
-    meshTransform = mayanode.DagNode(meshTransform)
-    meshShape = meshTransform.shape
-    skinCluster = meshShape.getSkinCluster()
+def bakeDeltaMushToSkinCluster(dag):
+    cmds.select(clear=True)
+    skinClusterObj = getSkinClusterObj(dag)
+    fnMesh = om.MFnMesh(dag)
 
-    originalWeights = skinCluster.getWeights()
-    influenceObjects = skinCluster.influenceObjects
+    originalWeights, infIndices, infObjects = getSkinClusterWeights(skinClusterObj)
 
     restPoints = om.MPointArray()
     # get rest pose vertex positions
-    meshShape.fnMesh.getPoints(restPoints, om.MSpace.kWorld)
-    infCount = influenceObjects.length()
+    fnMesh.getPoints(restPoints, om.MSpace.kWorld)
+    numVerts = restPoints.length()
 
-    deltaMush = cmds.deltaMush(meshTransform.dagPath.fullPathName(),
-                               smoothingIterations=5,
-                               smoothingStep=0.5,
-                               pinBorderVertices=False,
-                               envelope=1,
-                               after=True)[0]
+    infCount = infObjects.length()
 
+    deltaMush = \
+    cmds.deltaMush(dag.fullPathName(), smoothingIterations=5, smoothingStep=0.5, pinBorderVertices=False, envelope=1,
+                   after=True)[0]
     # makes the vertices keep their relative distances
     cmds.setAttr(deltaMush + '.distanceWeight', 1.0)
 
     deltaWeights = originalWeights
+    # for i in range(originalWeights.length()):
+    #     deltaWeights.append(0.0)
 
     gMainProgressBar = maya.mel.eval('$tmp = $gMainProgressBar')
-
-    cmds.progressBar(gMainProgressBar,
-                     edit=True,
-                     beginProgress=True,
-                     isInterruptable=True,
-                     status='Converting Delta Mush ...',
-                     maxValue=infCount)
+    cmds.progressBar(gMainProgressBar, edit=True, beginProgress=True, isInterruptable=True,
+                     status='Converting Delta Mush ...', maxValue=infCount)
 
     try:
+
         for influenceIndex in range(infCount):
             # move influence object one unit
-            infName = influenceObjects[influenceIndex].partialPathName()
+            infName = infObjects[influenceIndex].partialPathName()
 
             # this is where the delta mush deformer stops "working"
             # the deformation made by this move isn't affected by the delta mush
             cmds.move(0, 1, 0, infName, preserveChildPosition=1, worldSpace=1, relative=1)
 
             # if we don't re-declare the fnMesh every time, the points don't update
-            fnMesh = om.MFnMesh(meshTransform.dagPath)
+            fnMesh = om.MFnMesh(dag)
             influencePointLocations = om.MPointArray()
             fnMesh.getPoints(influencePointLocations, om.MSpace.kWorld)
 
@@ -205,9 +190,11 @@ def bakeDeltaMushToSkinCluster(meshTransform):
                 restDeltaDistance = influencePointLocations[vertexIndex].distanceTo(restPoints[vertexIndex])
 
                 # after moving the joint, if the vertex moves, that joint has some influence on the mesh
-                if restDeltaDistance > 0.0:
+                if restDeltaDistance > 0:
                     # set the weight for that vertex at that weight index to the distance
                     deltaWeights[(vertexIndex * infCount) + influenceIndex] = restDeltaDistance
+
+            # cmds.refresh(currentView=True)
 
             cmds.move(0, -1, 0, infName, preserveChildPosition=1, worldSpace=1, relative=1)
 
@@ -215,16 +202,15 @@ def bakeDeltaMushToSkinCluster(meshTransform):
 
             # om.MGlobal.displayInfo('Delta Mush conversion at {:.2f}%'.format((influenceIndex / float(infCount)) * 100))
 
-    except:
-        raise
+    except Exception as e:
+        raise Exception(e)
     finally:
-        cmds.progressBar(gMainProgressBar,
-                         edit=True,
-                         endProgress=True)
+        cmds.progressBar(gMainProgressBar, edit=True, endProgress=True)
 
-    skinCluster.setWeights(deltaWeights)
+    setSkinClusterWeights(skinClusterObj, infIndices, deltaWeights)
 
-    cmds.skinPercent(meshShape.name, normalize=True)
+    cmds.select(dag.partialPathName())
+    cmds.skinPercent(getSkinClusterName(dag), normalize=True)
 
     cmds.delete(deltaMush)
 
@@ -283,9 +269,8 @@ def pruneSkinWeights(maxInfluence=4):
         return
 
     # get the skin cluster object
-    skinCluster = getSkinCluster(dag.fullPathName())
-    # TODO do this ona more object oriented level
-    skinClusterObj = getSkinClusterObj(dag.fullPathName())
+    skinCluster = getSkinClusterName(dag)
+    skinClusterObj = getSkinClusterObj(dag)
 
     cmds.skinPercent(skinCluster, pruneWeights=0.005)
 
@@ -303,7 +288,7 @@ def pruneSkinWeights(maxInfluence=4):
         influenceIndices.append(i)
 
     oldWeights = om.MDoubleArray()
-    # don't use the selectedComponents MObject we made since we want to get the weights for each vertex 
+    # don't use the selectedComponents MObject we made since we want to get the weights for each vertex
     # on this mesh, not just the selected one
     emptyObj = om.MObject()
     mFnSkinCluster.getWeights(dag, selectedComponents, oldWeights, infCountPtr)
@@ -361,44 +346,3 @@ def getSkinClusterWeightDict(skinClusterObj):
 
     return weightDict
 
-
-def getSkinCluster(shape):
-    '''
-
-    :param str shape: the mesh to search
-    :return: str
-
-    '''
-
-    sel = om.MSelectionList()
-    try:
-        sel.add(shape)
-    except RuntimeError:
-        raise RuntimeError('Object {0} does not exist'.format(shape))
-
-    mobj = om.MObject()
-    sel.getDependNode(0, mobj)
-
-    itDG = om.MItDependencyGraph(mobj,
-                                 om.MFn.kSkinClusterFilter,
-                                 om.MItDependencyGraph.kUpstream,
-                                 om.MItDependencyGraph.kDepthFirst,
-                                 om.MItDependencyGraph.kNodeLevel)
-
-    if itDG.isDone():
-        # No skin cluster. Are you sure you passed a mesh?
-        return None
-
-    skinClusterMObjArray = om.MObjectArray()
-
-    while not itDG.isDone():
-        currentNode = itDG.currentItem()
-        skinClusterMObjArray.append(currentNode)
-
-        itDG.next()
-
-    if skinClusterMObjArray.length():
-        # Return the first item in the array as a string. If there are multiple skin clusters in the object's history,
-        # that's a problem
-        fnDependNode = om.MFnDependencyNode(skinClusterMObjArray[0])
-        return fnDependNode.name()

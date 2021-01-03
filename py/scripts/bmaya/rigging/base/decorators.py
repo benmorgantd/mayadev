@@ -1,4 +1,5 @@
 import maya.standalone
+import maya.cmds as cmds
 
 def wrapStandalone(fn):
     def wrapper(*args, **kwargs):
@@ -27,14 +28,18 @@ def wrapBuild(fn):
         self.connectBindJoints()
         self.parentModule()
 
-        self.modGrp.lockTransforms()
+        for transform in ['translate', 'rotate', 'scale']:
+            for axis in ['X', 'Y', 'Z']:
+                cmds.setAttr('{0}.{1}{2}'.format(self.modGrp, transform, axis), lock=True)
+
         for ctrl in self.components:
             for attr in ['scaleX', 'scaleY', 'scaleZ']:
-                ctrl.lockAttr(attr)
-            ctrl.lockAttr('visibility')
+                cmds.setAttr('{0}.{1}'.format(ctrl.ctrl, attr, lock=True))
+            cmds.setAttr(ctrl.ctrl + '.visibility', lock=True)
             for grp in ctrl.groupHierarchy:
-                grp.lockTransforms()
-                grp.lockAttr('visibility')
+                for transform in ['translate', 'rotate', 'scale']:
+                    for axis in ['X', 'Y', 'Z']:
+                        cmds.setAttr('{0}.{1}{2}'.format(grp, transform, axis))
 
         self.captureComponentDefaults()
         

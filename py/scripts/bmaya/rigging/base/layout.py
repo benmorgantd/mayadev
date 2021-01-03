@@ -5,8 +5,6 @@ from decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
 from bmaya.core import constants, name
 
-from bmaya.mayanode import DagNode
-
 
 class Layout(module.Module):
     """Every rig must have a Layout module"""
@@ -39,27 +37,27 @@ class Layout(module.Module):
                                            name='MESH_set')
 
     def makeRigGroups(self):
-        self.character.rigGrp = DagNode(cmds.group(empty=True, name='RIG'))
+        self.character.rigGrp = cmds.group(empty=True, name='RIG')
 
         self.character.connectToCharacter(self.character.rigGrp)
 
         try:
-            self.character.meshGrp = DagNode(cmds.group(self.character.meshSet, name='MESH'))
+            self.character.meshGrp = cmds.group(self.character.meshSet, name='MESH')
         except RuntimeError:
-            self.character.meshGrp = DagNode(cmds.group(empty=True, name='MESH'))
+            self.character.meshGrp = cmds.group(empty=True, name='MESH')
 
-        self.character.skeletonGrp = DagNode(cmds.group(constants.ROOT_JOINT, name='SKELETON'))
-        self.character.skeletonGrp.visibility = 0
+        self.character.skeletonGrp = cmds.group(constants.ROOT_JOINT, name='SKELETON')
+        cmds.setAttr(self.character.skeletonGrp + '.visibility', 0)
 
-        self.character.modulesGrp = DagNode(cmds.group(empty=True, name='MODULES'))
+        self.character.modulesGrp = cmds.group(empty=True, name='MODULES')
 
         cmds.parent(self.character.modulesGrp, self.character.skeletonGrp,
                     self.character.meshGrp, self.character.rigGrp)
 
-        self.character.modulesGrp.lockTransforms()
-        self.character.skeletonGrp.lockTransforms()
-        self.character.meshGrp.lockTransforms()
-        self.character.rigGrp.lockTransforms()
+        for grp in [self.character.modulesGrp, self.character.skeletonGrp, self.character.meshGrp, self.character.rigGrp]:
+            for transform in ['translate', 'rotate', 'scale']:
+                for axis in ['X', 'Y', 'Z']:
+                    cmds.setAttr('{0}.{1}{2}'.format(grp, transform, axis), lock=True)
 
     def makeCtrls(self):
         # make a stack of offset controls

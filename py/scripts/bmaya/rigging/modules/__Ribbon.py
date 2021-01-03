@@ -1,9 +1,9 @@
 import maya.cmds as cmds
+import maya.OpenMaya as om
 
 from bmaya.rigging.base import module
 from bmaya.rigging.base.decorators import wrapBuild
 from bmaya.rigging.shapes import shapelib
-from bmaya.mayanode import Transform
 from bmaya.core import constants, name, mathUtils
 
 
@@ -81,9 +81,11 @@ class Ribbon(module.Module):
         cmds.delete(cmds.pointConstraint(startJoint, endJoint, skinnedPlane, mo=0))
         cmds.delete(cmds.aimConstraint(endJoint, skinnedPlane, 
                     aimVector=[1,0,0], upVector=[0,1,0], worldUpType='None'))
-        
-        cmds.xform(skinnedPlane, 
-            scale=[(Transform(startJoint).worldPosition - Transform(endJoint).worldPosition).length(), 1, 1])
+
+        startJointPosition = om.MVector(*cmds.xform(startJoint, query=True, worldPosition=True, translation=True))
+        endJointPosition = om.MVector(*cmds.xform(startJoint, query=True, worldPosition=True, translation=True))
+
+        cmds.xform(skinnedPlane, scale=[startJointPosition.length() - endJointPosition.length(), 1, 1])
 
         cmds.makeIdentity(skinnedPlane, apply=True, t=1, r=1, s=1, pn=1)
 

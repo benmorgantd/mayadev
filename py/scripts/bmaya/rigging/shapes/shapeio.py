@@ -4,7 +4,6 @@ import maya.OpenMaya as om
 import maya.cmds as cmds
 
 from bmaya.core import fileio
-from bmaya import mayanode
 
 
 def save(cvsPath):
@@ -19,19 +18,23 @@ def save(cvsPath):
 
     # get cv point data
     while not objIter.isDone():
-        _mobj = om.MObject()
-        objIter.getDependNode(_mobj)
-        _ctrl = mayanode.DagNode(_mobj)
+        points = om.MPointArray()
+        dag = om.MDagPath()
+        objIter.getDagPath(dag)
 
-        points = _ctrl.shape.getPoints()
+        fnNurbs = om.MFnNurbsCurve(dag)
+
+        # gets the cvs in world space
+        fnNurbs.getCVs(points, om.MSpace.kWorld)
+
         pointArray = []
 
         for i in range(points.length()):
             pointArray.append([points[i].x, points[i].y, points[i].z])
 
-        shapeData[str(_ctrl.shortName)] = pointArray
+        shapeData[str(dag.partialPathName())] = pointArray
 
-        # _ctrl.fnNurbs.updateCurve()
+        fnNurbs.updateCurve()
 
         objIter.next()
 
@@ -62,18 +65,22 @@ def load(cvsPath):
     objIter = om.MItSelectionList(sel)
 
     while not objIter.isDone():
-        _mobj = om.MObject()
-        objIter.getDependNode(_mobj)
-        _ctrl = mayanode.DagNode(_mobj)
+        dag = om.MDagPath()
+        objIter.getDagPath(dag)
+        full_name = dag.fullPathName()
 
-        storedPoints = shapeData[str(_ctrl.shortName)]
+        fnNurbs = om.MFnNurbsCurve(dag)
+
+        storedPoints = shapeData[str(dag.partialPathName())]
 
         finalPoints = om.MPointArray()
 
         for point in storedPoints:
             finalPoints.append(*point)
 
-        _ctrl.fnNurbsCurve.setPoints(finalPoints, space='world')
+        fnNurbs.setCVs(finalPoints, om.MSpace.kWorld)
+
+        fnNurbs.updateCurve()
 
         objIter.next()
 

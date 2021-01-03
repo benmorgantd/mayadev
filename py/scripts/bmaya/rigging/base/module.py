@@ -7,8 +7,6 @@ import maya.OpenMaya as om
 from bmaya.core import constants, name, mathUtils
 from bmaya.rigging.shapes import shapelib
 
-from bmaya.mayanode import DagNode, DependencyNode
-
 
 class Module(object):
     mirrorPairs = {'L': 'R', 'R': 'L', 'M': None}
@@ -46,11 +44,11 @@ class Module(object):
             # this creates a locator shape of the given name
             self.node = cmds.createNode('network', name='{0}_{1}'.format(self.name, constants.MODULE_SUFFIX))
             # holds all the parts of the module. Not for transforming
-            self.modGrp = DagNode(cmds.createNode('transform', name=self.name + '_GRP'))
+            self.modGrp = cmds.createNode('transform', name=self.name + '_GRP')
             # holds the components of the node. Transform this should not result in double xforms
-            self.componentsGrp = DagNode(cmds.createNode('transform', name=self.name + '_COMPONENTS'))
+            self.componentsGrp = cmds.createNode('transform', name=self.name + '_COMPONENTS')
             # holds the driver joints for the node
-            self.driverGrp = DagNode(cmds.createNode('transform', name=self.name + '_DRIVERS'))
+            self.driverGrp = cmds.createNode('transform', name=self.name + '_DRIVERS')
             cmds.hide(self.driverGrp)
             cmds.parent(self.driverGrp, self.componentsGrp)
 
@@ -324,8 +322,6 @@ class Module(object):
 
             cmds.connectAttr(self.node + '.components', ctrl.ctrl + '.module',
                              force=True)
-
-            ctrl.offsetGrp.lockTransforms()
 
     def connectBindJoints(self):
         """Connects the module's bind joints to their control"""

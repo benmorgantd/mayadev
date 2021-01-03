@@ -3,14 +3,19 @@
   <component name="ChangeListManager">
     <list default="true" id="74bd15b0-e080-4c61-9a69-c2851a779195" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/asset.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/asset.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/mathUtils.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/mathUtils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/mayanode.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/mayanode.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/decorators.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/decorators.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/layout.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/layout.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/module.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/module.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/joint.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/joint.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/NeckHead.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/NeckHead.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Spline.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Spline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/__Ribbon.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/__Ribbon.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/shapes/shapeio.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/shapes/shapeio.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/shapes/shapelib.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/shapes/shapelib.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/config.json" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/config.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/customWidgets.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/customWidgets.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightio.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightio.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightutils.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightutils.py" afterDir="false" />
     </list>
