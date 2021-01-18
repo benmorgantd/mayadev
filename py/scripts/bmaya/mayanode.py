@@ -6,9 +6,6 @@ import maya.cmds as cmds
 import maya.api.OpenMaya as om
 import maya.api.OpenMayaAnim as omAnim
 
-# TODO: remove dependencies from outside this file
-from bmaya.core import boundingBox
-
 __all__ = [className for className, obj in inspect.getmembers(sys.modules[__name__]) if inspect.isclass(obj)]
 
 # CONSTANTS #
@@ -31,7 +28,62 @@ class Connections(object):
             self.outputs = plug.connectedTo(False, True)
 
 
+class Scene(object):
+    @classmethod
+    def getBoundingBox(cls):
+        """Returns the bounding box around the DAGs in the scene"""
+
+        boundingBox = om.MBoundingBox()
+
+        itDag = om.MItDag(om.MItDag.kDepthFirst, om.MFn.kMesh)
+
+        while not itDag.isDone():
+            dag = om.MDagPath()
+            itDag.getPath(dag)
+
+            fnDag = om.MFnDagNode(dag)
+            dagBoundingBox = fnDag.boundingBox()
+            dagBoundingBox.transformUsing(dag.inclusiveMatrix())
+
+            boundingBox.expand(dagBoundingBox)
+
+            itDag.next()
+
+        return boundingBox
+
+
 class DependencyNode(object):
+    @classmethod
+    def stringToMObject(cls, sourceString):
+        _mObject = None
+        if isinstance(sourceString, basestring):
+            try:
+                # we only want to deal in objects that have unique names
+                _sel = om.MSelectionList()
+                _sel.add(sourceString)
+                _mObject = _sel.getDependNode(0)
+            except RuntimeError:
+                raise RuntimeError('Object {0} does not exist or is not unique.'.format(sourceString))
+        else:
+            return None
+
+        return _mObject
+
+    @classmethod
+    def connect(cls, sourcePlug, destPlug):
+        _sourceFnAttr = om.MFnAttribute(sourcePlug.attribute())
+        _destFnAttr = om.MFnAttribute(destPlug.attribute())
+
+        if not _sourceFnAttr.isConnectable() or not _destFnAttr.isConnectable():
+            raise ValueError('A given plug is not connectable.')
+
+        _sourceFnAttr.setWritable(True)
+        _destFnAttr.setWritable(True)
+
+        _dgMod = om.MDGModifier()
+        _dgMod.connect(sourcePlug, destPlug)
+        _dgMod.doIt()
+
     def __init__(self, seed):
         self._initialized = False
         # I think many OpenMaya objects inherit from MObject, so we may want to directly check types instead
@@ -267,7 +319,7 @@ class DependencyNode(object):
                 typedAttrType = fnTypedAttr.attrType()
                 if typedAttrType == 5:
                     # kMatrix type. Get matrix data without the MFnTransform
-                    if plug.isArray():
+                    if plug.array:
                         # worldMatrix, worldInverseMatrix, parentMatrix, parentInverseMatrix
                         _childPlug = plug.elementByLogicalIndex(0)
                         fnMatrixData = om.MFnMatrixData(_childPlug.asMObject())
@@ -294,7 +346,7 @@ class DependencyNode(object):
             plugType = attributeMObj.apiType()
             fnAttr = om.MFnAttribute(attributeMObj)
 
-            if not plugType == om.MFn.kTypedAttribute and not fnAttr.isWritable():
+            if not plugType == om.MFn.kTypedAttribute and not fnAttr.writable:
                 raise AttributeError('Given attribute {0} is not writable.'.format(fnAttr.name()))
 
             if plugType == om.MFn.kDoubleLinearAttribute:
@@ -322,7 +374,7 @@ class DependencyNode(object):
             elif plugType == om.MFn.kAttribute3Double:
                 if isinstance(value, om.MQuaternion):
                     _eulerRot = value.asEulerRotation()
-                    _eulerRot = _eulerRot.reorder(ROTATE_ORDERS[self.rotateOrder])
+                    _eulerRot = _eulerRot.reorder(ROTATE_ORDERS[self.get('rotateOrder')])
                     value = _eulerRot
                 for i in range(plug.numChildren()):
                     _childPlug = plug.child(i)
@@ -338,40 +390,29 @@ class DependencyNode(object):
                     # Instead, read the data from the matrix and set attributes instead...
                     # NOTE: you cannot set this attribute on anything but self.matrix
 
-                    if fnTypedAttr.isArray():
+                    if fnTypedAttr.array:
                         raise RuntimeError(
-                            '{0}.DependencyNode : setattr is unsupported for Matrix Array attribute {1}'.format(
+                            '{0}.DependencyNode : set() is unsupported for Matrix Array attribute {1}'.format(
                                 __name__, plug.name()))
 
                     _xformMatrix = om.MTransformationMatrix(value)
-                    _translateVector = _xformMatrix.getTranslation(om.MSpace.kWorld)
+                    _translateVector = _xformMatrix.translation(om.MSpace.kWorld)
                     _rotateQuaternion = _xformMatrix.rotation()
-                    _scaleUtil = om.MScriptUtil()
-                    _scaleUtil.createFromDouble(1.0, 1.0, 1.0)
-                    _scalePtr = _scaleUtil.asDoublePtr()
-                    _xformMatrix.getScale(_scalePtr, om.MSpace.kWorld)
-                    _scale = [_scaleUtil.getDoubleArrayItem(_scalePtr, 0), _scaleUtil.getDoubleArrayItem(_scalePtr, 1),
-                              _scaleUtil.getDoubleArrayItem(_scalePtr, 2)]
-                    _shearUtil = om.MScriptUtil()
-                    _shearPtr = _shearUtil.asDoublePtr()
-                    _xformMatrix.getShear(_shearPtr, om.MSpace.kTransform)
-                    _shear = [_shearUtil.getDoubleArrayItem(_shearPtr, 0), _shearUtil.getDoubleArrayItem(_shearPtr, 1),
-                              _shearUtil.getDoubleArrayItem(_shearPtr, 2)]
-
-                    setattr(self, 'translate', _translateVector)
-                    setattr(self, 'rotate', _rotateQuaternion)
-                    setattr(self, 'scale', _scale)
-                    setattr(self, 'shear', _shear)
-
+                    _scale = _xformMatrix.scale(SPACES['local'])
+                    _shear = _xformMatrix.shear(SPACES['local'])
+                    self.set('translate', _translateVector)
+                    self.set('rotate', _rotateQuaternion)
+                    self.set('scale', _scale)
+                    self.set('shear', _shear)
 
             elif plugType == om.MFn.kEnumAttribute:
                 plug.setInt(value)
             elif plugType == om.MFn.kStringData:
                 plug.setString(value)
             elif plugType == om.MFn.kMessageAttribute:
-                raise AttributeError('setattr is currently not supported for this attribute type.')
+                raise AttributeError('set() is currently not supported for this attribute type.')
             else:
-                raise AttributeError('setattr is currently not supported for this attribute type.')
+                raise AttributeError('set() is currently not supported for this attribute type.')
 
     def findPlug(self, plugString):
         if self.fnDependencyNode.hasAttribute(plugString):
@@ -379,32 +420,13 @@ class DependencyNode(object):
         else:
             raise AttributeError('Object {0} has no plug {1}'.format(self, plugString))
 
-    @classmethod
-    def connect(cls, sourcePlug, destPlug):
-        _sourceFnAttr = om.MFnAttribute(sourcePlug.attribute())
-        _destFnAttr = om.MFnAttribute(destPlug.attribute())
-
-        if not _sourceFnAttr.isConnectable() or not _destFnAttr.isConnectable():
-            raise ValueError('A given plug is not connectable.')
-
-        _sourceFnAttr.setWritable(True)
-        _destFnAttr.setWritable(True)
-
-        _dgMod = om.MDGModifier()
-        _dgMod.connect(sourcePlug, destPlug)
-        _dgMod.doIt()
-
-    # @property
-    # def fnDependencyNode(self):
-    #     return om.MFnDependencyNode(self.mObject)
-
     @property
     def name(self):
         return self.fnDependencyNode.name()
 
     @name.setter
     def name(self, value):
-        self.fnDependencyNode.setName(self.makeShortNameUnique(value))
+        self.fnDependencyNode.setName(value)
 
     '''
     @property
@@ -419,22 +441,6 @@ class DependencyNode(object):
 
         return _attributes
     '''
-
-    @classmethod
-    def stringToMObject(cls, str):
-        _mObject = None
-        if isinstance(str, basestring):
-            try:
-                # we only want to deal in objects that have unique names
-                _sel = om.MSelectionList()
-                _sel.add(str)
-                _mObject = _sel.getDependNode(0)
-            except RuntimeError:
-                raise RuntimeError('Object {0} does not exist or is not unique.'.format(str))
-        else:
-            return None
-
-        return _mObject
 
 
 class DagNode(DependencyNode):
@@ -486,7 +492,7 @@ class DagNode(DependencyNode):
 
     @name.setter
     def name(self, value):
-        self.fnDependencyNode.setName(value)
+        self.fnDependencyNode.setName(self.makeShortNameUnique(value))
 
     @property
     def shortName(self):
@@ -624,11 +630,11 @@ class DagNode(DependencyNode):
 
     @property
     def matrixList(self):
-        return self.matrixToList(self.matrix)
+        return self.matrixToList(self.get('matrix'))
 
     @property
     def worldMatrixList(self):
-        return self.matrixToList(self.worldMatrix)
+        return self.matrixToList(self.get('worldMatrix'))
 
     @property
     def metadata(self):
@@ -647,7 +653,7 @@ class DagNode(DependencyNode):
 
     @property
     def longAxis(self):
-        _translate = self.translate
+        _translate = self.get('translate')
         axis = ['X', 'Y', 'Z']
         return axis[_translate.index(max(_translate))]
 
@@ -851,8 +857,7 @@ class Curve(Shape):
         if not space:
             raise ValueError('Unsupported space type \'{0}\' given.'.format(space))
 
-        _cvs = om.MPointArray()
-        self.fnNurbsCurve.getCVs(_cvs, space)
+        _cvs = self.fnNurbsCurve.cvPositions(space)
 
         return _cvs
 
@@ -862,7 +867,7 @@ class Curve(Shape):
             raise ValueError('Unsupported space type \'{0}\' given.'.format(space))
 
         _points = om.MPointArray()
-        _numCVs = self.fnNurbsCurve.numCVs()
+        _numCVs = self.fnNurbsCurve.numCVs
 
         if isinstance(points, list):
             for i in xrange(len(points)):
@@ -877,25 +882,30 @@ class Curve(Shape):
             # if points.length() != _numCVs:
             #     raise ValueError('The number of points given does not match the number of CV points.')
 
-        self.fnNurbsCurve.setCVs(_points, space)
+        self.fnNurbsCurve.setCVPositions(_points, space)
         self.fnNurbsCurve.updateCurve()
 
     def setupBoundingBox(self):
 
-        sceneBoundingBox = boundingBox.getSceneBoundingBox()
+        sceneBoundingBox = Scene.getBoundingBox()
 
-        if sceneBoundingBox.width() < 0.001:
-            cmds.xform(self.shape + '.cv[0:]', scale=(1, 1, 1))
-        else:
+        if sceneBoundingBox.width() > 0.001:
             cmds.xform(self.shape + '.cv[0:]', scale=(
-                sceneBoundingBox.width() + .1, sceneBoundingBox.height() + .1, sceneBoundingBox.depth() + .1))
+                sceneBoundingBox.width() + 0.1, sceneBoundingBox.height() + 0.1, sceneBoundingBox.depth() + 0.1))
 
-        cmds.xform(self.shape + '.cv[0:]', translation=boundingBox.getBoundingBoxCenter(sceneBoundingBox),
-                   relative=True)
+        center = sceneBoundingBox.center()
+        cmds.xform(self.shape + '.cv[0:]', translation=(center.x, center.y, center.z), relative=True)
 
+    @classmethod
+    def fitCurveToPoints(cls, points, name='fitCurve'):
+        linearCurve = cmds.curve(degree=1, point=points)
+        fitCurve = cmds.fitBspline(linearCurve, constructionHistory=False, tolerance=0.001, name=name)[0]
+        cmds.delete(linearCurve)
+
+        return Curve(fitCurve)
 
 class LinearCurve(Curve):
-    def __init__(self, seed, points, forceCvCount=False):
+    def __init__(self, seed=None, points=[], forceCvCount=False):
         if seed:
             super(LinearCurve, self).__init__(seed)
         else:
@@ -910,7 +920,7 @@ class LinearCurve(Curve):
 
                 if forceCvCount:
                     # Force the cv count to be the same on rig control curves so their shape can be easily changed
-                    _lastPoint = _points[_points.length() - 1]
+                    _lastPoint = _points[len(_points) - 1]
                     for j in range(len(points), forceCvCount):
                         # make all the remaining CVs equal to the same as the last point
                         _points.append(om.MPoint(_lastPoint))
@@ -922,7 +932,7 @@ class LinearCurve(Curve):
             super(LinearCurve, self).__init__(_newCurveMObj)
 
     def attachBorderCVsToTransform(self, startTransform, endTransform):
-        if not self.getPoints().length() == 0:
+        if not len(self.getPoints()) == 0:
             raise RuntimeError('This function can only be run on a curve with 2 points (a line).')
 
         # decompA = cmds.shadingNode('decomposeMatrix', asUtility=True, name=name + '_decompMatrixA')
@@ -946,6 +956,29 @@ class LinearCurve(Curve):
 
 
 class SkinCluster(DependencyNode):
+    @classmethod
+    def pruneVertexWeightList(cls, weights, influenceCount, maxInfluence=4, normalize=True):
+        """Prunes the given list to have only four non-zero values"""
+
+        sortedWeights = weights
+        sortedWeights.sort(reverse=True)
+        prunedWeights = [0.0] * influenceCount
+
+        if maxInfluence > 1:
+            for i in range(influenceCount):
+                if i > (maxInfluence - 1):
+                    prunedWeights[weights.index(sortedWeights[i])] = 0.0
+                else:
+                    prunedWeights[weights.index(sortedWeights[i])] = sortedWeights[i]
+        else:
+            prunedWeights[weights.index(sortedWeights[0])] = sortedWeights[0]
+
+        if normalize:
+            prunedWeightsSum = sum(prunedWeights)
+            prunedWeights = [value / prunedWeightsSum for value in prunedWeights]
+
+        return prunedWeights
+
     def __init__(self, seed):
         super(SkinCluster, self).__init__(seed)
 
@@ -995,9 +1028,10 @@ class SkinCluster(DependencyNode):
             assert isinstance(components, om.MObject)
 
         _outputGeometryDag = self.outputGeometry.dagPath
+        _influenceIndices = self.influenceIndices
 
         # fails at Mesh.dagPath
-        _weights = self.fnSkinCluster.getWeights(_outputGeometryDag, components, self.influenceIndices)
+        _weights = self.fnSkinCluster.getWeights(_outputGeometryDag, components, _influenceIndices)
 
         return _weights
 
@@ -1022,21 +1056,30 @@ class SkinCluster(DependencyNode):
 
     def setWeights(self, newWeights, components=None):
         if not components:
-            components = om.MObject()
+            components = om.MObject.kNullObj
         else:
             assert isinstance(components, om.MObject)
 
-        assert isinstance(newWeights, (om.MDoubleArray, list))
+        if not isinstance(newWeights, om.MDoubleArray):
+            if isinstance(newWeights, list):
+                _temp = om.MDoubleArray()
+                for w in newWeights:
+                    _temp.append(w)
+                newWeights = _temp
+            else:
+                raise ValueError('newWeights must be a DoubleArray or list')
 
-        print self.fnSkinCluster.setWeights(self.outputGeometry.dagPath, components, self.influenceIndices, newWeights)
+        self.fnSkinCluster.setWeights(self.outputGeometry.dagPath, components, self.influenceIndices, newWeights)
 
-    def pruneWeights(self, maxInfluence=4):
+    def pruneWeights(self, maxInfluence=4, components=None):
         """Sets the weights for each vertex to the average of its neighbors."""
 
         originalSel = om.MGlobal.getActiveSelectionList()
 
         sel = om.MSelectionList()
-        sel.add(self.outputGeometry + '.vtx[:]')
+
+        if not components:
+            sel.add(self.outputGeometry + '.vtx[:]')
 
         _dag = om.MDagPath()
         _dag, selectedComponents = sel.getComponent(0)
@@ -1076,28 +1119,52 @@ class SkinCluster(DependencyNode):
         om.MGlobal.displayInfo(
             'Pruned {0} over-influenced vertices from {1}.'.format(numOverInfluenced, meshTransform.shortName))
 
-    def smoothWeights(self, components):
-        raise RuntimeError('smoothWeights is not yet implemented')
+    def smoothWeights(self, iterations=1):
+        originalSel = om.MGlobal.getActiveSelectionList()
 
-    @classmethod
-    def pruneVertexWeightList(cls, weights, influenceCount, maxInfluence=4, normalize=True):
-        """Prunes the given list to have only four non-zero values"""
+        for k in xrange(iterations):
+            sel = originalSel
 
-        sortedWeights = weights
-        sortedWeights.sort(reverse=True)
-        prunedWeights = [0.0] * influenceCount
+            # TODO: allow passing of specific components
 
-        if maxInfluence > 1:
-            for i in range(influenceCount):
-                if i > (maxInfluence - 1):
-                    prunedWeights[weights.index(sortedWeights[i])] = 0.0
-                else:
-                    prunedWeights[weights.index(sortedWeights[i])] = sortedWeights[i]
-        else:
-            prunedWeights[weights.index(sortedWeights[0])] = sortedWeights[0]
+            _dag = om.MDagPath()
+            _dag, selectedComponents = sel.getComponent(0)
+            meshTransform = DagNode(_dag.node())
 
-        if normalize:
-            prunedWeightsSum = sum(prunedWeights)
-            prunedWeights = [value / prunedWeightsSum for value in prunedWeights]
+            # TODO: find a way to do this more efficiently, maybe be precaching neighbor verts
+            # we need to get weights on all vertices so that we have neighbors
+            oldWeights = self.getWeights()
 
-        return prunedWeights
+            # newWeights just starts as a copy of oldWeights
+            newWeights = list(om.MDoubleArray(oldWeights))
+
+            # iterate over the selected verts
+            itVerts = om.MItMeshVertex(meshTransform.dagPath, selectedComponents)
+            numInfluences = self.influenceCount
+
+            while not itVerts.isDone():
+                neighboringVertices = itVerts.getConnectedVertices()
+                neighborWeightSums = [0.0] * numInfluences
+                numNeighbors = len(neighboringVertices)
+                vertId = itVerts.index()
+
+                # TODO: see if there's a way to get rid of this nested for loop
+                for i in xrange(numNeighbors):
+                    v = neighboringVertices[i]
+                    # get these vertex's weights and add them to our weight sums
+                    for j in xrange(numInfluences):
+                        neighborWeightSums[j] += oldWeights[(v * numInfluences) + j]
+
+                smoothedWeight = [w / float(numNeighbors) for w in neighborWeightSums]
+                weightSum = float(sum(smoothedWeight))
+                normalizedWeight = [w / weightSum for w in smoothedWeight]
+
+                newWeights[(vertId * numInfluences): (vertId * numInfluences) + numInfluences] = normalizedWeight
+
+                itVerts.next()
+
+            self.setWeights(newWeights)
+
+        om.MGlobal.setActiveSelectionList(originalSel)
+
+
