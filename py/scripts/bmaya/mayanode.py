@@ -10,8 +10,7 @@ __all__ = [className for className, obj in inspect.getmembers(sys.modules[__name
 
 # CONSTANTS #
 
-ROTATE_ORDERS = [om.MEulerRotation.kXYZ, om.MEulerRotation.kYZX,
-                 om.MEulerRotation.kZXY, om.MEulerRotation.kXZY,
+ROTATE_ORDERS = [om.MEulerRotation.kXYZ, om.MEulerRotation.kYZX, om.MEulerRotation.kZXY, om.MEulerRotation.kXZY,
                  om.MEulerRotation.kYXZ, om.MEulerRotation.kZYX]
 
 DISPLAY_COLORS = {'black': 1, 'grey': 3, 'blue': 6, 'pink': 9, 'red': 13, 'lime': 14, 'darkblue': 15, 'white': 16,
@@ -19,10 +18,11 @@ DISPLAY_COLORS = {'black': 1, 'grey': 3, 'blue': 6, 'pink': 9, 'red': 13, 'lime'
 
 SPACES = {'world': om.MSpace.kWorld, 'object': om.MSpace.kObject, 'local': om.MSpace.kTransform}
 
+NULL_OBJECT = om.MObject.kNullObj
+
 
 class Connections(object):
     def __init__(self, plug):
-
         if plug.isConnected():
             self.inputs = plug.connectedTo(True, False)
             self.outputs = plug.connectedTo(False, True)
@@ -50,6 +50,60 @@ class Scene(object):
             itDag.next()
 
         return boundingBox
+
+    @classmethod
+    def getSelectedVertexIDs(cls):
+        '''If a face or edge, converts to a vertex.'''
+
+        # TODO: support conversion to CVs
+
+        sel = om.MGlobal.getActiveSelectionList()
+        dag, selectedComponents = sel.getComponent(0)
+
+        vertexConversion = set()
+
+        if selectedComponents.apiType() == om.MFn.kMeshVertComponent:
+            return selectedComponents
+        elif selectedComponents.apiType() == om.MFn.kMeshEdgeComponent:
+            edgeIter = om.MItMeshEdge(dag, selectedComponents)
+            while not edgeIter.isDone():
+                vert1 = edgeIter.vertexId(0)
+                vert2 = edgeIter.vertexId(1)
+                vertexConversion.add(vert1)
+                vertexConversion.add(vert2)
+                edgeIter.next()
+        elif selectedComponents.apiType() == om.MFn.kMeshPolygonComponent:
+            faceIter = om.MItMeshPolygon(dag, selectedComponents)
+            while not faceIter.isDone():
+                connectedVertices = faceIter.getVertices()
+                for vert in connectedVertices:
+                    vertexConversion.add(vert)
+
+                faceIter.next()
+        elif selectedComponents.apiType() == om.MFn.kInvalid:
+            # no selected components. A transform might only be selected
+            _dag = om.MDagPath(dag)
+            _dag.extendToShape(0)
+            # check what the shape's type is
+            _shapeMObj = _dag.node()
+            if _shapeMObj.hasFn(om.MFn.kMesh):
+                _mesh = Mesh(_shapeMObj)
+                if not _mesh.fnDagNode.isIntermediateObject:
+                    # get the vertices on the mesh
+                    for i in xrange(_mesh.fnMesh.numVertices):
+                        vertexConversion.add(i)
+            else:
+                return
+
+        newSel = om.MSelectionList()
+        for vertId in vertexConversion:
+            newSel.add(dag.fullPathName() + '.vtx[{0}]'.format(vertId))
+
+        dag, selectedComponents = newSel.getComponent(0)
+
+        # cmds.select([dag.fullPathName() + '.vtx[{0}]'.format(vertId) for vertId in vertexConversion])
+
+        return dag, selectedComponents
 
 
 class DependencyNode(object):
@@ -392,8 +446,8 @@ class DependencyNode(object):
 
                     if fnTypedAttr.array:
                         raise RuntimeError(
-                            '{0}.DependencyNode : set() is unsupported for Matrix Array attribute {1}'.format(
-                                __name__, plug.name()))
+                            '{0}.DependencyNode : set() is unsupported for Matrix Array attribute {1}'.format(__name__,
+                                plug.name()))
 
                     _xformMatrix = om.MTransformationMatrix(value)
                     _translateVector = _xformMatrix.translation(om.MSpace.kWorld)
@@ -516,29 +570,24 @@ class DagNode(DependencyNode):
     #         # object's short name is not unique. Iterate through the dag until we find this mObject
     #         raise RuntimeError('Object short name is not unique')
 
-    def getParent(self):
+    @property
+    def parent(self):
         # return the Transform of the parent
         if self.dagPath.length() > 1:
             return DagNode(self.fnDagNode.parent(0))
         else:
-            return None
+            return NULL_OBJECT
 
-    def setParent(self, newParent):
+    @parent.setter
+    def parent(self, newParent):
         if not newParent:
-            raise ValueError(
-                'Parenting to world not currently possible')  # if self.dagPath.length() > 1:  #     _currentParent = self.getParent()  #     while self.getParent():  #         _newParent = _currentParent.getParent()  #         self.setParent(_currentParent)  # else:  #     om.MGlobal.displayInfo('{0} is already a child of world'.format(self))
+            newParent = NULL_OBJECT
+        elif isinstance(newParent, DependencyNode):
+            newParent = newParent.mObject
 
-            # return
-        elif not isinstance(newParent, DagNode):
-            newParent = DagNode(newParent)
-
-        _currentParent = self.getParent()
-        if not _currentParent:
-            newParent.fnDagNode.addChild(self.mObject)
-        elif _currentParent and _currentParent.mObject != newParent.mObject:
-            newParent.fnDagNode.addChild(self.mObject)
-        else:
-            om.MGlobal.displayWarning('{0} is already the parent of {1}'.format(newParent.shortName, self.shortName))
+        dagMod = om.MDagModifier()
+        dagMod.reparentNode(self.mObject, newParent)
+        dagMod.doIt()
 
     @property
     def children(self):
@@ -877,10 +926,7 @@ class Curve(Shape):
                 _points.append(om.MPoint(_lastPoint))
 
         elif isinstance(points, om.MPointArray):
-            _points = points
-            # TODO: this isn't fully supported yet
-            # if points.length() != _numCVs:
-            #     raise ValueError('The number of points given does not match the number of CV points.')
+            _points = points  # TODO: this isn't fully supported yet  # if points.length() != _numCVs:  #     raise ValueError('The number of points given does not match the number of CV points.')
 
         self.fnNurbsCurve.setCVPositions(_points, space)
         self.fnNurbsCurve.updateCurve()
@@ -903,6 +949,7 @@ class Curve(Shape):
         cmds.delete(linearCurve)
 
         return Curve(fitCurve)
+
 
 class LinearCurve(Curve):
     def __init__(self, seed=None, points=[], forceCvCount=False):
@@ -1071,18 +1118,15 @@ class SkinCluster(DependencyNode):
 
         self.fnSkinCluster.setWeights(self.outputGeometry.dagPath, components, self.influenceIndices, newWeights)
 
-    def pruneWeights(self, maxInfluence=4, components=None):
+    def pruneWeights(self, maxInfluence=4):
         """Sets the weights for each vertex to the average of its neighbors."""
 
         originalSel = om.MGlobal.getActiveSelectionList()
 
-        sel = om.MSelectionList()
+        if not len(originalSel):
+            cmds.select(self.outputGeometry.dagPath.fullPathName())
 
-        if not components:
-            sel.add(self.outputGeometry + '.vtx[:]')
-
-        _dag = om.MDagPath()
-        _dag, selectedComponents = sel.getComponent(0)
+        _dag, selectedComponents = Scene.getSelectedVertexIDs()
         meshTransform = DagNode(_dag.node())
 
         oldWeights = self.getWeights(components=selectedComponents)
@@ -1119,16 +1163,11 @@ class SkinCluster(DependencyNode):
         om.MGlobal.displayInfo(
             'Pruned {0} over-influenced vertices from {1}.'.format(numOverInfluenced, meshTransform.shortName))
 
-    def smoothWeights(self, iterations=1):
+    def smoothWeights(self, iterations=3):
         originalSel = om.MGlobal.getActiveSelectionList()
 
         for k in xrange(iterations):
-            sel = originalSel
-
-            # TODO: allow passing of specific components
-
-            _dag = om.MDagPath()
-            _dag, selectedComponents = sel.getComponent(0)
+            _dag, selectedComponents = Scene.getSelectedVertexIDs()
             meshTransform = DagNode(_dag.node())
 
             # TODO: find a way to do this more efficiently, maybe be precaching neighbor verts
@@ -1166,5 +1205,3 @@ class SkinCluster(DependencyNode):
             self.setWeights(newWeights)
 
         om.MGlobal.setActiveSelectionList(originalSel)
-
-
