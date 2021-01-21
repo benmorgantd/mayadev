@@ -21,13 +21,6 @@ SPACES = {'world': om.MSpace.kWorld, 'object': om.MSpace.kObject, 'local': om.MS
 NULL_OBJECT = om.MObject.kNullObj
 
 
-class Connections(object):
-    def __init__(self, plug):
-        if plug.isConnected():
-            self.inputs = plug.connectedTo(True, False)
-            self.outputs = plug.connectedTo(False, True)
-
-
 class Scene(object):
     @classmethod
     def getBoundingBox(cls):
@@ -63,7 +56,7 @@ class Scene(object):
         vertexConversion = set()
 
         if selectedComponents.apiType() == om.MFn.kMeshVertComponent:
-            return selectedComponents
+            return dag, selectedComponents
         elif selectedComponents.apiType() == om.MFn.kMeshEdgeComponent:
             edgeIter = om.MItMeshEdge(dag, selectedComponents)
             while not edgeIter.isDone():
@@ -86,7 +79,7 @@ class Scene(object):
             _dag.extendToShape(0)
             # check what the shape's type is
             _shapeMObj = _dag.node()
-            if _shapeMObj.hasFn(om.MFn.kMesh):
+            if _shapeMObj.hasFn(om.MFn.kShape):
                 _mesh = Mesh(_shapeMObj)
                 if not _mesh.fnDagNode.isIntermediateObject:
                     # get the vertices on the mesh
@@ -101,9 +94,20 @@ class Scene(object):
 
         dag, selectedComponents = newSel.getComponent(0)
 
-        # cmds.select([dag.fullPathName() + '.vtx[{0}]'.format(vertId) for vertId in vertexConversion])
-
         return dag, selectedComponents
+
+    @classmethod
+    def getTypesFromSelection(cls):
+        sel = om.MGlobal.getActiveSelectionList()
+
+        selectionTypes = []
+
+        itSel = om.MItSelectionList(sel)
+        while not itSel.isDone():
+            selectionTypes.append(itSel.getDependNode().apiType())
+            itSel.next()
+
+        return selectionTypes
 
 
 class DependencyNode(object):
@@ -347,7 +351,7 @@ class DependencyNode(object):
             elif plugType == om.MFn.kNumericAttribute:
                 # get data type
                 fnNumericAttr = om.MFnNumericAttribute(attributeMObj)
-                unitType = fnNumericAttr.unitType()
+                unitType = fnNumericAttr.numericType()
                 if unitType == 1:
                     return plug.asBool()
                 elif unitType == 3:
@@ -576,7 +580,7 @@ class DagNode(DependencyNode):
         if self.dagPath.length() > 1:
             return DagNode(self.fnDagNode.parent(0))
         else:
-            return NULL_OBJECT
+            return None
 
     @parent.setter
     def parent(self, newParent):
@@ -589,13 +593,12 @@ class DagNode(DependencyNode):
         dagMod.reparentNode(self.mObject, newParent)
         dagMod.doIt()
 
-    @property
-    def children(self):
+    def children(self, filterType=om.MFn.kInvalid):
         '''Return child transforms'''
 
         # Filters don't seem to work here
-        _itDag = om.MItDag(om.MItDag.kDepthFirst)
-        _itDag.reset(self.dagPath)
+        _itDag = om.MItDag()
+        _itDag.reset(self.dagPath, om.MItDag.kDepthFirst, filterType)
 
         if _itDag.isDone():
             return []
@@ -607,22 +610,21 @@ class DagNode(DependencyNode):
 
         while not _itDag.isDone():
             if _itDag.depth() == 1:
-                _currentMObject = _itDag.currentNode()
-                if _currentMObject.hasFn(om.MFns.kTransform):
+                _currentMObject = _itDag.currentItem()
+                if _currentMObject.hasFn(om.MFn.kTransform):
                     _mObjArray.append(_currentMObject)
             _itDag.next()
 
         _result = []
-        for i in xrange(_mObjArray.length()):
+        for i in xrange(len(_mObjArray)):
             _result.append(DagNode(_mObjArray[i]))
         return _result
 
-    @property
-    def allChildren(self):
+    def allChildren(self, filterType=om.MFn.kInvalid):
         '''Return all descendent children transforms'''
-        # Filters don't seem to work here
-        _itDag = om.MItDag(om.MItDag.kDepthFirst)
-        _itDag.reset(self.dagPath)
+
+        _itDag = om.MItDag()
+        _itDag.reset(self.dagPath, om.MItDag.kDepthFirst, filterType)
 
         if _itDag.isDone():
             return []
@@ -639,7 +641,7 @@ class DagNode(DependencyNode):
             _itDag.next()
 
         _result = []
-        for i in xrange(_mObjArray.length()):
+        for i in xrange(len(_mObjArray)):
             _result.append(DagNode(_mObjArray[i]))
         return _result
 
@@ -708,8 +710,8 @@ class DagNode(DependencyNode):
 
     @property
     def vectorFromParent(self):
-        if self.getParent():
-            return self.worldPosition - self.getParent().worldPosition
+        if self.parent:
+            return self.worldPosition - self.parent.worldPosition
         else:
             return self.worldPosition
 
@@ -745,16 +747,13 @@ class DagNode(DependencyNode):
 
     @classmethod
     def matrixToList(cls, matrix):
-        util = om.MScriptUtil()
+        if isinstance(matrix, om.MTransformationMatrix):
+            matrix = matrix.asMatrix()
 
         matrixList = []
 
-        for row in range(4):
-            rowList = []
-            for column in range(3):
-                rowList.append(util.getDoubleArrayItem(matrix[row], column))
-
-            matrixList.append(rowList)
+        for i in range(16):
+            matrixList.append(matrix[i])
 
         return matrixList
 
@@ -891,6 +890,28 @@ class Mesh(Shape):
 
         # Return the first item in the array
         return SkinCluster(skinClusterMObjArray[0])
+
+    @classmethod
+    def getVertexNeighbors(self, dag, components):
+        # also returns itself
+
+        itVerts = om.MItMeshVertex(dag, components)
+        neighboringVerts = set()
+
+        while not itVerts.isDone():
+            neighboringVerts.add(itVerts.index())
+            neighbors = itVerts.getConnectedVertices()
+            for neighbor in neighbors:
+                neighboringVerts.add(neighbor)
+            itVerts.next()
+
+        sel = om.MSelectionList()
+        for vertId in neighboringVerts:
+            sel.add(dag.fullPathName() + '.vtx[{0}]'.format(vertId))
+
+        dag, neighboringVertices = sel.getComponent(0)
+
+        return neighboringVertices
 
 
 class Curve(Shape):
@@ -1103,7 +1124,7 @@ class SkinCluster(DependencyNode):
 
     def setWeights(self, newWeights, components=None):
         if not components:
-            components = om.MObject.kNullObj
+            components = NULL_OBJECT
         else:
             assert isinstance(components, om.MObject)
 
@@ -1170,8 +1191,12 @@ class SkinCluster(DependencyNode):
             _dag, selectedComponents = Scene.getSelectedVertexIDs()
             meshTransform = DagNode(_dag.node())
 
+            neighborVertexComponents = Mesh.getVertexNeighbors(_dag, selectedComponents) if selectedComponents else None
+
             # TODO: find a way to do this more efficiently, maybe be precaching neighbor verts
             # we need to get weights on all vertices so that we have neighbors
+            # oldWeights = self.getWeights(components=neighborVertexComponents) if neighborVertexComponents else self.getWeights()
+            # get weights on everything for now because it is much simpler
             oldWeights = self.getWeights()
 
             # newWeights just starts as a copy of oldWeights
@@ -1181,17 +1206,22 @@ class SkinCluster(DependencyNode):
             itVerts = om.MItMeshVertex(meshTransform.dagPath, selectedComponents)
             numInfluences = self.influenceCount
 
+            fnComponent = om.MFnSingleIndexedComponent(selectedComponents)
+            numSelectedComponents = len(fnComponent.getElements())
+
             while not itVerts.isDone():
-                neighboringVertices = itVerts.getConnectedVertices()
+                neighborVerts = itVerts.getConnectedVertices()
                 neighborWeightSums = [0.0] * numInfluences
-                numNeighbors = len(neighboringVertices)
+                numNeighbors = len(neighborVerts)
                 vertId = itVerts.index()
 
                 # TODO: see if there's a way to get rid of this nested for loop
                 for i in xrange(numNeighbors):
-                    v = neighboringVertices[i]
+                    v = neighborVerts[i]
                     # get these vertex's weights and add them to our weight sums
                     for j in xrange(numInfluences):
+                        # neighborWeightSums[j] += oldWeights[(v * numInfluences) + j]
+                        # print((v * numInfluences) + j)
                         neighborWeightSums[j] += oldWeights[(v * numInfluences) + j]
 
                 smoothedWeight = [w / float(numNeighbors) for w in neighborWeightSums]
