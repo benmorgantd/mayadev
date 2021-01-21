@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 
 from bmaya.core import boundingBox, mathUtils
-# import bmaya.mayanode as mayanode
+# import mayanode
 
 import shapedata
 

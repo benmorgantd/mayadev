@@ -4,7 +4,7 @@ import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
 from component import Component
-import bmaya.mayanode
+import mayanode
 
 
 class Skeleton(Component):
@@ -19,7 +19,7 @@ class Skeleton(Component):
 
     @classmethod
     def serializeJointHierarchy(cls, rootJoint):
-        rootJoint = bmaya.mayanode.DagNode(rootJoint)
+        rootJoint = mayanode.DagNode(rootJoint)
 
         joints = [{'shortName': rootJoint.shortName,
                    'worldMatrix': rootJoint.worldMatrixList, 
