@@ -2,7 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="74bd15b0-e080-4c61-9a69-c2851a779195" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/mayadev.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/mayadev.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/py/scripts/bm_smoothSkinWeight.mel" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/skin/tf_smoothSkinWeight.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/skin/tf_smoothSkinWeightMelCode.mel" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -42,6 +44,7 @@
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\benjamin\Documents\mayadev\py\scripts\bmaya\rigging\weights\skin" />
       <recent name="C:\Users\benjamin\Documents\mayadev\py\scripts\bmaya\mayanode" />
       <recent name="C:\Users\benjamin\Documents\mayadev\py\scripts\bmaya" />
     </key>
