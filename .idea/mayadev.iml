@@ -5,6 +5,9 @@
       <sourceFolder url="file://$MODULE_DIR$/py/scripts/bmaya" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
     </content>
+    <content url="file://$MODULE_DIR$/../mayanode/py/plug-ins">
+      <sourceFolder url="file://$MODULE_DIR$/../mayanode/py/plug-ins" isTestSource="false" />
+    </content>
     <content url="file://$MODULE_DIR$/../mayanode/py/scripts">
       <sourceFolder url="file://$MODULE_DIR$/../mayanode/py/scripts" isTestSource="false" />
     </content>
