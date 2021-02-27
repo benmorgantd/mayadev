@@ -9,9 +9,10 @@ from bmaya.core.components import *
 
 
 try:
-    PROJECT_ROOT = os.environ['RIG_ROOT']
+    PROJECT_DIR = os.environ['RIGGING_PROJECT_DIR']
 except KeyError:
-    raise RuntimeError('RIG_ROOT environment variable is not set.')
+    raise RuntimeError('RIGGING_PROJECT_DIR environment variable is not set.')
+
 
 class Asset(object):
     def __init__(self, assetId):
@@ -21,7 +22,7 @@ class Asset(object):
 
     @property
     def rootDir(self):
-        root = os.path.abspath(os.path.join(PROJECT_ROOT, self.project, self.assetType, self.name))
+        root = self.cleanPath(os.path.join(PROJECT_DIR, self.project, self.assetType, self.name))
         
         if os.path.exists(root):
             return root
@@ -87,8 +88,8 @@ class Asset(object):
     def exists(cls, project, name, assetType):
         """Checks if the given asset exists"""
 
-        rootDir = os.path.abspath(os.path.join(PROJECT_ROOT,
-                                                project, assetType, name))
+        rootDir = os.path.abspath(os.path.join(PROJECT_DIR,
+                                               project, assetType, name))
 
         if os.path.exists(rootDir):
             return rootDir
@@ -121,35 +122,34 @@ class Asset(object):
 
         return result
 
-
     @classmethod
     def getAssetIdFromFile(cls, filepath):
         """Given a path, derive from it the asset's name, type, and project"""
 
-        filepath = os.path.abspath(filepath)
+        filepath = cls.cleanPath(filepath)
 
         assetName = None
         assetProject = None
         assetType = None
 
-        dirname = os.path.dirname(filepath)
-        basename = os.path.basename(filepath)
+        dirname = cls.cleanPath(os.path.dirname(filepath))
+        basename = cls.cleanPath(os.path.basename(filepath))
 
         # see if it's in a subdirectory of PROJECT_ROOT
 
-        for directory, subdirectory, directoryFiles in os.walk(PROJECT_ROOT):
-            if dirname in directory and basename in directoryFiles:
+        for directory, subdirectory, directoryFiles in os.walk(PROJECT_DIR):
+            if dirname in cls.cleanPath(directory) and any(basename in cls.cleanPath(f) for f in directoryFiles):
                 # this file is within this asset's directory
-                rootDirectory = os.path.dirname(os.path.join(PROJECT_ROOT, 'projects'))
+                rootDirectory = cls.cleanPath(os.path.dirname(os.path.join(PROJECT_DIR, 'projects')))
+                # returns [project, type, name, ..., basename]
                 splitRootRelativePath = cls.splitpath(filepath.split(rootDirectory)[1])
                 assetName = splitRootRelativePath[2]
                 assetType = splitRootRelativePath[1]
                 assetProject = splitRootRelativePath[0]
-
         if assetProject and assetType and assetName:
             return '|'.join([assetProject, assetType, assetName])
         else:
-            print('NO ASSET FOUND')
+            cmds.warning('NO ASSET FOUND')
             return None
 
     def componentPathFromType(self, componentType):
@@ -196,5 +196,8 @@ class Asset(object):
                 shutil.copy(componentFile, newVersionFolder)
 
         print '\n>> Asset versioned successfully to: ' + newVersionFolder
-    
-    
+
+    @classmethod
+    def cleanPath(cls, filepath):
+        return os.path.abspath(filepath.lower())
+

@@ -40,7 +40,7 @@ class AssetLoader(qtbase.SimpleWindow):
         self.projectCombo = QtWidgets.QComboBox()
         self.mainLayout.addWidget(self.projectCombo)
 
-        availableProjects = os.listdir(asset.PROJECT_ROOT)
+        availableProjects = os.listdir(asset.PROJECT_DIR)
 
         for project in availableProjects:
             self.projectCombo.addItem(project)
@@ -60,7 +60,7 @@ class AssetLoader(qtbase.SimpleWindow):
         self.updateNameCombo()
 
     def updateTypeCombo(self):
-        availableAssetTypes = os.listdir(os.path.join(asset.PROJECT_ROOT, self.project))
+        availableAssetTypes = os.listdir(os.path.join(asset.PROJECT_DIR, self.project))
 
         self.typeCombo.clear()
 
@@ -68,7 +68,7 @@ class AssetLoader(qtbase.SimpleWindow):
             self.typeCombo.addItem(assetType)
 
     def updateNameCombo(self):
-        availableAssets = os.listdir(os.path.join(asset.PROJECT_ROOT, self.project, self.assetType))
+        availableAssets = os.listdir(os.path.join(asset.PROJECT_DIR, self.project, self.assetType))
 
         self.nameCombo.clear()
 

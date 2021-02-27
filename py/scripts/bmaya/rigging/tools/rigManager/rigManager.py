@@ -215,7 +215,7 @@ class RigManager(qtbase.DockableWidget):
 
     def exploreToBuildPath(self, action='Open', fileMode=1):
 
-        buildpath = asset.PROJECT_ROOT
+        buildpath = asset.PROJECT_DIR
 
         filepath = cmds.fileDialog2(okCaption=action,
                                     fileMode=fileMode,
@@ -240,7 +240,7 @@ class RigManager(qtbase.DockableWidget):
         assetId = asset.Asset.getAssetIdFromFile(filepath)
 
         if not assetId:
-            om.MGlobal.displayWarning('File is not a part of an asset. Building is disabled.')
+            om.MGlobal.displayWarning('{} is not a part of an asset. Building is disabled.'.format(filepath))
             self.widget.build.setEnabled(False)
             self.widget.componentType.setEnabled(False)
             self.widget.currentAssetLabel.setText('No Asset Loaded')
