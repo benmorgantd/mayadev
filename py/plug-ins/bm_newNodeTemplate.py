@@ -40,7 +40,6 @@ def creator():
 
 
 def initialize():
-    print 'here'
     nAttr = om.MFnNumericAttribute()
 
     # Create input attributes

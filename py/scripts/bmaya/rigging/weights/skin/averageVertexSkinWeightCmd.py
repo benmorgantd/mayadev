@@ -198,9 +198,9 @@ class AverageVertexSkinWeightCmd(ompx.MPxCommand):
 		# mults = [(sum(distances)/d)*pressure_sqr for d in distances]
 
 		# the main weight value calculation loop
-		for i in xrange(0, influenceCount):
+		for i in range(0, influenceCount):
 			v = oldWeight[i] * pre_mult
-			for w in xrange(0, surrVtxCount):
+			for w in range(0, surrVtxCount):
 				# v += surrWeights[i + (w*influenceCount)] * mults[w]
 				v += surrWeights[i + (w*influenceCount)] * pressure_sqr
 			values_append(v)

@@ -47,7 +47,7 @@ class Asset(object):
         """Determine if the given id is acceptable. 
         Ids should be a string in the format: project|type|name"""
 
-        assert isinstance(assetId, basestring)
+        assert isinstance(assetId, str)
 
         if '|' not in assetId:
             raise ValueError('Id should have tokens split by the pike character.')
@@ -174,14 +174,14 @@ class Asset(object):
 
         newVersionFolder = os.path.join(versionFolder, self.name + versionNum)
 
-        print '\n>> Creating asset version ' + versionNum
+        print('\n>> Creating asset version ' + versionNum)
 
         os.mkdir(newVersionFolder)
 
         for component in self.components:
             componentFile = component.fullPath
 
-            print '>>> Versioning asset component ' + component.type
+            print('>>> Versioning asset component ' + component.type)
 
             if component.type == 'weights':
                 weightsDir = os.path.join(newVersionFolder, 'weights')
@@ -195,7 +195,7 @@ class Asset(object):
             elif componentFile and os.path.exists(componentFile):
                 shutil.copy(componentFile, newVersionFolder)
 
-        print '\n>> Asset versioned successfully to: ' + newVersionFolder
+        print('\n>> Asset versioned successfully to: ' + newVersionFolder)
 
     @classmethod
     def cleanPath(cls, filepath):

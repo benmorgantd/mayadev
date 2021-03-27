@@ -341,7 +341,7 @@ def getSkinClusterWeightDict(skinClusterObj):
     weightDict = {}
     numInfluences = influenceIndices.length()
 
-    for i in xrange(numInfluences):
+    for i in range(numInfluences):
         weightDict[influenceObjects[i].partialPathName()] = weights[i:: numInfluences]
 
     return weightDict

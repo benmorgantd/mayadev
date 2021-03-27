@@ -85,7 +85,7 @@ def load(cvsPath):
         objIter.next()
 
     cmds.select(cl=1)
-    print ">>> Shape data loaded from " + cvsPath
+    print(">>> Shape data loaded from " + cvsPath)
 
 
 def mirror(cvsPath):
@@ -137,7 +137,7 @@ def mirror(cvsPath):
 
             objIter.next()
         else:
-            print "No mirror for control: " + dagName
+            print("No mirror for control: " + dagName)
             objIter.next()
 
     cmds.select(cl=1)

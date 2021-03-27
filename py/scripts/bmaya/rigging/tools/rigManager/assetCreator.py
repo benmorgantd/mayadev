@@ -14,7 +14,7 @@ class AssetCreator(QtWidgets.QMainWindow):
     def __init__(self, parent=None, designerFile=None, title='Asset Creator'):
         super(AssetCreator, self).__init__(parent)
 
-        if designerFile and isinstance(designerFile, basestring):
+        if designerFile and isinstance(designerFile, str):
             designPath = os.path.join(os.path.dirname(__file__), designerFile)
             if os.path.exists(designPath):
                 self.widget = QtCompat.load_ui(designPath)

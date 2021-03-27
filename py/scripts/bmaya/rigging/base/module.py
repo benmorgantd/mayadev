@@ -64,7 +64,7 @@ class Module(object):
             mayaAttrType = 'bool'
             mayaAttrVal = attr
 
-        elif isinstance(attr, basestring):
+        elif isinstance(attr, str):
             mayaAttrType = 'string'
             mayaAttrVal = str(attr)
 
@@ -72,7 +72,7 @@ class Module(object):
             cleanList = []
 
             for val in attr:
-                if isinstance(val, (basestring, int, float, bool)):
+                if isinstance(val, (str, int, float, bool)):
                     cleanList.append(val)
                 elif isinstance(val, shapelib.ControlCurve):
                     cleanList.append(val.ctrl)
@@ -84,7 +84,7 @@ class Module(object):
             cleanDict = {}
 
             for key, value in attr.items():
-                if isinstance(value, (basestring, int, float, bool)):
+                if isinstance(value, (str, int, float, bool)):
                     cleanDict[key] = value
                 elif isinstance(value, shapelib.ControlCurve):
                     cleanDict[key] = value.ctrl
@@ -133,11 +133,10 @@ class Module(object):
                     cmds.addAttr(self.node, ln=attrName, at=mayaAttrType,
                                  dv=mayaAttrVal, keyable=False)
                 except TypeError:
-                    print '--'
-                    print 'type: ', mayaAttrType
-                    print 'value: ', mayaAttrVal
-                    print 'Warning: Failed to add attribute \'{0}\'\n--'.format(
-                        attrName)
+                    print('--')
+                    print('type: ', mayaAttrType)
+                    print('value: ', mayaAttrVal)
+                    print('Warning: Failed to add attribute \'{0}\'\n--'.format(attrName))
 
     def findMirror(self, node):
         """Returns the mirrored node of the same type if it's in the scene.
@@ -182,7 +181,7 @@ class Module(object):
                     # could be trying to get the value of 'self'
                     continue
 
-                if isinstance(value, basestring):
+                if isinstance(value, str):
                     mirroredInitArgs[attr] = self.findMirror(value)
 
                 elif isinstance(value, list):
@@ -281,7 +280,7 @@ class Module(object):
             cmds.setAttr(offsetVector + '.operation', 2)
             cmds.connectAttr(pivotCtrl + '.translate',
                              offsetVector + '.input3D[1]')
-            for i in xrange(len(
+            for i in range(len(
                     cmds.parentConstraint(const, query=True, targetList=True))):
                 for axis in 'xyz':
                     cmds.setAttr(
@@ -574,7 +573,7 @@ class Module(object):
             cmds.setAttr(offsetVector + '.operation', 2)
             cmds.connectAttr(pivot.ctrl + '.translate',
                              offsetVector + '.input3D[1]')
-            for i in xrange(len(
+            for i in range(len(
                     cmds.parentConstraint(const, query=True, targetList=True))):
                 for axis in 'xyz':
                     cmds.setAttr(

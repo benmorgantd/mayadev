@@ -49,7 +49,7 @@ def labelJoints():
         try:
             cmds.setAttr(jnt + '.otherType', jntSplit[0] + jntSplit[1], type='string')
         except IndexError:
-            print jnt + ' may be named incorrectly.'
+            print(jnt + ' may be named incorrectly.')
 
 def getModuleNode(ctrl):
     if 'module' not in cmds.listAttr(ctrl):
@@ -77,8 +77,9 @@ def getCharacterModules(characterNode):
 
 def resetControl(ctrl):
     if 'defaultValues' not in cmds.listAttr(ctrl):
-        print ValueError('Control {0} has no default value attribute'.format(ctrl))
-    
+        print('Control {0} has no default value attribute'.format(ctrl))
+        return
+
     defaultValues = cmds.getAttr(ctrl + '.defaultValues')
     
     defaultValues = json.loads(defaultValues)

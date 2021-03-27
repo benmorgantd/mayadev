@@ -168,7 +168,7 @@ def get_points(path, space=OpenMaya.MSpace.kObject):
     @param[in] space Space to get the points.
     @return The MPointArray of points.
     """
-    if isinstance(path, basestring):
+    if isinstance(path, str):
         path = get_dag_path(get_shape(path))
     it_geo = OpenMaya.MItGeometry(path)
     points = OpenMaya.MPointArray()

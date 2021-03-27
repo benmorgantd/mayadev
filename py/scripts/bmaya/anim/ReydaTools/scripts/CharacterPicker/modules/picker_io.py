@@ -46,7 +46,7 @@ def save_picker(scene_items, background_path=""):
   return picker_dict
 
 def load_picker(scene, fullpath=None):
-  print os.path.split(__file__)[0]
+  print(os.path.split(__file__)[0])
   if not fullpath:
     try:
       # have the user navigate to the picker file

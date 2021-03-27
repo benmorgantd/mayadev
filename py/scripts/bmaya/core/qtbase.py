@@ -2,7 +2,6 @@
 
 import os
 import ast
-import time
 
 from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
@@ -19,7 +18,7 @@ class SimpleWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None, designerFile=None, title='Simple Widget'):
         super(SimpleWindow, self).__init__(parent=parent)
 
-        assert isinstance(title, basestring)
+        assert isinstance(title, str)
         self.title = title
 
         try:
@@ -30,7 +29,7 @@ class SimpleWindow(QtWidgets.QMainWindow):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
         self.setWindowTitle(self.title)
 
-        if designerFile and isinstance(designerFile, basestring):
+        if designerFile and isinstance(designerFile, str):
             if os.path.exists(designerFile):
                 self.widget = QtCompat.load_ui(designerFile)
                 self.widget.setParent(self)
@@ -47,7 +46,7 @@ class SimpleWidget(QtWidgets.QWidget):
     def __init__(self, parent=None, designerFile=None, title='Simple Widget'):
         super(SimpleWidget, self).__init__(parent=parent)
 
-        assert isinstance(title, basestring)
+        assert isinstance(title, str)
         self.title = title
 
         try:
@@ -59,7 +58,7 @@ class SimpleWidget(QtWidgets.QWidget):
 
         self.setWindowTitle(self.title)
 
-        if designerFile and isinstance(designerFile, basestring):
+        if designerFile and isinstance(designerFile, str):
             if os.path.exists(designerFile):
                 self.widget = QtCompat.load_ui(designerFile)
                 self.widget.setParent(self)

@@ -141,7 +141,7 @@ class IkChain(module.Module):
 
             pythonMatrixList = list(
                 om.MScriptUtil.getDoubleArrayItem(reorderedMatrix[i], j) for i
-                in xrange(4) for j in xrange(4))
+                in range(4) for j in range(4))
 
             cmds.xform(endCtrl.offsetGrp, matrix=pythonMatrixList)
 

@@ -21,12 +21,12 @@ class Layout(module.Module):
 
         cmds.file(self.character.skeleton.fullPath, i=True,
                   applyTo=':', loadReferenceDepth='none')
-        print '>>> Imported skeleton component <<<<'
+        print('>>> Imported skeleton component <<<<')
 
         # import the mesh
         cmds.file(self.character.mesh.fullPath, i=True,
                   applyTo=':', loadReferenceDepth='none')
-        print '>>> Imported mesh component <<<<'
+        print('>>> Imported mesh component <<<<')
 
         self.makeRigSets()
         self.makeRigGroups()

@@ -63,7 +63,7 @@ class Spline(module.Module):
 
         _components = []
 
-        for i in xrange(len(self.fkDriveJoints)):
+        for i in range(len(self.fkDriveJoints)):
             jnt = self.fkDriveJoints[i]
 
             ctrl = shapelib.ControlCurve(name=name.findControlName(jnt, identifier='Fk'), shapeType=self.shapeType,
@@ -103,7 +103,7 @@ class Spline(module.Module):
         ikControls = []
 
         # build the controls
-        for i in xrange(len(self.splineDriverJoints)):
+        for i in range(len(self.splineDriverJoints)):
             jnt = self.splineDriverJoints[i]
 
             ctrl = shapelib.ControlCurve(name=name.findControlName(jnt, identifier='Ik'), shapeType=self.shapeType,
@@ -189,7 +189,7 @@ class Spline(module.Module):
         # forwardVector = om.MVector(*startJointMatrix[4:7])
 
 
-        for i in xrange(self.controlAmount):
+        for i in range(self.controlAmount):
             cmds.select(clear=True)
 
             # make a control at a percentage distance along the curve

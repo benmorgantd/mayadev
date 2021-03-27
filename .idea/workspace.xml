@@ -2,22 +2,23 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="74bd15b0-e080-4c61-9a69-c2851a779195" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/components/mayaComponent.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/plug-ins/bm_newNodeTemplate.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/plug-ins/bm_newNodeTemplate.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/anim/ReydaTools/scripts/CharacterPicker/modules/picker_io.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/anim/ReydaTools/scripts/CharacterPicker/modules/picker_io.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/asset.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/asset.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/components/animRig.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/components/animRig.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/components/component.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/components/component.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/components/cvs.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/components/cvs.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/components/facePoses.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/components/facePoses.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/components/mesh.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/components/mesh.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/components/postops.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/components/postops.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/components/skeleton.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/components/skeleton.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/components/weights.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/components/weights.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/mathUtils.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/mathUtils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/core/qtbase.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/core/qtbase.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/layout.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/layout.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/module.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/module.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/base/rig.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/config.json" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/config.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/rigManager.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/rigManager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightio.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/IkChain.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/IkChain.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Spline.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/modules/Spline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/rigTools.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/rigTools.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/shapes/shapeio.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/shapes/shapeio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/assetCreator.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/tools/rigManager/assetCreator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/skin/averageVertexSkinWeightCmd.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/skin/averageVertexSkinWeightCmd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/skin/cvshapeinverter.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/skin/cvshapeinverter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightutils.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/scripts/bmaya/rigging/weights/weightutils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,7 +53,7 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="Python" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PythonContentEntriesConfigurable" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">

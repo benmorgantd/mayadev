@@ -160,7 +160,7 @@ def getMatrixAlongCurve(curve, parameter, downAxis='X'):
 
 
 def matchTransforms(source, targets, translate=True, rotate=True, scale=True):
-    if isinstance(targets, basestring):
+    if isinstance(targets, str):
         targets = [targets]
 
     for target in targets:

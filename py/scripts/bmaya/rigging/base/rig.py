@@ -237,7 +237,7 @@ class Rig(Asset):
 
         endTime = time.time()
 
-        print "Rig built in {0:.2f} seconds.".format(endTime - startTime)
+        print("Rig built in {0:.2f} seconds.".format(endTime - startTime))
 
         progressWindow.hide()
 
@@ -249,7 +249,7 @@ class Rig(Asset):
             cmds.addAttr(self.node, longName='connector',
                          attributeType='message')
 
-            print '>>> Created character node >> {0} <<'.format(self.node)
+            print('>>> Created character node >> {0} <<'.format(self.node))
 
     def addNodeAttrs(self):
 
@@ -373,7 +373,7 @@ class Rig(Asset):
         for mesh in self.meshShapes:
             numVerts = mesh.fnMesh.numVertices()
 
-            for i in xrange(numVerts):
+            for i in range(numVerts):
                 cmds.setAttr(mesh + '.pt[{0}]'.format(i), lock=True)
 
     def connectToCharacter(self, node):
@@ -479,22 +479,22 @@ class Rig(Asset):
             if not os.path.exists(dirpath):
                 os.makedirs(dirpath)
 
-        print ">> Component folders initialized"
+        print(">> Component folders initialized")
 
     def initComponentFiles(self):
 
         if not os.path.exists(self.mesh.fullPath):
-            print ">> Creating mesh file."
+            print(">> Creating mesh file.")
             # mesh file is just a blank ma
             cmds.file(new=True, force=True)
             cmds.file(rename=self.mesh.fullPath)
             cmds.file(save=True, type="mayaAscii", force=True)
             fileio.versionFile(self.mesh.fullPath)
         else:
-            print '>> A working mesh file already exists for ' + self.name
+            print('>> A working mesh file already exists for ' + self.name)
 
         if not os.path.exists(self.skeleton.fullPath):
-            print ">> Creating skeleton file."
+            print(">> Creating skeleton file.")
             # create a single joint for the default skeleton file
             cmds.file(new=True, force=True)
             cmds.joint(name=constants.ROOT_JOINT)
@@ -502,18 +502,18 @@ class Rig(Asset):
             cmds.file(save=True, type="mayaAscii", force=True)
             fileio.versionFile(self.skeleton.fullPath)
         else:
-            print '>> A working skeleton file already exists for ' + self.name
+            print('>> A working skeleton file already exists for ' + self.name)
 
         if not os.path.exists(self.cvs.fullPath):
-            print ">> Creating cvs file."
+            print(">> Creating cvs file.")
             with open(self.cvs.fullPath, "w") as f:
                 json.dump({}, f)
             fileio.versionFile(self.cvs.fullPath)
         else:
-            print '>> A working cvs file already exists for ' + self.name
+            print('>> A working cvs file already exists for ' + self.name)
 
         if not os.path.exists(self.build.fullPath):
-            print ">> Creating build file."
+            print(">> Creating build file.")
             # give it a LayoutRig template
             layoutRigPath = os.path.join(constants.TEMPLATES_PATH,
                                          "LayoutRig.json")
@@ -528,7 +528,7 @@ class Rig(Asset):
             fileio.versionFile(self.build.fullPath)
 
         if not os.path.exists(self.postops.fullPath):
-            print ">> Creating postops file"
+            print(">> Creating postops file")
 
             # Write the template python file
             with open(self.postops.fullPath, 'w') as f:
@@ -550,5 +550,5 @@ class Rig(Asset):
         # run postops file
         with open(self.postops.fullPath, 'r') as f:
             code = f.read()
-            exec (code)
+            exec(code)
 
