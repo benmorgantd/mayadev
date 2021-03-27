@@ -3,11 +3,11 @@ import os
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
-from component import Component
+from mayaComponent import MayaComponent
 import mayanode
 
 
-class Skeleton(Component):
+class Skeleton(MayaComponent):
 
     def __init__(self, asset, componentType):
         super(Skeleton, self).__init__(asset, componentType)

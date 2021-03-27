@@ -18,7 +18,7 @@ import layout
 class Rig(Asset):
     '''Rig is the base class for all rigs'''
 
-    def __init__(self, assetId, hasFace=False):
+    def __init__(self, assetId, hasFace=True):
         super(Rig, self).__init__(assetId)
 
         self.hasFace = hasFace
@@ -551,3 +551,4 @@ class Rig(Asset):
         with open(self.postops.fullPath, 'r') as f:
             code = f.read()
             exec (code)
+

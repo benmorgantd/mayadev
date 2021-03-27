@@ -10,3 +10,4 @@ class PostOps(Component):
     def relativePath(self):
         # /rig/components/postops.py
         return os.path.join('rig', 'components', self.type + self.extension)
+

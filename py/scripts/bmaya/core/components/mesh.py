@@ -1,7 +1,8 @@
 import os
-from component import Component
+from mayaComponent import MayaComponent
 
-class Mesh(Component):
+
+class Mesh(MayaComponent):
 
     def __init__(self, asset, componentType):
         super(Mesh, self).__init__(asset, componentType)
@@ -10,3 +11,4 @@ class Mesh(Component):
     def relativePath(self):
         # /mesh/mesh.ma
         return os.path.join(self.type, self.type + self.extension)
+

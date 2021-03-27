@@ -1,5 +1,7 @@
 import os
 from component import Component
+from bmaya.rigging.shapes import shapeio
+
 
 class Cvs(Component):
 
@@ -10,3 +12,9 @@ class Cvs(Component):
     def relativePath(self):
         # /rig/components/cvs.json
         return os.path.join('rig', 'components', self.type + self.extension)
+
+    def load(self):
+        shapeio.load(self.fullPath)
+
+    def save(self):
+        shapeio.save(self.fullPath)

@@ -215,7 +215,7 @@ class DockableWidget(SimpleWidget):
         )
 
 
-class Dialog(QtWidgets.QDialog):
+class Dialog(QtWidgets.QMainWindow):
     def __init__(self, parent=None, windowTitle='Dialog'):
         super(Dialog, self).__init__(parent)
 
@@ -225,6 +225,19 @@ class Dialog(QtWidgets.QDialog):
 
         self.setWindowTitle(windowTitle)
 
+
+class ConfirmDialog(Dialog):
+    def __init__(self, parent=None, windowTitle='Confirm Dialog'):
+        super(ConfirmDialog, self).__init__(parent, windowTitle)
+
+        _yesBtn = QtWidgets.QPushButton('Yes')
+        _noBtn = QtWidgets.QPushButton('No')
+
+        self.hLayout.addWidget(_yesBtn)
+        self.hLayout.addWidget(_noBtn)
+
+        self.setMinimumWidth(50)
+        self.setMinimumHeight(25)
 
 class ProgressWindow(SimpleWindow):
     windowSize = QtCore.QSize(350, 75)

@@ -201,3 +201,5 @@ class Asset(object):
     def cleanPath(cls, filepath):
         return os.path.abspath(filepath.lower())
 
+    # TODO: add component-loading logic at the asset level?
+

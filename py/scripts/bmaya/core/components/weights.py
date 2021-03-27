@@ -1,5 +1,7 @@
 import os
 from component import Component
+from bmaya.rigging.weights import weightio
+
 
 class Weights(Component):
 
@@ -17,7 +19,12 @@ class Weights(Component):
             files = os.listdir(self.fullPath)
         except WindowsError:
             files = []
-        
-        return files
-            
 
+        return files
+
+    def load(self):
+        for f in self.files:
+            weightio.load(os.path.join(self.fullPath, f))
+
+    def save(self):
+        weightio.save(self.fullPath)

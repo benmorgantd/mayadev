@@ -1,6 +1,6 @@
 import os
 
-TYPE_EXTENSIONS = {'mesh': '.ma', 
+TYPE_EXTENSIONS = {'mesh': '.ma',
                    'skeleton': '.ma',
                    'cvs': '.json', 
                    'animRig': '.ma', 
@@ -37,4 +37,13 @@ class Component(object):
     @property
     def fullPath(self):
         return os.path.join(self.asset.rootDir, self.relativePath)
+
+    def save(self):
+        raise NotImplementedError()
+
+    def load(self):
+        raise NotImplementedError()
+
+    def reference(self):
+        raise NotImplementedError()
 

@@ -1,7 +1,8 @@
 import os
-from component import Component
+from mayaComponent import MayaComponent
 
-class FacePoses(Component):
+
+class FacePoses(MayaComponent):
 
     def __init__(self, asset, componentType):
         super(FacePoses, self).__init__(asset, componentType)

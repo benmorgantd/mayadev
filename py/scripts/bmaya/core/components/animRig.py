@@ -1,7 +1,7 @@
 import os
-from component import Component
+from mayaComponent import MayaComponent
 
-class AnimRig(Component):
+class AnimRig(MayaComponent):
 
     def __init__(self, asset, componentType):
         super(AnimRig, self).__init__(asset, componentType)
@@ -11,5 +11,3 @@ class AnimRig(Component):
         # /rig/animRig.ma
         return os.path.join('rig', self.type + self.extension)
 
-
-    

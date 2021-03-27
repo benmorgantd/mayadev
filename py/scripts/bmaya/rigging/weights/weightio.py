@@ -51,7 +51,7 @@ def save(weightsDir):
             # exports by vertex index. Changes to the vert order will break this
             # with the new 'format' argument, this might not be backwards compatible... - _-
             cmds.deformerWeights("{0}.weights".format(dagName), deformer=skin[0], export=True, path=weightsDir,
-                                 method="index")
+                                 method="index", format='XML')
         else:
             print dagName, ' has no skin cluster to save.'
             itSel.next()

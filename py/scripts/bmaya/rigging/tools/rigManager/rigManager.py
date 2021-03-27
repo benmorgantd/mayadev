@@ -48,7 +48,7 @@ class RigManager(qtbase.DockableWidget):
 
         self.moduleList.setBuildList(self.buildList)
 
-        self.assetInstance = None
+        self.rigInstance = None
 
         self.setupFileMenu()
         self.setupAssetMenu()
@@ -83,7 +83,7 @@ class RigManager(qtbase.DockableWidget):
         buildMenu.addSeparator()
 
         actionSave = buildMenu.addAction('Save Build')
-        actionSave.triggered.connect(lambda: self.saveBuild(self.assetInstance.build.fullPath))
+        actionSave.triggered.connect(lambda: self.saveBuild(self.rigInstance.build.fullPath))
 
         actionSave = buildMenu.addAction('Save Build As...')
         actionSave.triggered.connect(lambda: self.saveBuild())
@@ -101,7 +101,7 @@ class RigManager(qtbase.DockableWidget):
         newAssetAction.triggered.connect(lambda: self.launchAssetWidget())
 
         versionAssetAction = assetMenu.addAction('Version Asset')
-        versionAssetAction.triggered.connect(lambda: self.assetInstance.versionAsset())
+        versionAssetAction.triggered.connect(lambda: self.rigInstance.versionAsset())
         
     def setupCVsMenu(self):
         cvsMenu = self.menu.addMenu('CV Tools')
@@ -114,8 +114,8 @@ class RigManager(qtbase.DockableWidget):
     
     def openAssetInExplorer(self):
         try:
-            self.assetInstance.openInExplorer(os.path.split(
-                self.assetInstance.animRig.fullPath)[0])
+            self.rigInstance.openInExplorer(os.path.split(
+                self.rigInstance.animRig.fullPath)[0])
         except AttributeError:
             om.MGlobal.displayWarning('An asset instance has not been established')
 
@@ -128,12 +128,14 @@ class RigManager(qtbase.DockableWidget):
         assetCreatorUI.activateWindow()
 
     def setupButtons(self):
-        self.widget.loadComponent.clicked.connect(lambda: self.loadComponent())
-        self.widget.saveComponent.clicked.connect(lambda: self.saveComponent())
-        self.widget.referenceComponent.clicked.connect(lambda: self.referenceComponent())
-        self.widget.build.clicked.connect(lambda: self.buildCharacter())
+        self.widget.loadComponent.clicked.connect(self.loadComponent)
+        self.widget.saveComponent.clicked.connect(self.saveComponent)
+        self.widget.referenceComponent.clicked.connect(self.referenceComponent)
+        self.widget.build.clicked.connect(self.buildCharacter)
 
     def loadModules(self):
+        # TODO: move this down to the module file
+        # TODO: remove inline import
         from bmaya.rigging import modules
 
         rigModsPath = os.path.dirname(os.path.abspath(modules.__file__))
@@ -154,64 +156,50 @@ class RigManager(qtbase.DockableWidget):
         if result in ['dismiss', 'No']:
             return
 
-        componentPath = self.assetInstance.componentPathFromType(componentType)
+        if componentType not in [component.type for component in self.rigInstance.components]:
+            om.MGlobal.displayError('Invalid component type {}'.format(componentType))
+            return
 
-        if componentType in ['skeleton', 'mesh', 'animRig']:
-            om.MGlobal.displayInfo('Saving ' + componentType + ' ...')
-            fileio.versionFile(componentPath)
-            cmds.file(rename=componentPath)
-            cmds.file(save=True, type="mayaAscii", force=True)
-        elif componentType == 'cvs':
-            from bmaya.rigging.shapes import shapeio
-            shapeio.save(componentPath)
-        elif componentType == 'weights':
-            from bmaya.rigging.weights import weightio
-            weightio.save(componentPath)
+        componentInstance = getattr(self.rigInstance, componentType)
+        componentInstance.save()
+
 
     def loadComponent(self):
         componentType = self.widget.componentType.currentText()
+        print('loading component')
 
-        result = cmds.confirmDialog(message='Are you sure you would like to open ' + componentType + '?',
-                                    button=['Yes', 'No'], defaultButton='Yes', cancelButton='No')
+        # result = cmds.confirmDialog(message='Are you sure you would like to open ' + componentType + '?',
+        #                             button=['Yes', 'No'], defaultButton='Yes', cancelButton='No')
         
-        if result in ['dismiss', 'No']:
+        # if result in ['dismiss', 'No']:
+        #     return
+
+        if componentType not in [component.type for component in self.rigInstance.components]:
+            om.MGlobal.displayError('Invalid component type {}'.format(componentType))
             return
 
-        componentPath = self.assetInstance.componentPathFromType(componentType)
-
-        if componentType in ['skeleton', 'mesh', 'animRig']:
-            self.assetInstance.openFile(componentPath)
-        elif componentType == 'cvs':
-            from bmaya.rigging.shapes import shapeio
-            shapeio.load(componentPath)
-        elif componentType == 'weights':
-            from bmaya.rigging.weights import weightio
-            weightFiles = self.assetInstance.findFilesOfType(componentPath, 'weights')
-            for f in weightFiles:
-                weightio.load(os.path.join(componentPath, f))
-        elif componentType == 'postops':
-            # can we open in VS Code?
-            print 'cannot open python files yet'
+        componentInstance = getattr(self.rigInstance, componentType)
+        componentInstance.load()
 
     def referenceComponent(self):
         componentType = self.widget.componentType.currentText()
-        componentPath = self.assetInstance.componentPathFromType(componentType)
+        componentInstance = getattr(self.rigInstance, componentType)
 
-        if componentType in ['skeleton', 'mesh', 'animRig']:
-            self.assetInstance.referenceFile(componentPath)
+        if hasattr(componentInstance, 'reference'):
+            componentInstance.reference()
         else:
             om.MGlobal.displayInfo("Cannot reference component type " + componentType)
 
     def buildCharacter(self):
-        if self.assetInstance:
+        if self.rigInstance:
             # save and version the build first
-            buildPath = self.assetInstance.build.fullPath
+            buildPath = self.rigInstance.build.fullPath
 
             fileio.versionFile(buildPath)
 
             self.saveBuild(buildPath)
 
-            self.assetInstance.buildRig()
+            self.rigInstance.buildRig()
 
     def exploreToBuildPath(self, action='Open', fileMode=1):
 
@@ -245,7 +233,7 @@ class RigManager(qtbase.DockableWidget):
             self.widget.componentType.setEnabled(False)
             self.widget.currentAssetLabel.setText('No Asset Loaded')
         else:
-            self.assetInstance = rig.Rig(assetId)
+            self.rigInstance = rig.Rig(assetId)
             self.widget.componentType.setEnabled(True)
             self.widget.build.setEnabled(True)
             self.widget.currentAssetLabel.setText(assetId)
@@ -274,7 +262,7 @@ class RigManager(qtbase.DockableWidget):
                 # file was not saved into an asset
                 return
             else:
-                self.assetInstance = rig.Rig(assetId)
+                self.rigInstance = rig.Rig(assetId)
 
                 self.widget.componentType.setEnabled(True)
                 self.widget.build.setEnabled(True)
@@ -317,13 +305,13 @@ class RigManager(qtbase.DockableWidget):
 
     def mirrorCvData(self):
         from bmaya.rigging.shapes import shapeio
-        shapeio.mirror(self.assetInstance.componentPathFromType('cvs'))
+        shapeio.mirror(self.rigInstance.componentPathFromType('cvs'))
 
     def removeSelectedCVData(self):
         from bmaya.rigging.shapes import shapeio
         import maya.cmds as cmds
 
-        shapeio.removeShapeData(self.assetInstance.componentPathFromType('cvs'), cmds.ls(selection=True))
+        shapeio.removeShapeData(self.rigInstance.componentPathFromType('cvs'), cmds.ls(selection=True))
 
 def run():
     ui = RigManager(designerFile=os.path.join(os.path.dirname(__file__), 'rigManager.ui'))
