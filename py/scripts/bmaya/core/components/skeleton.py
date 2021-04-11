@@ -3,7 +3,7 @@ import os
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
-from mayaComponent import MayaComponent
+from .mayaComponent import MayaComponent
 import mayanode
 
 

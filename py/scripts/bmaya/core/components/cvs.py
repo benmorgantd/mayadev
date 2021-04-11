@@ -1,5 +1,5 @@
 import os
-from component import Component
+from .component import Component
 from bmaya.rigging.shapes import shapeio
 
 

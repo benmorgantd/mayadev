@@ -5,7 +5,7 @@ import ast
 from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
 from bmaya.core import qtbase
-from bmaya.rigging.shapes import shapedata
+from bmaya.rigging.shapes import shapelib
 
 import maya.cmds as cmds
 
@@ -162,7 +162,7 @@ class BuildList(qtbase.Tree):
 
     def disableItem(self):
         currentObject = self.currentItem()
-        print 'here we would set an attribute to disable that tree'
+        # TODO: 'here we would set an attribute to disable that tree'
 
     def deleteItem(self):
         # delete the currently selected item
@@ -356,7 +356,9 @@ class AttributeLayoutValue(object):
             if self.attribute in ['shapeType', 'offsetShapeType']:
                 widget = QtWidgets.QComboBox()
 
-                for shapeType in shapedata.CONTROL_TYPES_AND_VALUES.keys():
+                controlTypeData =  shapelib.getControlTypeData()
+
+                for shapeType in controlTypeData.keys():
                     widget.addItem(shapeType)
 
                 widget.setCurrentIndex(widget.findText(self.defaultValue))

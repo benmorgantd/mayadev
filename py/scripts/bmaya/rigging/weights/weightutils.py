@@ -132,7 +132,7 @@ def quickSkin():
 
         if existingSkin:
             cmds.delete(existingSkin)
-            print 'deleted ', existingSkin
+            print('deleted {}'.format(existingSkin))
 
         cmds.select(joints)
         cmds.select(mesh, add=True)

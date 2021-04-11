@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-import constants
+from . import constants
 
 def nameSelection(selection, name='joint', side='L', suffix='JNT'):
     

@@ -7,7 +7,6 @@ import maya.cmds as cmds
 
 from bmaya.core.components import *
 
-
 try:
     PROJECT_DIR = os.environ['RIGGING_PROJECT_DIR']
 except KeyError:

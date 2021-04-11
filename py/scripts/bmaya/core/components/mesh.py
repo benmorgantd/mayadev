@@ -1,5 +1,5 @@
 import os
-from mayaComponent import MayaComponent
+from .mayaComponent import MayaComponent
 
 
 class Mesh(MayaComponent):

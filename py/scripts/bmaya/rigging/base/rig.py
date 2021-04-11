@@ -12,7 +12,7 @@ from bmaya.rigging.shapes import shapelib, shapeio
 from bmaya.rigging.weights import weightio
 from bmaya.rigging import buildio
 
-import layout
+from . import layout
 
 
 class Rig(Asset):

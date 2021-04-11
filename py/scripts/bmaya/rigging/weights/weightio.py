@@ -53,10 +53,10 @@ def save(weightsDir):
             cmds.deformerWeights("{0}.weights".format(dagName), deformer=skin[0], export=True, path=weightsDir,
                                  method="index", format='XML')
         else:
-            print dagName, ' has no skin cluster to save.'
+            print(dagName, ' has no skin cluster to save.')
             itSel.next()
 
-        print "Saved weights for {}".format(dagName)
+        print("Saved weights for {}".format(dagName))
 
         itSel.next()
 
@@ -77,7 +77,7 @@ def load(weightsPath):
         om.MGlobal.displayInfo("{0} does not exist in scene.".format(objName))
         return
 
-    print 'Loading weights for <' + objName + '> ...'
+    print('Loading weights for <' + objName + '> ...')
 
     # look for and delete old clusters if they exist
     existingSkinCluster = cmds.ls(cmds.listHistory(objName), type="skinCluster") or []
@@ -110,4 +110,4 @@ def load(weightsPath):
     cmds.skinPercent(newCluster[0], normalize=True)
     om.MGlobal.displayInfo("Loaded skinCluster weights onto {0}".format(objName))
 
-    print ">>> Weight data loaded from {0}".format(weightsPath)
+    print(">>> Weight data loaded from {0}".format(weightsPath))

@@ -1,5 +1,5 @@
 import os
-from component import Component
+from .component import Component
 
 import maya.cmds as cmds
 import maya.OpenMaya as om

@@ -30,4 +30,4 @@ def versionFile(filepath):
 
     shutil.copy(filepath, versionFilename)
 
-    print "Versioned file to {0}".format(versionFilename)
+    print("Versioned file to {0}".format(versionFilename))

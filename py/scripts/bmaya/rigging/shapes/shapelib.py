@@ -1,12 +1,22 @@
+import json
+import os
+
 import maya.cmds as cmds
 
 from bmaya.core import boundingBox, mathUtils
 # import mayanode
 
-import shapedata
+CONTROL_TYPES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'controlTypes.json')
 
 # However, to give us plenty of room to spare, we'll set the max amount of cvs to 256
 CV_LIMIT = 128
+
+
+def getControlTypeData():
+
+    with open(CONTROL_TYPES_PATH, 'r') as f:
+        controlTypeData = json.load(f)
+    return controlTypeData
 
 
 class ControlCurve(object):
@@ -135,7 +145,7 @@ class ControlCurve(object):
 
     def build(self):
         if self.shapeType not in self.types.keys():
-            print 'Given shape type is not valid. Defaulting to cube.'
+            print('Given shape type is not valid. Defaulting to cube.')
             self.shapeType = 'cube'
 
         cmds.select(clear=True)
