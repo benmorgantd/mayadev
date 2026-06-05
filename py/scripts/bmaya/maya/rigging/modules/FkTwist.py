@@ -1,9 +1,9 @@
 import maya.cmds as cmds
 
-from bmaya3.maya.rigging.modules import FkChain
-from bmaya3.maya.rigging.base.decorators import wrapBuild
-from bmaya3.maya.util import nameUtils, mathUtils
-from bmaya3.core import constants
+from bmaya.maya.rigging.modules import FkChain
+from bmaya.maya.rigging.base.decorators import wrapBuild
+from bmaya.maya.util import nameUtils, mathUtils
+from bmaya.core import constants
 
 
 class FkTwist(FkChain.FkChain):

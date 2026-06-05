@@ -3,7 +3,7 @@ import os
 
 import maya.cmds as cmds
 
-from bmaya3.maya.util import boundingBoxUtils, mathUtils
+from bmaya.maya.util import boundingBoxUtils, mathUtils
 
 CONTROL_TYPES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'controlTypes.json')
 

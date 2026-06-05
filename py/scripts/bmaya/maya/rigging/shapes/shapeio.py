@@ -3,7 +3,7 @@ import json
 import maya.OpenMaya as om
 import maya.cmds as cmds
 
-from bmaya3.core.util import fileUtils
+from bmaya.core.util import fileUtils
 
 
 def save(cvsPath):

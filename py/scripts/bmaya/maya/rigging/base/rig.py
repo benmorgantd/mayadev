@@ -12,17 +12,17 @@ import time
 
 import maya.cmds as cmds
 
-from bmaya3.maya.asset.asset import Asset
-from bmaya3.maya.asset.components import *
-import bmaya3.core.constants
-import bmaya3.maya.rigging.constants
-from bmaya3.core.util import fileUtils
-#from bmaya3.maya.ui import qtbase
+from bmaya.maya.asset.asset import Asset
+from bmaya.maya.asset.components import *
+import bmaya.core.constants
+import bmaya.maya.rigging.constants
+from bmaya.core.util import fileUtils
+#from bmaya.maya.ui import qtbase
 
-from bmaya3.maya.rigging.shapes import shapelib, shapeio
-from bmaya3.maya.rigging.weights import weightio
-from bmaya3.maya.rigging import buildio
-from bmaya3.maya.rigging import modules
+from bmaya.maya.rigging.shapes import shapelib, shapeio
+from bmaya.maya.rigging.weights import weightio
+from bmaya.maya.rigging import buildio
+from bmaya.maya.rigging import modules
 
 from . import layout
 
@@ -32,8 +32,8 @@ class Rig(Asset):
     
     How to build a rig:
 
-    from bmaya3.maya.asset.asset import Asset
-    from bmaya3.maya.rigging.base.rig import Rig
+    from bmaya.maya.asset.asset import Asset
+    from bmaya.maya.rigging.base.rig import Rig
 
     myAsset = Asset('dev|prop|cube')
     myRig = Rig(myAsset.assetId)
@@ -210,10 +210,10 @@ class Rig(Asset):
         self.addNodeAttrs()
 
         for mod in self.modules:
-            if cmds.objExists(mod['name'] + '_' + bmaya3.core.constants.MODULE_SUFFIX):
+            if cmds.objExists(mod['name'] + '_' + bmaya.core.constants.MODULE_SUFFIX):
                 cmds.connectAttr(self.node + '.modules',
                                  '{0}_{1}.character'.format(mod['name'],
-                                                            bmaya3.core.constants.MODULE_SUFFIX))
+                                                            bmaya.core.constants.MODULE_SUFFIX))
 
         #progressWindow.setStatus('Loading control shapes')
         #progressWindow.increment(5)
@@ -360,7 +360,7 @@ class Rig(Asset):
             elif 'noSkin' not in cmds.listAttr(mesh):
                 # skin meshes not marked noSkin to the root joint
                 self.skinClusters.append(
-                    cmds.skinCluster(bmaya3.core.constants.ROOT_JOINT, mesh,
+                    cmds.skinCluster(bmaya.core.constants.ROOT_JOINT, mesh,
                                      maximumInfluences=1,
                                      bindMethod=1,
                                      weightDistribution=1,
@@ -470,7 +470,7 @@ class Rig(Asset):
                 pass
 
     def loadPlugins(self):
-        for plugin in bmaya3.core.constants.REQUIRED_PLUGINS:
+        for plugin in bmaya.core.constants.REQUIRED_PLUGINS:
             cmds.loadPlugin(plugin, quiet=True)
 
     def initComponents(self):
@@ -517,7 +517,7 @@ class Rig(Asset):
             print(">> Creating skeleton file.")
             # create a single joint for the default skeleton file
             cmds.file(new=True, force=True)
-            cmds.joint(name=bmaya3.core.constants.ROOT_JOINT)
+            cmds.joint(name=bmaya.core.constants.ROOT_JOINT)
             cmds.file(rename=self.skeleton.fullPath)
             cmds.file(save=True, type="mayaAscii", force=True)
             fileUtils.versionFile(self.skeleton.fullPath)
@@ -535,7 +535,7 @@ class Rig(Asset):
         if not os.path.exists(self.build.fullPath):
             print(">> Creating build file using default LayoutRig template.")
             # give it a LayoutRig template
-            layoutRigPath = os.path.join(bmaya3.maya.rigging.constants.TEMPLATES_PATH,
+            layoutRigPath = os.path.join(bmaya.maya.rigging.constants.TEMPLATES_PATH,
                                          "LayoutRig.json")
 
             with open(layoutRigPath, "r") as f:
@@ -552,7 +552,7 @@ class Rig(Asset):
 
             # Write the template python file
             with open(self.postops.fullPath, 'w') as f:
-                f.write(bmaya3.core.constants.POSTOPS_TEMPLATE)
+                f.write(bmaya.core.constants.POSTOPS_TEMPLATE)
 
             fileUtils.versionFile(self.postops.fullPath)
 

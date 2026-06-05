@@ -6,7 +6,7 @@ which handles the actual logic for saving and loading weight data.
 
 import os
 from .component import Component
-from bmaya3.maya.rigging.weights import weightio
+from bmaya.maya.rigging.weights import weightio
 
 
 class Weights(Component):

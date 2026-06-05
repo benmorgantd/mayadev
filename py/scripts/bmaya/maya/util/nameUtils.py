@@ -5,7 +5,7 @@ that involve naming, such as naming joints and controls based on a consistent na
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from bmaya3.core import constants
+from bmaya.core import constants
 
 def nameSelection(selection, name='joint', side='L', suffix='JNT'):
     

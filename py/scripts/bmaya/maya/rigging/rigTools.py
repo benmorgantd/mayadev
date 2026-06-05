@@ -9,8 +9,8 @@ from ast import literal_eval
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from bmaya3.core.util import constants
-from bmaya3.maya.util import mathUtils
+from bmaya.core.util import constants
+from bmaya.maya.util import mathUtils
 
 
 def toggleSkinMode():

@@ -1,5 +1,5 @@
-from bmaya3.lib.Qt import QtWidgets
-from bmaya3.maya.ui import qtbase
+from bmaya.lib.Qt import QtWidgets
+from bmaya.maya.ui import qtbase
 
 class NamingTool(qtbase.SimpleWindow):
     def __init__(self, parent=None, title='Naming Tool'):

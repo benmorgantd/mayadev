@@ -1,8 +1,8 @@
 import maya.cmds as cmds
 
-from bmaya3.maya.rigging.shapes import shapelib
-from bmaya3.maya.util import nameUtils, mathUtils
-from bmaya3.core import constants
+from bmaya.maya.rigging.shapes import shapelib
+from bmaya.maya.util import nameUtils, mathUtils
+from bmaya.core import constants
 
 
 class Foot(object):

@@ -4,10 +4,10 @@ import os
 
 import maya.OpenMaya as om
 
-from bmaya3.lib.Qt import QtWidgets, QtCompat
+from bmaya.lib.Qt import QtWidgets, QtCompat
 
-from bmaya3.maya.rigging.base import rig
-from bmaya3.core import asset
+from bmaya.maya.rigging.base import rig
+from bmaya.core import asset
 
 
 class AssetCreator(QtWidgets.QMainWindow):

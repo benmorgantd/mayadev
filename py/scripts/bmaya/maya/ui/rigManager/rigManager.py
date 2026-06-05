@@ -5,15 +5,15 @@ from functools import partial
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from bmaya3.lib.Qt import QtWidgets, QtCore
+from bmaya.lib.Qt import QtWidgets, QtCore
 
-from bmaya3.maya.ui import qtbase
-from bmaya3.maya.util import fileUtils
-from bmaya3.maya.asset import asset
+from bmaya.maya.ui import qtbase
+from bmaya.maya.util import fileUtils
+from bmaya.maya.asset import asset
 from . import customWidgets, assetCreator
 
-from bmaya3.maya.rigging.base import rig
-from bmaya3.rigging import buildio
+from bmaya.maya.rigging.base import rig
+from bmaya.rigging import buildio
 
 
 class RigManager(qtbase.DockableWidget):
@@ -138,7 +138,7 @@ class RigManager(qtbase.DockableWidget):
     def loadModules(self):
         # TODO: move this down to the module file
         # TODO: remove inline import
-        from bmaya3.rigging import modules
+        from bmaya.rigging import modules
 
         rigModsPath = os.path.dirname(os.path.abspath(modules.__file__))
         # load every module from the rigMods folder
@@ -306,11 +306,11 @@ class RigManager(qtbase.DockableWidget):
             json.dump(configData, f, indent=4)
 
     def mirrorCvData(self):
-        from bmaya3.maya.rigging.shapes import shapeio
+        from bmaya.maya.rigging.shapes import shapeio
         shapeio.mirror(self.rigInstance.componentPathFromType('cvs'))
 
     def removeSelectedCVData(self):
-        from bmaya3.maya.rigging.shapes import shapeio
+        from bmaya.maya.rigging.shapes import shapeio
         import maya.cmds as cmds
 
         shapeio.removeShapeData(self.rigInstance.componentPathFromType('cvs'), cmds.ls(selection=True))

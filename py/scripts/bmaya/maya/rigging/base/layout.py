@@ -7,8 +7,8 @@ import maya.cmds as cmds
 
 from . import module
 from .decorators import wrapBuild
-from bmaya3.maya.rigging.shapes import shapelib
-from bmaya3.core import constants
+from bmaya.maya.rigging.shapes import shapelib
+from bmaya.core import constants
 
 
 class Layout(module.Module):

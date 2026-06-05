@@ -5,7 +5,7 @@ It contains the logic for loading and saving cvs using the shapeio module, which
 
 import os
 from .component import Component
-from bmaya3.maya.rigging.shapes import shapeio
+from bmaya.maya.rigging.shapes import shapeio
 
 
 class Cvs(Component):

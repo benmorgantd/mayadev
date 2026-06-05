@@ -6,8 +6,8 @@ import math
 
 import maya.cmds as cmds
 import maya.OpenMaya as om
-from bmaya3.core.util import constants
-from bmaya3.maya.util import nameUtils
+from bmaya.core.util import constants
+from bmaya.maya.util import nameUtils
 
 
 def getSelectionCenter():

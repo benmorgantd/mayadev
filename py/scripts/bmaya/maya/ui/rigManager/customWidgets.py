@@ -2,10 +2,10 @@
 
 import ast
 
-from bmaya3.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
+from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
 
-from bmaya3.core import qtbase
-from bmaya3.maya.rigging.shapes import shapelib
+from bmaya.core import qtbase
+from bmaya.maya.rigging.shapes import shapelib
 
 import maya.cmds as cmds
 
@@ -248,7 +248,7 @@ class BuildListItem(qtbase.TreeItem):
         return attrValues
 
     def loadAttributeTemplates(self):
-        from bmaya3.rigging import modules
+        from bmaya.rigging import modules
 
         attrData = modules.MODULE_ARGS[self.modType]
 

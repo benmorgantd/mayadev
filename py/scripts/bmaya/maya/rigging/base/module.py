@@ -11,9 +11,9 @@ import inspect
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from bmaya3.core import constants
-from bmaya3.maya.util import nameUtils, mathUtils
-from bmaya3.maya.rigging.shapes import shapelib
+from bmaya.core import constants
+from bmaya.maya.util import nameUtils, mathUtils
+from bmaya.maya.rigging.shapes import shapelib
 
 
 class Module(object):

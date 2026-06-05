@@ -1,10 +1,10 @@
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from bmaya3.maya.rigging.modules import FkTwist
-from bmaya3.maya.rigging.base.decorators import wrapBuild
-from bmaya3.maya.util import nameUtils
-from bmaya3.core import constants
+from bmaya.maya.rigging.modules import FkTwist
+from bmaya.maya.rigging.base.decorators import wrapBuild
+from bmaya.maya.util import nameUtils
+from bmaya.core import constants
 
 
 class NeckHead(FkTwist.FkTwist):

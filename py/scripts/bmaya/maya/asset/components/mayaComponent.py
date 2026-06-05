@@ -9,7 +9,7 @@ from .component import Component
 import maya.cmds as cmds
 import maya.OpenMaya as om
 
-from bmaya3.core.util import fileUtils
+from bmaya.core.util import fileUtils
 
 
 class MayaComponent(Component):
