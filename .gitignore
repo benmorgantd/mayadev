@@ -1,2 +1,7 @@
 *.pyc
 *.ma
+cpp_libraries/
+.tmp.driveupload/
+.gitignore
+.idea/
+scratch/

@@ -1,0 +1,109 @@
+site_name: bmaya3 Documentation
+
+theme:
+  name: material
+  features:
+    - search.suggest
+    - search.highlight
+  
+  # --- DARK MODE & PALETTE TOGGLE SETUP ---
+  palette:
+    # Scheme toggle for Dark Mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+      # Scheme toggle for Light Mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - core:
+    - constants: rigging/core/constants.md
+    - util:
+      - fileUtils: rigging/core/util/fileUtils.md
+  - guides:
+    - rigging_generation: guides/rigging_generation.md
+  - maya:
+    - asset:
+      - asset: rigging/maya/asset/asset.md
+      - components:
+        - animRig: rigging/maya/asset/components/animRig.md
+        - build: rigging/maya/asset/components/build.md
+        - component: rigging/maya/asset/components/component.md
+        - cvs: rigging/maya/asset/components/cvs.md
+        - facePoses: rigging/maya/asset/components/facePoses.md
+        - mayaComponent: rigging/maya/asset/components/mayaComponent.md
+        - mesh: rigging/maya/asset/components/mesh.md
+        - postops: rigging/maya/asset/components/postops.md
+        - skeleton: rigging/maya/asset/components/skeleton.md
+        - weights: rigging/maya/asset/components/weights.md
+    - modeling:
+      - blendBoundary: rigging/maya/modeling/blendBoundary.md
+    - rigging:
+      - base:
+        - decorators: rigging/maya/rigging/base/decorators.md
+        - layout: rigging/maya/rigging/base/layout.md
+        - module: rigging/maya/rigging/base/module.md
+        - rig: rigging/maya/rigging/base/rig.md
+      - buildio: rigging/maya/rigging/buildio.md
+      - joint: rigging/maya/rigging/joint.md
+      - modules:
+        - Arm: rigging/maya/rigging/modules/Arm.md
+        - Face: rigging/maya/rigging/modules/Face.md
+        - FkChain: rigging/maya/rigging/modules/FkChain.md
+        - FkTwist: rigging/maya/rigging/modules/FkTwist.md
+        - IkChain: rigging/maya/rigging/modules/IkChain.md
+        - IkFkChain: rigging/maya/rigging/modules/IkFkChain.md
+        - Leg: rigging/maya/rigging/modules/Leg.md
+        - NeckHead: rigging/maya/rigging/modules/NeckHead.md
+        - SingleJoint: rigging/maya/rigging/modules/SingleJoint.md
+        - Spline: rigging/maya/rigging/modules/Spline.md
+        - _Foot: rigging/maya/rigging/modules/_Foot.md
+        - _ThreeJointIkFkTwist: rigging/maya/rigging/modules/_ThreeJointIkFkTwist.md
+        - __Ribbon: rigging/maya/rigging/modules/__Ribbon.md
+      - rigTools: rigging/maya/rigging/rigTools.md
+      - shapes:
+        - shapeio: rigging/maya/rigging/shapes/shapeio.md
+        - shapelib: rigging/maya/rigging/shapes/shapelib.md
+      - weights:
+        - skin:
+          - averageVertexSkinWeightBrush: rigging/maya/rigging/weights/skin/averageVertexSkinWeightBrush.md
+          - averageVertexSkinWeightCmd: rigging/maya/rigging/weights/skin/averageVertexSkinWeightCmd.md
+          - bm_copyWeights: rigging/maya/rigging/weights/skin/bm_copyWeights.md
+          - bm_extrude_weights: rigging/maya/rigging/weights/skin/bm_extrude_weights.md
+          - bm_findUnderInfluencedVerts: rigging/maya/rigging/weights/skin/bm_findUnderInfluencedVerts.md
+          - bm_pruneSkinWeightsPlugin: rigging/maya/rigging/weights/skin/bm_pruneSkinWeightsPlugin.md
+          - bm_smoothSkinWeights: rigging/maya/rigging/weights/skin/bm_smoothSkinWeights.md
+          - bm_smooth_skinned_curve: rigging/maya/rigging/weights/skin/bm_smooth_skinned_curve.md
+          - bm_softCluster: rigging/maya/rigging/weights/skin/bm_softCluster.md
+          - bm_weight_io: rigging/maya/rigging/weights/skin/bm_weight_io.md
+          - cvshapeinverter: rigging/maya/rigging/weights/skin/cvshapeinverter.md
+          - cvshapeinverter_plugin: rigging/maya/rigging/weights/skin/cvshapeinverter_plugin.md
+        - weightio: rigging/maya/rigging/weights/weightio.md
+        - weightutils: rigging/maya/rigging/weights/weightutils.md
+    - ui:
+      - namingTool:
+        - namingTool: rigging/maya/ui/namingTool/namingTool.md
+      - qtbase: rigging/maya/ui/qtbase.md
+      - rigManager:
+        - assetCreator: rigging/maya/ui/rigManager/assetCreator.md
+        - customWidgets: rigging/maya/ui/rigManager/customWidgets.md
+        - rigManager: rigging/maya/ui/rigManager/rigManager.md
+    - util:
+      - boundingBoxUtils: rigging/maya/util/boundingBoxUtils.md
+      - dagUtils: rigging/maya/util/dagUtils.md
+      - dgUtils: rigging/maya/util/dgUtils.md
+      - mathUtils: rigging/maya/util/mathUtils.md
+      - nameUtils: rigging/maya/util/nameUtils.md
+      - selectionUtils: rigging/maya/util/selectionUtils.md

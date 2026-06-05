@@ -10,15 +10,6 @@ PATH+:=bin
 icons: ../icons 
 presets: ../presets 
 scripts: ../scripts 
-
-+ PLATFORM:mac bm 1.0 MODULE_LOC 
-MYMODULE_SHADERS_LOCATION:=shaders 
-MYMODULE_INCLUDE_LOCATION:=shaders/include 
-MOD_PLUG_IN_PATH+:=bin/image 
-PATH+:=bin 
-icons: ../icons 
-presets: ../presets 
-scripts: ../scripts 
 """
 
 
@@ -32,7 +23,7 @@ def easyInstall():
     except TypeError:
         # will happen if the user exits the file dialog
         failMessage = "Install of the bm module failed.\n\nPlease drag the file back into Maya to install."
-        print "\n" + failMessage
+        print("\n" + failMessage)
         cmds.confirmDialog(title="Error", message=failMessage)
         return
 
@@ -50,7 +41,7 @@ def easyInstall():
     modFile.close()
 
     successMessage = "Successfully installed the bm module.\n\nPlease restart Maya to finish installation."
-    print "\n" + successMessage
+    print("\n" + successMessage)
     cmds.confirmDialog(title="Success", message=successMessage)
 
 
