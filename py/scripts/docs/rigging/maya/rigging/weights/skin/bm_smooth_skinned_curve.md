@@ -1,44 +1,53 @@
-Here is your requested documentation:
+Here is the documentation for the `bm_smooth_skinned_curve` file:
 
-**Module: bm_smooth_skinned_curve**
+# Module: bm_smooth_skinned_curve
 
 ### Pipeline Intent
-Provides a moving average-based method for smoothing skinned nurbs curve weights in Maya.
+Provides a tool to smooth skinned nurbs curve weights using a moving average method, allowing for customizable strength.
 
 ### Technical Implementation
- Utilizes Maya's OpenMaya and OpenMayaAnim libraries to retrieve information about the skin cluster, influence objects, and CVs on the target curve. The `smooth_weights` function applies a weighted average of neighboring CVs' weights to each point on the curve, with adjustable strength.
+Utilizes Maya's OpenMaya and OpenMayaAnim libraries to interact with the scene data. The script selects the desired curve, converts its selection to CVs, retrieves the skin cluster, and then applies the smoothing algorithm.
 
 ### Overview
-This module enables animators to fine-tune the behavior of skinned nurbs curves in Maya by applying a moving average-based smoothing algorithm. This can help reduce the effect of isolated points or sharp changes in the curve's shape.
+This module offers a way to refine the weights of skinned nurbs curves using a moving average method. It can be used to create more natural-looking character rigs or to fine-tune existing ones.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya.maya.asset.components.animRig`, `bmaya.maya.rigging.buildio`
-* **External Dependencies:** `maya.cmds`, `OpenMaya`, `OpenMayaAnim`
+
+* **Internal Framework Links:** `bmaya.maya.asset.components.skeleton`, `bmaya.maya.rigging.modules.Arm`
+* **External Dependencies:** None
 
 ## API Taxonomy Reference
 
-### 🏷️ `FUNCTION` :: `find_skin_cluster`
-**Signature:**
-```python
-def find_skin_cluster(dag):
-```
-#### Arguments
-- dag (type): The DAG path of the target mesh.
+### 🏷️ `CLASS` :: None
+**Purpose:** None  
+*Inherits from:* None
 
-#### Returns
-- skin_cluster (str): The name of the skin cluster associated with the input mesh.
-- skin_cluster_obj (om.MObject): The MObject representation of the skin cluster.
+#### Methods
+
+- `find_skin_cluster(dag)`: Finds the skin cluster associated with a given DAG path.
+  - **Arguments:**
+    - `dag`: The DAG path to find the skin cluster for (type: `om.MDagPath`)
+  - **Returns:**
+    - A tuple containing the name of the skin cluster and its MObject (types: `str`, `om.MObject`)
+
+---
 
 ### 🏷️ `FUNCTION` :: `smooth_weights`
 **Signature:**
 ```python
 def smooth_weights(curve=None, smooth_strength=.25):
 ```
+
 #### Arguments
-- curve (str): The name of the nurbs curve to process. Optional.
-- smooth_strength (float): The strength of the smoothing algorithm. Defaults to 0.25.
+
+- `curve`: The curve to apply the smoothing algorithm to (type: `om.MDagPath`)
+- `smooth_strength`: The strength of the smoothing effect (type: `float`)
 
 #### Returns
 None
 
+---
+
 ### 🏷️ `GLOBAL VARIABLE` :: None
+- **Type:** None
+- **Value/Purpose:** None

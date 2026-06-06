@@ -1,25 +1,32 @@
 # Module: joint
 
 ### Pipeline Intent
-Provides utility functions for working with joints in Maya, including calculating the best-fit plane for a selection of vertices and adding twist joints to a given start joint.
+Provides utility functions for working with joints in Maya. This module offers functionality for calculating the best-fit plane of a selection, adding twist joints as children of a given joint, orienting joints to world or mesh space, and mirroring face joints.
 
 ### Technical Implementation
-Exposes automated versioning utilities using the standard library `os` and `shutil` modules. Handles directory generation asynchronously when creating nested version tracks.
+This module relies on the `maya.cmds` and `OpenMaya` libraries to interact with the Maya application. It utilizes various functions from these libraries to perform calculations and transformations.
 
 ### Overview
-The `joint` module provides a set of utility functions for working with joints in Maya, including calculating the best-fit plane for a selection of vertices and adding twist joints to a given start joint.
+The `joint` module is designed to provide a set of utility functions for working with joints in Maya. These functions can be used to manipulate joint hierarchies, calculate spatial relationships between joints, and orient joints to different reference frames.
 
 ### Cross-Module Dependencies
 
-* **Internal Framework Links:** `bmaya.core.util`, `bmaya.maya.util`
-* **External Dependencies:** None
+* **Internal Framework Links:** [List any modules from the codebase manifest that this file imports or interacts with]
+	+ `bmaya.core.util.fileUtils`
+	+ `bmaya.maya.util.nameUtils`
+* **External Dependencies:** [e.g., Maya.cmds, OpenMaya]
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: `None`
-
+**Purpose:** 
 #### Methods
-None
+- `getSelectionCenter(self)`: Calculates the centroid of a selection.
+- `bestFitPlane(self)`: Calculates the best-fit plane of a selection and orients a locator to that plane.
+- `addTwistJoints(startJoint, endJoint, jointCount=3)`: Adds twist joints as children of a given joint.
+- `orientToWorld(joints)`: Orients joints to world space.
+- `orientToMesh(joints, mesh)`: Orients joints to a specified mesh.
+- `mirrorFaceJoints(joints)`: Mirrors face joints.
 
 ---
 
@@ -28,11 +35,12 @@ None
 ```python
 def getSelectionCenter():
 ```
-#### Description:
-Calculates the centroid of a selection of vertices.
+#### Arguments
 
-#### Returns:
-A Maya vector representing the center of the selected vertices.
+* None
+
+#### Returns
+- The centroid of the selection.
 
 ---
 
@@ -41,11 +49,12 @@ A Maya vector representing the center of the selected vertices.
 ```python
 def bestFitPlane():
 ```
-#### Description:
-Calculates the best-fit plane for a selection of vertices and aims a locator at it.
+#### Arguments
 
-#### Returns:
-None
+* None
+
+#### Returns
+- A locator oriented to the best-fit plane of the selection.
 
 ---
 
@@ -54,16 +63,14 @@ None
 ```python
 def addTwistJoints(startJoint, endJoint, jointCount=3):
 ```
-#### Description:
-Adds twist joints as children of the given start joint, determined by the length from the start joint to the end joint.
+#### Arguments
 
-#### Args:
-* `startJoint`: The starting joint for the twist.
-* `endJoint`: The ending joint for the twist.
-* `jointCount`: The number of twist joints to add (default=3).
+* `startJoint`: The starting joint.
+* `endJoint`: The ending joint.
+* `jointCount=3`: The number of twist joints to add.
 
-#### Returns:
-An array of Joint classes representing the added twist joints.
+#### Returns
+- An array of Joint classes representing the added twist joints.
 
 ---
 
@@ -72,14 +79,13 @@ An array of Joint classes representing the added twist joints.
 ```python
 def orientToWorld(joints):
 ```
-#### Description:
-Orients a set of joints to world space, parenting any child joints to their respective parent joints and deleting any intermediate nodes.
+#### Arguments
 
-#### Args:
-* `joints`: The list of joints to orient.
+* `joints`: A list of joint names or MObject handles.
 
-#### Returns:
-None
+#### Returns
+
+* None
 
 ---
 
@@ -88,15 +94,14 @@ None
 ```python
 def orientToMesh(joints, mesh):
 ```
-#### Description:
-Orients a set of joints to match the normal of a given mesh.
+#### Arguments
 
-#### Args:
-* `joints`: The list of joints to orient.
-* `mesh`: The mesh to orient the joints to.
+* `joints`: A list of joint names or MObject handles.
+* `mesh`: The name or MObject handle of the mesh to orient to.
 
-#### Returns:
-None
+#### Returns
+
+* None
 
 ---
 
@@ -105,11 +110,10 @@ None
 ```python
 def mirrorFaceJoints(joints):
 ```
-#### Description:
-Mirrors a set of face joints, creating mirrored versions and parenting them to their respective parent joints.
+#### Arguments
 
-#### Args:
-* `joints`: The list of joints to mirror.
+* `joints`: A list of joint names or MObject handles.
 
-#### Returns:
-None
+#### Returns
+
+* None

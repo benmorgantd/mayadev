@@ -1,36 +1,40 @@
 # Module: animRig
 
 ### Pipeline Intent
-Provides base functionality for production Animation Rigs in Maya, handling asset ID, file management, and versioning.
+Provides a base class for production Animation Rigs that encapsulates logic for asset Id, file management, and versioning. This class is specific to Maya and serves as a foundation for building animation rigs.
 
 ### Technical Implementation
-Imports the `MayaComponent` class from `bmaya.maya.asset.components.component` to leverage its initialization and type management capabilities.
+The `AnimRig` class inherits from the `MayaComponent` class and utilizes the standard library `os` module to generate relative paths for rig files.
 
 ### Overview
-This module serves as a foundation for creating Animation Rig assets in Maya. It provides a basic structure for organizing and managing animation rig files, ensuring consistency across projects.
+This module defines a base class for animating rigs in Maya, handling various aspects of file management and asset identification. It serves as a starting point for creating custom animation rigs.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya.maya.asset.components.component`
+* **Internal Framework Links:** `bmaya.maya.asset.components.mayaComponent`
 * **External Dependencies:** None
 
 ## API Taxonomy Reference
 
-### 🏷️ `CLASS` :: `AnimRig`
+### 🏷️ `CLASS` :: AnimRig
 **Purpose:** Base class for production Animation Rigs that handles logic for asset Id, file management, and versioning.
+**Inherits from:** `bmaya.maya.asset.components.mayaComponent`
 
 #### Methods
-- `__init__(self, asset, componentType)`: Initializes the AnimRig object with the provided asset ID and component type.
+- `__init__(self, asset, componentType)`: Initializes the anim rig with provided asset and component type.
 
 ---
 
-### 🏷️ `FUNCTION` :: `relativePath`
+### 🏷️ `FUNCTION` :: relativePath
 **Signature:**
 ```python
 @property
 def relativePath(self):
 ```
-#### Description
-Returns the relative file path for the Animation Rig, which is a combination of the 'rig' directory and the rig's type and extension.
-
 #### Returns
-- `str`: The relative file path as a string.
+- A string representing the relative path for the animation rig file (e.g., `/rig/animRig.ma`)
+
+---
+
+### Documentation Drift
+
+* None found.

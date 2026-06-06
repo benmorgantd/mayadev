@@ -1,29 +1,29 @@
 # Module: averageVertexSkinWeightCmd
 
 ### Pipeline Intent
-Provides a script tool for animators to manage and adjust skin weights in Maya. This command allows users to set vertex weights based on the distance from the operating vertex.
+Provides a scripting tool for Maya to automate the process of assigning skin weights to vertices based on proximity to the operating vertex. This command is designed to maintain the maximum number of influences and apply a brush value to the resulting weight calculation.
 
 ### Technical Implementation
-The `averageVertexSkinWeightCmd` script tool uses OpenMaya and OpenMayaAnim libraries to interact with Maya's API. It exposes a command-line interface for animators to specify the index of the vertex, the value of the brush pressure, and the number of maximum influences to maintain.
+This module utilizes the OpenMaya and OpenMayaAnim libraries to interact with Maya's internal data structures and execute custom commands. The `AverageVertexSkinWeightCmd` class defines the logic for processing user input flags, parsing dependencies, and performing the actual weight assignment.
 
 ### Overview
-This module is designed to help animators manage skin weights in Maya by averaging the surrounding vertex weights based on their distance from the operating vertex. The script tool uses a brush-like approach to influence the vertex weight, allowing for more precise control over the skinning process.
+The `averageVertexSkinWeightCmd` command takes two optional flags: `-i` or `--index`, which specifies the vertex index to operate on, and `-v` or `--value`, which sets the brush value used in the weight calculation. The command iterates through surrounding vertices, calculates their distances from the operating vertex, and applies a weighted average based on these distances.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** None
-* **External Dependencies:** OpenMaya (om), OpenMayaAnim (oma)
+* **Internal Framework Links:** `bmaya.maya.asset.components.animRig`, `bmaya.maya.rigging.buildio`
+* **External Dependencies:** Maya.cmds, OpenMaya, PyMel
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: AverageVertexSkinWeightCmd
-**Purpose:** Provides a script tool for animators to manage and adjust skin weights in Maya.
+**Purpose:** Script command for assigning skin weights to vertices based on proximity.
 
 #### Methods
-- `__init__(self)`: Initializes the command.
-- `isUndoable(self)`: Returns True if the command is undoable.
-- `doIt(self, args)`: Performs the actual weight calculation based on the brush pressure and distance from the operating vertex.
-- `undoIt(self)`: Undoes the previous weight calculation by setting the original weights back to the skin cluster.
-- `redoIt(self)`: Redoes the previous weight calculation.
+- `__init__(self)`: Initializes the command with default values.
+- `isUndoable(self): Returns True, indicating that the command is undoable.
+- `doIt(self, args)`: Processes user input flags and performs the actual weight assignment.
+- `undoIt(self): Sets the old weights to restore the previous state.
+- `redoIt(self): Performs the same actions as `doIt`, but for redoing an undone action.
 
 ---
 
@@ -32,8 +32,8 @@ This module is designed to help animators manage skin weights in Maya by averagi
 ```python
 def cmdCreator():
 ```
-#### Returns
-- `ompx.asMPxPtr(AverageVertexSkinWeightCmd())`: Creates and returns an instance of the `AverageVertexSkinWeightCmd` class as a Maya command.
+#### Returns:
+- `ompx.asMPxPtr(AverageVertexSkinWeightCmd())`: Creates and returns a pointer to the `AverageVertexSkinWeightCmd` class instance.
 
 ---
 
@@ -42,11 +42,11 @@ def cmdCreator():
 ```python
 def syntaxCreator():
 ```
-#### Returns
-- `om.MSyntax()`: Creates and returns a syntax object for the `averageVertexSkinWeightCmd` command.
+#### Returns:
+- `om.MSyntax()`: Returns an instance of the Maya syntax parser.
 
 ---
 
 ### 🏷️ `GLOBAL VARIABLE` :: kPluginCmdName
-- **Type:** String
-- **Value/Purpose:** The name of the plugin command, used to register and deregister the command.
+* **Type:** String
+* **Value/Purpose:** The command name used to register this script with Maya.

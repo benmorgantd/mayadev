@@ -1,7 +1,5 @@
 # Pipeline Documentation
 
-> ⚠️ **NOTICE:** This documentation site was generated in **DEBUG MODE**. Content blocks are quick testing placeholders.
-
 Welcome to the internal rigging and pipeline core utility documentation. This site contains documentation dynamically compiled from codebase docstrings and localized code structure definitions.
 
 ### Technical Infrastructure Navigation
@@ -23,6 +21,7 @@ Press `S` or use the search field at the top of the interface to instantly locat
 * [bmaya.maya.asset.components.weights](rigging/maya/asset/components/weights.md)
 * [bmaya.maya.modeling.blendBoundary](rigging/maya/modeling/blendBoundary.md)
 * [bmaya.maya.rigging.buildio](rigging/maya/rigging/buildio.md)
+* [bmaya.maya.rigging.constants](rigging/maya/rigging/constants.md)
 * [bmaya.maya.rigging.joint](rigging/maya/rigging/joint.md)
 * [bmaya.maya.rigging.rigTools](rigging/maya/rigging/rigTools.md)
 * [bmaya.maya.rigging.base.decorators](rigging/maya/rigging/base/decorators.md)

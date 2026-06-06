@@ -1,68 +1,62 @@
-# Module: bm_weight_io
+Here is the Markdown documentation for the provided Python script:
+
+# Module: `bm_weight_io`
 
 ### Pipeline Intent
-Provides automated weight management tools for character riggers, enabling seamless export and import of skin weights between Maya scenes.
+Provides utilities for importing and exporting skin weights from Maya scenes, enabling riggers to efficiently manage character performance files.
 
 ### Technical Implementation
-This module utilizes the standard library `os` to manage file system operations and `xml.etree.ElementTree` to parse XML files. It also leverages the Maya API (`maya.cmds`, `maya.OpenMaya`) for interacting with the Maya environment.
+ Utilizes built-in libraries like `os`, `xml.etree.ElementTree` (for XML parsing), and `maya.cmds` and `OpenMaya` (for interacting with the Maya API).
 
 ### Overview
-The `bm_weight_io` module offers a pair of functions: `parse_xml` and `export_weights`. The `parse_xml` function parses an XML file, extracting joints information from it. The `export_weights` function exports skin weights for selected objects to a specified path. Additionally, the module includes an `import_weights` function that imports skin weights from an XML file and applies them to the corresponding object in the Maya scene.
+This module offers two primary functions: `parse_xml` for extracting joints from an XML file, and `export_weights` and `import_weights` for managing skin weights in Maya scenes.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** None
-* **External Dependencies:**
-	+ `maya.cmds`
-	+ `maya.OpenMaya`
-	+ `xml.etree.ElementTree`
+
+* **Internal Framework Links:** None detected
+* **External Dependencies:** `maya.cmds`, `OpenMaya`, `xml.etree.ElementTree`
 
 ## API Taxonomy Reference
 
-### 🏷️ `CLASS` :: N/A
-
-#### No classes are defined in this module.
-
----
-
-### 🏷️ `FUNCTION` :: parse_xml
+### 🏷️ `FUNCTION` :: `parse_xml`
 **Signature:**
 ```python
-def parse_xml(filepath):
+def parse_xml(filepath) -> list:
 ```
 #### Arguments
-- filepath (str): Path to the XML file to be parsed.
+- filepath (str): The path to the XML file containing joints.
 
 #### Returns
-- joints (list of str): A list of joints extracted from the XML file.
+- A list of joint names extracted from the XML file.
 
 ---
 
-### 🏷️ `FUNCTION` :: export_weights
+### 🏷️ `FUNCTION` :: `export_weights`
 **Signature:**
 ```python
-def export_weights(path=r"D:/Documents/Google Drive/01 BFA/Thesis Project Local Files/Rig/skin_library/Alpha/"):
+def export_weights(path=r"D:/Documents/Google Drive/01 BFA/Thesis Project Local Files/Rig/skin_library/Alpha/") -> None:
 ```
 #### Arguments
-- path (str, optional): Path where the skin weights will be exported. Default is `r"D:/.../Alpha/"`.
+- path (str): The directory path where the skin weights will be exported.
 
-#### Description
-Exports skin weights for selected objects to a specified path.
+#### Returns
+- None
 
 ---
 
-### 🏷️ `FUNCTION` :: import_weights
+### 🏷️ `FUNCTION` :: `import_weights`
 **Signature:**
 ```python
-def import_weights(path=r"D:/Documents/Google Drive/01 BFA/Thesis Project Local Files/Rig/skin_library/Alpha/"):
+def import_weights(path=r"D:/Documents/Google Drive/01 BFA/Thesis Project Local Files/Rig/skin_library/Alpha/") -> None:
 ```
 #### Arguments
-- path (str, optional): Path where the skin weights will be imported from. Default is `r"D:/.../Alpha/"`.
+- path (str): The directory path where the skin weights file is located.
 
-#### Description
-Imports skin weights from an XML file and applies them to the corresponding object in the Maya scene.
+#### Returns
+- None
 
 ---
 
-### 🏷️ `GLOBAL VARIABLE` :: None
+### **Documentation Drift**
 
-*No global variables are defined in this module.*
+* A docstring states that `export_weights` takes an optional argument `obj`, but no such argument exists in the actual code.

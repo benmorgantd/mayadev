@@ -1,40 +1,29 @@
 # Module: cvs
 
 ### Pipeline Intent
-Provides a json-based component for storing cv shape data for controls on a rig, handling loading and saving operations using the `shapeio` module.
+Provides the Cvs class, a component that manages CV (Control Vertex) shape data for rig controls as a JSON file. This component handles loading and saving of CV shape data using the `shapeio` module.
 
 ### Technical Implementation
-Combines inheritance from the `Component` class with Python properties to manage file paths. Utilizes `os.path.join` for constructing relative file paths based on asset type and extension.
+Exposes the Cvs class, inheriting from the `Component` class, which loads and saves CV shape data using the `shapeio` module.
 
 ### Overview
-The Cvs class is designed to encapsulate cv shape data for controls in a rig, utilizing json files as storage containers. It inherits from the Component class and provides methods for loading and saving cv shape data using the shapeio module.
+The Cvs class serves as a json file containing the cv shape data for the controls on a rig. It encapsulates the logic for loading and saving CVS files, utilizing the `shapeio` module to handle the actual operations.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `component` (from `bmaya3.maya.rigging.component`), `shapeio` (from `bmaya3.maya.rigging.shapes.shapeio`)
+* **Internal Framework Links:** `bmaya.maya.rigging.shapes.shapeio`
 * **External Dependencies:** None
 
 ## API Taxonomy Reference
 
-### 🏷️ `CLASS` :: Cvs
-**Purpose:** Encapsulates cv shape data for controls in a rig, utilizing json files as storage containers.
-*Inherits from:* `Component`
+### 🏷️ `CLASS` :: `Cvs`
+**Purpose:** Manages CV shape data for rig controls as a JSON file.
 
 #### Methods
-- `__init__(self, asset, componentType)`: Initializes the Cvs instance with an asset and component type.
-    *Arguments:*
-        - `asset`: The asset this cv belongs to.
-        - `componentType`: The type of this cv (e.g., "FK" or "IK").
-    *Returns:* None
+- `__init__(self, asset, componentType)`: Initializes the Cvs class with the given asset and component type.
+- `@property relativePath(self)`: Returns the relative path of the CVS file, based on the type and extension.
+- `load(self)`: Loads CV shape data using the `shapeio` module.
+- `save(self)`: Saves CV shape data using the `shapeio` module.
 
-- `@property relativePath(self)`: Returns the relative file path for this cv, constructed using the asset's component type and extension.
+---
 
-    *Returns:*
-        - A string representing the relative file path (e.g., "/rig/components/cvs.json")
-
-- `load(self)`: Loads cv shape data from a json file at the specified full path.
-    *Arguments:* None
-    *Returns:* None
-
-- `save(self)`: Saves cv shape data to a json file at the specified full path.
-    *Arguments:* None
-    *Returns:* None
+No documentation drift detected.

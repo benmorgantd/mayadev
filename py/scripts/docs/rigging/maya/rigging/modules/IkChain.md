@@ -4,55 +4,45 @@
 Provides production file path verification and localized directory scaffolding for animators saving character rig performance files. Designed to enforce the studio's directory structure across OS environments.
 
 ### Technical Implementation
-Exposes automated versioning utilities using standard library `os` and `shutil` modules. Handles directory generation asynchronously when creating nested version tracks.
+Exposes automated versioning utilities using the standard library `os` and `shutil` modules. Handles directory generation asynchronously when creating nested version tracks.
 
 ### Overview
-The IkChain module is responsible for building a simple single-chain IK system. It creates drive joints, binds joints, and sets up ik spaces. This module is part of the character rigging pipeline and is used to create performance rigs for animators.
+The `IkChain` module is used to create an inverse kinematic (ik) chain in Maya for character rigging purposes. It provides a simple single-chain ik system that can be customized with various parameters such as start joint, end joint, and up vector.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya3.core`, `bmaya3.rigging.base`, `bmaya3.rigging.shapes`
-* **External Dependencies:** `maya.cmds`, `OpenMaya`
+* **Internal Framework Links:**
+	+ `bmaya.core.constants`
+	+ `bmaya.maya.util.nameUtils`
+	+ `bmaya.maya.util.mathUtils`
+	+ `bmaya.maya.rigging.base.module`
+	+ `bmaya.maya.rigging.base.decorators`
+	+ `bmaya.maya.rigging.shapes.shapelib`
+* **External Dependencies:** None
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: `IkChain`
 
-**Purpose:** Provides a single-chain IK system for character rig performance files.
+**Purpose:** Create an inverse kinematic (ik) chain in Maya for character rigging purposes.
 
 #### Methods
-- `__init__(self, startJoint=None, endJoint=None, name='IkChain1', ...)`: Initializes the IkChain module with start and end joints, name, and other parameters.
-- `build(self)`: Builds a simple single-chain IK system.
-- `setupIkSpaces(self, ikCtrl, defaultValue=1)`: Sets up IK spaces for an ik control.
+- `__init__(self, startJoint=None, endJoint=None, name='IkChain1', character=None, parent=None, mirror=False, upVector=[0, 2, 0], exclude=[], side='L')`: Initializes the ik chain with parameters.
+- `build(self)`: Builds the ik chain.
+- `buildIkControls(self, driveJoints, worldAimTarget=None, downAxis='X', upAxis='Y', followWorld=True)`: Creates ik controls for the ik chain.
 
 ---
 
-### 🏷️ `FUNCTION` :: `findHierarchyJoints`
+### 🏷️ `FUNCTION` :: `parentConstrain`
 
 **Signature:**
 ```python
-def findHierarchyJoints(self, shortestDistance=True, exclude=[]) -> list:
+def parentConstrain(parent, child):
 ```
 #### Arguments
-- `shortestDistance`: A boolean indicating whether to use the shortest distance or not.
-- `exclude`: A list of joints to exclude from the hierarchy.
+- parent (str): The parent object.
+- child (str): The child object.
 
 #### Returns
-- `list`: A list of hierarchy joints.
+- None
 
----
-
-### 🏷️ `FUNCTION` :: `createDriveJoints`
-
-**Signature:**
-```python
-def createDriveJoints(self) -> list:
-```
-#### Returns
-- `list`: A list of drive joints.
-
----
-
-### 🏷️ `GLOBAL VARIABLE` :: `IkChain`
-
-* **Type:** Module
-* **Value/Purpose:** Represents the IkChain module.
+This function connects the child object to the parent object using a parent constraint in Maya.

@@ -1,305 +1,289 @@
 # Module: rigTools
 
 ### Pipeline Intent
-Provides utility functions for working with rigs in Maya. These functions are used by the rig components and postops to perform common tasks on rigs, such as toggling skinning mode, matching IK to FK, etc.
+Provides utility functions for working with rigs in Maya. These utilities are used by the rig components and postops to perform common tasks on rigs, such as toggling skinning mode, matching ik to fk, etc.
 
 ### Technical Implementation
-Exposes various functionalities using the standard library `json`, `time`, and `maya.cmds`/`OpenMaya`. Handles directory generation asynchronously when creating nested version tracks. Utilizes the `constants` module from `bmaya3.core.util` for spine up-axis definition.
+Exposed automated versioning utilities using the standard library `os` and `shutil` modules. Handles directory generation asynchronously when creating nested version tracks.
 
 ### Overview
-The `rigTools` module contains a set of utility functions that can be used to work with rigs in Maya. These functions are designed to be used by the rig components and postops to perform common tasks on rigs, such as toggling skinning mode, matching IK to FK, etc.
+The `rigTools` module contains a set of utility functions for working with rigs in Maya. These utilities are designed to simplify common tasks that riggers perform, such as toggling skinning mode, matching ik to fk, and baking keyframes.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya3.core.util`, `maya.cmds`, `OpenMaya`
+
+* **Internal Framework Links:** 
+    - `bmaya.maya.util.mathUtils`
+    - `bmaya.core.constants`
 * **External Dependencies:** None
 
 ## API Taxonomy Reference
 
-### 🏷️ `CLASS` :: None
-No classes defined in this module.
+### 🏷️ `CLASS` :: `None`
 
-#### Functions
+#### Methods
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `toggleSkinMode`
-
 **Signature:**
 ```python
 def toggleSkinMode():
 ```
-**Purpose:** Toggles skinning mode on the currently built rig.
+#### Description:
+Toggles skinning mode on the currently built rig.
 
-#### Returns
-- None
+#### Returns:
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `sizeJoints`
-
 **Signature:**
 ```python
 def sizeJoints():
 ```
-**Purpose:** Sizes joints based on their type (hand or non-hand).
+#### Description:
+Sizes joints based on whether they are part of the bind set or not. If a joint is in the bind set, it sets the radius to 1; otherwise, it sets the draw style to 0.
 
-#### Returns
-- None
+#### Returns:
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `labelJoints`
-
 **Signature:**
 ```python
 def labelJoints():
 ```
-**Purpose:** Labels joints with their side and type.
+#### Description:
+Labels joints based on their side (left, right, or middle) and type.
 
-#### Returns
-- None
+#### Returns:
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `getModuleNode`
-
 **Signature:**
 ```python
 def getModuleNode(ctrl):
 ```
-**Purpose:** Gets the module node from a given control.
+#### Description:
+Gets the module node associated with a given control.
 
 #### Parameters:
-* `ctrl`: Control to retrieve the module node for.
+- `ctrl`: The control to retrieve the module node for.
 
-#### Returns
-- Module node
+#### Returns:
+The module node associated with the control.
 
 ---
 
 ### 🏷️ `FUNCTION` :: `getCharacterNode`
-
 **Signature:**
 ```python
 def getCharacterNode(ctrl):
 ```
-**Purpose:** Gets the character node from a given control's module node.
+#### Description:
+Gets the character node associated with a given control and its module node.
 
 #### Parameters:
-* `ctrl`: Control to retrieve the character node for.
+- `ctrl`: The control to retrieve the character node for.
 
-#### Returns
-- Character node
-
----
-
-### 🏷️ `FUNCTION` :: `getCharacterModules`
-
-**Signature:**
-```python
-def getCharacterModules(characterNode):
-```
-**Purpose:** Gets the modules from a given character node.
-
-#### Parameters:
-* `characterNode`: Character node to retrieve the modules for.
-
-#### Returns
-- List of module nodes
+#### Returns:
+The character node associated with the control and its module node.
 
 ---
 
 ### 🏷️ `FUNCTION` :: `resetControl`
-
 **Signature:**
 ```python
 def resetControl(ctrl):
 ```
-**Purpose:** Resets the attributes of a given control to their default values.
+#### Description:
+Resets a control's attributes based on their default values.
 
 #### Parameters:
-* `ctrl`: Control to reset the attributes for.
+- `ctrl`: The control to reset.
 
-#### Returns
-- None
+#### Returns:
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `resetModule`
-
 **Signature:**
 ```python
 def resetModule(mod):
 ```
-**Purpose:** Resets the attributes of a given module and its components to their default values.
+#### Description:
+Resets a module's attributes based on their default values and those of its components.
 
 #### Parameters:
-* `mod`: Module node to reset the attributes for.
+- `mod`: The module to reset.
 
-#### Returns
-- None
+#### Returns:
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `resetCharacter`
-
 **Signature:**
 ```python
 def resetCharacter(ctrl):
 ```
-**Purpose:** Resets the attributes of a given character and its modules to their default values.
+#### Description:
+Resets a character's attributes based on their default values and those of its modules.
 
 #### Parameters:
-* `ctrl`: Control to reset the attributes for.
+- `ctrl`: The control to reset the character for.
 
-#### Returns
-- None
+#### Returns:
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `selectModule`
-
 **Signature:**
 ```python
 def selectModule(ctrl):
 ```
-**Purpose:** Selects all components of a given module node.
+#### Description:
+Selects a module's components in the Maya hierarchy.
 
 #### Parameters:
-* `ctrl`: Control to retrieve the module node for.
+- `ctrl`: The control to retrieve the module node for.
 
-#### Returns
-- None
+#### Returns:
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `keyAll`
-
 **Signature:**
 ```python
 def keyAll(ctrl):
 ```
-**Purpose:** Sets keyframes on all keyable attributes of a given character and its modules.
+#### Description:
+Sets keyframes for a character's modules and their components based on their current state.
 
 #### Parameters:
-* `ctrl`: Control to retrieve the character node for.
+- `ctrl`: The control to retrieve the character node for.
 
-#### Returns
-- None
+#### Returns:
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `keyIk`
-
 **Signature:**
 ```python
 def keyIk(ctrl):
 ```
-**Purpose:** Sets keyframes on all keyable attributes of a given IK component.
+#### Description:
+Sets keyframes for a character's ik components based on their current state.
 
 #### Parameters:
-* `ctrl`: Control to retrieve the module node for.
+- `ctrl`: The control to retrieve the module node for.
 
-#### Returns
-- None
+#### Returns:
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `keyFk`
-
 **Signature:**
 ```python
 def keyFk(ctrl):
 ```
-**Purpose:** Sets keyframes on all keyable attributes of a given FK component.
+#### Description:
+Sets keyframes for a character's fk components based on their current state.
 
 #### Parameters:
-* `ctrl`: Control to retrieve the module node for.
+- `ctrl`: The control to retrieve the module node for.
 
-#### Returns
-- None
+#### Returns:
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `matchIkToFk`
-
 **Signature:**
 ```python
 def matchIkToFk(ctrl):
 ```
-**Purpose:** Matches the position of IK controls to FK joints.
+#### Description:
+Matches a character's ik components to its fk components based on their current state.
 
 #### Parameters:
-* `ctrl`: Control to retrieve the module node for.
+- `ctrl`: The control to retrieve the module node for.
 
-#### Returns
-- None
+#### Returns:
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `matchFkToIk`
-
 **Signature:**
 ```python
 def matchFkToIk(ctrl):
 ```
-**Purpose:** Matches the position of FK joints to IK controls.
+#### Description:
+Matches a character's fk components to its ik components based on their current state.
 
 #### Parameters:
-* `ctrl`: Control to retrieve the module node for.
+- `ctrl`: The control to retrieve the module node for.
 
-#### Returns
-- None
+#### Returns:
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `bakeFkToIk`
-
 **Signature:**
 ```python
 def bakeFkToIk(ctrl, bakeRange=None):
 ```
-**Purpose:** Bakes FK controls to IK positions within a given time range.
+#### Description:
+Bakes a character's fk components to its ik components based on their current state and a given time range.
 
 #### Parameters:
-* `ctrl`: Control to retrieve the module node for.
-* `bakeRange`: Optional, specifies the time range to bake (start and end frames).
+- `ctrl`: The control to retrieve the module node for.
+- `bakeRange`: The time range to bake the keyframes for (default is the entire animation).
 
-#### Returns
-- None
+#### Returns:
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `bakeIkToFk`
-
 **Signature:**
 ```python
 def bakeIkToFk(ctrl, bakeRange=None):
 ```
-**Purpose:** Bakes IK controls to FK positions within a given time range.
+#### Description:
+Bakes a character's ik components to its fk components based on their current state and a given time range.
 
 #### Parameters:
-* `ctrl`: Control to retrieve the module node for.
-* `bakeRange`: Optional, specifies the time range to bake (start and end frames).
+- `ctrl`: The control to retrieve the module node for.
+- `bakeRange`: The time range to bake the keyframes for (default is the entire animation).
 
-#### Returns
-- None
+#### Returns:
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: `_getFirstSelection`
-
 **Signature:**
 ```python
 def _getFirstSelection():
 ```
-**Purpose:** Gets the first selection made in Maya.
+#### Description:
+Gets the first selection in Maya.
 
-#### Returns
-* First selected control or None if no control is selected.
+#### Parameters:
+- None
 
----
-
-Documentation Drift:
-
-* None
+#### Returns:
+The first selection in Maya.

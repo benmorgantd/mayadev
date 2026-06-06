@@ -1,64 +1,70 @@
 # Module: Face
 
 ### Pipeline Intent
-Provides facial rig setup for animators. Designed to create the necessary hierarchy and control structures for facial animation.
+Provides facial rig setup for animators, automating the creation of FKHierarchy modules to build controls for different regions of the face.
 
 ### Technical Implementation
-Exposes a modular system for building facial rig hierarchies using FkChain classes. Utilizes `wrapBuild` decorator for automated versioning utilities. Handles directory generation asynchronously when creating nested version tracks.
+Uses Maya.cmds and OpenMaya (FkChain) to generate hierarchical joint structures and bind them to drive joints. Utilizes Python's list comprehensions and conditional statements for data manipulation and processing.
 
 ### Overview
-The Face module is responsible for setting up the facial rig hierarchy and controls for animators. It uses the FkChain class to create the necessary joints and control structures, allowing for more precise facial animation.
+This module serves as a foundation for facial rigging in Maya, handling the creation of different FKHierarchy modules for upper head, middle head, lower head, jaw, eyebrows, and eyelids. It also establishes relationships between these regions using parent constraints to maintain offset.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya3.rigging.base`, `FkChain`
-* **External Dependencies:** None
+* **Internal Framework Links:** 
+  - `bmaya.maya.rigging.base` (module)
+  - `bmaya.maya.rigging.base.decorators` (wrapBuild decorator)
+  - `bmaya.maya.rigging.shapes` (shapelib module)
+  - `bmaya.maya.util` (nameUtils utility)
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: Face(module.Module)
-**Purpose:** Provides facial rig setup for animators.
-*Inherits from:* `module.Module`
+**Purpose:** The "Face" module sets up facial rigging in Maya, handling the creation of FKHierarchy modules for different regions of the face.
+
+*Inherits from:* `bmaya.maya.rigging.base.module.Module`
 
 #### Methods
-- `__init__(self, character=None, name='face', parent=None, upperHead=None, middleHead=None, lowerHead=None, jaw=None, eyeballs=[], eyelidBase=None, eyebrowBase=None, drivers=[]):` Initializer for the Face module.
+- `__init__(self, character=None, name='face', parent=None, ...):` Initializes the Face module with specified parameters.
+- `build(self):` Builds the facial rig hierarchy by creating FKHierarchy modules for different regions of the face and establishing relationships between them using parent constraints.
 
 ---
 
-### 🏷️ `FUNCTION` :: build(self)
-**Signature:**
-```python
-@wrapBuild
-def build(self):
-```
-#### Description:
-Automated versioning utilities using the standard library `os` and `shutil` modules. Handles directory generation asynchronously when creating nested version tracks.
-
-#### Arguments
-- None
-
-#### Returns
-- None
-
----
-
-### 🏷️ `FUNCTION` :: buildFaceFkHierarchy(self, startJoint, exclude=[])
+### 🏷️ `FUNCTION` :: buildFaceFkHierarchy
 **Signature:**
 ```python
 def buildFaceFkHierarchy(self, startJoint, exclude=[]):
 ```
-#### Description:
-Gathers the hierarchy joints for each region, creates their drive joints, and builds the fk controls.
-
 #### Arguments
-- `startJoint`: Start joint for the facial rig hierarchy.
-- `exclude`: List of joints to exclude from the hierarchy.
+- `startJoint`: The starting joint for the FKHierarchy.
+- `exclude`: A list of joints to exclude from the FKHierarchy.
 
 #### Returns
-- `bindJoints`: List of binding joints.
-- `driveJoints`: List of drive joints.
-- `controls`: List of fk control joints.
+- `bindJoints`: A list of bind joints created in the FKHierarchy.
+- `driveJoints`: A list of drive joints created in the FKHierarchy.
+- `controls`: A list of control shapes created in the FKHierarchy.
 
 ---
 
-### Documentation Drift
-* None found
+### 🏷️ `FUNCTION` :: createDriveJoint
+**Signature:**
+```python
+def createDriveJoint(self, jnt):
+```
+#### Arguments
+- `jnt`: The joint for which to create a drive joint.
+
+#### Returns
+- A drive joint created from the input joint.
+
+---
+
+### 🏷️ `FUNCTION` :: buildFkControls
+**Signature:**
+```python
+def buildFkControls(self, driveJoints):
+```
+#### Arguments
+- `driveJoints`: A list of drive joints for which to create control shapes.
+
+#### Returns
+- A list of control shapes created from the input drive joints.

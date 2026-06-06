@@ -1,44 +1,42 @@
 # Module: NeckHead
 
 ### Pipeline Intent
-Provides a character rigging module for animators to efficiently create and manage neck and head components in Maya.
+Provides a module for creating neck head rigs in Maya, utilizing forward kinematics and twist controls.
 
 ### Technical Implementation
-Utilizes the `FkTwist` class from `bmaya3.rigging.modules` and wraps it with `wrapBuild` decorator. Exposes methods for building and setting up constraints for twist controls.
+Utilizes the `FkTwist` class to create the rig's structure, allowing for precise control over joint placement and character deformation. Exposes automated build functionality through the `buildNeckHead` method.
 
 ### Overview
-The NeckHead module serves as a foundation for creating neck and head components in Maya-based character rigs. It extends the functionality of the FkTwist class, allowing animators to define start and end joints, exclude specific segments, and apply constraints for twist controls.
+This module generates a neck head rigging solution that incorporates forward kinematics and twist controls. It provides a starting point for animators seeking to create realistic character poses and movements.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya3.rigging.modules.FkTwist`, `bmaya3.core.nameUtils`, `bmaya3.core.constants`
+
+* **Internal Framework Links:** FkTwist, maya.rigging.base.decorators
+* **External Dependencies:** None
 
 ## API Taxonomy Reference
 
-### 🏷️ `CLASS` :: `NeckHead`
-**Purpose:** A character rigging module for neck and head components in Maya.
-
-*Inherits from:* `FkTwist.FkTwist`
+### 🏷️ `CLASS` :: NeckHead
+**Purpose:** A module for creating neck head rigs in Maya.
+*Inherits from:* FkTwist.FkTwist
 
 #### Methods
-- `__init__(self, ...)`: Initializes the NeckHead object with start joint, end joint, exclude list, name, character, parent, shape type, mirror, side, align world, twist axis, and exponent.
-- `build(self)`: Calls the buildNeckHead method to construct the neck and head components.
-- `buildNeckHead(self)`: Builds the FkTwist structure and applies constraints for twist controls.
+
+- `__init__(self, startJoint=None, endJoint=None, exclude=[], name='NeckHead1', character=None, parent=None, shapeType='cube', mirror=False, side='L', alignWorld=False, twistAxis='X', exponent=1)`:
+  Initializes the NeckHead module with optional parameters for joint placement, mirroring, and more.
+- `build(self):`
+  Calls the internal `buildNeckHead` method to construct the rig's structure.
 
 ---
 
-### 🏷️ `FUNCTION` :: `buildNeckHead`
+### 🏷️ `FUNCTION` :: buildNeckHead
 **Signature:**
 ```python
 def buildNeckHead(self):
 ```
-
-#### Method Body
-
-* Calls `self.buildFkTwist()` to construct the FkTwist structure.
-* Calculates the start and end points of the neck and head components.
-* Applies constraints for twist controls by creating point constraints, calculating weights, and setting aim constraints.
+#### Description:
+Builds the neck head rig using forward kinematics and twist controls. Calculates start and end points, then applies constraints for twist control.
 
 ---
 
-### Documentation Drift
-* None detected.
+### No GLOBAL VARIABLES

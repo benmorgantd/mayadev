@@ -1,83 +1,100 @@
-Here is the documented code:
+Here is the Markdown documentation for this file:
 
-# Module: customWidgets
+# Module: `customWidgets`
 
 ### Pipeline Intent
-Provides custom widgets for rigManager to facilitate interaction with character rigs.
+Provides a set of custom widgets for rigManager, allowing users to interact with build data and attributes.
 
 ### Technical Implementation
-Combines Qt classes from `Qt`, `QtGui`, and `QtCore` modules with Maya-specific libraries like `maya.cmds`. Utilizes Qt's tree widget and list views to create a hierarchical structure for managing build data. Implements custom widgets, such as `CustomLineEdit` and `AttributeLayoutValue`, to handle attribute editing.
+The module imports various Qt modules, including `Qt`, `QtWidgets`, `QtGui`, and `QtCore`. It also imports `qtbase` from the `bmaya.core` package, as well as `shapelib` from the `bmaya.maya.rigging.shapes` package. The module defines several classes: `ModuleList`, `BuildList`, `BuildListItem`, `AttributeLayoutValue`, and `AttributeLayout`. These classes provide custom widgets for displaying and interacting with build data and attributes.
 
 ### Overview
-The `customWidgets` module offers a set of reusable UI components designed for use within the rigManager pipeline. These widgets enable users to manage character rigs by creating, renaming, deleting, duplicating, and disabling build items. The module relies on Maya's `maya.cmds` library to interact with Maya's scene management.
+The `customWidgets` module is designed to work with the rigManager pipeline, providing a set of custom widgets for users to interact with build data and attributes. The modules define several key classes: `ModuleList`, which provides a list view of modules; `BuildList`, which provides a tree view of build items; `BuildListItem`, which represents an individual build item; `AttributeLayoutValue`, which defines the layout for displaying attribute values; and `AttributeLayout`, which manages the display of attributes.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya3.lib.Qt`, `bmaya3.core.qtbase`, `shapelib`
-* **External Dependencies:** `maya.cmds`
+* Internal Framework Links: `bmaya.core`, `bmaya.maya.rigging.shapes`
+* External Dependencies: None
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: `ModuleList`
-**Purpose:** A custom list widget for displaying build data.
-
+**Purpose:** Provides a list view of modules.
 *Inherits from:* `qtbase.List`
 
 #### Methods
-- `mouseDoubleClickEvent(self, event)`: Handles double-click events on list items.
-- `setBuildList(self, listWidget)`: Sets the build list associated with this module list.
-- `mousePressEvent(self, event)`: Checks if the event is a right-click and shows the context menu accordingly.
+- `setBuildList(self, listWidget)`: Sets the build list widget.
+- `mouseDoubleClickEvent(self, event)`: Handles mouse double-click events.
+
+---
 
 ### 🏷️ `CLASS` :: `BuildList`
-**Purpose:** A custom tree widget for managing build data.
-
+**Purpose:** Provides a tree view of build items.
 *Inherits from:* `qtbase.Tree`
 
 #### Methods
-- `loadList(self, buildData, attributeLayoutContainer)`: Loads build data into this tree widget.
-- `getAllValues(self)`: Retrieves the attribute values of all build items in this tree widget.
-- `hideAttrLayouts(self)`: Hides attribute layouts for all build items in this tree widget.
-- `renameItem(self)`: Renames the currently selected build item.
-- `disableItem(self)`: Disables the currently selected build item.
-- `deleteItem(self)`: Deletes the currently selected build item.
-- `duplicateItem(self)`: Duplicates the currently selected build item.
+- `loadList(self, buildData, attributeLayoutContainer)`: Loads the build list with data.
+- `getAllValues(self)`: Gets all values for the build list.
+- `hideAttrLayouts(self)`: Hides attribute layouts.
+- `renameItem(self)`: Renames an item in the build list.
+- `disableItem(self)`: Disables an item in the build list.
+- `deleteItem(self)`: Deletes an item in the build list.
+
+---
 
 ### 🏷️ `CLASS` :: `BuildListItem`
-**Purpose:** A custom tree item for representing a build item in the `BuildList` widget.
-
+**Purpose:** Represents an individual build item.
 *Inherits from:* `qtbase.TreeItem`
 
 #### Methods
-- `loadAttributeTemplates(self)`: Loads attribute templates based on this build item's type.
-- `values(self)`: Retrieves the attribute values of this build item.
+- `loadAttributeTemplates(self)`: Loads attribute templates for the build item.
+- `values(self)`: Gets the values for the build item.
+
+---
+
+### 🏷️ `CLASS` :: `AttributeLayoutValue`
+**Purpose:** Defines the layout for displaying attribute values.
+*Inherits from:* None
+
+#### Methods
+- `build(self)`: Builds the attribute value widget.
+- `toJson(self)`: Converts the attribute value to JSON format.
+
+---
 
 ### 🏷️ `CLASS` :: `AttributeLayout`
-**Purpose:** A custom widget for displaying and editing attribute values.
-
+**Purpose:** Manages the display of attributes.
 *Inherits from:* `QtWidgets.QWidget`
 
 #### Methods
-- `build(self)`: Builds the attribute layout for this widget.
-- `toJson(self)`: Converts this attribute value to a JSON string.
+- `build(self)`: Builds the attribute layout.
+- `addAttr(attribute, value, row)`: Adds an attribute to the layout.
 
-### 🏷️ `FUNCTION` :: `AttributeLayoutValue`
-**Purpose:** A custom class for representing an attribute value in the `AttributeLayout` widget.
-
-#### Methods
-- `build(self)`: Builds the attribute layout item based on its type.
-- `translateToType(self, item)`: Translates this attribute value to the specified type.
-- `toJson(self)`: Converts this attribute value to a JSON string.
+---
 
 ### 🏷️ `FUNCTION` :: `CustomLineEdit`
-**Purpose:** A custom line edit widget for editing attribute values.
+**Signature:**
+```python
+def __init__(self, text, parent=None):
+```
+#### Arguments
+- `text`: The initial text for the line edit.
+- `parent`: The parent widget (optional).
+
+#### Returns
+None
+
+---
+
+### 🏷️ `CLASS` :: `LineEditMenu`
+**Purpose:** Provides a menu for custom line edits.
+*Inherits from:* `QtWidgets.QMenu`
 
 #### Methods
-- `mousePressEvent(self, event)`: Handles mouse press events and shows the context menu.
-- `replaceWithSelection(self)`: Replaces this line edit's text with the selected items in Maya.
-- `resetToDefault(self)`: Resets this line edit's text to its default value.
+- `replaceWithSelection(self)`: Replaces the text with the selection.
+- `resetToDefault(self)`: Resets the text to its default value.
 
-### 🏷️ `FUNCTION` :: `LineEditMenu`
-**Purpose:** A custom context menu for the `CustomLineEdit` widget.
+---
 
-#### Methods
-- `addAction(self, action)`: Adds an action to this menu.
-- `hide(self)`: Hides this menu.
+### Documentation Drift
+
+None found.

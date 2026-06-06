@@ -1,49 +1,48 @@
 # Module: weights
 
 ### Pipeline Intent
-Provides the management and storage of skin weights for a rig. This module is designed to handle the loading and saving of .weights files within the rig's components directory.
+Provides a framework for handling and persisting skin weights in Maya rigs. This component serves as a central hub for managing .weights files within the rig's components directory.
 
 ### Technical Implementation
-This implementation utilizes the `os` module for file system operations and the `weightio` module from `bmaya3.rigging.weights` for handling weight data logic.
+Built upon the `Component` class from `bmaya.maya.asset.components.component`, this module leverages the `weightio` utility to read and write skin weight data.
 
 ### Overview
-The Weights component is a folder that contains the skin weight files for a rig. These files are saved and loaded using the `weightio` module, which handles the actual logic for saving and loading weight data.
+The Weights component is responsible for storing, loading, and managing skin weights for a given Maya rig. This module ensures that weight files are properly saved and loaded within the designated directory structure.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** 
-	+ `bmaya3.rigging.weights.weightio`
+* **Internal Framework Links:** `bmaya.maya.rigging.weights.weightio`
 * **External Dependencies:** None
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: `Weights`
-**Purpose:** Manages the skin weights for a rig.
+**Purpose:** Manages skin weight files for a Maya rig component.
 *Inherits from:* `Component`
 
 #### Methods
-- `__init__(self, asset, componentType)`: Initializes the Weights object with the given asset and component type.
+- `__init__(self, asset, componentType)`: Initializes the Weights component with the given asset and component type.
 
 ---
 
-### 🏷️ `FUNCTION` :: `relativePath`
-**Signature:**
+### 🏷️ `PROPERTY` :: `relativePath`
+**Signature:** 
 ```python
 @property
 def relativePath(self):
 ```
-#### Returns
-- A string representing the path of the weights folder within the rig's components directory, based on the component type.
+#### Description:
+Returns the directory path where this component's weight files are stored.
 
 ---
 
-### 🏷️ `FUNCTION` :: `files`
-**Signature:**
+### 🏷️ `PROPERTY` :: `files`
+**Signature:** 
 ```python
 @property
 def files(self):
 ```
-#### Returns
-- A list of file names in the weights folder.
+#### Description:
+Retrieves a list of files in this component's weight file directory. If an error occurs while listing files, returns an empty list instead.
 
 ---
 
@@ -52,8 +51,12 @@ def files(self):
 ```python
 def load(self):
 ```
-#### Description
-- Loads the skin weight files from the weights folder using the `weightio.load()` method.
+#### Arguments:
+
+* No arguments
+
+#### Description:
+Loads skin weight data from all .weights files in this component's directory using the `weightio.load()` utility.
 
 ---
 
@@ -62,5 +65,9 @@ def load(self):
 ```python
 def save(self):
 ```
-#### Description
-- Saves the skin weight files to the weights folder using the `weightio.save()` method.
+#### Arguments:
+
+* No arguments
+
+#### Description:
+Saves the current skin weight data to disk using the `weightio.save()` utility, storing it in this component's designated directory.

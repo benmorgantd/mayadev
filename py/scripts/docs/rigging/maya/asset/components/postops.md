@@ -1,33 +1,42 @@
 # Module: postops
 
 ### Pipeline Intent
-Provides the PostOps component, a Python file that enables custom logic execution on a rig after it is built.
+Allows users to execute custom logic on a rig after it's built, providing flexibility and control over the asset creation process.
 
 ### Technical Implementation
-Imports and extends the `Component` class from the `bmaya.maya.asset.components.component` module. Utilizes the `os` module to generate the relative path of the PostOps instance.
+Inherits from `Component` class and utilizes the `os` module for file path management. The `relativePath` property generates a file path based on the component type and extension.
 
 ### Overview
-The PostOps component serves as a starting point for custom post-processing operations on character rigs, allowing users to execute custom logic after the rig is built.
+The PostOps component is designed to provide users with the ability to run custom scripts or logic on their rigs after they are built, giving them more control over the asset creation process.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya.maya.asset.components.component`
+* **Internal Framework Links:** `bmaya.maya.asset.components.component` (inherited from)
+* **External Dependencies:** None
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: `PostOps`
-**Purpose:** Extends the base Component class for post-processing operations on character rigs.
-*Inherits from:* `Component`
+**Purpose:** Extends the `Component` class to provide custom logic execution on a rig after it's built.
 
 #### Methods
-- `__init__(self, asset, componentType)`: Initializes the PostOps instance with an asset and component type.
+- `__init__(self, asset, componentType)`: Initializes the PostOps component with an asset and component type.
+    + **Arguments:**
+        - `asset`: The asset being worked on.
+        - `componentType`: The type of component (e.g., arm, leg, etc.).
 
 ---
 
-### 🏷️ `FUNCTION` :: `relativePath`
-**Signature:**
+### 🏷️ `PROPERTY` :: `relativePath`
+- **Type:** `str`
+- **Value/Purpose:** Returns the file path for the PostOps component based on its type and extension.
+
 ```python
 @property
 def relativePath(self):
+    return os.path.join('rig', 'components', self.type + self.extension)
 ```
-#### Description
-Returns the relative path of the PostOps instance as a string, using the `os.path.join` function to combine the 'rig', 'components', and type-specific directory structure.
+
+---
+
+**Documentation Drift:**
+None found.

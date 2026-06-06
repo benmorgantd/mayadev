@@ -1,15 +1,13 @@
-Here is the Markdown documentation for the `skeleton.py` file:
-
 # Module: skeleton
 
 ### Pipeline Intent
-Provides serialization and deserialization utilities for joint hierarchies in Maya rigs. This component serves as a bridge between the rig's skeletal structure and external data storage.
+Provides the logic for serializing and deserializing a joint hierarchy used to save and load the skeleton component of a rig.
 
 ### Technical Implementation
-The Skeleton class inherits from the MayaComponent base class, utilizing its asset management and component type handling capabilities. It leverages the `maya.cmds` module to interact with the Maya API and manipulate joint hierarchies.
+Utilizes Maya's OpenMaya API and commands to manipulate and query joints, as well as serialize and deserialize data structures.
 
 ### Overview
-The Skeleton class is designed to facilitate the saving and loading of rig skeletons in a standardized format. This enables animators to easily transfer their work between different machines, environments, or projects.
+The Skeleton class is a MayaComponent that encapsulates the joint hierarchy for a rig. It contains methods for serializing and deserializing this hierarchy, which is used to save and load the skeleton component of a rig.
 
 ### Cross-Module Dependencies
 * **Internal Framework Links:** `bmaya.maya.asset.components.mayaComponent`
@@ -17,17 +15,45 @@ The Skeleton class is designed to facilitate the saving and loading of rig skele
 
 ## API Taxonomy Reference
 
-### 🏷️ `CLASS` :: Skeleton
-**Purpose:** Represents the joint hierarchy for a Maya rig and provides serialization and deserialization utilities.
+### 🏷️ `CLASS` :: `Skeleton`
+**Purpose:** A MayaComponent that contains the joint hierarchy for a rig.
+**Inherits from:** `MayaComponent`
 
 #### Methods
-- `__init__(self, asset, componentType)`: Initializes the Skeleton instance with an asset and component type.
-- `relativePath(self)`: Returns the relative file path for the skeleton component's serialized data.
-- `serializeJointHierarchy(cls, rootJoint)`: Serializes the joint hierarchy rooted at the specified joint, returning a list of joint data dictionaries.
-- `deserializeJointHierarchy(cls, data)`: Deserializes the provided joint data and creates new joints in Maya, recreating the original hierarchy.
+- `__init__(self, asset, componentType)`: Initializes the Skeleton with an asset and component type.
 
 ---
 
-### 🏷️ `GLOBAL VARIABLE` :: None
+### 🏷️ `FUNCTION` :: `serializeJointHierarchy`
+**Signature:**
+```python
+@classmethod
+def serializeJointHierarchy(cls, rootJoint):
+```
+**Purpose:** Serializes a joint hierarchy starting from the given root joint.
+#### Arguments
+- `rootJoint`: The root joint to start serialization from.
 
-Note: There are no global variables defined in this file.
+#### Returns
+- A list of dictionaries containing serialized joint data.
+
+---
+
+### 🏷️ `FUNCTION` :: `deserializeJointHierarchy`
+**Signature:**
+```python
+@classmethod
+def deserializeJointHierarchy(cls, data):
+```
+**Purpose:** Deserializes a joint hierarchy from the given data.
+#### Arguments
+- `data`: A list of dictionaries containing serialized joint data.
+
+#### Returns
+- None
+
+---
+
+### 🏷️ `GLOBAL VARIABLE` :: `relativePath`
+- **Type:** str
+- **Value/Purpose:** The path to the skeleton component file in the rig directory, relative to the asset.

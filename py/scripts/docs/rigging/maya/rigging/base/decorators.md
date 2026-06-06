@@ -1,55 +1,47 @@
 # Module: decorators
 
 ### Pipeline Intent
-Provides a set of decorator functions for rigging operations that allow the user to run code before and after the main logic of a function.
+Provides a means to decorate rigging operations with pre- and post-processing logic, allowing for the initialization and uninitialization of maya.standalone, as well as running code before and after building a rig.
 
 ### Technical Implementation
-Uses Maya's standalone module for initializing and uninitializing, as well as Python's decorators syntax for wrapping functions.
+Exposes two decorator functions: `wrapStandalone` and `wrapBuild`. These decorators provide a way to wrap arbitrary function calls with custom logic, enabling features like locking attributes, capturing component defaults, and more.
 
 ### Overview
-This module exposes two primary decorators: `wrapStandalone` and `wrapBuild`. The first is designed to initialize and terminate Maya's standalone mode before and after executing the main logic. The second is intended for rigging operations that require setup and teardown of various components, such as making nodes, setting attributes, and locking transforms.
+The `decorators` module offers a flexible mechanism for adding context-specific code before and after the main logic of a rigging operation. This allows developers to enforce specific behaviors or constraints without modifying the underlying code.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya.maya.standalone`, `bmaya.maya.cmds`
-* **External Dependencies:** None
+* **Internal Framework Links:** None
+* **External Dependencies:** maya.standalone, maya.cmds
 
 ## API Taxonomy Reference
 
-### 🏷️ `CLASS` :: `None`
-**Purpose:** N/A  
-*Inherits from:* N/A
+### 🏷️ `CLASS` :: N/A
 
-#### No methods
+#### Methods
+None
 
 ---
 
-### 🏷️ `FUNCTION` :: `wrapStandalone`
+### 🏷️ `FUNCTION` :: wrapStandalone
 **Signature:**
 ```python
 def wrapStandalone(fn):
 ```
-#### Arguments
-- fn (function): The function to be wrapped.
-
-#### Returns
-- A wrapper function that initializes Maya's standalone mode before executing the original function and then uninitializes after execution.
+#### Description:
+Wraps a function with logic that initializes maya.standalone and uninitializes it after the main logic is executed.
 
 ---
 
-### 🏷️ `FUNCTION` :: `wrapBuild`
+### 🏷️ `FUNCTION` :: wrapBuild
 **Signature:**
 ```python
 def wrapBuild(fn):
 ```
-#### Arguments
-- fn (function): The function to be wrapped.
-- self (object): The object instance being processed (e.g., a rig component).
-- *args, **kwargs: Additional positional and keyword arguments passed to the original function.
-
-#### Returns
-- A wrapper function that sets up and tears down various components before and after executing the original function. This includes making nodes, setting attributes, locking transforms, and capturing component defaults.
+#### Description:
+Wraps a function with logic that performs various tasks before and after the main rigging operation, including building a limb type, checking contracts, making nodes, capturing component defaults, and locking attributes.
 
 ---
 
 ### 🏷️ `GLOBAL VARIABLE` :: None
-None
+
+Note: There are no global variables in this module.

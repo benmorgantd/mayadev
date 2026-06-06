@@ -1,23 +1,38 @@
 # Module: mesh
 
 ### Pipeline Intent
-Provides a MayaComponent that contains the model for an Asset. This class serves as a blueprint for modeling and organizing 3D assets within the studio's pipeline.
+Provides a MayaComponent-based class for managing mesh assets in the pipeline. This module defines a Mesh class that contains the model for an Asset.
 
 ### Technical Implementation
-Inherits from `MayaComponent` to leverage its base functionality. Initializes with asset information and component type, utilizing the `os.path.join` method to generate the relative path for the mesh model file.
+Uses inheritance from `MayaComponent` to establish a foundation for storing and retrieving asset metadata.
 
 ### Overview
-The Mesh class encapsulates the logic for creating and managing 3D models within Maya. It is designed to be used as a building block in the Asset pipeline, allowing developers to create reusable components that can be easily integrated into larger projects.
+The `Mesh` class is designed as a container for holding mesh-related data, providing a way to organize and manage mesh assets within the pipeline.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya.maya.asset.components.component` (MayaComponent)
-* **External Dependencies:** None
+* **Internal Framework Links:** `bmaya.maya.asset.components.component`, `bmaya.maya.asset.components.mayaComponent`
 
 ## API Taxonomy Reference
 
-### 🏷️ `CLASS` :: Mesh
-**Purpose:** Contains the model for an Asset, serving as a blueprint for modeling and organizing 3D assets.
+### 🏷️ `CLASS` :: `Mesh`
+**Purpose:** A MayaComponent-based class for managing mesh assets in the pipeline.
+
+*Inherits from:* `MayaComponent`
 
 #### Methods
-- `__init__(self, asset, componentType)`: Initializes the Mesh instance with asset information and component type.
-- `@property relativePath(self)`: Returns the relative path of the mesh model file based on its type and extension.
+- `__init__(self, asset, componentType)`: Initializes a new Mesh instance with an asset and component type.
+	Arguments:
+	- self (Mesh): The current object instance.
+	- asset: The parent asset this mesh belongs to.
+	- componentType: The type of component (e.g., "mesh", "rig", etc.).
+
+---
+
+### 🏷️ `PROPERTY` :: `relativePath`
+**Signature:**
+```python
+@property
+def relativePath(self):
+```
+#### Returns
+- A file path representing the location of this mesh asset, in the format `/mesh/mesh.ma`.

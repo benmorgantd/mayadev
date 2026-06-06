@@ -1,75 +1,50 @@
 # Module: IkFkChain
 
 ### Pipeline Intent
-Enables the creation of IK/FK chains for character rigging, allowing animators to define complex joint hierarchies and blend between different poses.
+Provides a framework for creating complex character rigs that blend between FK and IK controls.
 
 ### Technical Implementation
-Imports necessary modules from `bmaya3` framework, including decorators and shape libraries. Inheriting from both `IkChain` and `FkChain`, this class combines the functionality of inverse kinematics (IK) and forward kinematics (FK) to create a single chain for character rigging.
+Combines the functionality of FkChain and IkChain classes to create a hybrid rigging system. Utilizes decorators from `bmaya.maya.rigging.base.decorators` to manage versioning utilities. Leverages shapes from `bmaya.maya.rigging.shapes.shapelib`.
 
 ### Overview
-This module provides a comprehensive solution for creating IK/FK chains, allowing animators to define complex joint hierarchies and blend between different poses. By combining the functionalities of `IkChain` and `FkChain`, this class enables the creation of more realistic and nuanced character movements.
+The IkFkChain module serves as the foundation for creating character rigs that seamlessly transition between FK (Forward Kinematics) and IK (Inverse Kinematics) control schemes.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya3.rigging.base.decorators`, `bmaya3.rigging.shapes`
+* **Internal Framework Links:** FkChain, IkChain, maya.cmds
 * **External Dependencies:** None
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: `IkFkChain`
-
-**Purpose:** Combines the functionalities of IK and FK to create a single chain for character rigging.
-
-*Inherits from:* `IkChain.IkChain`, `FkChain.FkChain`
+**Purpose:** A hybrid rigging class that combines the functionality of FK and IK chains.
 
 #### Methods
-- `__init__(self, ...)`: Initializes the IK/FK chain with given start and end joints, name, and other parameters.
-- `build(self)`: Builds a single joint control on the given joint and sets up the FK/Ik setup.
+- `__init__(self, ...)`: Initializes the IkFkChain instance with various settings.
+  - **Arguments:**
+    - startJoint: Starting joint for the chain (default: None)
+    - endJoint: Ending joint for the chain (default: None)
+    - name: Name of the rigging component (default: 'IkFkChain1')
+    - character: Character being rigged (default: None)
+    - parent: Parent node for the rigging component (default: None)
+    - mirror: Flag to indicate mirroring of the rig (default: False)
+    - upVector: Up vector for the rigging component (default: [0, 2, 0])
+    - exclude: List of joints to exclude from the chain (default: [])
+    - side: Side of the character being rigged (default: 'L')
+    - fkikDefault: Default value for the FK/IK blending attribute (default: 0)
+    - alignWorld: Flag to align the rig with the world axis (default: True)
 
-    @wrapBuild
-    def build(self):
-        # build a single joint control on the given joint
+- `build(self)`: Builds a single joint control on the given joint and sets up the FK/IK blending.
+  - **Returns:** None
 
-        self.bindJoints = self.findHierarchyJoints(shortestDistance=True,
-                                                   exclude=self.exclude)
-        self.driveJoints = self.createDriveJoints(label='DRIVER',
-                                                  constrain=True)
+- `buildFkIkSetup(self, ...)`: Sets up the IK and FK drive joints and controls for the character rig.
 
-        self.buildFkIkSetup()
+    * **Arguments:**
+      - worldAimTarget: Target node to aim the IK chain at (default: None)
+      - downAxis: Down axis for the IK chain (default: 'X')
+      - upAxis: Up axis for the IK chain (default: 'Y')
+      - followWorld: Flag to follow the world's rotation (default: True)
 
-        self.components += self.ikComponents
-        self.components += self.fkComponents
+    * **Returns:** None
 
-- `buildFkIkSetup(self, ...)`: Sets up the FK/Ik setup with drive joints and creates IK/FK components.
-
-    def buildFkIkSetup(self, worldAimTarget=None, downAxis='X', upAxis='Y',
-                       followWorld=True):
-        # need to feed it our specific drive joints
-        self.ikDriveJoints = self.createDriveJoints(label='IKDRIVER',
-                                                    constrain=False)
-        self.fkDriveJoints = self.createDriveJoints(label='FKDRIVER',
-                                                    constrain=False)
-
-        self.ikComponents = self.buildIkControls(self.ikDriveJoints,
-                                                 worldAimTarget=worldAimTarget,
-                                                 downAxis=downAxis,
-                                                 upAxis=upAxis,
-                                                 followWorld=followWorld)
-        self.fkComponents = self.buildFkControls(self.fkDriveJoints)
-
-        # add an attribute for blending
-        cmds.addAttr(self.node, longName='FKIK', attributeType='float',
-                     dv=self.fkikDefault,
-                     min=0, max=1, keyable=True)
-
-        self.blendReverse = self.blendChains(self.fkDriveJoints,
-                                             self.ikDriveJoints,
-                                             self.driveJoints,
-                                             self.node + '.FKIK')
-
-        # connect blend control to visibility
-        cmds.connectAttr(self.blendReverse,
-                         '{0}.v'.format(self.fkComponents[0].offsetGrp))
-        cmds.connectAttr(self.node + '.FKIK',
-                         '{0}.v'.format(self.ikComponents[0].offsetGrp))
-        cmds.connectAttr(self.node + '.FKIK',
-                         '{0}.v'.format(self.ikComponents[-1].offsetGrp))
+### Documentation Drift
+None

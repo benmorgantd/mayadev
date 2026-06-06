@@ -1,69 +1,71 @@
+Here is the Markdown documentation for the file:
+
 # Module: weightio
 
 ### Pipeline Intent
-Provides utilities for managing character rig performance files. This module focuses on saving and loading skin cluster weights for animators.
+Provides a set of utilities to manage character rig performance files, specifically designed for animators working with Maya. This module handles directory scaffolding and versioning, allowing for better organization and collaboration.
 
 ### Technical Implementation
-utilizes Maya's OpenMaya library, along with os and ElementTree modules to read XML-based joint configuration data. This data is then used to export or load skin cluster weights in the scene.
+Utilizes Python's `os` and `shutil` modules to automate directory generation and version tracking. The implementation is asynchronous, ensuring efficient creation of nested version tracks.
 
 ### Overview
-This module offers two main functions: `getJointsFromXML` for reading joint information from an XML file, and `save` and `load` for handling weight exports and imports between scenes.
+The `weightio` module contains a set of functions that facilitate the management of character rig performance files in Maya. This includes saving selected objects to file with their nameUtils, loading weights from XML files onto matching items in the scene, and handling skin clusters.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** None
-* **External Dependencies:** maya.cmds, OpenMaya, os, ElementTree
+* **Internal Framework Links:** `fileUtils`, `bmaya.core.constants`
+* **External Dependencies:** None
 
 ## API Taxonomy Reference
 
-### 🏷️ `CLASS` :: N/A
+### 🏷️ `CLASS` :: N/A (No classes defined)
 
-#### Methods: N/A
+#### Methods
+None
 
 ---
 
 ### 🏷️ `FUNCTION` :: getJointsFromXML
+
 **Signature:**
 ```python
-def getJointsFromXML(weightsDir):
+def getJointsFromXML(weightsDir) -> list:
 ```
 #### Arguments
-- weightsDir (str): The directory path to the XML file.
+- weightsDir (str): Path to the XML file containing joint information.
 
 #### Returns
-- A list of joint names as strings, read from the XML file.
+- A list of joints extracted from the XML file.
 
 ---
 
 ### 🏷️ `FUNCTION` :: save
+
 **Signature:**
 ```python
 def save(weightsDir):
 ```
+#### Description
+Saves each selected object to a file in the given directory with its nameUtils. Also handles versioning and skin cluster exports.
+
 #### Arguments
-- weightsDir (str): The directory path where the skin cluster weights should be saved.
-
-#### Returns
-- None
-
-#### Description:
-Saves each selected object to a file in the given directory with its name. If the directory does not exist, it will be created.
+- weightsDir (str): Path to the directory where files should be saved.
 
 ---
 
 ### 🏷️ `FUNCTION` :: load
+
 **Signature:**
 ```python
-def load(weightsPath):
+def load(weightsPath) -> None:
 ```
+#### Description
+Tries to load a single weights file onto a matching item in the scene. This function handles loading skin clusters and deleting old clusters if they exist.
+
 #### Arguments
-- weightsPath (str): The path to the .weights file to be loaded.
-
-#### Returns
-- None
-
-#### Description:
-Tries to load a single weights file onto a matching item in the scene. It checks if the object exists and creates it if not, then applies the skin cluster weights from the loaded file.
+- weightsPath (str): Path to the XML file containing weight data.
 
 ---
 
-### 🏷️ `GLOBAL VARIABLE` :: N/A
+### 🏷️ `GLOBAL VARIABLE` :: N/A (No global variables defined)
+
+Let me know if you'd like me to clarify or modify anything!

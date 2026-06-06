@@ -1,42 +1,43 @@
 # Module: assetCreator
 
 ### Pipeline Intent
-Provides a graphical interface for animators to initiate the creation of new assets in Maya. This module serves as a foundation for building and managing character rigs, providing a streamlined workflow for artists.
+Provides a user interface for creating new assets in Maya. This module offers a Qt-based application that initiates the creation process by prompting users to input project name, asset type, and asset name.
 
 ### Technical Implementation
-Utilizes the PyQt framework for creating a Qt-based user interface, allowing for seamless integration with Maya's UI components. The `AssetCreator` class inherits from `QtWidgets.QMainWindow`, enabling the creation of a windowed application with a central widget area.
+Utilizes the Qt framework through `QtWidgets.QMainWindow` and `QtCompat.load_ui()` to load UI designs from `.ui` files. Interacts with Maya's OpenMaya API for creating assets using the `rig.Rig()` function.
 
 ### Overview
-The `assetCreator` module is designed to facilitate the process of creating new assets in Maya by providing an intuitive interface for animators. It does so by offering features such as project name, asset type, and asset name input fields, which enable users to specify the properties of their desired asset.
+This module is responsible for handling user input, validating asset existence, and initiating the creation process when prompted.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:**
-	+ `bmaya3.lib.Qt`: Importing Qt modules for UI development.
-	+ `bmaya3.rigging.base`: Importing rigging module classes for asset creation.
-	+ `bmaya3.core.asset`: Importing asset-related utilities from the core module.
+* **Internal Framework Links:** `bmaya.core.asset`, `bmaya.maya.rigging.base`
+* **External Dependencies:** Maya's OpenMaya API (`maya.OpenMaya as om`)
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: `AssetCreator`
-**Purpose:** A graphical interface for creating new assets in Maya, providing a streamlined workflow for animators.
 
-*Inherits from:* `QtWidgets.QMainWindow`
+**Purpose:** Initiates the creation process for new assets in Maya.
 
 #### Methods
 - `__init__(self, parent=None, designerFile=None, title='Asset Creator')`: Initializes the asset creator window.
-- `createAsset(self)`: Creates a new asset based on user input and closes the window.
+    * `parent` (None): Optional parent widget.
+    * `designerFile` (str): Path to a Qt Designer file to load as the main UI component. Defaults to None.
+    * `title` (str): Title for the asset creator window. Defaults to 'Asset Creator'.
+
+- `createAsset(self)`: Creates a new asset in Maya based on user input.
 
 ---
 
-### 🏷️ `FUNCTION` :: None
+### 🏷️ `FUNCTION` :: `createAsset`
+**Signature:**
+```python
+def createAsset(self):
+    ...
+```
 
-(no functions documented)
+#### Arguments
+- None
 
----
-
-### 🏷️ `GLOBAL VARIABLE` :: None
-
-(no global variables documented)
-
-Note: Documentation Drift:
-* The `createAsset` method's lambda function is not explicitly documented, but its purpose can be inferred from the surrounding code.
+#### Returns
+- None

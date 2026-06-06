@@ -33,7 +33,7 @@ nav:
     - util:
       - fileUtils: rigging/core/util/fileUtils.md
   - guides:
-    - rigging_generation: guides/rigging_generation.md
+    - How To Build a Rig: guides/How To Build a Rig.md
   - maya:
     - asset:
       - asset: rigging/maya/asset/asset.md
@@ -57,6 +57,7 @@ nav:
         - module: rigging/maya/rigging/base/module.md
         - rig: rigging/maya/rigging/base/rig.md
       - buildio: rigging/maya/rigging/buildio.md
+      - constants: rigging/maya/rigging/constants.md
       - joint: rigging/maya/rigging/joint.md
       - modules:
         - Arm: rigging/maya/rigging/modules/Arm.md

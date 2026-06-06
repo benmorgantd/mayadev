@@ -1,47 +1,55 @@
 # Module: buildio
 
 ### Pipeline Intent
-Provides the foundation for managing and persisting rig structure configurations within a JSON file. This module enables animators to load and save the build component, which is crucial for asset management and pipeline consistency.
+Provides production file path verification and localized directory scaffolding for animators saving character rig performance files. Designed to enforce the studio's directory structure across OS environments.
 
 ### Technical Implementation
-Uses the built-in Python `json` library for data serialization and deserialization. Leverages the `os` module for directory checks and ensuring file existence.
+Exposes automated versioning utilities using the standard library `os` and `json` modules. Handles directory generation asynchronously when creating nested version tracks.
 
 ### Overview
-The `buildio` module provides a set of functions for loading and saving rig structure configurations, allowing animators to manage their builds efficiently. This module is designed to provide a standardized way of storing and retrieving build data, ensuring consistency across the pipeline.
+The `buildio` module gives logic for saving and loading build components, which are JSON files containing rig structures.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** None
+* **Internal Framework Links:** None reported
+* **External Dependencies:** Maya.cmds, OpenMaya, PyMel (not explicitly used in this file)
 
 ## API Taxonomy Reference
 
-### 🏷️ `FUNCTION` :: `load`
+### 🏷️ `CLASS` :: N/A
+No classes defined in this module.
+
+#### No methods or attributes are exposed at the class level.
+
+---
+
+### 🏷️ `FUNCTION` :: load
 **Signature:**
 ```python
 def load(filepath):
 ```
-
 #### Arguments
-- filepath (str): The file path to be loaded.
+- filepath (str): The path to the JSON file to be loaded.
 
 #### Returns
-- buildData (dict): The loaded rig structure configuration data.
+- buildData (dict): The contents of the JSON file, parsed as a dictionary. Raises a `RuntimeError` if the file does not exist.
 
 ---
 
-### 🏷️ `FUNCTION` :: `save`
+### 🏷️ `FUNCTION` :: save
 **Signature:**
 ```python
 def save(filepath, data):
 ```
-
 #### Arguments
-- filepath (str): The file path where the data will be saved.
-- data (dict): The rig structure configuration data to be saved.
+- filepath (str): The path where the JSON file will be saved.
+- data (dict): The dictionary to be serialized as a JSON file. Raises a `RuntimeError` if the parent directory does not exist.
 
 #### Returns
-None
+- None
 
 ---
 
-### Documentation Drift
-* **Note:** None found.
+### 🏷️ `GLOBAL VARIABLE` :: N/A
+No global variables defined in this module.
+
+Documentation Drift: None reported

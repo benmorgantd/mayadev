@@ -1,33 +1,60 @@
 # Module: Spline
 
 ### Pipeline Intent
-Provides a mechanism for creating and managing spline-based character rigging in Maya. This module focuses on building the foundation of a character's spine, including creation of joints, controls, and constraints.
+Provides a high-level framework for creating spines in Maya, incorporating FK and IK controls. This module enables animators to create flexible and realistic character rigs.
 
 ### Technical Implementation
-This module utilizes various Maya commands and functions to create and manipulate objects such as joints, controls, and curves. It also relies on internal utility modules like `mathUtils` for mathematical operations and `nameUtils` for naming conventions.
+Exposes the `Spline` class, which inherits from `Module`. This class provides automated directory generation and version tracking utilities using Python's standard library modules (`os`, `shutil`).
 
 ### Overview
-The Spline module is designed to create a character's spine by generating a series of joints and controls along a spline curve. The module allows for customization of the spine's length, control amount, and other parameters. It also includes features such as automatic parenting of controls and constraints, making it easier to set up and manage complex character rigs.
+The `Spline` module is designed to facilitate the creation of complex character rigging pipelines in Maya. It integrates FK (forward kinematics) and IK (inverse kinematics) controls, allowing for realistic and flexible character movements.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya.core.constants`, `bmaya.rigging.base.decorators`, `bmaya.rigging.shapes.shapelib`, `bmaya.maya.cmds`
+
+* **Internal Framework Links:** `bmaya.maya.rigging.base.module`, `bmaya.maya.util.nameUtils`, `bmaya.maya.util.mathUtils`, `bmaya.maya.rigging.shapes.shapeio`
 * **External Dependencies:** None
 
 ## API Taxonomy Reference
 
-### 🏷️ `CLASS` :: `Spline(module.Module)`
-**Purpose:** A class representing a character's spine, responsible for creating and managing the joints, controls, and constraints that define it.
+### 🏷️ `CLASS` :: `Spline`
+**Purpose:** Creates a high-level framework for creating spines in Maya, incorporating FK and IK controls.
 
 #### Methods
-- `__init__(self, startJoint=None, endJoint=None, name='Spline1', character=None, side='M', mirror=False, parent=None, setupTwist=True, controlAmount=3, stretchy=True, startTwistParent=None, shapeType='cube')`: Initializes the Spline object with optional parameters.
-- `build(self)`: Builds the spine by creating and parenting joints, controls, and constraints.
-- `buildFkControls(self)`: Creates and configures FK (Forward Kinematics) controls for the spine.
-- `buildIkControls(self)`: Creates and configures IK (Inverse Kinematics) controls for the spine.
-- `setupStretch(self)`: Sets up stretch factors for the spine's controls.
-- `setupAdvancedTwist(self)`: Configures advanced twist features for the spine.
-- `setupIkEndJoint(self)`: Creates a joint at the end of the ik chain to serve as an FK-style control.
-- `setupIkHierarchy(self)`: Makes a simple switch to make the ik hierarchy behave like an fk one.
+- `__init__(self, startJoint=None, endJoint=None, name='Spline1', character=None, side='M', mirror=False, parent=None, setupTwist=True, controlAmount=3, stretchy=True, startTwistParent=None, shapeType='cube')`: Initializes the Spline object with various parameters.
+
+- `build(self)`: Builds the FK and IK controls for the spine.
+
+- `buildFkControls(self)`: Creates the FK controls for the spine.
+
+- `buildIkControls(self)`: Creates the IK controls for the spine.
+
+- `buildIkSpline(self)`: Generates the IK spline curve and handles.
+
+- `setupStretch(self)`: Sets up the stretch factor for the IK controls.
+
+- `buildSplineDriverJoints(self)`: Creates the driver joints for the IK controls.
+
+- `setupAdvancedTwist(self)`: Configures the advanced twist controls for the spine.
+
+- `setupIkEndJoint(self)`: Creates a joint at the end of the ik chain that serves as an fk-style control.
+
+- `setupIkHierarchy(self)`: Sets up the IK hierarchy to behave like an FK one.
 
 ---
 
-### 🏷️ `FUNCTION` :: `buildIkSpline(self)`: Builds an IK spline for the spine and returns it along with its corresponding curve node.
+### 🏷️ `FUNCTION` :: `wrapBuild`
+**Signature:**
+```python
+def wrapBuild(func):
+```
+#### Arguments
+- `func`: The function to be wrapped with error handling and logging.
+
+#### Returns
+- None
+
+---
+
+### 🏷️ `GLOBAL VARIABLE` :: `VARIABLE_NAME`
+- **Type:** N/A
+- **Value/Purpose:** N/A

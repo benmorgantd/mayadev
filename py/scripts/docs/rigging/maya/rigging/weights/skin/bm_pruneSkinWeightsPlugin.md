@@ -1,29 +1,64 @@
-# Module: bm_pruneSkinWeightsPlugin
+# Module: `bm_pruneSkinWeightsPlugin`
 
 ### Pipeline Intent
-Provides a Maya plugin for pruning skin weights on a selected mesh. This tool helps maintain character rig performance by removing redundant weight influences.
+Provides a Python plugin for Maya's `skinPercent` command, pruning skin weights for character rig performance files. This module optimizes the workflow by automatically setting weights to zero for non-affecting joints, allowing animators to focus on refining poses.
 
 ### Technical Implementation
-The `PruneWeights` class is an OpenMayaMPx command that utilizes the `omMPx.MPxCommand` and `omAnim.MFnSkinCluster` classes to prune the skin weights of a selected mesh. It uses a combination of Python and MEL scripts to achieve this functionality.
+The plugin utilizes OpenMaya and OpenMayaAnim APIs to access and manipulate Maya's internal data structures. It exposes a `PruneWeights` command that can be executed in the Maya UI or programmatically using the Python API.
 
 ### Overview
-This plugin provides a Maya command for pruning skin weights on a selected mesh. The command takes into account the original influences and averages them based on their proximity to the vertex being processed, thus preserving the overall shape of the character while removing redundant weight influences.
+This module implements a custom `skinPercent` command that prunes skin weights based on influence counts. The plugin utilizes the OpenMayaAnim library to interact with Maya's animation system and perform weight manipulation.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya.maya.asset.components.mesh`, `bmaya.maya.asset.components.skeleton`, `bmaya.maya.rigging.weights.weightio`
+* **Internal Framework Links:** `bmaya.maya.rigging.weights.weightio`
 * **External Dependencies:** None
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: `PruneWeights`
-**Purpose:** Prunes skin weights on a selected mesh.
+**Purpose:** A custom Maya command for pruning skin weights based on influence counts.
 
 #### Methods
-- `__init__(self)`: Initializes the command.
-- `isUndoable(self)`: Returns whether the command is undoable.
-- `doIt(self, args)`: Calls the redoIt function to prune the skin weights.
-- `redoIt(self)`: Prunes the skin weights and returns the data for undoing.
-- `undoIt(self)`: Sets the original weights using the data from redoIt.
+- `__init__(self)`: Initializes the command with default settings.
+- `isUndoable(self)`: Returns `True`, indicating that this command is undoable.
+- `doIt(self, args)`: Invokes the `redoIt` method to prune skin weights and save the original state for undoing.
+- `redoIt(self)`: Reduces influence counts by pruning non-affecting joints and normalizing the remaining weights.
+- `undoIt(self)`: Restores the original skin weights by setting the old values.
+
+### 🏷️ `FUNCTION` :: `pruneSkinWeights`
+**Signature:**
+```python
+def pruneSkinWeights(self, maxInfluence=4):
+```
+#### Arguments
+- `maxInfluence` (int): The maximum influence count to consider for pruning. Defaults to 4.
+
+#### Returns
+- None
+
+### 🏷️ `FUNCTION` :: `pruneWeightList`
+**Signature:**
+```python
+def pruneWeightList(self, weights, maxInfluence=4):
+```
+#### Arguments
+- `weights` (list): The list of skin weights to prune.
+- `maxInfluence` (int): The maximum influence count to consider for pruning. Defaults to 4.
+
+#### Returns
+- pruned_weights: A normalized list of skin weights with non-affecting joints set to zero.
+
+### 🏷️ `FUNCTION` :: `getSkinCluster`
+**Signature:**
+```python
+def getSkinCluster(self, dag):
+```
+#### Arguments
+- `dag` (MDagPath): The MDagPath object representing the mesh to investigate.
+
+#### Returns
+- skin_cluster (str): The name of the skin cluster affecting the mesh.
+- skin_cluster_obj (MObject): The MObject representation of the skin cluster.
 
 ### 🏷️ `FUNCTION` :: `cmdCreator`
 **Signature:**
@@ -32,7 +67,7 @@ def cmdCreator():
   return omMPx.asMPxPtr(PruneWeights())
 ```
 #### Returns
-- A pointer to the PruneWeights command.
+- A pointer to the `PruneWeights` command.
 
 ### 🏷️ `FUNCTION` :: `initializePlugin`
 **Signature:**
@@ -44,8 +79,8 @@ def initializePlugin(mObject):
   except:
     om.MGlobal.displayError("Failed to register command {0}".format(kPluginCmdName))
 ```
-#### Returns
-- None
+#### Arguments
+- `mObject` (MObject): The MObject representation of the Maya plugin.
 
 ### 🏷️ `FUNCTION` :: `uninitializePlugin`
 **Signature:**
@@ -57,5 +92,9 @@ def uninitializePlugin(mObject):
   except:
     om.MGlobal.displayError("Failed to deregister command {0}".format(kPluginCmdName))
 ```
-#### Returns
-- None
+#### Arguments
+- `mObject` (MObject): The MObject representation of the Maya plugin.
+
+### Documentation Drift
+
+* None detected.

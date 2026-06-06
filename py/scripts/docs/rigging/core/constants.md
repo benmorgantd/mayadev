@@ -1,38 +1,42 @@
 # Module: constants
 
 ### Pipeline Intent
-Provides a collection of named constants and utility values for the Maya rigging pipeline, serving as a centralized hub for asset type definitions, joint naming conventions, and layout control structure initialization.
+Provides a centralized repository for the Maya pipeline's core constants, maintaining consistency and reusability across various modules.
 
 ### Technical Implementation
-Exposed through Python dictionaries and f-strings, these constants leverage built-in modules like `os` to generate path-related information. The script also defines control naming patterns using suffixes and side designations.
+The `constants` module exposes a collection of pre-defined values, dictionaries, and templates essential to the maya asset creation process. These constants are designed to simplify code organization and improve maintainability by encapsulating frequently used values.
 
 ### Overview
-This module offers a set of pre-defined values for character rigging, including asset types, joint numbering, layout controls, and mesh file extensions. These constants facilitate the creation and organization of Maya assets by providing consistent naming conventions and structural guidelines.
+This module serves as a single source of truth for common pipeline constants, facilitating easy access and reuse throughout the project.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** None noted.
-* **External Dependencies:** `os`, `maya.cmds`
+* **Internal Framework Links:** [bmaya.core.util.fileUtils], [bmaya.maya.asset.components.animRig], [bmaya.maya.rigging.buildio]
 
 ## API Taxonomy Reference
 
-### 🏷️ `CLASS` :: N/A (constants module)
+### 🏷️ `CLASS` :: N/A
 
-#### Constants
+---
 
-- **TEMPLATES_PATH**: [No actual implementation]
-- **ASSET_TYPES**: ['prop', 'environment', 'character', 'head']
-- **COUNT_START**: 0
-- **SIDE_NAMES**: {'left': 'L', 'right': 'R', 'middle': 'M'}
-- **JOINT_SUFFIX**: 'JNT'
-- **DOWN_AXIS**, **SPINE_UP_AXIS**, **UP_AXIS**: ['X', 'Y', or 'Z']
-- **ROOT_JOINT**: f'root_{COUNT_START}_{SIDE_NAMES["middle"]}_{JOINT_SUFFIX}'
-- **CTRL_SUFFIX**: 'ctrl'
-- **TOP_LAYOUT_CONTROL** and **BOTTOM_LAYOUT_CONTROL**: layout control names based on `COUNT_START`
-- **MESH_SUFFIX**: 'mesh'
-- **REQUIRED_PLUGINS**: ['matrixNodes', 'quatNodes']
-- **UNIT_VECTORS**: {'X': [1, 0, 0], 'Y': [0, 1, 0], 'Z': [0, 0, 1]}
-- **POSTOPS_TEMPLATE**: a template string for post-processing operations
-- **LAYOUT_CONTROL_COUNT**: 3
-- **MODULE_SUFFIX**: 'LIMB'
+### 🏷️ `FUNCTION` :: N/A
 
-Note: Documentation drift detected in `TEMPLATES_PATH` (commented out implementation).
+---
+
+### 🏷️ `GLOBAL VARIABLE` ::
+- **Type:** Various (list, dict, str)
+- **Value/Purpose:**
+	+ `ASSET_TYPES`: A list of possible asset types for the pipeline.
+	+ `COUNT_START`, `ROOT_JOINT`, and `LAYOUT_CONTROL_COUNT`: Integer values used for naming conventions in the Maya scene.
+	+ `SIDE_NAMES`: A dictionary mapping side names to abbreviations (e.g., 'left' to 'L').
+	+ `JOINT_SUFFIX` and `CTRL_SUFFIX`: String values used as suffixes for joint and control node names.
+	+ `DOWN_AXIS`, `SPINE_UP_AXIS`, and `UP_AXIS`: Axis names used in the Maya scene.
+	+ `TOP_LAYOUT_CONTROL` and `BOTTOM_LAYOUT_CONTROL`: Unique string identifiers for the top and bottom layout controls.
+	+ `MESH_SUFFIX`: A string suffix used for mesh node naming.
+	+ `REQUIRED_PLUGINS`: A list of required plugins for the pipeline.
+	+ `UNIT_VECTORS`: A dictionary containing unit vectors (X, Y, Z) as lists.
+	+ `POSTOPS_TEMPLATE`: A template string for post-operations scripting in Maya.
+	+ `MODULE_SUFFIX`: A string suffix used to identify module-specific nodes.
+
+---
+
+Please note that this documentation is based on the provided code and might not be exhaustive or up-to-date.

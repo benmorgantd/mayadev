@@ -1,16 +1,16 @@
 # Module: component
 
 ### Pipeline Intent
-Provides a base class for production Components that handles logic for asset Id, file management, and versioning.
+Provides the foundation for production components, including asset ID management, file handling, and versioning. Acts as a base class for individual component files that make up an asset.
 
 ### Technical Implementation
-Exposes type extensions for each component type using a dictionary. Handles the unimplemented logic for loading and saving and referencing, which must be defined by each specific component type.
+Utilizes dictionaries to store type extensions for each component type. Handles unimplemented logic for loading, saving, and referencing, which must be defined by specific component types.
 
 ### Overview
-This module serves as a foundation for creating different types of components in the production pipeline. It handles file management and versioning for each component type, providing a starting point for developers to build upon.
+The `Component` class serves as a base class for various production components in the pipeline. It manages the necessary file paths and extensions based on the component's type. This class is designed to provide a standard interface for all components to interact with the asset hierarchy.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya.maya.asset.asset`, `bmaya.core.util.fileUtils`
+* **Internal Framework Links:** `bmaya.maya.asset.asset`
 * **External Dependencies:** None
 
 ## API Taxonomy Reference
@@ -19,17 +19,20 @@ This module serves as a foundation for creating different types of components in
 **Purpose:** Base class for production Components that handles logic for asset Id, file management, and versioning.
 
 #### Methods
-- `__init__(self, asset, componentType)`: Initializes the Component instance with an asset and a component type.
-- `get_type(self)`: Returns the component type.
-- `get_extension(self)`: Returns the file extension associated with the component type.
-- `get_relative_path(self)`: Returns the relative path for the component (e.g., `/rig/components`).
-- `get_full_path(self)`: Returns the full path to the component's directory, including the asset root directory.
-- `save(self)`: Raises a NotImplementedError as this method is not implemented.
-- `load(self)`: Raises a NotImplementedError as this method is not implemented.
-- `reference(self)`: Raises a NotImplementedError as this method is not implemented.
+- `__init__(self, asset, componentType)`: Initializes the component with an asset and a component type.
+- `@property type(self)`: Returns the component's type.
+- `@property extension(self)`: Returns the component's type-specific file extension.
+- `@property relativePath(self)`: Returns the component's relative path within the rig directory.
+- `@property fullPath(self)`: Returns the component's full path, including its parent asset's root directory and the component's relative path.
 
----
+#### Properties
+* `componentType`: The type of the component (e.g., 'mesh', 'skeleton', etc.).
+* `type`: The type of the component.
+* `extension`: The file extension specific to the component's type.
+* `relativePath`: The component's relative path within the rig directory.
+* `fullPath`: The component's full path, including its parent asset's root directory and the component's relative path.
 
-**Documentation Drift**
-
-* None found.
+#### Functions
+- `save(self)`: Raises a `NotImplementedError` for unimplemented save logic.
+- `load(self)`: Raises a `NotImplementedError` for unimplemented load logic.
+- `reference(self)`: Raises a `NotImplementedError` for unimplemented reference logic.

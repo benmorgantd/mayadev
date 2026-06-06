@@ -1,52 +1,45 @@
 # Module: blendBoundary
 
 ### Pipeline Intent
-Provides a utility to blend vertex normals between two separate meshes where vertices have the same world space position. This allows for smooth transitions when combining different character rig parts.
+Provides utility for blending vertex normals between two separate meshes where vertices have the same world space position.
 
 ### Technical Implementation
-Uses the `pymel.core` library to interact with Maya and manipulate mesh data. The primary method is `gatherBorderInfo`, which identifies boundary vertices and extracts their positions and normals. The secondary method, `blendBoundary`, blends vertex normals between the two meshes based on a specified distance tolerance.
+Leverages pymel.core and PyMel to access Maya's API. Utilizes list comprehensions, dictionaries, and mathematical operations to optimize performance.
 
 ### Overview
-This module enables animators to seamlessly blend character rig parts by averaging vertex normals along shared boundaries. This process reduces visual artifacts and enhances overall performance.
+The `blendBoundary` module offers a single function, `blendBoundary`, which blends vertex normals between two separate meshes based on their world space position. This process is particularly useful when dealing with complex character rigging pipelines where multiple meshes need to be aligned and averaged for optimal animation results.
 
 ### Cross-Module Dependencies
 * **Internal Framework Links:** None
-* **External Dependencies:** `pymel.core`
+* **External Dependencies:** `pymel.core`, `time`
 
 ## API Taxonomy Reference
 
-### 🏷️ `CLASS` :: N/A
-
----
-
-### 🏷️ `FUNCTION` :: gatherBorderInfo
-
-**Signature:**
-```python
-def gatherBorderInfo(meshObj):
-```
-#### Arguments
-- meshObj (PyNode): The input mesh object to analyze.
-
-#### Returns
-- border, points, normals (tuple): A tuple containing the boundary vertices, their positions, and their normals.
-
----
-
-### 🏷️ `FUNCTION` :: blendBoundary
-
+### 🏷️ `FUNCTION` :: `blendBoundary`
 **Signature:**
 ```python
 def blendBoundary(meshA, meshB, distanceTolerance=0.001):
 ```
 #### Arguments
-- meshA (PyNode): The first input mesh object.
-- meshB (PyNode): The second input mesh object.
-- distanceTolerance (float): The tolerance for considering vertices as "close enough" to blend.
+- `meshA`: The first mesh object to blend.
+- `meshB`: The second mesh object to blend.
+- `distanceTolerance`: Optional float parameter for the maximum allowed difference in world space position (default: 0.001).
 
 #### Returns
-N/A
+None
 
 ---
 
-### 🏷️ `GLOBAL VARIABLE` :: N/A
+### 🏷️ `FUNCTION` :: `gatherBorderInfo`
+**Signature:**
+```python
+def gatherBorderInfo(meshObj):
+```
+#### Arguments
+- `meshObj`: The mesh object to gather border information from.
+
+#### Returns
+A tuple containing:
+	* `border`: A list of boundary vertices.
+	* `points`: A list of world space points for the boundary vertices.
+	* `normals`: A list of normal vectors for the boundary vertices.

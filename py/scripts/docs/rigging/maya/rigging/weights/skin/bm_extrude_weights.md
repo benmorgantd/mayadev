@@ -1,53 +1,78 @@
 # Module: bm_extrude_weights
 
 ### Pipeline Intent
-Automates the process of extruding skin weights for a polygon mesh in Maya, allowing for quick fixes of intersections on thick meshes. This module is designed to be used within the Maya UI.
+Automated weight extrusion for skin clusters in Maya, allowing animators to quickly fix intersection issues on complex meshes.
 
 ### Technical Implementation
-The `ExtrudeWeights` class extends the OpenMayaMPx.MPxCommand interface and provides methods for undoing and redoing the command. The `doIt`, `redoIt`, and `undoIt` methods work together to execute the command, which involves finding the skin cluster on a selected mesh, copying the weights for each vertex to its closest neighbor in the inverse normal direction, and then setting those new weights.
+This module uses OpenMaya and OpenMayaAnim APIs to interact with Maya's internal data structures. It leverages `omMPx.MPxCommand` to create a custom command that applies the weight extrusion algorithm.
 
 ### Overview
-This module is used to automate the process of extruding skin weights for a polygon mesh in Maya. It can be used to quickly fix intersections on thick meshes by copying the weights for each vertex to its closest neighbor in the inverse normal direction.
+The `bm_extrude_weights` module provides an interactive tool for animators to quickly fix intersection issues on complex meshes by extruding skin cluster weights to nearby vertices in inverse normal directions. This is particularly useful when working with thick meshes or those prone to self-intersections.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `maya.OpenMaya`, `maya.OpenMayaAnim`, `maya.OpenMayaMPx`, `maya.cmds`
-* **External Dependencies:** None
+* **Internal Framework Links:** `bmaya.maya.rigging.weights.skin`
+* **External Dependencies:** Maya.cmds, OpenMaya, OpenMayaAnim
 
 ## API Taxonomy Reference
 
-### 🏷️ `CLASS` :: `ExtrudeWeights`
-**Purpose:** Provides methods for extruding skin weights on a polygon mesh in Maya.
+### 🏷️ `CLASS` :: ExtrudeWeights
+**Purpose:** Custom command for weight extrusion in skin clusters.
 
 #### Methods
-- `__init__(self)`: Initializes the command.
-- `isUndoable(self)`: Indicates whether this command is undoable.
-- `doIt(self, args)`: Executes the command.
-- `redoIt(self)`: Re-executes the command for redos.
-- `undoIt(self)`: Undoes the command.
+- `isUndoable(self)`: Verifies whether the command is undoable.
+- `doIt(self, args)`: Performs the actual weight extrusion process.
+- `redoIt(self)`: Redoes the previous weight extrusion operation.
+- `undoIt(self)`: Undoes the previous weight extrusion operation.
 
 ---
 
-### 🏷️ `FUNCTION` :: `cmdCreator`
+### 🏷️ `FUNCTION` :: cmdCreator
 **Signature:**
 ```python
-def cmdCreator() -> omMPx.MPxCommand:
+def cmdCreator():
+  return omMPx.asMPxPtr(ExtrudeWeights())
 ```
-#### Purpose:** Creates an instance of the `ExtrudeWeights` class.
+#### Returns
+- An instance of `omMPx.MPxCommand` (ExtrudeWeights) wrapped in an `omMPx.asMPxPtr`.
 
 ---
 
-### 🏷️ `FUNCTION` :: `initializePlugin`
+### 🏷️ `FUNCTION` :: initializePlugin
 **Signature:**
 ```python
-def initializePlugin(mObject) -> None:
+def initializePlugin(mObject):
+  fnPlugin = omMPx.MFnPlugin(mObject, "Ben Morgan", "1.0.0", "Any")
+  try:
+    fnPlugin.registerCommand(kPluginCmdName, cmdCreator)
+  except:
+    om.MGlobal.displayError("Failed to register command {0}".format(kPluginCmdName))
 ```
-#### Purpose:** Initializes the plugin by registering the command.
+#### Arguments
+- `mObject`: The Maya object representing the plugin.
+
+#### Returns
+- None
 
 ---
 
-### 🏷️ `FUNCTION` :: `uninitializePlugin`
+### 🏷️ `FUNCTION` :: uninitializePlugin
 **Signature:**
 ```python
-def uninitializePlugin(mObject) -> None:
+def uninitializePlugin(mObject):
+  fnPlugin = omMPx.MFnPlugin(mObject)
+  try:
+    fnPlugin.deregisterCommand(kPluginCmdName)
+  except:
+    om.MGlobal.displayError("Failed to deregister command {0}".format(kPluginCmdName))
 ```
-#### Purpose:** Uninitializes the plugin by deregistering the command.
+#### Arguments
+- `mObject`: The Maya object representing the plugin.
+
+#### Returns
+- None
+
+---
+
+### 🏷️ `GLOBAL VARIABLE` :: kPluginCmdName
+- **Type:** str
+- **Value/Purpose:** The name of the extrude weights command, used for registration and deregistration.

@@ -1,48 +1,30 @@
 # Module: Arm
 
 ### Pipeline Intent
-Provides a modular implementation of an arm component for character rigging. This module integrates with the `ThreeJointIkFkTwist` class to create a 3-joint IK/FK chain with a gimbal control.
+Provides a rigging module for creating character armatures with IK/FK chains and additional control mechanisms.
 
 ### Technical Implementation
-Utilizes the `_ThreeJointIkFkTwist` class from `bmaya3.rigging.base.threejointikfkTwist` for IK/FK chain management. Wraps the build process using `wrapBuild` decorator to ensure correct execution of the pipeline.
+Utilizes Maya's internal commands and OpenMaya utilities to construct and manipulate the rig's structure, joint layout, and component organization. Exposes build and setup functions for animators to create and customize their own armature templates.
 
 ### Overview
-The `Arm` module constructs a character arm with three joints and an additional gimbal control, allowing for better manipulation of shoulder movements. This module serves as a building block for creating more complex character rigs.
+This module is designed to simplify the process of creating character arms with IK/FK chains and additional control mechanisms. It provides a foundation for building customizable armatures that can be used in various animation scenarios.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `_ThreeJointIkFkTwist`, `shapelib`
+* **Internal Framework Links:** `bmaya.maya.rigging.base.decorators`, `bmaya.maya.shapes`, `bmaya.maya.util.nameUtils`
 * **External Dependencies:** None
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: `Arm`
-
-**Purpose:** A modular implementation of an arm component for character rigging.
+**Purpose:** Creates a character armature with IK/FK chains and additional control mechanisms.
+*Inherits from:* `_ThreeJointIkFkTwist.ThreeJointIkFkTwist`
 
 #### Methods
-- `__init__(self, startJoint=None, endJoint=None, name='Arm1', character=None, parent=None, mirror=False, side='L', fkikDefault=0, alignWorld=True)`: Initializes the arm module with specified parameters.
-- `build(self) @wrapBuild`: Builds the 3-joint IK/FK chain and adds a gimbal control.
+- `__init__(self, startJoint=None, endJoint=None, name='Arm1', ...)`:
+  Initializes the arm module with specified joint names, character, and other settings.
 
----
+- `build(self):`:
+  Builds the IK/FK chain structure and sets up additional control mechanisms.
 
-### 🏷️ `FUNCTION` :: `addFkGimbalControl`
-
-**Signature:**
-```python
-def addFkGimbalControl(self):
-```
-#### Arguments
-- self: Reference to the `Arm` object
-
-#### Returns
-- None
-
-#### Description
-Adds a gimbal control on top of the existing shoulder FK, allowing for better manipulation of shoulder movements.
-
----
-
-### 🏷️ `GLOBAL VARIABLE` :: `modType`
-
-- **Type:** String
-- **Value/Purpose:** Tracks the type of module (Arm) in the pipeline.
+- `addFkGimbalControl(self):`:
+  Adds a secondary control mechanism on top of the existing shoulder FK, allowing for XYZ rotation order control.

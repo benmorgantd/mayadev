@@ -1,28 +1,26 @@
 # Module: cvshapeinverter
 
 ### Pipeline Intent
-Provides a mechanism for inverting shapes through deformation chains to correct character rig performance issues. This module automates the process of creating an inverted shape from a deformed base mesh and a corrected corrective mesh.
+Provides a mechanism for inverting a shape through the deformation chain, allowing animators to correct pose-related issues and apply the corrected mesh as a blendShape target.
 
 ### Technical Implementation
-This module utilizes Maya's OpenMaya API to manipulate geometry, points, and matrices. It exposes various utility functions for retrieving and setting point arrays, matrix manipulation, and dag path handling.
+The `cvshapeinverter` module utilizes Maya's OpenMaya API and various Python modules (e.g., math) to perform point-wise calculations and manipulation of mesh data. It exposes an `invert` function that takes three input parameters: `base`, `corrective`, and `name`. The function generates an inverted shape by calculating the difference between the deformed base mesh and the sculpted corrective mesh.
 
 ### Overview
-The `cvshapeinverter` module provides a tool for animators to correct character rig performance issues by inverting shapes through deformation chains. This process involves duplicating the base mesh, sculpting corrective fixes, selecting the original skinned model, and then running the `invert()` function.
+The `cvshapeinverter` module is designed to automate the process of inverting a shape through the deformation chain, making it easier for animators to correct pose-related issues and apply the corrected mesh as a blendShape target. This module provides a Pythonic interface for performing this inversion operation.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** None
-* **External Dependencies:** Maya.cmds, OpenMaya
+* **Internal Framework Links:** `maya.cmds`, `maya.OpenMaya`
+* **External Dependencies:** None
 
 ## API Taxonomy Reference
 
-### 🏷️ `CLASS` :: `None`
-
----
+### 🏷️ `CLASS` :: N/A
 
 ### 🏷️ `FUNCTION` :: `invert`
 **Signature:**
 ```python
-def invert(base=None, corrective=None, name=None) -> str:
+def invert(base=None, corrective=None, name=None):
 ```
 #### Arguments
 - base (str): Deformed base mesh.
@@ -37,7 +35,7 @@ def invert(base=None, corrective=None, name=None) -> str:
 ### 🏷️ `FUNCTION` :: `get_shape`
 **Signature:**
 ```python
-def get_shape(node, intermediate=False) -> str:
+def get_shape(node, intermediate=False):
 ```
 #### Arguments
 - node (str): Name of the node.
@@ -51,27 +49,40 @@ def get_shape(node, intermediate=False) -> str:
 ### 🏷️ `FUNCTION` :: `get_mobject`
 **Signature:**
 ```python
-def get_mobject(node) -> OpenMaya.MObject:
+def get_mobject(node):
 ```
 #### Arguments
 - node (str): Name of the node.
 
 #### Returns
-- OpenMaya.MObject: The dag path of a node.
+- MObject: The dag path of a node.
+
+---
+
+### 🏷️ `FUNCTION` :: `get_dag_path`
+**Signature:**
+```python
+def get_dag_path(node):
+```
+#### Arguments
+- node (str): Name of the node.
+
+#### Returns
+- MDagPath: The dag path of a node.
 
 ---
 
 ### 🏷️ `FUNCTION` :: `get_points`
 **Signature:**
 ```python
-def get_points(path, space=OpenMaya.MSpace.kObject) -> OpenMaya.MPointArray:
+def get_points(path, space=OpenMaya.MSpace.kObject):
 ```
 #### Arguments
-- path (str): Name or dag path of a node.
+- path (str or MObject): Name or dag path of a node.
 - space (OpenMaya.MSpace): Space to get the points.
 
 #### Returns
-- OpenMaya.MPointArray: The MPointArray of points.
+- MPointArray: The control point positions of a geometry node.
 
 ---
 
@@ -81,8 +92,8 @@ def get_points(path, space=OpenMaya.MSpace.kObject) -> OpenMaya.MPointArray:
 def set_points(path, points, space=OpenMaya.MSpace.kObject):
 ```
 #### Arguments
-- path (str): Name or dag path of a node.
-- points (OpenMaya.MPointArray): MPointArray of points.
+- path (str or MObject): Name or dag path of a node.
+- points (MPointArray): The control point positions to set.
 - space (OpenMaya.MSpace): Space to get the points.
 
 ---
@@ -112,8 +123,4 @@ def set_matrix_cell(matrix, value, row, column):
 
 ---
 
-### 🏷️ `GLOBAL VARIABLE` :: `None`
-
-Note: Documentation Drift detected for the following elements:
-
-* None
+### 🏷️ `GLOBAL VARIABLE` :: N/A

@@ -1,79 +1,118 @@
-Here is the documentation for the `qtbase` module:
-
 # Module: qtbase
 
 ### Pipeline Intent
-Provides foundation classes and utilities for building Qt-based UI components within Maya. This module encapsulates basic widgets, layouts, and utility functions for customizing and extending the Qt framework in a Maya context.
+Provides a foundation for building Qt-based UI components within Maya. This module serves as a starting point for creating customizable and reusable GUI elements.
 
 ### Technical Implementation
-Imports necessary Qt modules (`QtWidgets`, `QtGui`, `QtCore`) and uses them to create custom widgets, layouts, and utilities that can be used to build Maya-specific UI components. Implements several basic widgets (e.g., `SimpleWindow`, `SimpleWidget`, `Table`, `List`, `Tree`), each with its own unique features and behaviors.
+Imports relevant modules from the `bmaya` library, such as `Qt`, to facilitate interaction with Qt-based widgets. The module also utilizes Maya's `maya.cmds` and `OpenMayaUI` libraries to integrate Maya-specific functionality into the UI components.
 
 ### Overview
-The `qtbase` module is designed to provide a solid foundation for building custom Qt-based UI components within Maya. It offers a range of pre-built widgets, layouts, and utilities that can be used to create customized UIs tailored to specific needs and workflows.
+This module provides a collection of basic UI components, including windows, widgets, tables, lists, trees, dockable widgets, dialogs, and progress windows. These components can be used as building blocks for creating custom UIs within Maya.
 
 ### Cross-Module Dependencies
-
-* **Internal Framework Links:** None
-* **External Dependencies:** `maya.cmds`, `OpenMayaUI`
+* **Internal Framework Links:** `bmaya.lib.Qt`, `maya.cmds`, `OpenMayaUI`
+* **External Dependencies:** None
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: `SimpleWindow`
-**Purpose:** Base class for simple Maya windows with title and layout capabilities.
-*Inherits from:* `QtWidgets.QMainWindow`
+**Purpose:** A basic window class for creating custom UI components.
 
 #### Methods
-- `__init__(self, parent=None, designerFile=None, title='Simple Widget')`: Initializes the window object.
+- `__init__(self, parent=None, designerFile=None, title='Simple Widget')`: Initializes the window with optional parent widget, designer file, and title.
+- `setWindowTitle(self, title)`: Sets the window's title.
+- `setAttribute(self, attribute, value)`: Sets a Qt attribute for the window.
+
+---
+
+### 🏷️ `CLASS` :: `SimpleWidget`
+**Purpose:** A basic widget class for creating custom UI components.
+
+#### Methods
+- `__init__(self, parent=None, designerFile=None, title='Simple Widget')`: Initializes the widget with optional parent widget, designer file, and title.
+- `setWindowTitle(self, title)`: Sets the widget's title.
+- `setAttribute(self, attribute, value)`: Sets a Qt attribute for the widget.
 
 ---
 
 ### 🏷️ `CLASS` :: `Table`
-**Purpose:** Custom Qt table widget with basic data handling and formatting capabilities.
-*Inherits from:* `QtWidgets.QTableWidget`
+**Purpose:** A basic table class for displaying tabular data.
 
 #### Methods
-- `translateToType(self, item)`: Converts an item's value to a specific type (e.g., string, int).
-- `toJson(self, dictionary)`: Serializes a dictionary of key-value pairs into a JSON-formatted string.
+- `__init__(self)`: Initializes the table with default settings.
+- `setShowGrid(self, flag)`: Toggles the display of grid lines in the table.
+- `toJson(self, dictionary)`: Converts a dictionary into a JSON-formatted string.
+
+---
+
+### 🏷️ `CLASS` :: `List`
+**Purpose:** A basic list class for displaying list-based data.
+
+#### Methods
+- `__init__(self, parent=None)`: Initializes the list with optional parent widget.
+- `setAlternatingRowColors(self, flag)`: Toggles alternating row colors in the list.
+
+---
+
+### 🏷️ `CLASS` :: `Tree`
+**Purpose:** A basic tree class for displaying hierarchical data.
+
+#### Methods
+- `__init__(self, parent=None)`: Initializes the tree with optional parent widget.
+- `setAlternatingRowColors(self, flag)`: Toggles alternating row colors in the tree.
+- `items(self)`: Returns a list of top-level items in the tree.
+- `topLevelItems(self)`: Returns a list of top-level items in the tree.
+
+---
+
+### 🏷️ `CLASS` :: `TreeItem`
+**Purpose:** A basic tree item class for representing individual nodes in the tree.
+
+#### Methods
+- `__init__(self, parent=None)`: Initializes the tree item with optional parent widget.
+- `parents(self)`: Returns a list of parents for the tree item.
+- `children(self)`: Returns a list of children for the tree item.
+- `name(self)`: Returns the name of the tree item.
 
 ---
 
 ### 🏷️ `CLASS` :: `DockableWidget`
-**Purpose:** Custom Qt widget that can be docked within Maya's workspace.
-*Inherits from:* `SimpleWidget`
+**Purpose:** A basic dockable widget class for creating custom UI components that can be docked within Maya's workspace.
 
 #### Methods
-- `dock(self, width=385, height=735)`: Dock the widget in Maya's workspace with specified dimensions.
+- `__init__(self, parent=None, designerFile=None, title='rigManager')`: Initializes the dockable widget with optional parent widget, designer file, and title.
+- `dock(self, width=385, height=735)`: Docks the widget within Maya's workspace.
 
 ---
 
 ### 🏷️ `CLASS` :: `Dialog`
-**Purpose:** Base class for custom Qt dialog windows with basic layout and formatting capabilities.
-*Inherits from:* `QtWidgets.QMainWindow`
+**Purpose:** A basic dialog class for creating custom UI components that can be used as modal windows.
 
 #### Methods
-- `__init__(self, parent=None, windowTitle='Dialog')`: Initializes the dialog object.
+- `__init__(self, parent=None, windowTitle='Dialog')`: Initializes the dialog with optional parent widget and title.
+- `setWindowFlags(self, flags)`: Sets various flags for the dialog window.
 
 ---
 
 ### 🏷️ `CLASS` :: `ConfirmDialog`
-**Purpose:** Custom Qt confirm dialog window with Yes/No button options.
-*Inherits from:* `Dialog`
+**Purpose:** A basic confirm dialog class for creating custom UI components that can be used to prompt users for confirmation.
 
 #### Methods
-- None
+- `__init__(self, parent=None, windowTitle='Confirm Dialog')`: Initializes the confirm dialog with optional parent widget and title.
+- `setMinimumWidth(self, width)`: Sets the minimum width of the confirm dialog.
+- `setMinimumHeight(self, height)`: Sets the minimum height of the confirm dialog.
 
 ---
 
 ### 🏷️ `CLASS` :: `ProgressWindow`
-**Purpose:** Custom Qt progress window with basic status and progress bar capabilities.
-*Inherits from:* `SimpleWindow`
+**Purpose:** A basic progress window class for creating custom UI components that can be used to display progress indicators.
 
 #### Methods
-- `increment(self, value)`: Updates the progress bar's value by a specified amount.
-- `setStatus(self, text)`: Sets the status text label within the progress window.
+- `__init__(self, parent=None, designerFile=None, title='Simple Widget')`: Initializes the progress window with optional parent widget, designer file, and title.
+- `increment(self, value)`: Increments the progress bar by a given value.
+- `setStatus(self, text)`: Sets the status text for the progress window.
 
 ---
 
 ### Documentation Drift
-
-No documentation drift detected.
+None detected.

@@ -1,19 +1,19 @@
-Here is the documentation for the file:
+Here is the documentation for this file:
 
-# Module: `bm_findUnderInfluencedVerts`
+# Module: bm_findUnderInfluencedVerts
 
 ### Pipeline Intent
-Provides a tool to identify and prune under-influenced vertices from a skin cluster, helping to optimize rig performance.
+Provides a tool to prune vertices with less than a specified number of influences in a Maya skin cluster. This helps reduce complexity and improve rig performance.
 
 ### Technical Implementation
-Utilizes Maya's OpenMaya and OpenMayaAnim libraries to interact with the scene, selecting vertices and retrieving skin cluster information. Exposes automated pruning functionality based on user-defined maximum influence count.
+Utilizes OpenMaya and OpenMayaAnim modules to iterate through selected mesh components, extract skin clusters, and retrieve influence objects and weights. The algorithm identifies vertices with fewer influences than the specified maximum and adds them to an available vertex list for further processing.
 
 ### Overview
-This module allows artists to streamline their workflow by identifying and eliminating under-influenced vertices from a character rig's skin cluster, reducing computational overhead and improving overall performance.
+This module is designed to streamline rigging workflows by automatically removing under-influenced vertices in a Maya skin cluster. This process helps maintain scene integrity while reducing computational overhead.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya.maya.asset.components.skin`, `bmaya.maya.rigging.weights.weightio`
-* **External Dependencies:** None
+* **Internal Framework Links:** `bmaya.maya.asset.components.cvs`, `bmaya.maya.rigging.weights.skin`
+* **External Dependencies:** `maya.OpenMaya`, `maya.OpenMayaAnim`
 
 ## API Taxonomy Reference
 
@@ -23,7 +23,7 @@ This module allows artists to streamline their workflow by identifying and elimi
 def find_under_influenced_verts(max_influences=4):
 ```
 #### Arguments
-- max_influences (int): The maximum number of influences allowed for a vertex. Defaults to 4.
+- max_influences (int): The maximum number of influences a vertex can have. Defaults to 4.
 
 #### Returns
 None
@@ -35,12 +35,6 @@ None
 ```python
 def prune_influences(max_influences=3):
 ```
-#### Arguments
-- max_influences (int): The maximum number of influences allowed for a vertex. Defaults to 3.
+Note: This function is not defined in the provided code, but it seems to be a wrapper for the `find_under_influenced_verts` function with a default value of 3.
 
-#### Returns
-None
-
----
-
-Note that there is no `CLASS` or `GLOBAL VARIABLE` documentation in this file, as it only contains two functions: `find_under_influenced_verts` and `prune_influences`.
+Please let me know if you would like me to make any changes.

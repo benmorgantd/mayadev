@@ -1,4 +1,4 @@
-Here is the Markdown documentation for the file:
+Here is the Markdown documentation for the provided Python file:
 
 # Module
 
@@ -9,45 +9,42 @@ Provides production file path verification and localized directory scaffolding f
 Exposes automated versioning utilities using the standard library `os` and `shutil` modules. Handles directory generation asynchronously when creating nested version tracks.
 
 ### Overview
-The Module class is the base class for all rig modules, containing basic attributes and methods that all modules will need, such as building the module, creating the module node, adding attributes to the node, finding mirror nodes, etc.
+The Module class is the base class for all rig modules. It contains basic attributes and methods that all modules will need, such as building the module, creating the module node, adding attributes to the node, finding mirror nodes, etc. Each specific module (such as Arm, Leg, Spine, etc.) will inherit from this class and implement its own build method to create the specific rig for that module.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** [List of modules from the codebase manifest that this file imports or interacts with]
-	+ None listed.
-* **External Dependencies:** [e.g., Maya.cmds, OpenMaya, PyMel]
-	+ None listed.
+* **Internal Framework Links:**
+	+ `bmaya.maya.asset.components.animRig`
+	+ `bmaya.maya.asset.components.build`
+	+ `bmaya.maya.rigging.joint`
+	+ `bmaya.maya.util.dagUtils`
+	+ `bmaya.maya.util.nameUtils`
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: `Module`
-**Purpose:** Base class for all rig modules
-*Inherits from:* None
+**Purpose:** Base class for all rig modules.
 
 #### Methods
-- `__init__(self, character=None, name='module1', modType='Module', parent=None, side='L', mirror=False, shapeType='cube', alignWorld=None)`: Initializes the module with attributes.
+- `__init__(self, character=None, name='module1', modType='Module', parent=None, side='L', mirror=False, shapeType='cube', alignWorld=None)`: Initializes the module with optional parameters.
+- `build(self)`: Should get defined by child class.
 - `makeNode(self)`: Creates the module node before anything gets built.
+- `parseForMayaAttr(self, attr)`: Converts attribute values to Maya-compatible types.
 - `addNodeAttrs(self)`: Adds attributes to the module node.
-- `findMirror(self, node)`: Returns the mirrored node of the same type if it's in the scene. Else returns None.
-- `doMirror(self)`: Mirrors the module and its children.
-- `parentModule(self)`: Parents the whole module's group into the character modules group.
-- `connectComponents(self)`: Connects the module's components to the module.
-- `connectBindJoints(self)`: Connects the module's bind joints to their control.
+- `findMirror(self, node)`: Returns the mirrored node of the same type if it's in the scene.
+- `doMirror(self)`: Creates a mirrored copy of the module (if mirror is True).
+- `determineParent(self, parent)`: Determines the parent for the module or its components.
+- `parentModule(self)`: Parent the whole module's group into the module group for the character.
 
-### 🏷️ `FUNCTION` :: `createDriveJoint`
+### 🏷️ `FUNCTION` :: `addMoveablePivot(cls, ctrl)`
 **Signature:**
 ```python
-def createDriveJoint(self, jnt, label='Driver', constrain=True):
+def addMoveablePivot(cls, ctrl):
 ```
 #### Arguments
-- `jnt`: The joint to drive.
-- `label`: The label for the driver joint.
-- `constrain`: Whether to constrain the driver joint.
+- `ctrl`: The control to add a moveable pivot to.
 
-### 🏷️ `FUNCTION` :: `captureComponentDefaults`
-**Signature:**
-```python
-def captureComponentDefaults(self):
-```
-#### No arguments
+#### Returns
+- None
 
-This function captures the default values of keyable attributes for each component in the module.
+#### Description:
+Adds a new control that represents the pivot for this control.

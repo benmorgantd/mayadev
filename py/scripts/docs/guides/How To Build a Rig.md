@@ -4,8 +4,8 @@ Note that you have to have the `RIGGING_PROJECT_DIR` environment variable set. T
 
 Code to build a simple rig from nothing:
 ```python 
-from bmaya3.maya.asset.asset import Asset
-from bmaya3.maya.rigging.base.rig import Rig
+from bmaya.maya.asset.asset import Asset
+from bmaya.maya.rigging.base.rig import Rig
 
 myRig = Rig('dev|prop|cube')
 myRig.buildRig()

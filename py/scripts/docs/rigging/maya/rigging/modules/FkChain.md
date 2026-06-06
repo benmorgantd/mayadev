@@ -1,35 +1,32 @@
 # Module: FkChain
 
 ### Pipeline Intent
-Provides a foundational framework for building FK (Forward Kinematics) chains in character rigging, facilitating the creation of articulated joints and drives.
+Provides flexible FK chain rigging functionality for animators, handling joint hierarchies and mirroring. Enables creation of articulated skeletons with adjustable constraints.
 
 ### Technical Implementation
-Uses Maya's cmds module to interact with the Maya API. Leverages decorators from `bmaya3.rigging.base.decorators` to implement build workflows. Incorporates shape libraries from `bmaya3.rigging.shapes` for joint creation. Utilizes name utilities from `bmaya3.core.nameUtils` for naming conventions.
+Utilizes decorators from `bmaya.maya.rigging.base.decorators` to encapsulate the build process, ensuring thread-safe and asynchronous execution. Integrates shape manipulation capabilities from `bmaya.maya.shapes`.
 
 ### Overview
-The FkChain module serves as a building block for constructing FK chains in character rigging, enabling the creation of articulated joints and drives. This module provides a foundation for creating complex character rigs by establishing a hierarchical structure of joints and drives.
+The FkChain module offers a comprehensive rigging framework for creating articulated skeletons in Maya. It enables animators to define FK chains with custom start and end joints, mirroring, and alignment.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** `bmaya3.rigging.base`, `bmaya3.rigging.shapes`, `bmaya3.core`
+* **Internal Framework Links:** 
+	+ `bmaya.maya.rigging.base`: For `module` and decorator-based pipeline management.
+	+ `bmaya.maya.shapes`: For shape manipulation and creation.
+	+ `bmaya.util`: For naming utilities.
 * **External Dependencies:** None
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: `FkChain`
-
-**Purpose:** A foundational module for building FK (Forward Kinematics) chains in character rigging.
+**Purpose:** A modular implementation of a FK chain rigging system.
 
 #### Methods
-- `__init__(self, startJoint=None, endJoint=None, exclude=[], name='FkChain1', character=None, parent=None, shapeType='cube', mirror=False, side='L', alignWorld=False)`:
-	+ Initializes the FkChain module with optional parameters for starting and ending joints, exclusion list, name, character, parent, shape type, mirroring, and world alignment.
-- `build(self)`: @wrapBuild decorator wraps this method, which builds the FK chain by finding suitable joints, creating drive joints, and constructing fk controls.
+- `__init__(self, ...)`: Initializes the FkChain module with optional start and end joints, exclusions, name, character, parent, shape type, mirroring, side, and alignment settings.
+- `build(self)`: Builds the FK chain by finding hierarchical joints to include in the chain, creating drive joints, and constructing FK controls.
 
 ---
 
-### 🏷️ `FUNCTION` :: `findHierarchyJoints`
-**Signature:**
-```python
-def findHierarchyJoints(self, exclude=[]) -> list:
-```
-#### Arguments
-- `exclude`: List of joints to be excluded from the hierarchy chain.
+Note: Documentation Drift
+
+* No discrepancies found between docstrings and actual code.

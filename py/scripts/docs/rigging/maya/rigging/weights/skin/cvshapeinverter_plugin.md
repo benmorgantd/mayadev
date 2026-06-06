@@ -1,42 +1,44 @@
 # Module: cvshapeinverter_plugin
 
 ### Pipeline Intent
-Provides a Maya Deformer Node that inverts the shape of a corrective mesh by applying a series of matrices to deformed points. This node is used to correct character rig performance issues.
+Provides an MPxDeformerNode implementation for inverting corrective shapes within Maya's rigging pipeline.
 
 ### Technical Implementation
-Exposes an OpenMayaMPx-based implementation for creating and initializing a cvShapeInverter plugin, which can be registered with Maya's Deformer Node system. Handles attribute creation and connection setup for the corrective mesh, deformed points, and inversion matrix inputs.
+Uses OpenMayaMPx to create a deform node that reads matrices and deformed points, then applies these inputs to perform shape inversion calculations. This allows animators to utilize the corrective mesh data and invert its effects on the character rig.
 
 ### Overview
-The `cvShapeInverter` class is a Maya Deformer Node that applies a series of matrices to deformed points to correct character rig performance issues. This node takes three input attributes: `correctiveMesh`, `deformedPoints`, and `inversionMatrix`. The node inverts the shape of the corrective mesh by applying the matrices to the deformed points.
+The cvShapeInverter module is designed to enable Maya artists to correct for unwanted shape deformation in their rigged characters. By providing an MPxDeformerNode, this module can be easily integrated into existing pipelines, offering a robust and efficient way to reverse the effects of corrective shapes.
 
 ### Cross-Module Dependencies
-* **Internal Framework Links:** [None]
-* **External Dependencies:** maya.OpenMayaMPx, maya.OpenMaya
+* **Internal Framework Links:** `bmaya.maya.asset.components.animRig`, `bmaya.maya.asset.components.build`, `bmaya.maya.rigging.weights.weightio`
+* **External Dependencies:** None
 
 ## API Taxonomy Reference
 
 ### 🏷️ `CLASS` :: cvShapeInverter
-**Purpose:** Maya Deformer Node for inverting the shape of a corrective mesh.
+**Purpose:** An MPxDeformerNode implementation for inverting corrective shapes.
 
 #### Methods
-- `__init__(self)`: Initializes the node's attributes and internal state.
-- `deform(self, data, itGeo, localToWorldMatrix, geomIndex)`: Applies the matrices to deformed points to correct character rig performance issues.
-- `creator()`: Returns an instance of the cvShapeInverter class.
-
-#### Attributes
-- `aCorrectiveGeo`: Input attribute for the corrective mesh.
-- `aDeformedPoints`: Input attribute for the deformed points.
-- `aMatrix`: Input attribute for the inversion matrix.
+- `__init__(self)`: Initializes the node's internal state.
+- `deform(self, data, itGeo, localToWorldMatrix, geomIndex)`: Performs shape inversion calculations based on input matrices and deformed points.
+- `creator()`: Returns a pointer to an instance of this class.
+- `initialize()`: Sets up attribute connections for the node.
+- `initializePlugin(mobject)`: Registers the node with the Maya plugin system.
+- `uninitializePlugin(mobject)`: Deregisters the node from the Maya plugin system.
 
 ---
 
 ### 🏷️ `FUNCTION` :: creator
 **Signature:**
 ```python
-def creator() -> OpenMayaMPx.MPxPtr:
+def creator():
+    return OpenMayaMPx.asMPxPtr(cvShapeInverter())
 ```
+#### Arguments
+None
+
 #### Returns
-- An instance of the cvShapeInverter class.
+A pointer to an instance of cvShapeInverter
 
 ---
 
@@ -44,16 +46,10 @@ def creator() -> OpenMayaMPx.MPxPtr:
 **Signature:**
 ```python
 def initialize():
+    # Code...
 ```
-#### Purpose
-Initializes the node's attributes and connects them to the Maya Deformer Node system.
+#### Arguments
+None
 
----
-
-### 🏷️ `FUNCTION` :: uninitializePlugin
-**Signature:**
-```python
-def uninitializePlugin(mobject):
-```
-#### Purpose
-Unregisters the cvShapeInverter plugin from Maya's Deformer Node system.
+#### Returns
+None
