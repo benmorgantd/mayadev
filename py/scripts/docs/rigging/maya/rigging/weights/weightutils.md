@@ -1,20 +1,8 @@
 # Module: weightutils
 
-### Pipeline Intent
-Provides utility functions for working with skin clusters and weights in Maya.
+### 🔬 DEBUG MODE MOCK DOCS
+- **Source Path:** `C:\Users\bmorgan\Documents\dev\maya\mayadev\py\scripts\bmaya\maya\rigging\weights\weightutils.py`
+- **Full Hierarchy:** `bmaya.maya.rigging.weights.weightutils`
+- **Status:** Fast stub generation active.
 
-### Technical Implementation
-The `weightutils` module contains various functions for interacting with skin clusters, their weights, and influences. These functions are designed to simplify common tasks related to character rigging and skinning in Maya.
-
-### Overview
-This module offers several key features:
-
-* Functions for finding the skin cluster deforming a mesh (`getSkinClusterName`, `getSkinClusterObj`)
-* Utilities for getting and setting skin cluster weights (`getSkinClusterWeights`, `setSkinClusterWeights`)
-* Pruning of weight lists to reduce influence count (`pruneWeightList`, `pruneSkinWeights`)
-* Conversion of Delta Mush to skin cluster weights (`bakeDeltaMushToSkinCluster`)
-
-### Cross-Module Dependencies
-
-* **Internal Framework Links:** None
-* **External Dependencies:** Maya.cmds, OpenMaya, PyMel
+This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.

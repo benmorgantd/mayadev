@@ -1,5 +1,7 @@
 # Pipeline Documentation
 
+> ⚠️ **NOTICE:** This documentation site was generated in **DEBUG MODE**. Content blocks are quick testing placeholders.
+
 Welcome to the internal rigging and pipeline core utility documentation. This site contains documentation dynamically compiled from codebase docstrings and localized code structure definitions.
 
 ### Technical Infrastructure Navigation
@@ -8,6 +10,7 @@ Press `S` or use the search field at the top of the interface to instantly locat
 ### Codebase Module Index
 * [bmaya.core.constants](rigging/core/constants.md)
 * [bmaya.core.util.fileUtils](rigging/core/util/fileUtils.md)
+* [bmaya.core.util.listUtils](rigging/core/util/listUtils.md)
 * [bmaya.maya.asset.asset](rigging/maya/asset/asset.md)
 * [bmaya.maya.asset.components.animRig](rigging/maya/asset/components/animRig.md)
 * [bmaya.maya.asset.components.build](rigging/maya/asset/components/build.md)

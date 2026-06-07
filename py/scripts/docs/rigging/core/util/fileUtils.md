@@ -1,32 +1,8 @@
 # Module: fileUtils
 
-### Pipeline Intent
-Provides automated versioning utilities for asset files using the standard library `os` and `shutil` modules. Handles directory generation asynchronously when creating nested version tracks.
+### 🔬 DEBUG MODE MOCK DOCS
+- **Source Path:** `C:\Users\bmorgan\Documents\dev\maya\mayadev\py\scripts\bmaya\core\util\fileUtils.py`
+- **Full Hierarchy:** `bmaya.core.util.fileUtils`
+- **Status:** Fast stub generation active.
 
-### Technical Implementation
-Exposes a single function, `versionFile`, which saves off a copy of the given file to a `<filename>.Versions` folder.
-
-### Overview
-The `fileUtils` module offers a simple way to manage versioning for assets in your Maya pipeline. This implementation uses the `os` and `shutil` modules to create a new directory structure for each versioned file, keeping track of previous versions.
-
-### Cross-Module Dependencies
-* **Internal Framework Links:** None
-
-## API Taxonomy Reference
-
-### 🏷️ `FUNCTION` :: `versionFile`
-**Signature:**
-```python
-def versionFile(filepath):
-```
-#### Arguments
-- filepath (str): The file to version.
-
-#### Returns
-None
-
----
-
-### Implementation Notes
-Documentation Drift:
-* No drift detected.
+This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.

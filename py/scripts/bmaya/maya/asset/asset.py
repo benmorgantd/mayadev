@@ -114,9 +114,6 @@ class Asset(object):
         else:
             return []
 
-
-        return  
-
     @classmethod
     def splitpath(cls, filepath):
         """split a path into all of its components"""

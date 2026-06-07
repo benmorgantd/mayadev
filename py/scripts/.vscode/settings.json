@@ -1,5 +1,6 @@
 {
     "python.pythonPath": "C:\\Program Files (x86)\\Python\\python.exe",
     "python.linting.pylintEnabled": true,
-    "python.linting.enabled": true
+    "python.linting.enabled": true,
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }

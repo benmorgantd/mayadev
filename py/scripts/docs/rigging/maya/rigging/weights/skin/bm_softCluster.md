@@ -1,38 +1,8 @@
-# Module: `bm_softCluster`
+# Module: bm_softCluster
 
-### Pipeline Intent
-A tool to create a cluster deformer with the same weights as the soft selection.
+### 🔬 DEBUG MODE MOCK DOCS
+- **Source Path:** `C:\Users\bmorgan\Documents\dev\maya\mayadev\py\scripts\bmaya\maya\rigging\weights\skin\bm_softCluster.py`
+- **Full Hierarchy:** `bmaya.maya.rigging.weights.skin.bm_softCluster`
+- **Status:** Fast stub generation active.
 
-### Technical Implementation
-Uses Maya's OpenMaya and cmds modules to interact with the scene, retrieving information about the selected objects, their components, and their weights. Handles different types of objects (meshes, nurbs curves, and lattices) by utilizing MItSelectionList and MFnSingleIndexedComponent or MFnTripleIndexedComponent depending on the object type.
-
-### Overview
-The `softCluster` function generates a cluster deformer that mimics the same soft selection as the input. This is achieved by iterating through each selected component, retrieving its weight influence, and setting it on the cluster deformer.
-
-### Cross-Module Dependencies
-* **Internal Framework Links:** None
-* **External Dependencies:** maya.OpenMaya, maya.cmds
-
-## API Taxonomy Reference
-
-### 🏷️ `FUNCTION` :: `softCluster`
-
-**Signature:**
-```python
-def softCluster():
-```
-#### Arguments
-None.
-
-#### Returns
-A cluster deformer with the same weights as the soft selection.
-
----
-
-### 🏷️ `CLASS` :: No classes in this file.
-
----
-
-### Documentation Drift
-
-None found.
+This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.

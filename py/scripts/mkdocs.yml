@@ -1,4 +1,4 @@
-site_name: bmaya3 Documentation
+site_name: bmaya Documentation
 
 theme:
   name: material
@@ -32,6 +32,7 @@ nav:
     - constants: rigging/core/constants.md
     - util:
       - fileUtils: rigging/core/util/fileUtils.md
+      - listUtils: rigging/core/util/listUtils.md
   - guides:
     - How To Build a Rig: guides/How To Build a Rig.md
   - maya:
