@@ -5,7 +5,6 @@ from bmaya.maya.rigging.base import module
 from bmaya.maya.rigging.base.decorators import wrapBuild
 from bmaya.maya.rigging.shapes import shapelib
 from bmaya.maya.util import nameUtils, mathUtils
-from bmaya.core import constants
 
 
 class Ribbon(module.Module):

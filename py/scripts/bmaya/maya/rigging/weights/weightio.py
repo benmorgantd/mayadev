@@ -10,8 +10,8 @@ from bmaya.core.util import fileUtils
 from bmaya.core import log
 
 
-def get_joints_from_xml(weightsDir):
-    tree = ElementTree.parse(weightsDir)
+def get_joints_from_xml(weights_dir):
+    tree = ElementTree.parse(weights_dir)
     root = tree.getroot()
 
     joints = []
@@ -23,7 +23,7 @@ def get_joints_from_xml(weightsDir):
     return joints
 
 
-def save(weightsDir):
+def save(weights_dir):
     # Saves each selected object to a file in the given directory
     # with its nameUtils.
 
@@ -32,8 +32,8 @@ def save(weightsDir):
 
     it_sel = om.MItSelectionList(sel)
 
-    if not os.path.exists(weightsDir):
-        os.makedirs(weightsDir)
+    if not os.path.exists(weights_dir):
+        os.makedirs(weights_dir)
 
     while not it_sel.isDone():
         dag = om.MDagPath()
@@ -43,7 +43,7 @@ def save(weightsDir):
 
         skin = cmds.ls(cmds.listHistory(dag_name), type='skinCluster') or []
 
-        filename = os.path.join(weightsDir, dag_name + '.weights')
+        filename = os.path.join(weights_dir, dag_name + '.weights')
         if os.path.exists(filename):
             # version the file
             fileUtils.version_file(filename)
@@ -56,7 +56,7 @@ def save(weightsDir):
                 "{0}.weights".format(dag_name),
                 deformer=skin[0],
                 export=True,
-                path=weightsDir,
+                path=weights_dir,
                 method="index",
                 format='XML')
         else:
