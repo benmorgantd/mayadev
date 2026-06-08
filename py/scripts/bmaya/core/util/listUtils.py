@@ -5,5 +5,5 @@ def firstOrDefault(iterable, default=None):
         iterator = iter(iterable)
     except TypeError:
         raise TypeError("Given argument is not an iterable")
-    
-    return next(iterator,  default)
+
+    return next(iterator, default)

@@ -6,7 +6,7 @@ from bmaya.core import log
 
 class ToolMenu(object):
     """Generates an editable, cascading Maya native window menu from a layout file."""
-    
+
     def __init__(self, menu_id=None):
         self.menu_id = menu_id or "{0}Menu".format(label.replace(" ", ""))
         self.hierarchy = []
@@ -15,11 +15,12 @@ class ToolMenu(object):
         """Loads the view structural configuration file."""
         if not os.path.exists(filepath):
             return False
-            
+
         with open(filepath, 'r') as f:
             data = json.load(f)
-            
-        self.label = data.get("label", "Tool Menu")  # NOTE: Maya will need this to be unique. We should append a guid.
+
+        # NOTE: Maya will need this to be unique. We should append a guid.
+        self.label = data.get("label", "Tool Menu")
         self.hierarchy = data.get("items", [])
         return True
 
@@ -31,11 +32,16 @@ class ToolMenu(object):
 
         main_window = "MayaWindow"
         if not cmds.window(main_window, exists=True):
-            raise RuntimeError("Maya Main Window container could not be found.")
+            raise RuntimeError(
+                "Maya Main Window container could not be found.")
 
         # Create root layout wrapper
-        cmds.menu(self.menu_id, label=self.label, parent=main_window, tearOff=True)
-        
+        cmds.menu(
+            self.menu_id,
+            label=self.label,
+            parent=main_window,
+            tearOff=True)
+
         # Traverse layout rules recursively
         self._build_recursive(self.menu_id, self.hierarchy, registry)
         log.info(f"Built Tool Menu {self.label}")
@@ -47,31 +53,35 @@ class ToolMenu(object):
 
             if item_type == "separator":
                 cmds.menuItem(divider=True, parent=parent_layout)
-                
+
             elif item_type == "submenu":
                 sub_label = item.get("label", "SubMenu")
                 sub_menu = cmds.menuItem(
-                    label=sub_label, 
-                    subMenu=True, 
-                    tearOff=True, 
+                    label=sub_label,
+                    subMenu=True,
+                    tearOff=True,
                     parent=parent_layout
                 )
-                self._build_recursive(sub_menu, item.get("items", []), registry)
-                
+                self._build_recursive(
+                    sub_menu, item.get(
+                        "items", []), registry)
+
             elif item_type == "tool":
                 guid = item.get("guid")
                 tool = registry.tools.get(guid)
 
                 if not tool:
-                    # Gracefully render broken configurations without dropping layout parsing completely
+                    # Gracefully render broken configurations without dropping
+                    # layout parsing completely
                     cmds.menuItem(
-                        label="Missing Tool (Ref: {0})".format(guid[:8]), 
-                        enable=False, 
+                        label="Missing Tool (Ref: {0})".format(guid[:8]),
+                        enable=False,
                         parent=parent_layout
                     )
                     continue
 
-                # Amalgamate explicit user toggles from both layout settings and core parameters
+                # Amalgamate explicit user toggles from both layout settings
+                # and core parameters
                 is_enabled = tool.enabled and item.get("enabled", True)
 
                 # Keyword declaration isolates loop mutation side effects

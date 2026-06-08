@@ -1,6 +1,6 @@
 [
     {
-        "startJoint": "root_00_M_JNT", 
+        "start_joint": "root_00_M_JNT", 
         "parent": null, 
         "shapeType": "boundingBox", 
         "mirror": false, 

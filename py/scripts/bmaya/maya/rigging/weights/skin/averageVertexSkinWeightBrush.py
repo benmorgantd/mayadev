@@ -4,11 +4,11 @@ from maya.cmds import loadPlugin as loadPlugin
 
 pluginFileName = 'averageVertexSkinWeightCmd.py'
 if pluginInfo(pluginFileName, q=True, l=True) == False:
-  loadPlugin(pluginFileName)
+    loadPlugin(pluginFileName)
 
 
 def initPaint():
-  cmd = '''
+    cmd = '''
   global string $avgVertexSkinWeightsBrushSel[];
 
   global proc averageVertexWeightBrush(string $context) {
@@ -32,7 +32,7 @@ def initPaint():
           $i++;
           if ($number != 0)
           $objName = $buffer[0];
-      }  
+      }
   }
 
   global proc set_averageVertexWeightBrush(int $slot, int $index, float $val) {
@@ -40,22 +40,20 @@ def initPaint():
 
       if($avgVertexSkinWeightsBrushSel[0] != "") {
           if(!stringArrayContains($index, $avgVertexSkinWeightsBrushSel))
-              return; 
+              return;
       }
-      averageVertexSkinWeight -i $index -v $val;     
+      averageVertexSkinWeight -i $index -v $val;
   }
   '''
-  mel.eval(cmd)
-
+    mel.eval(cmd)
 
 
 def paint():
-  cmd = '''
+    cmd = '''
   ScriptPaintTool;
   artUserPaintCtx -e -tsc "averageVertexWeightBrush" `currentCtx`;
   '''
-  mel.eval(cmd)
+    mel.eval(cmd)
 
 
 initPaint()
-

@@ -12,7 +12,7 @@ MODULE_CLASSES = {}
 MODULE_ARGS = {}
 
 for modType in __all__:
-    
+
     # Python 3 compatible dynamic import
     module_path = f'bmaya.maya.rigging.modules.{modType}'
     importlib.import_module(module_path)

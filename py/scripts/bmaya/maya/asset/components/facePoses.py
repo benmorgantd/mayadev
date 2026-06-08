@@ -8,9 +8,9 @@ from .mayaComponent import MayaComponent
 
 class FacePoses(MayaComponent):
 
-    def __init__(self, asset, componentType):
-        super(FacePoses, self).__init__(asset, componentType)
+    def __init__(self, asset, component_type):
+        super(FacePoses, self).__init__(asset, component_type)
 
     @property
-    def relativePath(self):
+    def relative_path(self):
         return os.path.join('rig', 'components', self.type + self.extension)

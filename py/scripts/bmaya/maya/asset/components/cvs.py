@@ -10,16 +10,16 @@ from bmaya.maya.rigging.shapes import shapeio
 
 class Cvs(Component):
 
-    def __init__(self, asset, componentType):
-        super(Cvs, self).__init__(asset, componentType)
+    def __init__(self, asset, component_type):
+        super(Cvs, self).__init__(asset, component_type)
 
     @property
-    def relativePath(self):
+    def relative_path(self):
         # /rig/components/cvs.json
         return os.path.join('rig', 'components', self.type + self.extension)
 
     def load(self):
-        shapeio.load(self.fullPath)
+        shapeio.load(self.full_path)
 
     def save(self):
-        shapeio.save(self.fullPath)
+        shapeio.save(self.full_path)

@@ -34,9 +34,11 @@ class ModuleList(qtbase.List):
                 # no row selected
                 return
 
-            # get the current item instead and add it as a child. If nothing is selected, 
+            # get the current item instead and add it as a child. If nothing is selected,
             # add it to the top node
-            newMod = BuildListItem(modType=selectedModType, attributeContainer=self.attributeContainer)
+            newMod = BuildListItem(
+                modType=selectedModType,
+                attributeContainer=self.attributeContainer)
 
             currentItem = self.buildList.currentItem()
             if currentItem:
@@ -64,7 +66,6 @@ class BuildList(qtbase.Tree):
         self.contextMenu = BuildListContextMenu(buildList=self)
         self.contextMenu.hide()
 
-
     def mousePressEvent(self, event):
         self.clearSelection()
 
@@ -82,7 +83,7 @@ class BuildList(qtbase.Tree):
             return
 
         self.hideAttrLayouts()
-        
+
         listItem.attributeLayout.setVisible(True)
 
     def mouseDoubleClickEvent(self, event):
@@ -104,16 +105,17 @@ class BuildList(qtbase.Tree):
             modData.pop('name')
             modData.pop('children')
 
-            listItem = BuildListItem(modType=modType, 
-                                     attributeContainer=attributeLayoutContainer,
-                                     customAttrs=modData)
+            listItem = BuildListItem(
+                modType=modType,
+                attributeContainer=attributeLayoutContainer,
+                customAttrs=modData)
 
             listItem.setText(0, str(modName))
 
             if not parent:
-                 self.addTopLevelItem(listItem)
+                self.addTopLevelItem(listItem)
 
-                 for child in modChildren:
+                for child in modChildren:
                     addChildren(child, parent=listItem)
 
             else:
@@ -121,10 +123,10 @@ class BuildList(qtbase.Tree):
 
                 for child in modChildren:
                     addChildren(child, parent=listItem)
-            
+
         for topLevelMod in buildData:
             addChildren(topLevelMod, parent=None)
-        
+
     def getAllValues(self):
 
         attrData = []
@@ -150,13 +152,13 @@ class BuildList(qtbase.Tree):
         return attrData
 
     def hideAttrLayouts(self):
-        
+
         for item in self.items:
             if item.attributeLayout:
                 item.attributeLayout.setVisible(False)
 
     def renameItem(self):
-        
+
         currentItem = self.currentItem()
         self.editItem(currentItem)
 
@@ -172,19 +174,20 @@ class BuildList(qtbase.Tree):
         currentItemParent = currentItem.parent()
 
         if currentItemParent:
-            currentItemParent.takeChild(currentItemParent.indexOfChild(currentItem))
+            currentItemParent.takeChild(
+                currentItemParent.indexOfChild(currentItem))
         else:
             self.takeTopLevelItem(self.indexOfTopLevelItem(currentItem))
 
         try:
             cmds.delete(currentItem.name)
-        except:
+        except BaseException:
             pass
 
         self.contextMenu.hide()
 
     def duplicateItem(self):
-        
+
         # get the selection
         currentObject = self.currentItem()
 
@@ -196,9 +199,10 @@ class BuildList(qtbase.Tree):
         customAttrs.pop('name')
 
         # create a new list item of the same type as the selection
-        listItem = BuildListItem(modType=currentObject.modType, 
-                                  attributeContainer=currentObject.attributeContainer,
-                                  customAttrs=customAttrs)
+        listItem = BuildListItem(
+            modType=currentObject.modType,
+            attributeContainer=currentObject.attributeContainer,
+            customAttrs=customAttrs)
 
         currentObjectParent = currentObject.parent()
 
@@ -207,8 +211,14 @@ class BuildList(qtbase.Tree):
         else:
             self.addTopLevelItem(listItem)
 
+
 class BuildListItem(qtbase.TreeItem):
-    def __init__(self, modType, customAttrs=None, attributeContainer=None, name=None):
+    def __init__(
+            self,
+            modType,
+            customAttrs=None,
+            attributeContainer=None,
+            name=None):
         super(BuildListItem, self).__init__()
 
         self.attributeContainer = attributeContainer
@@ -218,17 +228,17 @@ class BuildListItem(qtbase.TreeItem):
             self.setText(0, self.modType)
         else:
             self.setText(0, name)
-    
+
         # Put attribute data inside of the build layout item
         self.customAttrs = customAttrs
         self.defaultAttrs = self.loadAttributeTemplates()
 
         if self.customAttrs:
-            self.attributeLayout = AttributeLayout(parent=self.attributeContainer, 
-                attributes=self.customAttrs)
+            self.attributeLayout = AttributeLayout(
+                parent=self.attributeContainer, attributes=self.customAttrs)
         else:
-            self.attributeLayout = AttributeLayout(parent=self.attributeContainer,
-                attributes=self.defaultAttrs)
+            self.attributeLayout = AttributeLayout(
+                parent=self.attributeContainer, attributes=self.defaultAttrs)
 
         self.attributeLayout.build()
 
@@ -273,7 +283,6 @@ class BuildListContextMenu(QtWidgets.QMenu):
         duplicateAction = self.addAction('Duplicate')
         duplicateAction.triggered.connect(lambda: buildList.duplicateItem())
 
-        
 
 class CustomLineEdit(QtWidgets.QLineEdit):
     def __init__(self, text, parent=None):
@@ -297,7 +306,6 @@ class CustomLineEdit(QtWidgets.QLineEdit):
         else:
             QtWidgets.QLineEdit.mousePressEvent(self, event)
 
-
     def replaceWithSelection(self):
         sel = cmds.ls(sl=1)
 
@@ -311,12 +319,14 @@ class CustomLineEdit(QtWidgets.QLineEdit):
     def resetToDefault(self):
         self.setText(self.defaultValue)
 
+
 class LineEditMenu(QtWidgets.QMenu):
     def __init__(self, lineEdit):
         super(LineEditMenu, self).__init__()
 
         replaceWithSelection = self.addAction('Replace With Selection')
-        replaceWithSelection.triggered.connect(lambda: lineEdit.replaceWithSelection())
+        replaceWithSelection.triggered.connect(
+            lambda: lineEdit.replaceWithSelection())
 
         resetAction = self.addAction('Reset To Default')
         resetAction.triggered.connect(lambda: lineEdit.resetToDefault())
@@ -332,8 +342,8 @@ class AttributeLayoutValue(object):
         self.defaultValue = defaultValue
         self.widget = self.build()
         self.widget.setMinimumHeight(25)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, 
-                                            QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding,
+                                           QtWidgets.QSizePolicy.Fixed)
         self.widget.setSizePolicy(sizePolicy)
 
     def build(self):
@@ -352,11 +362,11 @@ class AttributeLayoutValue(object):
             widget.addItem('False')
 
         elif self.valueType in [str]:
-            
+
             if self.attribute in ['shapeType', 'offsetShapeType']:
                 widget = QtWidgets.QComboBox()
 
-                controlTypeData =  shapelib.getControlTypeData()
+                controlTypeData = shapelib.get_control_type_data()
 
                 for shapeType in controlTypeData.keys():
                     widget.addItem(shapeType)
@@ -397,11 +407,13 @@ class AttributeLayoutValue(object):
         elif isinstance(self.widget, QtWidgets.QCheckBox):
             return self.translateToType(self.widget.isChecked())
 
+
 class AttributeLayout(QtWidgets.QWidget):
     def __init__(self, parent=None, attributes=None):
         super(AttributeLayout, self).__init__()
 
-        # each row has a QHBoxLayout filled with a QLabel and AttributeLayoutValue item
+        # each row has a QHBoxLayout filled with a QLabel and
+        # AttributeLayoutValue item
         self.attributes = attributes
         self.rows = []
         self.layout = QtWidgets.QGridLayout()
@@ -419,14 +431,22 @@ class AttributeLayout(QtWidgets.QWidget):
             # create a new table widget item
             attrWidget = QtWidgets.QLabel(attribute)
             # makes the key not editable
-            value = AttributeLayoutValue(attribute=attribute, defaultValue=self.attributes[attribute])
+            value = AttributeLayoutValue(
+                attribute=attribute,
+                defaultValue=self.attributes[attribute])
 
             self.layout.addWidget(attrWidget, row, 0)
             self.layout.addWidget(value.widget, row, 1)
 
             self.rows.append([attrWidget, value])
 
-        commonAttrs = ['startJoint', 'endJoint', 'parent', 'side', 'mirror', 'shapeType']
+        commonAttrs = [
+            'start_joint',
+            'endJoint',
+            'parent',
+            'side',
+            'mirror',
+            'shapeType']
 
         modAttrs = self.attributes.keys()
 
@@ -441,15 +461,18 @@ class AttributeLayout(QtWidgets.QWidget):
             addAttr(attribute, value, row)
             row += 1
 
-        moduleUncommonAttrs = [attr for attr in modAttrs if attr not in moduleCommonAttrs]
-        
+        moduleUncommonAttrs = [
+            attr for attr in modAttrs if attr not in moduleCommonAttrs]
+
         for attribute in moduleUncommonAttrs:
             value = self.attributes[attribute]
             addAttr(attribute, value, row)
 
             row += 1
 
-        verticalSpacer = QtWidgets.QSpacerItem(1, 1, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
+        verticalSpacer = QtWidgets.QSpacerItem(
+            1, 1, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
         self.layout.addItem(verticalSpacer, row, 0)
 
         self.setVisible(False)
+

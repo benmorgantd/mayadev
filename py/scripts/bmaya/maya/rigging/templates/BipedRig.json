@@ -27,7 +27,7 @@
                     "parent":null, 
                     "shapeType":"cube", 
                     "side":"L", 
-                    "startJoint":"thumb_00_L_JNT"
+                    "start_joint":"thumb_00_L_JNT"
                   }, 
                   {
                     "alignWorld":null, 
@@ -41,7 +41,7 @@
                     "parent":null, 
                     "shapeType":"cube", 
                     "side":"L", 
-                    "startJoint":"index_00_L_JNT"
+                    "start_joint":"index_00_L_JNT"
                   }, 
                   {
                     "alignWorld":null, 
@@ -55,7 +55,7 @@
                     "parent":null, 
                     "shapeType":"cube", 
                     "side":"L", 
-                    "startJoint":"mid_00_L_JNT"
+                    "start_joint":"mid_00_L_JNT"
                   }, 
                   {
                     "alignWorld":null, 
@@ -69,7 +69,7 @@
                     "parent":null, 
                     "shapeType":"cube", 
                     "side":"L", 
-                    "startJoint":"ring_00_L_JNT"
+                    "start_joint":"ring_00_L_JNT"
                   }, 
                   {
                     "alignWorld":null, 
@@ -83,7 +83,7 @@
                     "parent":null, 
                     "shapeType":"cube", 
                     "side":"L", 
-                    "startJoint":"pinky_00_L_JNT"
+                    "start_joint":"pinky_00_L_JNT"
                   }
                 ], 
                 "endJoint":"hand_00_L_JNT", 
@@ -93,7 +93,7 @@
                 "name":"arm", 
                 "parent":"clavicle_00_L_JNT", 
                 "side":"L", 
-                "startJoint":"shoulder_00_L_JNT"
+                "start_joint":"shoulder_00_L_JNT"
               }
             ], 
             "mirror":true, 
@@ -102,7 +102,7 @@
             "parent":"spine_03_M_JNT", 
             "shapeType":"circleStick", 
             "side":"L", 
-            "startJoint":"clavicle_00_L_JNT"
+            "start_joint":"clavicle_00_L_JNT"
           }, 
           {
             "alignWorld":null, 
@@ -117,7 +117,7 @@
             "parent":"spine_03_M_JNT", 
             "shapeType":"cube", 
             "side":"L", 
-            "startJoint":"neck_00_M_JNT", 
+            "start_joint":"neck_00_M_JNT", 
             "twistAxis":"X"
           }
         ], 
@@ -129,7 +129,7 @@
         "parent":"root_00_M_ctrl", 
         "setupTwist":true, 
         "side":"L", 
-        "startJoint":"spine_00_M_JNT", 
+        "start_joint":"spine_00_M_JNT", 
         "startTwistParent":"rootOffset_00_M_ctrl", 
         "stretchy":true
       }, 
@@ -146,7 +146,7 @@
         "name":"leg", 
         "parent":"root_00_M_JNT", 
         "side":"L", 
-        "startJoint":"hip_00_L_JNT", 
+        "start_joint":"hip_00_L_JNT", 
         "toeTip":"toeTip_00_L_JNT"
       }
     ], 
@@ -157,6 +157,6 @@
     "parent":null, 
     "shapeType":"fourArrow", 
     "side":"L", 
-    "startJoint":"root_00_M_JNT"
+    "start_joint":"root_00_M_JNT"
   }
 ]

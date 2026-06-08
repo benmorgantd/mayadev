@@ -238,6 +238,7 @@ class ConfirmDialog(Dialog):
         self.setMinimumWidth(50)
         self.setMinimumHeight(25)
 
+
 class ProgressWindow(SimpleWindow):
     windowSize = QtCore.QSize(350, 75)
 
@@ -266,5 +267,5 @@ class ProgressWindow(SimpleWindow):
             self.progressBarWidget.value() + int(value))
 
     def setStatus(self, text):
-        self.statusTextWidget.setText(text.replace('...','') + '...')
-        print(text)
+        self.statusTextWidget.setText(text.replace('...', '') + '...')
+        log.info(text)

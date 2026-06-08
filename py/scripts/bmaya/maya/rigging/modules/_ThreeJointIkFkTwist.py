@@ -10,12 +10,12 @@ from . import IkFkChain
 
 
 class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
-    def __init__(self, startJoint=None, endJoint=None,
+    def __init__(self, start_joint=None, endJoint=None,
                  name='ThreeJointIkFkTwist1', character=None,
                  parent=None, mirror=False, side='L', fkikDefault=0,
                  alignWorld=True):
 
-        IkFkChain.IkFkChain.__init__(self, startJoint=startJoint,
+        IkFkChain.IkFkChain.__init__(self, start_joint=start_joint,
                                      endJoint=endJoint,
                                      name=name + '_ikFkChain',
                                      character=character, parent=parent,
@@ -24,21 +24,21 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
                                      alignWorld=alignWorld)
 
         self.modType = "ThreeJointIkFkTwist"
-        self.contract = [self.startJoint, self.endJoint]
+        self.contract = [self.start_joint, self.endJoint]
 
-    def build(self, startJoint, endJoint, worldAimTarget=None, downAxis='X',
+    def build(self, start_joint, endJoint, worldAimTarget=None, downAxis='X',
               upAxis='Y', followWorld=True):
-        self.bindJoints = self.findHierarchyJoints(shortestDistance=True,
-                                                   startJoint=startJoint,
-                                                   endJoint=endJoint)
+        self.bindJoints = self.find_hierarchy_joints(shortest_distance=True,
+                                                     start_joint=start_joint,
+                                                     end_joint=endJoint)
 
-        # # force the bind joint start and ends to zyx rotate order 
+        # # force the bind joint start and ends to zyx rotate order
         # cmds.setAttr(self.bindJoints[0] + '.rotateOrder', 5)
         # cmds.setAttr(self.bindJoints[1] + '.rotateOrder', 0)
         # cmds.setAttr(self.bindJoints[2] + '.rotateOrder', 5)
 
-        self.driveJoints = self.createDriveJoints(label='DRIVER',
-                                                  constrain=True)
+        self.driveJoints = self.create_drive_joints(label='DRIVER',
+                                                    constrain=True)
 
         self.buildFkIkSetup(worldAimTarget=worldAimTarget, downAxis=downAxis,
                             upAxis=upAxis, followWorld=followWorld)
@@ -55,28 +55,31 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
                               mo=1)
 
     def setupUpperTwist(self):
-        self.upperTwistJoints = self.findTwistJoints(self.bindJoints[0])
+        self.upperTwistJoints = self.find_twist_joints(self.bindJoints[0])
         self.bindJoints += self.upperTwistJoints
         self.upperTwistControls = []
 
-        upperTwistGrp = cmds.group(empty=True, name=self.name + 'upperTwistGrp')
-        cmds.parent(upperTwistGrp, self.componentsGrp)
+        upperTwistGrp = cmds.group(
+            empty=True, name=self.name + 'upperTwistGrp')
+        cmds.parent(upperTwistGrp, self.components_grp)
 
         for jnt in self.upperTwistJoints:
-            driveJnt = self.createDriveJoint(jnt, label='DRIVER',
-                                             constrain=True)
+            driveJnt = self.create_drive_joint(jnt, label='DRIVER',
+                                               constrain=True)
             self.driveJoints.append(driveJnt)
-            ctrl = shapelib.ControlCurve(name=nameUtils.findControlName(driveJnt),
-                                         shapeType='cube', jnt=driveJnt)
-            cmds.parent(ctrl.offsetGrp, upperTwistGrp)
-            self.parentConstrain(self.driveJoints[0], ctrl.offsetGrp,
-                                 maintainOffset=True)
-            self.parentConstrain(ctrl.ctrl, driveJnt, maintainOffset=True)
+            ctrl = shapelib.ControlCurve(
+                name=nameUtils.find_control_name(driveJnt),
+                shapeType='cube',
+                jnt=driveJnt)
+            cmds.parent(ctrl.offset_grp, upperTwistGrp)
+            self.parent_constrain(self.driveJoints[0], ctrl.offset_grp,
+                                  maintainOffset=True)
+            self.parent_constrain(ctrl.ctrl, driveJnt, maintainOffset=True)
             self.upperTwistControls.append(ctrl)
 
         startTwistJoint, ikGrp = mathUtils.setupIkTwist(
-            twistJoint=self.driveJoints[0], ikStartJoint=self.driveJoints[1],
-            ikHandleParent=self.parent, twistJointParent=self.startJoint,
+            twistJoint=self.driveJoints[0], ikstart_joint=self.driveJoints[1],
+            ikHandleParent=self.parent, twistJointParent=self.start_joint,
             name=self.name + 'upperTwist_' + self.side)
 
         numTwistJoints = float(len(self.upperTwistJoints))
@@ -89,7 +92,7 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
             cmds.connectAttr(startTwistJoint + '.rotateX', md + '.input1')
             cmds.setAttr(md + '.input2', j / (numTwistJoints - 1))
             cmds.connectAttr(md + '.output',
-                             self.upperTwistControls[i].spaceGrp + '.rotateX',
+                             self.upperTwistControls[i].space_grp + '.rotateX',
                              force=True)
 
             j -= 1
@@ -104,25 +107,29 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         self.components += self.upperTwistControls
 
     def setupLowerTwist(self):
-        self.lowerTwistJoints = self.findTwistJoints(self.bindJoints[1])
+        self.lowerTwistJoints = self.find_twist_joints(self.bindJoints[1])
         self.bindJoints += self.lowerTwistJoints
         self.lowerTwistControls = []
-        lowerTwistGrp = cmds.group(empty=True, name=self.name + 'lowerTwistGrp')
-        cmds.parent(lowerTwistGrp, self.componentsGrp)
+        lowerTwistGrp = cmds.group(
+            empty=True, name=self.name + 'lowerTwistGrp')
+        cmds.parent(lowerTwistGrp, self.components_grp)
 
         for jnt in self.lowerTwistJoints:
-            driveJnt = self.createDriveJoint(jnt, label='DRIVER',
-                                             constrain=True)
+            driveJnt = self.create_drive_joint(jnt, label='DRIVER',
+                                               constrain=True)
             self.driveJoints.append(driveJnt)
-            ctrl = shapelib.ControlCurve(name=nameUtils.findControlName(driveJnt),
-                                         shapeType='cube', jnt=driveJnt)
-            cmds.parent(ctrl.offsetGrp, lowerTwistGrp)
-            self.parentConstrain(self.driveJoints[1], ctrl.offsetGrp,
-                                 maintainOffset=True)
-            self.parentConstrain(ctrl.ctrl, driveJnt, maintainOffset=True)
+            ctrl = shapelib.ControlCurve(
+                name=nameUtils.find_control_name(driveJnt),
+                shapeType='cube',
+                jnt=driveJnt)
+            cmds.parent(ctrl.offset_grp, lowerTwistGrp)
+            self.parent_constrain(self.driveJoints[1], ctrl.offset_grp,
+                                  maintainOffset=True)
+            self.parent_constrain(ctrl.ctrl, driveJnt, maintainOffset=True)
             self.lowerTwistControls.append(ctrl)
 
-        # extract twist from start and end joint and connect it to the twistOffset variables
+        # extract twist from start and end joint and connect it to the
+        # twistOffset variables
 
         endQuat = mathUtils.setupQuatTwist(self.driveJoints[2], twistAxis='X')
 
@@ -134,7 +141,7 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
             cmds.connectAttr(endQuat + '.outputRotateX', md + '.input1')
             cmds.setAttr(md + '.input2', i / (numTwistJoints - 1))
             cmds.connectAttr(md + '.output',
-                             self.lowerTwistControls[i].spaceGrp + '.rotateX',
+                             self.lowerTwistControls[i].space_grp + '.rotateX',
                              force=True)
 
         cmds.addAttr(self.node, longName='lowerTwistVisibility',
@@ -168,9 +175,9 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
                          ikDistance + '.inMatrix2')
 
         # create a condition node to track if we're stretching
-        stretchCondition = cmds.createNode('condition',
-                                           name='{0}_{1}_ikStretchCondition'.format(
-                                               self.name, self.side))
+        stretchCondition = cmds.createNode(
+            'condition', name='{0}_{1}_ikStretchCondition'.format(
+                self.name, self.side))
 
         # connect that distance to the first term of our conditional
         cmds.connectAttr(ikDistance + '.distance',
@@ -198,18 +205,16 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         cmds.setAttr(stretchFactor + '.input2', float(1 / maxStretch))
 
         # now we need a multiply node for each limb's length
-        upLimbStretchedLength = cmds.shadingNode('multDL',
-                                                 name='{0}_{1}_upLimbStretchFactor'.format(
-                                                     self.name, self.side),
-                                                 asUtility=True)
+        upLimbStretchedLength = cmds.shadingNode(
+            'multDL', name='{0}_{1}_upLimbStretchFactor'.format(
+                self.name, self.side), asUtility=True)
         cmds.connectAttr(stretchFactor + '.output',
                          upLimbStretchedLength + '.input1')
         cmds.setAttr(upLimbStretchedLength + '.input2', upLimbLen)
 
-        loLimbStretchedLength = cmds.shadingNode('multDL',
-                                                 name='{0}_{1}_loLimbStretchFactor'.format(
-                                                     self.name, self.side),
-                                                 asUtility=True)
+        loLimbStretchedLength = cmds.shadingNode(
+            'multDL', name='{0}_{1}_loLimbStretchFactor'.format(
+                self.name, self.side), asUtility=True)
         cmds.connectAttr(stretchFactor + '.output',
                          loLimbStretchedLength + '.input1')
         cmds.setAttr(loLimbStretchedLength + '.input2', loLimbLen)
@@ -220,25 +225,34 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         cmds.connectAttr(loLimbStretchedLength + '.output',
                          stretchCondition + '.colorIfTrueG')
 
-        # make another multiply node for controlling the length of the upper leg
+        # make another multiply node for controlling the length of the upper
+        # leg
 
-        upLimbLength = cmds.createNode('multiplyDivide',
-                                       name='{0}_{1}_upLimbLengthMultiplier'.format(
-                                           self.name, self.side))
+        upLimbLength = cmds.createNode(
+            'multiplyDivide',
+            name='{0}_{1}_upLimbLengthMultiplier'.format(
+                self.name,
+                self.side))
         # add an attribute to the limb for controlling this
         cmds.addAttr(self.node, longName='upLimbLength', keyable=True,
                      attributeType='float', defaultValue=1.0)
-        cmds.connectAttr(self.node + '.upLimbLength', upLimbLength + '.input1X')
+        cmds.connectAttr(
+            self.node + '.upLimbLength',
+            upLimbLength + '.input1X')
         cmds.connectAttr(stretchCondition + '.outColorR',
                          upLimbLength + '.input2X')
-        # if stretch is off, multiply the value by the default limb length instead
+        # if stretch is off, multiply the value by the default limb length
+        # instead
         cmds.setAttr(upLimbLength + '.input1Y', upLimbLen)
-        cmds.connectAttr(self.node + '.upLimbLength', upLimbLength + '.input2Y')
+        cmds.connectAttr(
+            self.node + '.upLimbLength',
+            upLimbLength + '.input2Y')
 
-        # create a conditional that'll allow us to turn off stretch for the limb
-        stretchSwitchConditition = cmds.createNode('condition',
-                                                   name='{0}_{1}_ikStretchSwitchCondition'.format(
-                                                       self.name, self.side))
+        # create a conditional that'll allow us to turn off stretch for the
+        # limb
+        stretchSwitchConditition = cmds.createNode(
+            'condition', name='{0}_{1}_ikStretchSwitchCondition'.format(
+                self.name, self.side))
         cmds.addAttr(self.node, longName='stretchyLimb', keyable=True,
                      attributeType='bool', defaultValue=True)
         cmds.connectAttr(self.node + '.stretchyLimb',
@@ -257,12 +271,16 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         cmds.connectAttr(stretchCondition + '.colorIfFalseG',
                          stretchSwitchConditition + '.colorIfFalseG')
 
-        cmds.connectAttr(stretchSwitchConditition + '.outColorR',
-                         '{0}.translate{1}'.format(self.ikDriveJoints[1],
-                                                   constants.DOWN_AXIS.upper()))
-        cmds.connectAttr(stretchSwitchConditition + '.outColorG',
-                         '{0}.translate{1}'.format(self.ikDriveJoints[2],
-                                                   constants.DOWN_AXIS.upper()))
+        cmds.connectAttr(
+            stretchSwitchConditition + '.outColorR',
+            '{0}.translate{1}'.format(
+                self.ikDriveJoints[1],
+                constants.DOWN_AXIS.upper()))
+        cmds.connectAttr(
+            stretchSwitchConditition + '.outColorG',
+            '{0}.translate{1}'.format(
+                self.ikDriveJoints[2],
+                constants.DOWN_AXIS.upper()))
 
         # keep twist controls in their relative position by utilizing their
         # space groups
@@ -270,7 +288,7 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         for twistControl in self.upperTwistControls:
             const = cmds.pointConstraint(self.ikDriveJoints[0],
                                          self.ikDriveJoints[1],
-                                         twistControl.spaceGrp,
+                                         twistControl.space_grp,
                                          maintainOffset=True)
             weights = cmds.pointConstraint(const[0], query=True,
                                            weightAliasList=True)
@@ -281,7 +299,7 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         for twistControl in self.lowerTwistControls:
             const = cmds.pointConstraint(self.ikDriveJoints[1],
                                          self.ikDriveJoints[2],
-                                         twistControl.spaceGrp,
+                                         twistControl.space_grp,
                                          maintainOffset=True)
             weights = cmds.pointConstraint(const[0], query=True,
                                            weightAliasList=True)

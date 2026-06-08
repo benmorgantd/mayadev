@@ -8,7 +8,7 @@ from bmaya.maya.util import nameUtils
 
 class FkChain(module.Module):
 
-    def __init__(self, startJoint=None, endJoint=None, exclude=[],
+    def __init__(self, start_joint=None, endJoint=None, exclude=[],
                  name='FkChain1',
                  character=None, parent=None, shapeType='cube', mirror=False,
                  side='L',
@@ -20,21 +20,19 @@ class FkChain(module.Module):
                                alignWorld=alignWorld)
 
         self.parent = parent
-        self.startJoint = startJoint
+        self.start_joint = start_joint
         # If no endJoint is given, the chain will expand through the dag
         # and trim itself at joints in the exclude list
         self.endJoint = endJoint
         self.exclude = exclude
 
-        self.contract = [self.startJoint]
+        self.contract = [self.start_joint]
 
     @wrapBuild
     def build(self):
         # finds the joints that should belong in the chain
-        self.bindJoints = self.findHierarchyJoints(exclude=self.exclude)
-        self.driveJoints = self.createDriveJoints()
+        self.bindJoints = self.find_hierarchy_joints(exclude=self.exclude)
+        self.driveJoints = self.create_drive_joints()
 
-        self.components = self.buildFkControls(self.driveJoints,
-                                               setupAlignWorld=True)
-
-
+        self.components = self.build_fk_controls(self.driveJoints,
+                                                 setup_align_world=True)

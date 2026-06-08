@@ -6,13 +6,13 @@ Animation Rigs are a type of Maya Component, meaning they are specific to Maya.
 import os
 from .mayaComponent import MayaComponent
 
+
 class AnimRig(MayaComponent):
 
-    def __init__(self, asset, componentType):
-        super(AnimRig, self).__init__(asset, componentType)
+    def __init__(self, asset, component_type):
+        super(AnimRig, self).__init__(asset, component_type)
 
     @property
-    def relativePath(self):
+    def relative_path(self):
         # /rig/animRig.ma
         return os.path.join('rig', self.type + self.extension)
-

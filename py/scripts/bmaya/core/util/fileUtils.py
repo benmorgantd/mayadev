@@ -4,10 +4,10 @@ import shutil
 
 def versionFile(filepath):
     """Saves off a copy of the given file to a <filename>.Versions folder.
-    
+
     Args:
         filepath (str): The file to version.
-    
+
     """
 
     if not os.path.exists(filepath):
@@ -30,4 +30,4 @@ def versionFile(filepath):
 
     shutil.copy(filepath, versionFilename)
 
-    print("Versioned file to {0}".format(versionFilename))
+    log.info("Versioned file to {0}".format(versionFilename))

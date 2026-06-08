@@ -2,7 +2,7 @@
 
 import os
 
-import maya.OpenMaya as om
+import maya.api.OpenMaya as om
 
 from bmaya.lib.Qt import QtWidgets, QtCompat
 
@@ -33,14 +33,15 @@ class AssetCreator(QtWidgets.QMainWindow):
         assetType = self.widget.assetType.text().strip()
         name = self.widget.assetnameUtils.text().strip()
 
-        assetId = '|'.join([project, assetType, name])
+        asset_id = '|'.join([project, assetType, name])
 
         assetPath = asset.Asset.exists(project, name, assetType)
 
         if assetPath:
-            om.MGlobal.displayInfo('An asset of this description already exists')
+            om.MGlobal.displayInfo(
+                'An asset of this description already exists')
             return
         else:
-            rig.Rig(assetId)
-            
+            rig.Rig(asset_id)
+
             self.close()

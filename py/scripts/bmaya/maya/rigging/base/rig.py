@@ -1,9 +1,9 @@
 """Purpose:
-The Rig class is the main class for building a rig. It contains the main logic for building the rig, 
-as well as the main attributes that are used by the modules to build the rig, such as the list of modules, 
-the build data, etc. It also contains methods for building the layout rig, skinning the rig, 
-coloring controls, etc. 
-The Rig class is responsible for orchestrating the entire rigging process, 
+The Rig class is the main class for building a rig. It contains the main logic for building the rig,
+as well as the main attributes that are used by the modules to build the rig, such as the list of modules,
+the build data, etc. It also contains methods for building the layout rig, skinning the rig,
+coloring controls, etc.
+The Rig class is responsible for orchestrating the entire rigging process,
 and is the main class that is instantiated when building a rig.
 """
 import json
@@ -14,10 +14,11 @@ import maya.cmds as cmds
 
 from bmaya.maya.asset.asset import Asset
 from bmaya.maya.asset.components import *
+from bmaya.core import log
 import bmaya.core.constants
 import bmaya.maya.rigging.constants
 from bmaya.core.util import fileUtils
-#from bmaya.maya.ui import qtbase
+# from bmaya.maya.ui import qtbase
 
 from bmaya.maya.rigging.shapes import shapelib, shapeio
 from bmaya.maya.rigging.weights import weightio
@@ -29,20 +30,20 @@ from . import layout
 
 class Rig(Asset):
     '''Rig is the base class for all rigs
-    
+
     How to build a rig:
 
     from bmaya.maya.asset.asset import Asset
     from bmaya.maya.rigging.base.rig import Rig
 
     myAsset = Asset('dev|prop|cube')
-    myRig = Rig(myAsset.assetId)
+    myRig = Rig(myAsset.asset_id)
     myRig.buildRig()
     myAsset.openFile(myAsset.componentPathFromType('animRig'))
     '''
 
-    def __init__(self, assetId, hasFace=True):
-        super(Rig, self).__init__(assetId)
+    def __init__(self, asset_id, hasFace=True):
+        super(Rig, self).__init__(asset_id)
 
         self.hasFace = hasFace
         self.skinClusters = []
@@ -58,7 +59,7 @@ class Rig(Asset):
 
     @property
     def meshShapes(self):
-        _setMeshes = cmds.sets(self.meshSet, query=True) or []
+        _setMeshes = cmds.sets(self.mesh_set, query=True) or []
         _meshShapes = []
         for mesh in _setMeshes:
             _meshShapes.append(cmds.listRelatives(mesh, type='shape')[0])
@@ -95,46 +96,46 @@ class Rig(Asset):
 
         startTime = time.time()
 
-        ##progressWindow = qtbase.#progressWindow(title='Building Rig')
-        ##progressWindow.show()
+        # progressWindow = qtbase.#progressWindow(title='Building Rig')
+        # progressWindow.show()
 
         self.modules = []
         self.allControls = []
         mirrorModules = []
 
-        ##progressWindow.setStatus('Creating blank scene')
-        ##progressWindow.increment(5)
+        # progressWindow.setStatus('Creating blank scene')
+        # progressWindow.increment(5)
 
         # create a new scene
         cmds.file(new=True, force=True)
 
-        ##progressWindow.setStatus('Loading plugins')
-        #progressWindow.increment(5)
+        # progressWindow.setStatus('Loading plugins')
+        # progressWindow.increment(5)
         # load required plugins
         self.loadPlugins()
 
-        #progressWindow.setStatus('Making character node')
-        #progressWindow.increment(5)
+        # progressWindow.setStatus('Making character node')
+        # progressWindow.increment(5)
 
         self.makeNode()
 
-        #progressWindow.setStatus('Reading build file')
-        #progressWindow.increment(5)
+        # progressWindow.setStatus('Reading build file')
+        # progressWindow.increment(5)
 
         # open up the character's build file (json)
-        self.buildData = buildio.load(self.build.fullPath)
+        self.buildData = buildio.load(self.build.full_path)
 
         buildList = []
 
-        #progressWindow.setStatus('Building layout rig')
-        #progressWindow.increment(5)
+        # progressWindow.setStatus('Building layout rig')
+        # progressWindow.increment(5)
 
         layoutDict, layoutComponents = self.buildLayout()
         self.modules.append(layoutDict)
         self.allControls += [comp.ctrl for comp in layoutComponents]
 
-
         # unflatten tree
+
         def addChildren(mod):
             mod['character'] = self
             self.addModule(mod)
@@ -143,8 +144,8 @@ class Rig(Asset):
             for child in mod['children']:
                 addChildren(child)
 
-        #progressWindow.setStatus('Flattening build tree')
-        #progressWindow.increment(5)
+        # progressWindow.setStatus('Flattening build tree')
+        # progressWindow.increment(5)
 
         for mod in self.buildData:
             if mod['children']:
@@ -154,8 +155,8 @@ class Rig(Asset):
                 self.addModule(mod)
                 buildList.append(mod)
 
-        #progressWindow.setStatus('Building limbs')
-        #progressWindow.increment(5)
+        # progressWindow.setStatus('Building limbs')
+        # progressWindow.increment(5)
 
         if not buildList:
             raise RuntimeError
@@ -165,7 +166,8 @@ class Rig(Asset):
             modType = mod['modType']
 
             # create a new instance of that class
-            modInstance = modules.MODULE_CLASSES[modType].__new__(modules.MODULE_CLASSES[modType])
+            modInstance = modules.MODULE_CLASSES[modType].__new__(
+                modules.MODULE_CLASSES[modType])
             modInstance.__init__(character=self)
 
             for key, value in mod.items():
@@ -188,41 +190,45 @@ class Rig(Asset):
                 self.allControls += [comp.ctrl for comp in
                                      mirrorInstance.components]
 
-
         self.modules += mirrorModules
 
-        #progressWindow.setStatus('Making sets')
-        #progressWindow.increment(5)
+        # progressWindow.setStatus('Making sets')
+        # progressWindow.increment(5)
 
         self.ctrlSet = cmds.sets(self.allControls, name='CTRL_set')
         if self.hasFace:
             self.faceCtrlSet = cmds.sets(name='FACE_CTRL_set')
             cmds.sets(self.faceCtrlSet, edit=True, forceElement=self.ctrlSet)
 
-
-        #progressWindow.setStatus('Adding default skinning')
-        #progressWindow.increment(5)
-        # skinning after the components have been built allows us to create bind joints
+        # progressWindow.setStatus('Adding default skinning')
+        # progressWindow.increment(5)
+        # skinning after the components have been built allows us to create
+        # bind joints
         self.skin()
 
-        #progressWindow.setStatus('Writing character node attributes')
-        #progressWindow.increment(5)
+        # progressWindow.setStatus('Writing character node attributes')
+        # progressWindow.increment(5)
         self.addNodeAttrs()
 
         for mod in self.modules:
-            if cmds.objExists(mod['name'] + '_' + bmaya.core.constants.MODULE_SUFFIX):
-                cmds.connectAttr(self.node + '.modules',
-                                 '{0}_{1}.character'.format(mod['name'],
-                                                            bmaya.core.constants.MODULE_SUFFIX))
+            if cmds.objExists(
+                mod['name'] +
+                '_' +
+                    bmaya.core.constants.MODULE_SUFFIX):
+                cmds.connectAttr(
+                    self.node + '.modules',
+                    '{0}_{1}.character'.format(
+                        mod['name'],
+                        bmaya.core.constants.MODULE_SUFFIX))
 
-        #progressWindow.setStatus('Loading control shapes')
-        #progressWindow.increment(5)
-        shapeio.load(self.componentPathFromType('cvs'))
+        # progressWindow.setStatus('Loading control shapes')
+        # progressWindow.increment(5)
+        shapeio.load(self.component_path_from_type('cvs'))
 
-        #progressWindow.setStatus('Loading weights')
-        #progressWindow.increment(5)
-        weightsDir = self.componentPathFromType('weights')
-        weightFiles = self.findFilesOfType(weightsDir, 'weights')
+        # progressWindow.setStatus('Loading weights')
+        # progressWindow.increment(5)
+        weightsDir = self.component_path_from_type('weights')
+        weightFiles = self.find_files_of_type(weightsDir, 'weights')
 
         for f in weightFiles:
             weightio.load(os.path.join(weightsDir, f))
@@ -230,36 +236,36 @@ class Rig(Asset):
         # create influences set
         self.bindSet = self.makeBindSet()
 
-        #progressWindow.setStatus('Coloring controls')
-        #progressWindow.increment(5)
+        # progressWindow.setStatus('Coloring controls')
+        # progressWindow.increment(5)
         self.colorControls()
 
         cmds.refresh(currentView=True)
 
-        #progressWindow.setStatus('Cleaning up')
+        # progressWindow.setStatus('Cleaning up')
         # scene cleanup:
         self.setupMeshReferencing()
         self.lockDownConstraints()
 
         cmds.hide(cmds.ls(type='ikHandle'))
 
-        #progressWindow.setStatus('Running post operations')
-        #progressWindow.increment(5)
+        # progressWindow.setStatus('Running post operations')
+        # progressWindow.increment(5)
         self.runPostOps()
 
-        #progressWindow.setStatus('Finished building rig')
+        # progressWindow.setStatus('Finished building rig')
 
-        cmds.file(rename=self.animRig.fullPath)
+        cmds.file(rename=self.animRig.full_path)
         cmds.file(save=True, type='mayaAscii', force=True)
-        fileUtils.versionFile(self.animRig.fullPath)
+        fileUtils.versionFile(self.animRig.full_path)
 
         cmds.viewFit(allObjects=True, fitFactor=1)
 
         endTime = time.time()
 
-        print("Rig built in {0:.2f} seconds.".format(endTime - startTime))
+        log.info("Rig built in {0:.2f} seconds.".format(endTime - startTime))
 
-        #progressWindow.hide()
+        # progressWindow.hide()
 
     def makeNode(self):
         if not cmds.objExists(self.name + '_CHAR'):
@@ -269,7 +275,7 @@ class Rig(Asset):
             cmds.addAttr(self.node, longName='connector',
                          attributeType='message')
 
-            print('>>> Created character node >> {0} <<'.format(self.node))
+            log.info('>>> Created character node >> {0} <<'.format(self.node))
 
     def addNodeAttrs(self):
 
@@ -330,12 +336,12 @@ class Rig(Asset):
             elif attrType in [animRig.AnimRig, build.Build, cvs.Cvs, mesh.Mesh,
                               skeleton.Skeleton, weights.Weights]:
                 attrType = 'string'
-                attrVal = self.componentPathFromType(attr)
+                attrVal = self.component_path_from_type(attr)
                 attr += 'Path'
             else:
                 attrType = 'string'
                 try:
-                    attrVal = attr.fullPath
+                    attrVal = attr.full_path
                 except AttributeError:
                     continue
 
@@ -354,7 +360,9 @@ class Rig(Asset):
         # skin the root joint to all the meshes in the scene
 
         for mesh in self.meshShapes:
-            weightsPath = os.path.join(self.weights.fullPath, mesh + '.' + self.weights.extension)
+            weightsPath = os.path.join(
+                self.weights.full_path,
+                mesh + '.' + self.weights.extension)
             if os.path.exists(weightsPath):
                 weightio.load(weightsPath)
             elif 'noSkin' not in cmds.listAttr(mesh):
@@ -366,7 +374,7 @@ class Rig(Asset):
                                      weightDistribution=1,
                                      normalizeWeights=1)[0])
             else:
-                print('Skipped applying weights on ' + mesh)
+                log.info('Skipped applying weights on ' + mesh)
 
     def setupMeshReferencing(self):
 
@@ -396,7 +404,7 @@ class Rig(Asset):
             for i in range(numVerts):
                 cmds.setAttr(mesh + '.pt[{0}]'.format(i), lock=True)
 
-    def connectToCharacter(self, node):
+    def connect_to_character(self, node):
 
         if cmds.objExists(node):
             cmds.addAttr(node, longName='character', attributeType='message')
@@ -443,7 +451,8 @@ class Rig(Asset):
         for mesh in self.meshShapes:
             existingSkin = cmds.ls(cmds.listHistory(mesh), type='skinCluster')
             if existingSkin:
-                members = cmds.skinCluster(existingSkin[0], query=True, influence=True)
+                members = cmds.skinCluster(
+                    existingSkin[0], query=True, influence=True)
                 for jnt in members:
                     if jnt in skelJoints:
                         skinClusterInfluences.add(jnt)
@@ -465,7 +474,7 @@ class Rig(Asset):
             try:
                 cmds.setAttr(ctrl + '.overrideEnabled', True)
                 cmds.setAttr(ctrl + '.overrideColor', side)
-            except:
+            except BaseException:
                 # for sets nested within the ctrl set
                 pass
 
@@ -495,80 +504,79 @@ class Rig(Asset):
         """Creates the component folders for the asset"""
 
         for component in self.components:
-            dirpath = os.path.dirname(component.fullPath)
+            dirpath = os.path.dirname(component.full_path)
             if not os.path.exists(dirpath):
                 os.makedirs(dirpath)
 
-        print(">> Component folders initialized")
+        log.info(">> Component folders initialized")
 
     def initComponentFiles(self):
 
-        if not os.path.exists(self.mesh.fullPath):
-            print(">> Creating mesh file.")
+        if not os.path.exists(self.mesh.full_path):
+            log.info(">> Creating mesh file.")
             # mesh file is just a blank ma
             cmds.file(new=True, force=True)
-            cmds.file(rename=self.mesh.fullPath)
+            cmds.file(rename=self.mesh.full_path)
             cmds.file(save=True, type="mayaAscii", force=True)
-            fileUtils.versionFile(self.mesh.fullPath)
+            fileUtils.versionFile(self.mesh.full_path)
         else:
-            print('>> A working mesh file already exists for ' + self.name)
+            log.info('>> A working mesh file already exists for ' + self.name)
 
-        if not os.path.exists(self.skeleton.fullPath):
-            print(">> Creating skeleton file.")
+        if not os.path.exists(self.skeleton.full_path):
+            log.info(">> Creating skeleton file.")
             # create a single joint for the default skeleton file
             cmds.file(new=True, force=True)
             cmds.joint(name=bmaya.core.constants.ROOT_JOINT)
-            cmds.file(rename=self.skeleton.fullPath)
+            cmds.file(rename=self.skeleton.full_path)
             cmds.file(save=True, type="mayaAscii", force=True)
-            fileUtils.versionFile(self.skeleton.fullPath)
+            fileUtils.versionFile(self.skeleton.full_path)
         else:
-            print('>> A working skeleton file already exists for ' + self.name)
+            log.info('>> A working skeleton file already exists for ' + self.name)
 
-        if not os.path.exists(self.cvs.fullPath):
-            print(">> Creating cvs file.")
-            with open(self.cvs.fullPath, "w") as f:
+        if not os.path.exists(self.cvs.full_path):
+            log.info(">> Creating cvs file.")
+            with open(self.cvs.full_path, "w") as f:
                 json.dump({}, f)
-            fileUtils.versionFile(self.cvs.fullPath)
+            fileUtils.versionFile(self.cvs.full_path)
         else:
-            print('>> A working cvs file already exists for ' + self.name)
+            log.info('>> A working cvs file already exists for ' + self.name)
 
-        if not os.path.exists(self.build.fullPath):
-            print(">> Creating build file using default LayoutRig template.")
+        if not os.path.exists(self.build.full_path):
+            log.info(">> Creating build file using default LayoutRig template.")
             # give it a LayoutRig template
-            layoutRigPath = os.path.join(bmaya.maya.rigging.constants.TEMPLATES_PATH,
-                                         "LayoutRig.json")
+            layoutRigPath = os.path.join(
+                bmaya.maya.rigging.constants.RIG_TEMPLATES_DIR,
+                "LayoutRig.json")
 
             with open(layoutRigPath, "r") as f:
                 layoutRigData = f.read()
 
             # write the contents to this asset's build file
-            with open(self.build.fullPath, "w") as f:
+            with open(self.build.full_path, "w") as f:
                 f.write(layoutRigData)
 
-            fileUtils.versionFile(self.build.fullPath)
+            fileUtils.versionFile(self.build.full_path)
 
-        if not os.path.exists(self.postops.fullPath):
-            print(">> Creating postops file")
+        if not os.path.exists(self.postops.full_path):
+            log.info(">> Creating postops file")
 
             # Write the template python file
-            with open(self.postops.fullPath, 'w') as f:
+            with open(self.postops.full_path, 'w') as f:
                 f.write(bmaya.core.constants.POSTOPS_TEMPLATE)
 
-            fileUtils.versionFile(self.postops.fullPath)
+            fileUtils.versionFile(self.postops.full_path)
 
         if self.hasFace:
-            if not os.path.exists(self.facePoses.fullPath):
-                print(">> Creating facePoses file")
+            if not os.path.exists(self.facePoses.full_path):
+                log.info(">> Creating facePoses file")
 
                 # write a blank json file
-                with open(self.facePoses.fullPath, "w") as f:
+                with open(self.facePoses.full_path, "w") as f:
                     json.dump({}, f)
-                fileUtils.versionFile(self.facePoses.fullPath)
-
+                fileUtils.versionFile(self.facePoses.full_path)
 
     def runPostOps(self):
         # run postops file
-        with open(self.postops.fullPath, 'r') as f:
+        with open(self.postops.full_path, 'r') as f:
             code = f.read()
             exec(code)
-

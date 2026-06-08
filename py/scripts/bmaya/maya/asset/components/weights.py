@@ -1,6 +1,6 @@
 """Purpose:
 The Weights component is a folder that contains the skin weight files for a rig.
-These live in .weights files in the rig/components/weights folder and are saved and loaded using the weightio module, 
+These live in .weights files in the rig/components/weights folder and are saved and loaded using the weightio module,
 which handles the actual logic for saving and loading weight data.
 """
 
@@ -15,14 +15,14 @@ class Weights(Component):
         super(Weights, self).__init__(asset, componentType)
 
     @property
-    def relativePath(self):
+    def relative_path(self):
         # /rig/components/weights/
         return os.path.join('rig', 'components', self.type)
 
     @property
     def files(self):
         try:
-            files = os.listdir(self.fullPath)
+            files = os.listdir(self.full_path)
         except WindowsError:
             files = []
 
@@ -30,7 +30,7 @@ class Weights(Component):
 
     def load(self):
         for f in self.files:
-            weightio.load(os.path.join(self.fullPath, f))
+            weightio.load(os.path.join(self.full_path, f))
 
     def save(self):
-        weightio.save(self.fullPath)
+        weightio.save(self.full_path)

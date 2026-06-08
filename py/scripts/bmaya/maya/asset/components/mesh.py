@@ -8,11 +8,10 @@ from .mayaComponent import MayaComponent
 
 class Mesh(MayaComponent):
 
-    def __init__(self, asset, componentType):
-        super(Mesh, self).__init__(asset, componentType)
+    def __init__(self, asset, component_type):
+        super(Mesh, self).__init__(asset, component_type)
 
     @property
-    def relativePath(self):
+    def relative_path(self):
         # /mesh/mesh.ma
         return os.path.join(self.type, self.type + self.extension)
-

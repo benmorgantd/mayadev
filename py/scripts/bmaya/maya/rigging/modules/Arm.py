@@ -9,43 +9,44 @@ from . import _ThreeJointIkFkTwist
 
 class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
 
-    def __init__(self, startJoint=None, endJoint=None, name='Arm1',
+    def __init__(self, start_joint=None, endJoint=None, name='Arm1',
                  character=None,
                  parent=None, mirror=False, side='L', fkikDefault=0,
                  alignWorld=True):
-        _ThreeJointIkFkTwist.ThreeJointIkFkTwist.__init__(self,
-                                                          startJoint=startJoint,
-                                                          endJoint=endJoint,
-                                                          name=name + '_ikFkChain',
-                                                          character=character,
-                                                          parent=parent,
-                                                          mirror=mirror,
-                                                          side=side,
-                                                          fkikDefault=fkikDefault,
-                                                          alignWorld=alignWorld)
+        _ThreeJointIkFkTwist.ThreeJointIkFkTwist.__init__(
+            self,
+            start_joint=start_joint,
+            endJoint=endJoint,
+            name=name + '_ikFkChain',
+            character=character,
+            parent=parent,
+            mirror=mirror,
+            side=side,
+            fkikDefault=fkikDefault,
+            alignWorld=alignWorld)
 
         self.modType = "Arm"
 
-        self.contract = [self.startJoint, self.endJoint]
+        self.contract = [self.start_joint, self.endJoint]
 
     @wrapBuild
     def build(self):
-        _ThreeJointIkFkTwist.ThreeJointIkFkTwist.build(self, self.startJoint,
+        _ThreeJointIkFkTwist.ThreeJointIkFkTwist.build(self, self.start_joint,
                                                        self.endJoint,
                                                        followWorld=1)
 
         self.addFkGimbalControl()
-        self.setupAlignWorld(self.fkShoulderGimbal,
-                             defaultValue=self.alignWorld)
+        self.setup_align_world(self.fkShoulderGimbal,
+                               defaultValue=self.align_world)
 
     def addFkGimbalControl(self):
-        # add a second control on top of the existing shoulder fk 
+        # add a second control on top of the existing shoulder fk
         # that has xyz (0) rotation order
 
-        shoulderFkOffset = self.fkComponents[0].offsetGrp
+        shoulderFkOffset = self.fkComponents[0].offset_grp
 
-        ctrlName = nameUtils.findControlName(self.fkComponents[0].ctrl,
-                                        identifier='Gimbal')
+        ctrlName = nameUtils.find_control_name(self.fkComponents[0].ctrl,
+                                               identifier='Gimbal')
         self.fkShoulderGimbal = shapelib.ControlCurve(name=ctrlName,
                                                       shapeType='sphere',
                                                       jnt=shoulderFkOffset)
@@ -53,12 +54,12 @@ class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
         # change its rotate order to zxy from that of the shoulder fk offset group
         # cmds.setAttr(self.fkShoulderGimbal.ctrl + '.rotateOrder', 0)
 
-        cmds.parent(self.fkShoulderGimbal.offsetGrp, self.componentsGrp, a=1)
-        cmds.parent(self.fkComponents[0].offsetGrp, self.fkShoulderGimbal.ctrl,
+        cmds.parent(self.fkShoulderGimbal.offset_grp, self.components_grp, a=1)
+        cmds.parent(self.fkComponents[0].offset_grp, self.fkShoulderGimbal.ctrl,
                     a=1)
 
         # hook it up to the visibility switch
         cmds.connectAttr(self.blendReverse,
-                         self.fkShoulderGimbal.offsetGrp + '.v')
+                         self.fkShoulderGimbal.offset_grp + '.v')
 
         self.components.append(self.fkShoulderGimbal)

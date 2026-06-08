@@ -1,11 +1,12 @@
 """Purpose:
-Decorators for rigging operations that allow the user to run code before and after the main logic of a function, 
+Decorators for rigging operations that allow the user to run code before and after the main logic of a function,
 such as initializing and uninitializing maya.standalone, or running code before and after building a rig.
 That code can include things like locking attributes, capturing component defaults, etc.
 """
 
 import maya.standalone
 import maya.cmds as cmds
+
 
 def wrapStandalone(fn):
     def wrapper(*args, **kwargs):
@@ -22,7 +23,10 @@ def wrapStandalone(fn):
 
 def wrapBuild(fn):
     def wrapper(self, *args, **kwargs):
-        print(">>> Building limb type <{0}> : \'{1}\'\n".format(self.__class__.__name__, self.name))
+        log.info(
+            ">>> Building limb type <{0}> : \'{1}\'\n".format(
+                self.__class__.__name__,
+                self.name))
 
         self.checkContract()
         self.makeNode()
@@ -36,17 +40,34 @@ def wrapBuild(fn):
 
         for transform in ['translate', 'rotate', 'scale']:
             for axis in ['X', 'Y', 'Z']:
-                cmds.setAttr('{0}.{1}{2}'.format(self.modGrp, transform, axis), lock=True, keyable=False)
+                cmds.setAttr(
+                    '{0}.{1}{2}'.format(
+                        self.modGrp,
+                        transform,
+                        axis),
+                    lock=True,
+                    keyable=False)
 
         for ctrl in self.components:
             for attr in ['scaleX', 'scaleY', 'scaleZ']:
-                cmds.setAttr('{0}.{1}'.format(ctrl.ctrl, attr, lock=True, keyable=False))
+                cmds.setAttr(
+                    '{0}.{1}'.format(
+                        ctrl.ctrl,
+                        attr,
+                        lock=True,
+                        keyable=False))
             cmds.setAttr(ctrl.ctrl + '.visibility', lock=True, keyable=False)
 
             for grp in ctrl.groupHierarchy:
                 for transform in ['translate', 'rotate', 'scale']:
                     for axis in ['X', 'Y', 'Z']:
-                        cmds.setAttr('{0}.{1}{2}'.format(grp, transform, axis), lock=True, keyable=False)
+                        cmds.setAttr(
+                            '{0}.{1}{2}'.format(
+                                grp,
+                                transform,
+                                axis),
+                            lock=True,
+                            keyable=False)
 
         self.captureComponentDefaults()
 

@@ -6,7 +6,11 @@ import maya.cmds as cmds
 
 
 def getSelection(ofType=None):
-    return cmds.ls(selection=True, type=ofType) if ofType is not None else cmds.ls(selection=True)
+    return cmds.ls(
+        selection=True,
+        type=ofType) if ofType is not None else cmds.ls(
+        selection=True)
+
 
 sl1 = getSelection()[0]
 selected = getSelection()

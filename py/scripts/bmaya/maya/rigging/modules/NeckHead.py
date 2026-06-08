@@ -1,5 +1,5 @@
 import maya.cmds as cmds
-import maya.OpenMaya as om
+import maya.api.OpenMaya as om
 
 from bmaya.maya.rigging.modules import FkTwist
 from bmaya.maya.rigging.base.decorators import wrapBuild
@@ -9,7 +9,7 @@ from bmaya.core import constants
 
 class NeckHead(FkTwist.FkTwist):
 
-    def __init__(self, startJoint=None, endJoint=None, exclude=[],
+    def __init__(self, start_joint=None, endJoint=None, exclude=[],
                  name='NeckHead1',
                  character=None, parent=None, shapeType='cube', mirror=False,
                  side='L',
@@ -18,13 +18,13 @@ class NeckHead(FkTwist.FkTwist):
                                  shapeType=shapeType,
                                  mirror=mirror, side=side,
                                  alignWorld=alignWorld,
-                                 startJoint=startJoint, endJoint=endJoint,
+                                 start_joint=start_joint, endJoint=endJoint,
                                  exclude=exclude,
                                  exponent=exponent, twistAxis=twistAxis)
 
         self.modType = 'NeckHead'
 
-        self.contract = [self.startJoint, self.endJoint]
+        self.contract = [self.start_joint, self.endJoint]
 
     @wrapBuild
     def build(self):
@@ -33,8 +33,15 @@ class NeckHead(FkTwist.FkTwist):
     def buildNeckHead(self):
         self.buildFkTwist()
 
-        startPoint = om.MVector(*cmds.xform(self.components[0].ctrl, query=True, worldSpace=True, translation=True))
-        endPoint = om.MVector(*cmds.xform(self.components[-1].ctrl, query=True, worldSpace=True, translation=True))
+        startPoint = om.MVector(
+            *
+            cmds.xform(
+                self.components[0].ctrl,
+                query=True,
+                worldSpace=True,
+                translation=True))
+        endPoint = om.MVector(
+            *cmds.xform(self.components[-1].ctrl, query=True, worldSpace=True, translation=True))
         startEndDistance = (endPoint - startPoint).length()
 
         # add constraints for twist controls
@@ -49,11 +56,13 @@ class NeckHead(FkTwist.FkTwist):
             startTwistDistance = (twistPoint - startPoint).length()
 
             # get the percentage it is along that distance
-            distancePercent = float(startTwistDistance / float(startEndDistance))
+            distancePercent = float(
+                startTwistDistance /
+                float(startEndDistance))
 
             pConstraint = cmds.pointConstraint(self.components[0].ctrl,
                                                self.components[-1].ctrl,
-                                               twistCtrl.spaceGrp,
+                                               twistCtrl.space_grp,
                                                maintainOffset=False)[0]
 
             weightList = cmds.pointConstraint(pConstraint, query=True,
@@ -63,7 +72,7 @@ class NeckHead(FkTwist.FkTwist):
             cmds.setAttr('{0}.{1}'.format(pConstraint, weightList[1]),
                          distancePercent)
 
-            cmds.aimConstraint(self.components[-1].ctrl, twistCtrl.spaceGrp,
+            cmds.aimConstraint(self.components[-1].ctrl, twistCtrl.space_grp,
                                aimVector=constants.UNIT_VECTORS[
                                    constants.DOWN_AXIS],
                                upVector=constants.UNIT_VECTORS[

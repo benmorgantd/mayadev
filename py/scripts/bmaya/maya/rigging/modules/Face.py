@@ -41,21 +41,21 @@ class Face(module.Module):
         # # ----- Init Regions ------- #
         # # Upper Head
         # FkChain.FkChain.__init__(self,
-        #                          startJoint=self.upperHead,
+        #                          start_joint=self.upperHead,
         #                          name=self.name + '_upperHead',
         #                          character=self.character,
         #                          exclude=self.eyebrowBases)
         #
         # # Middle Head
         # FkChain.FkChain.__init__(self,
-        #                          startJoint=self.middleHead,
+        #                          start_joint=self.middleHead,
         #                          name=self.name + '_middleHead',
         #                          character=self.character,
         #                          exclude=self.eyeballs + self.eyebrowBases)
         #
         # # Lower Head
         # FkChain.FkChain.__init__(self,
-        #                          startJoint=self.middleHead,
+        #                          start_joint=self.middleHead,
         #                          name=self.name + '_lowerHead',
         #                          character=self.character,
         #                          exclude=[self.jaw])
@@ -99,68 +99,68 @@ class Face(module.Module):
         # and build the fk controls
 
         self.upperHeadBindJoints, \
-        self.upperHeadDriveJoints, \
-        self.upperHeadControls = self.buildFaceFkHierarchy(
-                startJoint=self.upperHead,
+            self.upperHeadDriveJoints, \
+            self.upperHeadControls = self.buildFaceFkHierarchy(
+                start_joint=self.upperHead,
                 exclude=[self.eyebrowBase])
 
         self.middleHeadBindJoints, \
-        self.middleHeadDriveJoints, \
-        self.middleHeadControls = self.buildFaceFkHierarchy(
-                startJoint=self.middleHead,
+            self.middleHeadDriveJoints, \
+            self.middleHeadControls = self.buildFaceFkHierarchy(
+                start_joint=self.middleHead,
                 exclude=[self.eyelidBase] + self.eyeballs)
 
         self.lowerHeadBindJoints, \
-        self.lowerHeadDriveJoints, \
-        self.lowerHeadControls = self.buildFaceFkHierarchy(
-                startJoint=self.lowerHead,
+            self.lowerHeadDriveJoints, \
+            self.lowerHeadControls = self.buildFaceFkHierarchy(
+                start_joint=self.lowerHead,
                 exclude=self.jaw)
 
         self.eyebrowBindJoints, \
-        self.eyebrowDriveJoints, \
-        self.eyebrowControls = self.buildFaceFkHierarchy(
-                startJoint=self.eyebrowBase,
+            self.eyebrowDriveJoints, \
+            self.eyebrowControls = self.buildFaceFkHierarchy(
+                start_joint=self.eyebrowBase,
                 exclude=[])
 
-        self.parentConstrain(self.upperHeadControls[0],
-                             self.eyebrowControls[0],
-                             maintainOffset=True)
+        self.parent_constrain(self.upperHeadControls[0],
+                              self.eyebrowControls[0],
+                              maintainOffset=True)
 
         self.eyelidBindJoints, \
-        self.eyelidDriveJoints, \
-        self.eyelidControls = self.buildFaceFkHierarchy(
-                startJoint=self.eyelidBase,
+            self.eyelidDriveJoints, \
+            self.eyelidControls = self.buildFaceFkHierarchy(
+                start_joint=self.eyelidBase,
                 exclude=[])
 
-        self.parentConstrain(self.middleHeadControls[0],
-                             self.eyelidControls[0],
-                             maintainOffset=True)
+        self.parent_constrain(self.middleHeadControls[0],
+                              self.eyelidControls[0],
+                              maintainOffset=True)
 
         self.jawBindJoints, \
-        self.jawDriveJoints, \
-        self.jawControls = self.buildFaceFkHierarchy(
-                startJoint=self.jaw,
+            self.jawDriveJoints, \
+            self.jawControls = self.buildFaceFkHierarchy(
+                start_joint=self.jaw,
                 exclude=[])
 
-        self.parentConstrain(self.lowerHeadControls[0],
-                             self.jawControls[0],
-                             maintainOffset=True)
+        self.parent_constrain(self.lowerHeadControls[0],
+                              self.jawControls[0],
+                              maintainOffset=True)
 
-    def buildFaceFkHierarchy(self, startJoint, exclude=[]):
-        bindJoints = self.findHierarchyJoints(startJoint=startJoint,
-                                              exclude=exclude,
-                                              shortestDistance=False)
+    def buildFaceFkHierarchy(self, start_joint, exclude=[]):
+        bindJoints = self.find_hierarchy_joints(start_joint=start_joint,
+                                                exclude=exclude,
+                                                shortest_distance=False)
 
         self.bindJoints += bindJoints
 
         driveJoints = []
 
         for jnt in bindJoints:
-            driveJoints.append(self.createDriveJoint(jnt))
+            driveJoints.append(self.create_drive_joint(jnt))
 
         self.driveJoints += driveJoints
 
-        controls = self.buildFkControls(driveJoints=driveJoints)
+        controls = self.build_fk_controls(drive_joints=driveJoints)
 
         self.components += controls
 

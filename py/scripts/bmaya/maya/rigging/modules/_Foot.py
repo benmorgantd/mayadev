@@ -21,8 +21,12 @@ class Foot(object):
 
     def build(self):
         # finds the joints that should belong in the chain
-        self.footHierarchy = [self.heel, self.bankOut, self.bankIn, self.toeTip,
-                              self.ball]
+        self.footHierarchy = [
+            self.heel,
+            self.bankOut,
+            self.bankIn,
+            self.toeTip,
+            self.ball]
 
         self.reverseHierarchy = self.createReverseHierarchy()
 
@@ -93,7 +97,8 @@ class Foot(object):
 
         cmds.select(clear=True)
 
-        # the ballSwivel joint is unique because it doesn't have a supplied joint
+        # the ballSwivel joint is unique because it doesn't have a supplied
+        # joint
         ballSwivelName = ['ballSwivel']
         ballSwivelName += self.footHierarchy[0].split('_')[1:]
         ballSwivelJnt = cmds.joint(name='_'.join(ballSwivelName))
@@ -128,13 +133,13 @@ class Foot(object):
     def createIkHandles(self):
         # create two single chain iks
 
-        self.ankleToBallIk = cmds.ikHandle(startJoint=self.footIkDriveJoints[0],
-                                           endEffector=self.footIkDriveJoints[
-                                               1],
-                                           name=self.name + '_ankleSCik',
-                                           solver='ikSCsolver')[0]
+        self.ankleToBallIk = cmds.ikHandle(
+            start_joint=self.footIkDriveJoints[0],
+            endEffector=self.footIkDriveJoints[1],
+            name=self.name + '_ankleSCik',
+            solver='ikSCsolver')[0]
 
-        self.ballToToeIk = cmds.ikHandle(startJoint=self.footIkDriveJoints[1],
+        self.ballToToeIk = cmds.ikHandle(start_joint=self.footIkDriveJoints[1],
                                          endEffector=self.footIkDriveJoints[2],
                                          name=self.name + '_ballSCik',
                                          solver='ikSCsolver')[0]
@@ -144,30 +149,36 @@ class Foot(object):
 
     def createIkControls(self):
         self.ballSwivelCtrl = shapelib.ControlCurve(
-            name=nameUtils.findControlName(self.reverseHierarchy[0]),
+            name=nameUtils.find_control_name(self.reverseHierarchy[0]),
             jnt=self.reverseHierarchy[0], shapeType='circleArrow')
         cmds.setAttr(self.heel + '.rotateOrder', 2)
-        self.heelCtrl = shapelib.ControlCurve(name=nameUtils.findControlName(self.heel),
-                                              jnt=self.heel,
-                                              shapeType='archedDoubleArrow')
-        self.toeTipCtrl = shapelib.ControlCurve(name=nameUtils.findControlName(self.toeTip),
-                                                jnt=self.toeTip,
-                                                shapeType='archedDoubleArrow')
+        self.heelCtrl = shapelib.ControlCurve(
+            name=nameUtils.find_control_name(
+                self.heel),
+            jnt=self.heel,
+            shapeType='archedDoubleArrow')
+        self.toeTipCtrl = shapelib.ControlCurve(
+            name=nameUtils.find_control_name(
+                self.toeTip),
+            jnt=self.toeTip,
+            shapeType='archedDoubleArrow')
         self.ballRollCtrl = shapelib.ControlCurve(
-            name=nameUtils.findControlName(self.ball, identifier='IK'),
+            name=nameUtils.find_control_name(self.ball, identifier='IK'),
             jnt=self.ball, shapeType='circleStick')
         self.bankOutCtrl = shapelib.ControlCurve(
-            name=nameUtils.findControlName(self.bankOut), jnt=self.bankOut,
+            name=nameUtils.find_control_name(self.bankOut), jnt=self.bankOut,
             shapeType='archedDoubleArrow')
-        self.bankInCtrl = shapelib.ControlCurve(name=nameUtils.findControlName(self.bankIn),
-                                                jnt=self.bankIn,
-                                                shapeType='archedDoubleArrow')
+        self.bankInCtrl = shapelib.ControlCurve(
+            name=nameUtils.find_control_name(
+                self.bankIn),
+            jnt=self.bankIn,
+            shapeType='archedDoubleArrow')
 
-        cmds.parent(self.ballRollCtrl.offsetGrp, self.toeTipCtrl.ctrl)
-        cmds.parent(self.toeTipCtrl.offsetGrp, self.bankInCtrl.ctrl)
-        cmds.parent(self.bankInCtrl.offsetGrp, self.bankOutCtrl.ctrl)
-        cmds.parent(self.bankOutCtrl.offsetGrp, self.heelCtrl.ctrl)
-        cmds.parent(self.heelCtrl.offsetGrp, self.ballSwivelCtrl.ctrl)
+        cmds.parent(self.ballRollCtrl.offset_grp, self.toeTipCtrl.ctrl)
+        cmds.parent(self.toeTipCtrl.offset_grp, self.bankInCtrl.ctrl)
+        cmds.parent(self.bankInCtrl.offset_grp, self.bankOutCtrl.ctrl)
+        cmds.parent(self.bankOutCtrl.offset_grp, self.heelCtrl.ctrl)
+        cmds.parent(self.heelCtrl.offset_grp, self.ballSwivelCtrl.ctrl)
 
         self.parentConstrain(self.toeTipCtrl.ctrl, self.reverseHierarchy[-3])
         self.parentConstrain(self.ballRollCtrl.ctrl, self.reverseHierarchy[-2])
@@ -178,8 +189,9 @@ class Foot(object):
     def createFkControls(self):
         jnt = self.footFkDriveJoints[1]
 
-        ctrl = shapelib.ControlCurve(name=nameUtils.findControlName(jnt, identifier='FK'),
-                                     jnt=jnt, shapeType='cube')
+        ctrl = shapelib.ControlCurve(
+            name=nameUtils.find_control_name(
+                jnt, identifier='FK'), jnt=jnt, shapeType='cube')
         self.parentConstrain(ctrl.ctrl, jnt, maintainOffset=False)
 
         return [ctrl]

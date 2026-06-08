@@ -71,7 +71,11 @@ def invert(base=None, corrective=None, name=None):
 
     inverted_shapes = cmds.duplicate(base, name=name)[0]
     # Delete the unnessary shapes
-    shapes = cmds.listRelatives(inverted_shapes, children=True, shapes=True, path=True)
+    shapes = cmds.listRelatives(
+        inverted_shapes,
+        children=True,
+        shapes=True,
+        path=True)
     for s in shapes:
         if cmds.getAttr('%s.intermediateObject' % s):
             cmds.delete(s)
@@ -106,7 +110,11 @@ def invert(base=None, corrective=None, name=None):
     plug_deformed_points = fn_deformer.findPlug('deformedPoints', False)
     plug_deformed_points.setMObject(point_data_mobj)
 
-    cmds.connectAttr('%s.outMesh' % get_shape(corrective), '%s.correctiveMesh' % deformer)
+    cmds.connectAttr(
+        '%s.outMesh' %
+        get_shape(corrective),
+        '%s.correctiveMesh' %
+        deformer)
 
     cmds.undoInfo(closeChunk=True)
     return inverted_shapes
@@ -125,8 +133,8 @@ def get_shape(node, intermediate=False):
             raise RuntimeError, '%s has no shape' % node
         for shape in shapes:
             is_intermediate = cmds.getAttr('%s.intermediateObject' % shape)
-            if intermediate and is_intermediate and cmds.listConnections('%s.worldMesh' % shape,
-                                                                         source=False):
+            if intermediate and is_intermediate and cmds.listConnections(
+                    '%s.worldMesh' % shape, source=False):
                 return shape
             elif not intermediate and not is_intermediate:
                 return shape
@@ -210,4 +218,3 @@ def set_matrix_cell(matrix, value, row, column):
     @param[in] column Column number.
     """
     OpenMaya.MScriptUtil.setDoubleArray(matrix[row], column, value)
-

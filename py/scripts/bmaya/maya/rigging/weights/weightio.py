@@ -4,7 +4,7 @@ import os
 from xml.etree import ElementTree
 
 import maya.cmds as cmds
-import maya.OpenMaya as om
+import maya.api.OpenMaya as om
 
 from bmaya.core.util import fileUtils
 
@@ -49,14 +49,20 @@ def save(weightsDir):
 
         if skin:
             # exports by vertex index. Changes to the vert order will break this
-            # with the new 'format' argument, this might not be backwards compatible... - _-
-            cmds.deformerWeights("{0}.weights".format(dagName), deformer=skin[0], export=True, path=weightsDir,
-                                 method="index", format='XML')
+            # with the new 'format' argument, this might not be backwards
+            # compatible... - _-
+            cmds.deformerWeights(
+                "{0}.weights".format(dagName),
+                deformer=skin[0],
+                export=True,
+                path=weightsDir,
+                method="index",
+                format='XML')
         else:
-            print(dagName, ' has no skin cluster to save.')
+            log.info(dagName, ' has no skin cluster to save.')
             itSel.next()
 
-        print("Saved weights for {}".format(dagName))
+        log.info("Saved weights for {}".format(dagName))
 
         itSel.next()
 
@@ -77,10 +83,12 @@ def load(weightsPath):
         om.MGlobal.displayInfo("{0} does not exist in scene.".format(objName))
         return
 
-    print('Loading weights for <' + objName + '> ...')
+    log.info('Loading weights for <' + objName + '> ...')
 
     # look for and delete old clusters if they exist
-    existingSkinCluster = cmds.ls(cmds.listHistory(objName), type="skinCluster") or []
+    existingSkinCluster = cmds.ls(
+        cmds.listHistory(objName),
+        type="skinCluster") or []
 
     if existingSkinCluster:
         cmds.delete(existingSkinCluster)
@@ -101,13 +109,23 @@ def load(weightsPath):
     # add the skin cluster
     # Add in options to load from previous saved skin cluster's settings since
     # we may not want 4 max influences or linear blending
-    newCluster = cmds.skinCluster(weightDistribution=1, obeyMaxInfluences=False, toSelectedBones=True, skinMethod=0,
-                                  bindMethod=1)
+    newCluster = cmds.skinCluster(
+        weightDistribution=1,
+        obeyMaxInfluences=False,
+        toSelectedBones=True,
+        skinMethod=0,
+        bindMethod=1)
 
-    cmds.deformerWeights("{0}.weights".format(objName), im=True, path=weightsDirname, ignoreName=True, method="index",
-                         deformer=newCluster[0])
+    cmds.deformerWeights(
+        "{0}.weights".format(objName),
+        im=True,
+        path=weightsDirname,
+        ignoreName=True,
+        method="index",
+        deformer=newCluster[0])
     cmds.select(objName)
     cmds.skinPercent(newCluster[0], normalize=True)
-    om.MGlobal.displayInfo("Loaded skinCluster weights onto {0}".format(objName))
+    om.MGlobal.displayInfo(
+        "Loaded skinCluster weights onto {0}".format(objName))
 
-    print(">>> Weight data loaded from {0}".format(weightsPath))
+    log.info(">>> Weight data loaded from {0}".format(weightsPath))

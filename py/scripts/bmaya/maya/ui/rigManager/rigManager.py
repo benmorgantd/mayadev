@@ -3,7 +3,7 @@ import json
 from functools import partial
 
 import maya.cmds as cmds
-import maya.OpenMaya as om
+import maya.api.OpenMaya as om
 
 from bmaya.lib.Qt import QtWidgets, QtCore
 
@@ -85,7 +85,9 @@ class RigManager(qtbase.DockableWidget):
         buildMenu.addSeparator()
 
         actionSave = buildMenu.addAction('Save Build')
-        actionSave.triggered.connect(lambda: self.saveBuild(self.rigInstance.build.fullPath))
+        actionSave.triggered.connect(
+            lambda: self.saveBuild(
+                self.rigInstance.build.full_path))
 
         actionSave = buildMenu.addAction('Save Build As...')
         actionSave.triggered.connect(lambda: self.saveBuild())
@@ -93,7 +95,8 @@ class RigManager(qtbase.DockableWidget):
         buildMenu.addSeparator()
 
         self.actionOpenInExplorer = buildMenu.addAction('Open In Explorer')
-        self.actionOpenInExplorer.triggered.connect(lambda: self.openAssetInExplorer())
+        self.actionOpenInExplorer.triggered.connect(
+            lambda: self.openAssetInExplorer())
 
     def setupAssetMenu(self):
 
@@ -103,8 +106,9 @@ class RigManager(qtbase.DockableWidget):
         newAssetAction.triggered.connect(lambda: self.launchAssetWidget())
 
         versionAssetAction = assetMenu.addAction('Version Asset')
-        versionAssetAction.triggered.connect(lambda: self.rigInstance.versionAsset())
-        
+        versionAssetAction.triggered.connect(
+            lambda: self.rigInstance.version_asset())
+
     def setupCVsMenu(self):
         cvsMenu = self.menu.addMenu('CV Tools')
 
@@ -113,18 +117,20 @@ class RigManager(qtbase.DockableWidget):
 
         actionMirror.triggered.connect(lambda: self.mirrorCvData())
         actionRemoveData.triggered.connect(lambda: self.removeSelectedCVData())
-    
+
     def openAssetInExplorer(self):
         try:
-            self.rigInstance.openInExplorer(os.path.split(
-                self.rigInstance.animRig.fullPath)[0])
+            self.rigInstance.open_in_explorer(os.path.split(
+                self.rigInstance.animRig.full_path)[0])
         except AttributeError:
-            om.MGlobal.displayWarning('An asset instance has not been established')
+            om.MGlobal.displayWarning(
+                'An asset instance has not been established')
 
     def launchAssetWidget(self):
 
-        assetCreatorUI = assetCreator.AssetCreator(parent=qtbase.getMayaMainWindow(),
-                                                   designerFile=os.path.join(os.path.dirname(__file__),'assetCreator.ui'))
+        assetCreatorUI = assetCreator.AssetCreator(
+            parent=qtbase.getMayaMainWindow(), designerFile=os.path.join(
+                os.path.dirname(__file__), 'assetCreator.ui'))
 
         assetCreatorUI.show()
         assetCreatorUI.activateWindow()
@@ -143,7 +149,7 @@ class RigManager(qtbase.DockableWidget):
         rigModsPath = os.path.dirname(os.path.abspath(modules.__file__))
         # load every module from the rigMods folder
         mods = os.listdir(rigModsPath)
-        # sort them alphabetically 
+        # sort them alphabetically
         mods.sort()
         for mod in mods:
             if mod.endswith('.py') and not mod.startswith('_'):
@@ -152,32 +158,42 @@ class RigManager(qtbase.DockableWidget):
     def saveComponent(self):
         componentType = self.widget.componentType.currentText()
 
-        result = cmds.confirmDialog(message='Are you sure you would like to save ' + componentType + '?',
-                                    button=['Yes', 'No'], defaultButton='Yes', cancelButton='No')
-                                    
+        result = cmds.confirmDialog(
+            message='Are you sure you would like to save ' +
+            componentType +
+            '?',
+            button=[
+                'Yes',
+                'No'],
+            defaultButton='Yes',
+            cancelButton='No')
+
         if result in ['dismiss', 'No']:
             return
 
-        if componentType not in [component.type for component in self.rigInstance.components]:
-            om.MGlobal.displayError('Invalid component type {}'.format(componentType))
+        if componentType not in [
+                component.type for component in self.rigInstance.components]:
+            om.MGlobal.displayError(
+                'Invalid component type {}'.format(componentType))
             return
 
         componentInstance = getattr(self.rigInstance, componentType)
         componentInstance.save()
 
-
     def loadComponent(self):
         componentType = self.widget.componentType.currentText()
-        print('loading component')
+        log.info('loading component')
 
         # result = cmds.confirmDialog(message='Are you sure you would like to open ' + componentType + '?',
-        #                             button=['Yes', 'No'], defaultButton='Yes', cancelButton='No')
-        
+        # button=['Yes', 'No'], defaultButton='Yes', cancelButton='No')
+
         # if result in ['dismiss', 'No']:
         #     return
 
-        if componentType not in [component.type for component in self.rigInstance.components]:
-            om.MGlobal.displayError('Invalid component type {}'.format(componentType))
+        if componentType not in [
+                component.type for component in self.rigInstance.components]:
+            om.MGlobal.displayError(
+                'Invalid component type {}'.format(componentType))
             return
 
         componentInstance = getattr(self.rigInstance, componentType)
@@ -190,12 +206,14 @@ class RigManager(qtbase.DockableWidget):
         if hasattr(componentInstance, 'reference'):
             componentInstance.reference()
         else:
-            om.MGlobal.displayInfo("Cannot reference component type " + componentType)
+            om.MGlobal.displayInfo(
+                "Cannot reference component type " +
+                componentType)
 
     def buildCharacter(self):
         if self.rigInstance:
             # save and version the build first
-            buildPath = self.rigInstance.build.fullPath
+            buildPath = self.rigInstance.build.full_path
 
             fileUtils.versionFile(buildPath)
 
@@ -215,7 +233,7 @@ class RigManager(qtbase.DockableWidget):
 
         if not filepath:
             return
-        
+
         else:
             return filepath[0]
 
@@ -227,22 +245,24 @@ class RigManager(qtbase.DockableWidget):
                 return
 
         # set our asset to the one derived from the path
-        assetId = asset.Asset.getAssetIdFromFile(filepath)
+        asset_id = asset.Asset.get_asset_id_from_file(filepath)
 
-        if not assetId:
-            om.MGlobal.displayWarning('{} is not a part of an asset. Building is disabled.'.format(filepath))
+        if not asset_id:
+            om.MGlobal.displayWarning(
+                '{} is not a part of an asset. Building is disabled.'.format(filepath))
             self.widget.build.setEnabled(False)
             self.widget.componentType.setEnabled(False)
             self.widget.currentAssetLabel.setText('No Asset Loaded')
         else:
-            self.rigInstance = rig.Rig(assetId)
+            self.rigInstance = rig.Rig(asset_id)
             self.widget.componentType.setEnabled(True)
             self.widget.build.setEnabled(True)
-            self.widget.currentAssetLabel.setText(assetId)
-    
+            self.widget.currentAssetLabel.setText(asset_id)
+
         self.resetBuildList()
         self.buildData = buildio.load(filepath)
-        self.buildList.loadList(self.buildData, 
+        self.buildList.loadList(
+            self.buildData,
             attributeLayoutContainer=self.widget.attributeLayoutContainer)
 
         self.addRecentFile(filepath)
@@ -258,28 +278,27 @@ class RigManager(qtbase.DockableWidget):
         try:
             fileUtils.versionFile(filepath)
         except AttributeError:
-            assetId = asset.Asset.getAssetIdFromFile(filepath)
+            asset_id = asset.Asset.get_asset_id_from_file(filepath)
 
-            if not assetId:
+            if not asset_id:
                 # file was not saved into an asset
                 return
             else:
-                self.rigInstance = rig.Rig(assetId)
+                self.rigInstance = rig.Rig(asset_id)
 
                 self.widget.componentType.setEnabled(True)
                 self.widget.build.setEnabled(True)
-                self.widget.currentAssetLabel.setText(assetId)
+                self.widget.currentAssetLabel.setText(asset_id)
 
                 fileUtils.versionFile(filepath)
 
         buildio.save(filepath, jsonData)
 
     def resetBuildList(self):
-        
+
         self.buildList.cellData = {}
         self.buildList.hideAttrLayouts()
         self.buildList.clear()
-
 
     def getConfigData(self):
         configFile = os.path.join(os.path.dirname(__file__), 'config.json')
@@ -307,16 +326,23 @@ class RigManager(qtbase.DockableWidget):
 
     def mirrorCvData(self):
         from bmaya.maya.rigging.shapes import shapeio
-        shapeio.mirror(self.rigInstance.componentPathFromType('cvs'))
+        shapeio.mirror(self.rigInstance.component_path_from_type('cvs'))
 
     def removeSelectedCVData(self):
         from bmaya.maya.rigging.shapes import shapeio
         import maya.cmds as cmds
 
-        shapeio.removeShapeData(self.rigInstance.componentPathFromType('cvs'), cmds.ls(selection=True))
+        shapeio.remove_shape_data(
+            self.rigInstance.component_path_from_type('cvs'),
+            cmds.ls(
+                selection=True))
+
 
 def run():
-    ui = RigManager(designerFile=os.path.join(os.path.dirname(__file__), 'rigManager.ui'))
+    ui = RigManager(
+        designerFile=os.path.join(
+            os.path.dirname(__file__),
+            'rigManager.ui'))
     ui.dock()
     return ui
 

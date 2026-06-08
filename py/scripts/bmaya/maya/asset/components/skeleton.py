@@ -4,60 +4,63 @@ It contains the logic for serializing and deserializing a joint hierarchy, which
 """
 
 import os
-
-import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
 from .mayaComponent import MayaComponent
 
+
 class Skeleton(MayaComponent):
 
-    def __init__(self, asset, componentType):
-        super(Skeleton, self).__init__(asset, componentType)
+    def __init__(self, asset, component_type):
+        super(Skeleton, self).__init__(asset, component_type)
 
     @property
-    def relativePath(self):
+    def relative_path(self):
         # /rig/components/skeleton.ma
         return os.path.join('rig', 'components', self.type + self.extension)
 
     @classmethod
-    def serializeJointHierarchy(cls, rootJoint):
-        def _getJointData(jnt):
-            jointData = dict()
+    def serialize_joint_hierarchy(cls, root_joint):
+        def _get_joint_data(jnt):
+            joint_data = dict()
 
-            jointData['shortName'] = jnt
+            joint_data['shortName'] = jnt
             jointParent = cmds.listRelatives(jnt, parent=True, type='joint')
-            jointData['parent'] = jointParent
-            jointData['worldMatrix'] = cmds.xform(jnt, query=True, matrix=True, worldSpace=True)
-            jointData['radius'] = cmds.getAttr(f'{jnt}.radius')
+            joint_data['parent'] = jointParent
+            joint_data['worldMatrix'] = cmds.xform(
+                jnt, query=True, matrix=True, worldSpace=True)
+            joint_data['radius'] = cmds.getAttr(f'{jnt}.radius')
 
-            return jointData
+            return joint_data
 
-        joints = [_getJointData(rootJoint)]
+        joints = [_get_joint_data(root_joint)]
 
-        for childJoint in cmds.listRelatives(rootJoint, children=True, type='joint', allDescendents=True):
-            joints.append(_getJointData(childJoint))
+        for child_joint in cmds.listRelatives(
+                root_joint,
+                children=True,
+                type='joint',
+                allDescendents=True):
+            joints.append(_get_joint_data(child_joint))
 
         return joints
 
     @classmethod
-    def deserializeJointHierarchy(cls, data):
-        newJoints = []
+    def deserialize_joint_hierarchy(cls, data):
+        new_joints = []
 
-        for jointData in data:
+        for joint_data in data:
             cmds.select(clear=True)
-            jointName = jointData['shortName']
+            jointName = joint_data['shortName']
             newJoint = cmds.joint(name=jointName)
-            cmds.xform(newJoint, matrix=jointData['worldMatrix'])
+            cmds.xform(newJoint, matrix=joint_data['worldMatrix'])
 
-            if jointData.get('parent'):
-                cmds.parent(newJoint, jointData['parent'])
-            if jointData.get('radius'):
-                cmds.setAttr(newJoint + '.radius', jointData['radius'])
+            if joint_data.get('parent'):
+                cmds.parent(newJoint, joint_data['parent'])
+            if joint_data.get('radius'):
+                cmds.setAttr(newJoint + '.radius', joint_data['radius'])
 
             cmds.makeIdentity(newJoint, apply=True)
 
-            newJoints.append(newJoint)
+            new_joints.append(newJoint)
 
         cmds.select(clear=True)
-

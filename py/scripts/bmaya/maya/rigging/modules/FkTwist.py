@@ -8,7 +8,7 @@ from bmaya.core import constants
 
 class FkTwist(FkChain.FkChain):
 
-    def __init__(self, startJoint=None, endJoint=None, exclude=[],
+    def __init__(self, start_joint=None, endJoint=None, exclude=[],
                  name='FkTwist1',
                  character=None, parent=None, shapeType='cube', mirror=False,
                  side='L',
@@ -17,14 +17,14 @@ class FkTwist(FkChain.FkChain):
         FkChain.FkChain.__init__(self, name=name, character=character,
                                  shapeType=shapeType, mirror=mirror, side=side,
                                  alignWorld=alignWorld,
-                                 startJoint=startJoint, endJoint=endJoint,
+                                 start_joint=start_joint, endJoint=endJoint,
                                  exclude=exclude)
 
         self.twistAxis = twistAxis
         self.exponent = exponent
         self.modType = 'FkTwist'
 
-        self.contract = [self.startJoint, self.endJoint]
+        self.contract = [self.start_joint, self.endJoint]
 
     @wrapBuild
     def build(self):
@@ -32,10 +32,11 @@ class FkTwist(FkChain.FkChain):
 
     def buildFkTwist(self):
         # finds the joints that should belong in the chain
-        self.bindJoints = self.findHierarchyJoints(shortestDistance=True,
-                                                   exclude=self.exclude)
-        # create base and twist drive joints separately so the controls can be too
-        self.twistJoints = self.findTwistJoints(self.bindJoints[0])
+        self.bindJoints = self.find_hierarchy_joints(shortest_distance=True,
+                                                     exclude=self.exclude)
+        # create base and twist drive joints separately so the controls can be
+        # too
+        self.twistJoints = self.find_twist_joints(self.bindJoints[0])
 
         if not self.twistJoints:
             raise ValueError(
@@ -43,10 +44,10 @@ class FkTwist(FkChain.FkChain):
 
         self.bindJoints += self.twistJoints
 
-        self.driveJoints = self.createDriveJoints()
+        self.driveJoints = self.create_drive_joints()
 
-        self.components = self.buildFkControls(self.driveJoints,
-                                               setupAlignWorld=True)
+        self.components = self.build_fk_controls(self.driveJoints,
+                                                 setup_align_world=True)
         endComp = self.components[1]
         self.components.append(endComp)
         self.components.pop(1)
@@ -59,14 +60,14 @@ class FkTwist(FkChain.FkChain):
 
         for comp in self.twistComponents:
             cmds.connectAttr(self.node + '.showTwistControls',
-                             comp.offsetGrp + '.visibility')
+                             comp.offset_grp + '.visibility')
 
         self.setupTwist()
 
     def setupTwist(self):
         """Setup the twist from the start of the chain"""
 
-        # we already have controls built for the chain, so add offset groups 
+        # we already have controls built for the chain, so add offset groups
         # to drive them
 
         endQuat = mathUtils.setupQuatTwist(self.driveJoints[1],
@@ -82,7 +83,7 @@ class FkTwist(FkChain.FkChain):
                 twistMult + '.input1')
             # so with one twist joint, this is 0.5, and with two it's 0.33
             curveX = (1 / float((len(self.twistComponents) + 1))) * (i + 1)
-            # we are making a polynomial 
+            # we are making a polynomial
             curveValue = curveX ** self.exponent
 
             # add a new attribute to our node for controlling the twist value
@@ -100,9 +101,13 @@ class FkTwist(FkChain.FkChain):
                                                          'upperTwist'))
             cmds.setAttr(upperTwistGrp + '.rotateOrder',
                          cmds.getAttr(ctrl + '.rotateOrder'))
-            mathUtils.matchTransforms(self.twistComponents[i].offsetGrp,
+            mathUtils.matchTransforms(self.twistComponents[i].offset_grp,
                                       upperTwistGrp)
-            cmds.parent(upperTwistGrp, cmds.listRelatives(ctrl, parent=True)[0])
+            cmds.parent(
+                upperTwistGrp,
+                cmds.listRelatives(
+                    ctrl,
+                    parent=True)[0])
             cmds.parent(ctrl, upperTwistGrp)
 
             cmds.connectAttr(twistMult + '.output',

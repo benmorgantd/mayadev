@@ -1,5 +1,5 @@
 import maya.cmds as cmds
-import maya.OpenMaya as om
+import maya.api.OpenMaya as om
 
 from bmaya.core import constants
 from bmaya.maya.util import nameUtils, mathUtils
@@ -10,7 +10,7 @@ from bmaya.maya.rigging.shapes import shapelib
 
 class IkChain(module.Module):
 
-    def __init__(self, startJoint=None, endJoint=None, name='IkChain1',
+    def __init__(self, start_joint=None, endJoint=None, name='IkChain1',
                  character=None,
                  parent=None, mirror=False, upVector=[0, 2, 0], exclude=[],
                  side='L'):
@@ -20,37 +20,37 @@ class IkChain(module.Module):
                                shapeType='cube', mirror=mirror, side=side)
 
         self.parent = parent
-        self.startJoint = startJoint
+        self.start_joint = start_joint
         self.endJoint = endJoint
         self.upVector = upVector
         self.exclude = exclude
 
-        self.contract = [self.startJoint, self.endJoint]
+        self.contract = [self.start_joint, self.endJoint]
 
     @wrapBuild
     def build(self):
         # build a simple single chain ik system
 
-        self.bindJoints = self.findHierarchyJoints(shortestDistance=True,
-                                                   exclude=self.exclude)
+        self.bindJoints = self.find_hierarchy_joints(shortest_distance=True,
+                                                     exclude=self.exclude)
 
-        self.driveJoints = self.createDriveJoints()
+        self.driveJoints = self.create_drive_joints()
 
         self.components = self.buildIkControls(self.driveJoints)
 
     def buildIkControls(self, driveJoints, worldAimTarget=None, downAxis='X',
                         upAxis='Y', followWorld=True):
-        # letting components be a local variable here so that we can use this 
+        # letting components be a local variable here so that we can use this
         # safer in child methods
         components = []
 
         startCtrl = shapelib.ControlCurve(
-            name=nameUtils.findControlName(driveJoints[0], identifier='Ik'),
+            name=nameUtils.find_control_name(driveJoints[0], identifier='Ik'),
             shapeType='cube', jnt=driveJoints[0])
 
         if worldAimTarget:
             endCtrl = shapelib.ControlCurve(
-                nameUtils.findControlName(driveJoints[-1], identifier='Ik'),
+                nameUtils.find_control_name(driveJoints[-1], identifier='Ik'),
                 shapeType='cube')
 
             worldAlignVector = om.MVector(
@@ -69,9 +69,9 @@ class IkChain(module.Module):
             if V * om.MVector(0, 0, 1) < 0:
                 V *= -1.0
 
-            # print('U: {0},{1},{2}'.format(U.x, U.y, U.z))            
-            # print('V: {0},{1},{2}'.format(V.x, V.y, V.z))            
-            # print('W: {0},{1},{2}'.format(W.x, W.y, W.z))         
+            # log.info('U: {0},{1},{2}'.format(U.x, U.y, U.z))
+            # log.info('V: {0},{1},{2}'.format(V.x, V.y, V.z))
+            # log.info('W: {0},{1},{2}'.format(W.x, W.y, W.z))
 
             pythonMatrixList = [V.x, V.y, V.z, 0,
                                 U.x, U.y, U.z, 0,
@@ -144,74 +144,87 @@ class IkChain(module.Module):
                 om.MScriptUtil.getDoubleArrayItem(reorderedMatrix[i], j) for i
                 in range(4) for j in range(4))
 
-            cmds.xform(endCtrl.offsetGrp, matrix=pythonMatrixList)
+            cmds.xform(endCtrl.offset_grp, matrix=pythonMatrixList)
 
         else:
             endCtrl = shapelib.ControlCurve(
-                nameUtils.findControlName(driveJoints[-1], identifier='Ik'),
+                nameUtils.find_control_name(driveJoints[-1], identifier='Ik'),
                 shapeType='cube',
                 jnt=driveJoints[-1])
 
-        cmds.parent(endCtrl.offsetGrp, startCtrl.ctrl)
+        cmds.parent(endCtrl.offset_grp, startCtrl.ctrl)
 
         self.setupIkSpaces(endCtrl, defaultValue=followWorld)
 
-        ik, ikGrp = self.makeIkHandle(startJoint=driveJoints[0],
-                                      endJoint=driveJoints[-1],
-                                      solverType='ikRPsolver',
-                                      name=self.name + '_ikHandle')
+        ik, ikGrp = self.make_ik_handle(start_joint=driveJoints[0],
+                                        end_joint=driveJoints[-1],
+                                        solver_type='ikRPsolver',
+                                        name=self.name + '_ikHandle')
 
         poleVectorCtrl = shapelib.ControlCurve(
-            name=nameUtils.findControlName(driveJoints[0], identifier='IkAim'),
+            name=nameUtils.find_control_name(
+                driveJoints[0], identifier='IkAim'),
             shapeType='sphere', jnt=driveJoints[-1])
-        shapelib.ControlCurve.drawLine(driveJoints[1] + '_pvLine', driveJoints[1],
-                                       poleVectorCtrl.ctrl, startCtrl.offsetGrp)
+        shapelib.ControlCurve.draw_line(
+            driveJoints[1] + '_pvLine',
+            driveJoints[1],
+            poleVectorCtrl.ctrl,
+            startCtrl.offset_grp)
 
         if len(driveJoints) < 3:
-            cmds.xform(poleVectorCtrl.offsetGrp, translation=self.upVector,
+            cmds.xform(poleVectorCtrl.offset_grp, translation=self.upVector,
                        relative=True, objectSpace=True)
         else:
-            cmds.xform(poleVectorCtrl.offsetGrp,
+            cmds.xform(poleVectorCtrl.offset_grp,
                        translation=mathUtils.findPoleVector(driveJoints,
                                                             scaleFactor=1.5),
                        worldSpace=True)
-            cmds.xform(poleVectorCtrl.offsetGrp, rotation=(0, 0, 0), absolute=1,
-                       worldSpace=True)
+            cmds.xform(
+                poleVectorCtrl.offset_grp,
+                rotation=(
+                    0,
+                    0,
+                    0),
+                absolute=1,
+                worldSpace=True)
 
-        cmds.pointConstraint(endCtrl.ctrl, poleVectorCtrl.offsetGrp,
+        cmds.pointConstraint(endCtrl.ctrl, poleVectorCtrl.offset_grp,
                              maintainOffset=True)
         cmds.poleVectorConstraint(poleVectorCtrl.ctrl, ik)
 
         self.setupIkSpaces(poleVectorCtrl, defaultValue=1)
 
-        cmds.parent(ikGrp, self.modGrp)
+        cmds.parent(ikGrp, self.mod_grp)
 
         components += [startCtrl, endCtrl, poleVectorCtrl]
         self.ikHandle = ik
         self.ikHandleGrp = ikGrp
 
         # connect the controls to the joints and effectors
-        self.parentConstrain(startCtrl.ctrl, driveJoints[0])
-        self.parentConstrain(endCtrl.ctrl, ikGrp)
+        self.parent_constrain(startCtrl.ctrl, driveJoints[0])
+        self.parent_constrain(endCtrl.ctrl, ikGrp)
 
-        cmds.parent(poleVectorCtrl.offsetGrp, self.componentsGrp)
-        cmds.parent(startCtrl.offsetGrp, self.componentsGrp)
+        cmds.parent(poleVectorCtrl.offset_grp, self.components_grp)
+        cmds.parent(startCtrl.offset_grp, self.components_grp)
 
         return components
 
     def setupIkSpaces(self, ikCtrl, defaultValue=1):
         # parent to world and add switch
-        const = self.parentConstrain(constants.BOTTOM_LAYOUT_CONTROL,
-                                     ikCtrl.spaceGrp)
+        const = self.parent_constrain(constants.BOTTOM_LAYOUT_CONTROL,
+                                      ikCtrl.space_grp)
         cmds.addAttr(ikCtrl.ctrl, longName='followWorld',
                      defaultValue=defaultValue, attributeType='bool',
                      keyable=True)
-        cmds.connectAttr(ikCtrl.ctrl + '.followWorld', '{0}.{1}W0'.format(const,
-                                                                          constants.BOTTOM_LAYOUT_CONTROL))
+        cmds.connectAttr(
+            ikCtrl.ctrl + '.followWorld',
+            '{0}.{1}W0'.format(
+                const,
+                constants.BOTTOM_LAYOUT_CONTROL))
 
         # check if there's a point constraint on the offset group
         poleVectorPointConstraint = cmds.ls(
-            cmds.listRelatives(ikCtrl.offsetGrp, children=True),
+            cmds.listRelatives(ikCtrl.offset_grp, children=True),
             type='pointConstraint')
 
         if poleVectorPointConstraint:

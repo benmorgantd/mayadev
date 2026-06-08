@@ -13,30 +13,54 @@ from bmaya.maya.rigging.base import module
 
 
 class Spline(module.Module):
-    def __init__(self, startJoint=None, endJoint=None, name='Spline1', character=None, side='M', mirror=False,
-                 parent=None, setupTwist=True, controlAmount=3, stretchy=True, startTwistParent=None, shapeType='cube'):
-        super(Spline, self).__init__(modType='Spline', name=name, character=character, mirror=mirror, side=side,
-                                     shapeType=shapeType)
+    def __init__(
+            self,
+            start_joint=None,
+            endJoint=None,
+            name='Spline1',
+            character=None,
+            side='M',
+            mirror=False,
+            parent=None,
+            setupTwist=True,
+            controlAmount=3,
+            stretchy=True,
+            startTwistParent=None,
+            shapeType='cube'):
+        super(
+            Spline,
+            self).__init__(
+            modType='Spline',
+            name=name,
+            character=character,
+            mirror=mirror,
+            side=side,
+            shapeType=shapeType)
 
-        self.startJoint = startJoint
+        self.start_joint = start_joint
         self.endJoint = endJoint
         self.setupTwist = setupTwist
         self.controlAmount = controlAmount
         self.stretchy = stretchy
         self.startTwistParent = startTwistParent
 
-        self.contract = [self.startJoint, self.endJoint]
+        self.contract = [self.start_joint, self.endJoint]
 
     @wrapBuild
     def build(self):
-        self.bindJoints = self.findHierarchyJoints(startJoint=self.startJoint, endJoint=self.endJoint,
-                                                   shortestDistance=True)
+        self.bindJoints = self.find_hierarchy_joints(
+            start_joint=self.start_joint,
+            end_joint=self.endJoint,
+            shortest_distance=True)
 
-        self.fkDriveJoints = self.createDriveJoints(label='FKDRIVER', constrain=False)
-        self.ikDriveJoints = self.createDriveJoints(label='IKDRIVER', constrain=False)
-        self.driveJoints = self.createDriveJoints(label='DRIVER', constrain=True)
+        self.fkDriveJoints = self.create_drive_joints(
+            label='FKDRIVER', constrain=False)
+        self.ikDriveJoints = self.create_drive_joints(
+            label='IKDRIVER', constrain=False)
+        self.driveJoints = self.create_drive_joints(
+            label='DRIVER', constrain=True)
 
-        self.fkComponents = self.buildFkControls()
+        self.fkComponents = self.build_fk_controls()
         self.ikComponents = self.buildIkControls()
 
         if self.setupTwist:
@@ -46,47 +70,66 @@ class Spline(module.Module):
         self.setupIkHierarchy()
 
         # add an attribute for blending
-        cmds.addAttr(self.node, longName='FKIK', attributeType='float', dv=1, min=0, max=1, keyable=True)
+        cmds.addAttr(
+            self.node,
+            longName='FKIK',
+            attributeType='float',
+            dv=1,
+            min=0,
+            max=1,
+            keyable=True)
 
-        self.blendReverse = self.blendChains(self.fkDriveJoints, self.ikDriveJoints, self.driveJoints,
-                                             self.node + '.FKIK')
+        self.blendReverse = self.blend_chains(
+            self.fkDriveJoints,
+            self.ikDriveJoints,
+            self.driveJoints,
+            self.node + '.FKIK')
 
         # connect blend control to visibility
-        cmds.connectAttr(self.blendReverse, '{0}.v'.format(self.fkComponents[0].offsetGrp))
+        cmds.connectAttr(
+            self.blendReverse, '{0}.v'.format(
+                self.fkComponents[0].offset_grp))
 
         for ctrl in self.ikComponents:
-            cmds.connectAttr(self.node + '.FKIK', '{0}.v'.format(ctrl.offsetGrp))
+            cmds.connectAttr(
+                self.node + '.FKIK',
+                '{0}.v'.format(
+                    ctrl.offset_grp))
 
         self.components += self.fkComponents
         self.components += self.ikComponents
 
-    def buildFkControls(self):
+    def build_fk_controls(self):
 
         _components = []
 
         for i in range(len(self.fkDriveJoints)):
             jnt = self.fkDriveJoints[i]
 
-            ctrl = shapelib.ControlCurve(name=nameUtils.findControlName(jnt, identifier='Fk'), shapeType=self.shapeType,
-                                         jnt=jnt)
+            ctrl = shapelib.ControlCurve(name=nameUtils.find_control_name(
+                jnt, identifier='Fk'), shapeType=self.shape_type, jnt=jnt)
 
             _components.append(ctrl)
 
-            self.parentConstrain(ctrl.ctrl, jnt, maintainOffset=True)
+            self.parent_constrain(ctrl.ctrl, jnt, maintainOffset=True)
 
             if i == 0:
-                cmds.parent(ctrl.offsetGrp, self.componentsGrp)
+                cmds.parent(ctrl.offset_grp, self.components_grp)
             else:
-                parentJoint = cmds.listRelatives(jnt, parent=True, type='joint')[0]
+                parentJoint = cmds.listRelatives(
+                    jnt, parent=True, type='joint')[0]
                 parentCtrl = cmds.listConnections(parentJoint + '.driveCtrl')
 
                 if parentCtrl:
-                    cmds.parent(ctrl.offsetGrp, parentCtrl[0])
+                    cmds.parent(ctrl.offset_grp, parentCtrl[0])
                 else:
-                    cmds.parent(ctrl.offsetGrp, _components[0].ctrl)
+                    cmds.parent(ctrl.offset_grp, _components[0].ctrl)
 
             cmds.addAttr(jnt, longName='driveCtrl', attributeType='message')
-            cmds.addAttr(ctrl.ctrl, longName='driveJoint', attributeType='message')
+            cmds.addAttr(
+                ctrl.ctrl,
+                longName='driveJoint',
+                attributeType='message')
             cmds.connectAttr(ctrl.ctrl + '.driveJoint', jnt + '.driveCtrl')
 
         return _components
@@ -99,7 +142,10 @@ class Spline(module.Module):
         cmds.hide(self.splineCurve, self.splineDriverJoints)
 
         # skin the driver joints to the curve
-        cmds.skinCluster(self.splineDriverJoints, self.splineCurve, maximumInfluences=4)
+        cmds.skinCluster(
+            self.splineDriverJoints,
+            self.splineCurve,
+            maximumInfluences=4)
 
         ikControls = []
 
@@ -107,14 +153,17 @@ class Spline(module.Module):
         for i in range(len(self.splineDriverJoints)):
             jnt = self.splineDriverJoints[i]
 
-            ctrl = shapelib.ControlCurve(name=nameUtils.findControlName(jnt, identifier='Ik'), shapeType=self.shapeType,
-                jnt=jnt)
+            ctrl = shapelib.ControlCurve(name=nameUtils.find_control_name(
+                jnt, identifier='Ik'), shapeType=self.shape_type, jnt=jnt)
 
-            cmds.parent(ctrl.offsetGrp, self.componentsGrp)
-            self.parentConstrain(ctrl.ctrl, jnt, maintainOffset=True)
+            cmds.parent(ctrl.offset_grp, self.components_grp)
+            self.parent_constrain(ctrl.ctrl, jnt, maintainOffset=True)
 
             if i == 0 and self.startTwistParent:
-                self.parentConstrain(self.startTwistParent, ctrl.offsetGrp, maintainOffset=True)
+                self.parent_constrain(
+                    self.startTwistParent,
+                    ctrl.offset_grp,
+                    maintainOffset=True)
 
             ikControls.append(ctrl)
 
@@ -123,20 +172,22 @@ class Spline(module.Module):
         return ikControls
 
     def buildIkSpline(self):
-        """Note that there will be some movement on the ikJoints after creating this. 
+        """Note that there will be some movement on the ikJoints after creating this.
         Having the blend maintain offset will help.
         """
 
-        jntLocs = [cmds.xform(jnt, q=1, t=1, ws=1) for jnt in self.ikDriveJoints]
+        jntLocs = [cmds.xform(jnt, q=1, t=1, ws=1)
+                   for jnt in self.ikDriveJoints]
 
-        splineCurve = mathUtils.fitCurveToPoints(jntLocs, name=self.name + '_spline')
+        splineCurve = mathUtils.fitCurveToPoints(
+            jntLocs, name=self.name + '_spline')
         cmds.setAttr(splineCurve + '.inheritsTransform', False)
 
         # the end effector for the splineIKHandle is one joint too early?
 
         splineIkHandle = cmds.ikHandle(name=self.name + '_splineIkHandle',
                                        solver='ikSplineSolver',
-                                       startJoint=self.ikDriveJoints[0],
+                                       start_joint=self.ikDriveJoints[0],
                                        endEffector=self.ikDriveJoints[-1],
                                        curve=splineCurve,
                                        createCurve=False)[0]
@@ -150,7 +201,7 @@ class Spline(module.Module):
             cmds.setAttr(splineIkHandle + '.dWorldUpVector', 0, 0, 1)
             cmds.setAttr(splineIkHandle + '.dWorldUpVectorEnd', 0, 0, 1)
 
-        cmds.parent(splineCurve, splineIkHandle, self.componentsGrp)
+        cmds.parent(splineCurve, splineIkHandle, self.components_grp)
 
         return [splineIkHandle, splineCurve]
 
@@ -159,45 +210,77 @@ class Spline(module.Module):
         # create a curveInfo node to track the current arc length of the curve
         curveShape = cmds.listRelatives(self.splineCurve, shapes=True)[0]
         curveInfo = cmds.createNode("curveInfo")
-        cmds.connectAttr(curveShape + ".worldSpace[0]", curveInfo + ".inputCurve")
+        cmds.connectAttr(
+            curveShape + ".worldSpace[0]",
+            curveInfo + ".inputCurve")
 
         # create a multiply divide node to track the stretch factor
-        stretchFactor = cmds.shadingNode('multDL', asUtility=True, name=self.name + '_stretchFactor')
+        stretchFactor = cmds.shadingNode(
+            'multDL',
+            asUtility=True,
+            name=self.name +
+            '_stretchFactor')
         cmds.connectAttr(curveInfo + '.arcLength', stretchFactor + '.input1')
-        cmds.setAttr(stretchFactor + '.input2', 1 / float(cmds.getAttr(curveInfo + '.arcLength')))
+        cmds.setAttr(
+            stretchFactor +
+            '.input2',
+            1 /
+            float(
+                cmds.getAttr(
+                    curveInfo +
+                    '.arcLength')))
 
         for i in range(1, len(self.ikDriveJoints)):
             jnt = self.ikDriveJoints[i]
 
             # create a mdl for this joint's original length (default down axis
             # is x)
-            lengthMultiplier = cmds.shadingNode('multDL', asUtility=True, name=jnt + '_stretchMultiplier')
-            cmds.setAttr(lengthMultiplier + '.input1',
-                         cmds.getAttr('{0}.translate{1}'.format(jnt, constants.SPINE_UP_AXIS)))
-            cmds.connectAttr(stretchFactor + '.output', lengthMultiplier + '.input2')
+            lengthMultiplier = cmds.shadingNode(
+                'multDL', asUtility=True, name=jnt + '_stretchMultiplier')
+            cmds.setAttr(
+                lengthMultiplier + '.input1',
+                cmds.getAttr(
+                    '{0}.translate{1}'.format(
+                        jnt,
+                        constants.SPINE_UP_AXIS)))
+            cmds.connectAttr(
+                stretchFactor + '.output',
+                lengthMultiplier + '.input2')
 
-            cmds.connectAttr(lengthMultiplier + '.output', '{0}.translate{1}'.format(jnt, constants.SPINE_UP_AXIS))
+            cmds.connectAttr(
+                lengthMultiplier + '.output',
+                '{0}.translate{1}'.format(
+                    jnt,
+                    constants.SPINE_UP_AXIS))
 
     def buildSplineDriverJoints(self):
 
         # we could go on a variable here since this is essentially the number of
-        # controls 
+        # controls
 
         splineDriverJoints = []
 
         # use the forward vector of our start joint as the y axis value
-        # startJointMatrix = cmds.getAttr(self.startJoint + '.worldMatrix[0]')
-        # forwardVector = om.MVector(*startJointMatrix[4:7])
-
+        # start_jointMatrix = cmds.getAttr(self.start_joint + '.worldMatrix[0]')
+        # forwardVector = om.MVector(*start_jointMatrix[4:7])
 
         for i in range(self.controlAmount):
             cmds.select(clear=True)
 
             # make a control at a percentage distance along the curve
-            matrix = mathUtils.getMatrixAlongCurve(self.splineCurve, i / float(self.controlAmount - 1),
-                                                   downAxis=constants.SPINE_UP_AXIS)
+            matrix = mathUtils.getMatrixAlongCurve(
+                self.splineCurve,
+                i /
+                float(
+                    self.controlAmount -
+                    1),
+                downAxis=constants.SPINE_UP_AXIS)
 
-            jnt = cmds.joint(name=nameUtils.findJointName(self.bindJoints[0], count=i, suffix='CURVEDRIVER'))
+            jnt = cmds.joint(
+                name=nameUtils.findJointName(
+                    self.bindJoints[0],
+                    count=i,
+                    suffix='CURVEDRIVER'))
 
             if constants.SPINE_UP_AXIS == 'X':
                 cmds.setAttr(jnt + '.rotateOrder', 2)
@@ -208,10 +291,9 @@ class Spline(module.Module):
 
             cmds.makeIdentity(jnt, apply=True)
 
-            cmds.parent(jnt, self.componentsGrp)
+            cmds.parent(jnt, self.components_grp)
 
             splineDriverJoints.append(jnt)
-
 
         return splineDriverJoints
 
@@ -221,20 +303,26 @@ class Spline(module.Module):
         # set world up to Object Rotation Up (Start, End)
         cmds.setAttr(self.splineIkHandle + '.dWorldUpType', 4)
 
-        cmds.connectAttr(self.ikComponents[0].ctrl + '.worldMatrix[0]', self.splineIkHandle + '.dWorldUpMatrix')
-        cmds.connectAttr(self.ikComponents[-1].ctrl + '.worldMatrix[0]', self.splineIkHandle + '.dWorldUpMatrixEnd')
+        cmds.connectAttr(
+            self.ikComponents[0].ctrl +
+            '.worldMatrix[0]',
+            self.splineIkHandle +
+            '.dWorldUpMatrix')
+        cmds.connectAttr(
+            self.ikComponents[-1].ctrl + '.worldMatrix[0]', self.splineIkHandle + '.dWorldUpMatrixEnd')
 
     def setupIkEndJoint(self):
         """Create a joint at the end of the ik chain that serves as more of an fk-style control"""
 
         cmds.select(clear=True)
-        jnt = cmds.joint(
-            name=nameUtils.findJointName(self.ikDriveJoints[-1], count=len(self.ikDriveJoints), suffix='IKDRIVER'))
-        cmds.setAttr(jnt + '.rotateOrder', cmds.getAttr(self.ikDriveJoints[-1] + '.rotateOrder'))
+        jnt = cmds.joint(name=nameUtils.findJointName(
+            self.ikDriveJoints[-1], count=len(self.ikDriveJoints), suffix='IKDRIVER'))
+        cmds.setAttr(jnt + '.rotateOrder',
+                     cmds.getAttr(self.ikDriveJoints[-1] + '.rotateOrder'))
         mathUtils.matchTransforms(self.ikDriveJoints[-1], jnt)
 
         cmds.parent(jnt, self.ikDriveJoints[-2])
-        self.parentConstrain(self.ikComponents[-1], jnt, maintainOffset=True)
+        self.parent_constrain(self.ikComponents[-1], jnt, maintainOffset=True)
 
         # just replace the end joint with this joint so when we setup the blend
         # it just works
@@ -243,23 +331,48 @@ class Spline(module.Module):
     def setupIkHierarchy(self):
         """Make a simple switch to make the ik hierarchy behave like an fk one"""
 
-        cmds.addAttr(self.node, longName='hybridIk', attributeType='bool', keyable=True, defaultValue=False)
+        cmds.addAttr(
+            self.node,
+            longName='hybridIk',
+            attributeType='bool',
+            keyable=True,
+            defaultValue=False)
 
         for i in range(len(self.ikComponents) - 1):
-            const = self.parentConstrain(self.ikComponents[i].ctrl, self.ikComponents[i + 1].offsetGrp)
+            const = self.parent_constrain(
+                self.ikComponents[i].ctrl, self.ikComponents[i + 1].offset_grp)
 
-            cmds.connectAttr(self.node + '.hybridIk',
-                             '{0}.{1}'.format(const, cmds.parentConstraint(const, query=True, weightAliasList=True)[0]))
+            cmds.connectAttr(
+                self.node + '.hybridIk',
+                '{0}.{1}'.format(
+                    const,
+                    cmds.parentConstraint(
+                        const,
+                        query=True,
+                        weightAliasList=True)[0]))
 
-        # switch off the base ik's constraint with this if there is one 
+        # switch off the base ik's constraint with this if there is one
         if self.startTwistParent:
-            rev = cmds.createNode('reverse', name=self.name + '_ikHybridReverse')
+            rev = cmds.createNode(
+                'reverse',
+                name=self.name +
+                '_ikHybridReverse')
             cmds.connectAttr(self.node + '.hybridIk', rev + '.inputX')
-            # get the parent constraint on the first ik component's offset group
-            const = cmds.ls(cmds.listRelatives(self.ikComponents[0].offsetGrp, children=True), type='parentConstraint')
+            # get the parent constraint on the first ik component's offset
+            # group
+            const = cmds.ls(
+                cmds.listRelatives(
+                    self.ikComponents[0].offset_grp,
+                    children=True),
+                type='parentConstraint')
 
             if const:
                 # switch it off when we go into hybridIk mode
-                cmds.connectAttr(rev + '.outputX', '{0}.{1}'.format(const[0],
-                                                                    cmds.parentConstraint(const[0], query=True,
-                                                                        weightAliasList=True)[0]))
+                cmds.connectAttr(
+                    rev + '.outputX',
+                    '{0}.{1}'.format(
+                        const[0],
+                        cmds.parentConstraint(
+                            const[0],
+                            query=True,
+                            weightAliasList=True)[0]))

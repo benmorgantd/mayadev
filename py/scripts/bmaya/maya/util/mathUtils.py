@@ -2,7 +2,7 @@
 Utility functions for working with math in maya. These are used by various components to perform common
 tasks that involve math, such as finding the pole vector position for an ik handle, etc.
 """
-import maya.OpenMaya as om
+import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
 
@@ -19,50 +19,67 @@ def findPoleVector(joints, scaleFactor=1):
         obj.getDagPath(i, jointDag)
         jointDags.append(jointDag)
 
-    startJointFnTrans = om.MFnTransform(jointDags[0])
+    start_jointFnTrans = om.MFnTransform(jointDags[0])
     secondJointFnTrans = om.MFnTransform(jointDags[1])
     endJointFnTrans = om.MFnTransform(jointDags[2])
 
-    startJointVec = startJointFnTrans.getTranslation(om.MSpace.kWorld)
+    start_jointVec = start_jointFnTrans.getTranslation(om.MSpace.kWorld)
     secondJointVec = secondJointFnTrans.getTranslation(om.MSpace.kWorld)
     endJointVec = endJointFnTrans.getTranslation(om.MSpace.kWorld)
 
     # A - B gives us the vector from B to A
-    startEndVec = endJointVec - startJointVec
-    startSecondVec = secondJointVec - startJointVec
+    startEndVec = endJointVec - start_jointVec
+    startSecondVec = secondJointVec - start_jointVec
 
     # project the startSecondVec onto the line made by startEndVec
-    projection = startEndVec * ((startSecondVec * startEndVec) / (startEndVec * startEndVec))
-    affineProjection = projection + startJointVec
+    projection = startEndVec * \
+        ((startSecondVec * startEndVec) / (startEndVec * startEndVec))
+    affineProjection = projection + start_jointVec
 
     projectionThroughMidJoint = (secondJointVec - affineProjection)
     # multiply by ((up_to_mid_vec.length() / projectionThroughMidJoint)
     scaleProjectionThroughMidJoint = projectionThroughMidJoint * (
-            startSecondVec.length() / projectionThroughMidJoint.length()) * scaleFactor
+        startSecondVec.length() / projectionThroughMidJoint.length()) * scaleFactor
 
     poleVectorLocation = (affineProjection + scaleProjectionThroughMidJoint)
 
     return [poleVectorLocation.x, poleVectorLocation.y, poleVectorLocation.z]
 
 
-def setupIkTwist(twistJoint=None, ikStartJoint=None, ikHandleParent=None, twistJointParent=None, name=None):
+def setupIkTwist(
+        twistJoint=None,
+        ikstart_joint=None,
+        ikHandleParent=None,
+        twistJointParent=None,
+        name=None):
     """
-    startJoint (str): Required for the scik method. This joint will be the base of or single chain IK system. 
+    start_joint (str): Required for the scik method. This joint will be the base of or single chain IK system.
     ikParent (str): Required for the scik method. The resulting IK handle will eventually be the child of this joint.
     * It's recommended that you don't use a "bind" joint for this. Try to keep your bind hierarchy clean :)
 
     twistJointParent (str): Required for the scik method. The parent joint of the base of the IK chain.
 
-    mathUtils.setupIkTwist(twistJoint='leg_00_L_JNT', startJoint='leg_01_L_JNT', ikParent='pelvis_00_M_JNT', twistJointParent='leg_00_L_JNT', name='legTwist_L'
+    mathUtils.setupIkTwist(twistJoint='leg_00_L_JNT', start_joint='leg_01_L_JNT', ikParent='pelvis_00_M_JNT', twistJointParent='leg_00_L_JNT', name='legTwist_L'
     """
 
-    ikTwistStart = cmds.duplicate(twistJointParent, parentOnly=True, name=name + "_twist")[0]
-    ikTwistEnd = cmds.duplicate(twistJointParent, parentOnly=True, name=name + "_twistEnd")[0]
+    ikTwistStart = cmds.duplicate(
+        twistJointParent,
+        parentOnly=True,
+        name=name + "_twist")[0]
+    ikTwistEnd = cmds.duplicate(
+        twistJointParent,
+        parentOnly=True,
+        name=name + "_twistEnd")[0]
 
-    matchTransforms(ikStartJoint, ikTwistStart)
+    matchTransforms(ikstart_joint, ikTwistStart)
     cmds.parent(ikTwistEnd, ikTwistStart)
 
-    ik = cmds.ikHandle(sj=ikTwistStart, ee=ikTwistEnd, solver="ikSCsolver", name=name + "_scikHandle")
+    ik = cmds.ikHandle(
+        sj=ikTwistStart,
+        ee=ikTwistEnd,
+        solver="ikSCsolver",
+        name=name +
+        "_scikHandle")
 
     cmds.parent(ikTwistStart, twistJoint)
 
@@ -94,11 +111,20 @@ def setupQuatTwist(obj=None, twistAxis="X"):
     cmds.connectAttr(obj + ".worldMatrix[0]", mm + ".matrixIn[0]")
     cmds.connectAttr(obj + ".parentInverseMatrix[0]", mm + ".matrixIn[1]")
 
-    decomp = cmds.createNode("decomposeMatrix", n=obj.rstrip("_jj") + "_decompMatrix")
+    decomp = cmds.createNode(
+        "decomposeMatrix",
+        n=obj.rstrip("_jj") +
+        "_decompMatrix")
     cmds.connectAttr(mm + ".matrixSum", decomp + ".inputMatrix")
 
-    quatToEuler = cmds.createNode("quatToEuler", n=obj.rstrip("_jj") + "_quatToEuler")
-    cmds.connectAttr("{0}.outputQuat{1}".format(decomp, twistAxis), "{0}.inputQuat{1}".format(quatToEuler, twistAxis))
+    quatToEuler = cmds.createNode(
+        "quatToEuler",
+        n=obj.rstrip("_jj") +
+        "_quatToEuler")
+    cmds.connectAttr(
+        "{0}.outputQuat{1}".format(
+            decomp, twistAxis), "{0}.inputQuat{1}".format(
+            quatToEuler, twistAxis))
     cmds.connectAttr(decomp + ".outputQuatW", quatToEuler + ".inputQuatW")
     cmds.connectAttr(obj + ".rotateOrder", quatToEuler + ".inputRotateOrder")
 
@@ -109,7 +135,11 @@ def fitCurveToPoints(points, name='fitCurve'):
     """[cmds.xform(jnt, q=1, t=1, ws=1) for jnt in joints]"""
 
     linearCurve = cmds.curve(degree=1, point=points)
-    fitCurve = cmds.fitBspline(linearCurve, constructionHistory=False, tolerance=0.001, name=name)[0]
+    fitCurve = cmds.fitBspline(
+        linearCurve,
+        constructionHistory=False,
+        tolerance=0.001,
+        name=name)[0]
 
     cmds.delete(linearCurve)
 
@@ -129,9 +159,21 @@ def getMatrixAlongCurve(curve, parameter, downAxis='X'):
     cmds.connectAttr(curveInfo + '.position.positionZ', temp4x4 + '.in32')
 
     # align the down axis (x) to the tangent of the curve
-    cmds.connectAttr(curveInfo + '.normalizedTangent.normalizedTangentX', temp4x4 + '.in00')
-    cmds.connectAttr(curveInfo + '.normalizedTangent.normalizedTangentY', temp4x4 + '.in01')
-    cmds.connectAttr(curveInfo + '.normalizedTangent.normalizedTangentZ', temp4x4 + '.in02')
+    cmds.connectAttr(
+        curveInfo +
+        '.normalizedTangent.normalizedTangentX',
+        temp4x4 +
+        '.in00')
+    cmds.connectAttr(
+        curveInfo +
+        '.normalizedTangent.normalizedTangentY',
+        temp4x4 +
+        '.in01')
+    cmds.connectAttr(
+        curveInfo +
+        '.normalizedTangent.normalizedTangentZ',
+        temp4x4 +
+        '.in02')
 
     cmds.setAttr(curveInfo + ".parameter", parameter)
 
@@ -140,7 +182,7 @@ def getMatrixAlongCurve(curve, parameter, downAxis='X'):
     U = om.MVector(*cmds.getAttr(curveInfo + '.normalizedTangent')[0])
     W = (U ^ forwardVector).normal()
 
-    # like an up vector in an aim, the forward vector may not always be 
+    # like an up vector in an aim, the forward vector may not always be
     # orthogonal to U (if the spline has any sort of curve to it)
     forwardVector = (W ^ U).normal()
 
@@ -157,7 +199,10 @@ def getMatrixAlongCurve(curve, parameter, downAxis='X'):
     cmds.delete(temp4x4, curveInfo)
 
     if downAxis == 'Y':
-        matrix = reorderMatrix(getMMatrixFromList(matrix), downAxis=1, upAxis=2)
+        matrix = reorderMatrix(
+            getMMatrixFromList(matrix),
+            downAxis=1,
+            upAxis=2)
         matrix = listFromMatrix(matrix)
 
     return matrix
@@ -168,7 +213,12 @@ def matchTransforms(source, targets, translate=True, rotate=True, scale=True):
         targets = [targets]
 
     for target in targets:
-        cmds.delete(cmds.parentConstraint(source, target, maintainOffset=False))
+        cmds.delete(
+            cmds.parentConstraint(
+                source,
+                target,
+                maintainOffset=False))
+
 
 def getMMatrixFromList(matrixList):
     matrix = om.MMatrix()
@@ -240,15 +290,17 @@ def listFromMatrix(matrix):
 
     return matrixList
 
+
 def getMatrix(transform, worldSpace=True):
     if worldSpace:
         return cmds.xform(transform, q=1, matrix=1, ws=1)
     else:
         return cmds.xform(transform, q=1, matrix=1, os=1)
 
+
 def getWorldMatrix(transform):
     return getMatrix(transform, worldSpace=True)
 
+
 def getObjectMatrix(transform):
     return getMatrix(transform, worldSpace=False)
-

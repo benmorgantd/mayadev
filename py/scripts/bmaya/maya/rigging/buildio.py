@@ -5,15 +5,17 @@ Gives the logic for saving and loading the build component, which is a json file
 import json
 import os
 
+
 def load(filepath):
 
     if not os.path.exists(filepath):
         raise RuntimeError('Filepath does not exist.')
-    
-    with open(filepath, "r") as f:
-        buildData = json.load(f)
 
-    return buildData
+    with open(filepath, "r") as f:
+        build_data = json.load(f)
+
+    return build_data
+
 
 def save(filepath, data):
 
