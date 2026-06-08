@@ -15,9 +15,9 @@ class IkChain(module.Module):
                  parent=None, mirror=False, upVector=[0, 2, 0], exclude=[],
                  side='L'):
 
-        module.Module.__init__(self, modType='IkChain', name=name,
+        module.Module.__init__(self, mod_type='IkChain', name=name,
                                character=character,
-                               shapeType='cube', mirror=mirror, side=side)
+                               shape_type='cube', mirror=mirror, side=side)
 
         self.parent = parent
         self.start_joint = start_joint

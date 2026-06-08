@@ -19,19 +19,19 @@ from bmaya.maya.rigging.shapes import shapelib
 class Module(object):
     mirrorPairs = {'L': 'R', 'R': 'L', 'M': None}
 
-    def __init__(self, character=None, name='module1', modType='Module',
+    def __init__(self, character=None, name='module1', mod_type='Module',
                  parent=None, side='L',
-                 mirror=False, shapeType='cube', alignWorld=None):
+                 mirror=False, shape_type='cube', align_world=None):
 
         self.character = character
 
         self.name = name
-        self.mod_type = modType
-        self.parent = self.determineParent(parent)
+        self.mod_type = mod_type
+        self.parent = self.determine_parent(parent)
         self.side = side
         self.mirror = mirror
-        self.shape_type = shapeType
-        self.align_world = alignWorld
+        self.shape_type = shape_type
+        self.align_world = align_world
 
         self.components = []
         self.bind_joints = []
@@ -70,7 +70,7 @@ class Module(object):
             cmds.hide(self.driverGrp)
             cmds.parent(self.driverGrp, self.components_grp)
 
-            # print '>>> Created {0} node >> {1} <<'.format(self.modType,
+            # print '>>> Created {0} node >> {1} <<'.format(self.mod_type,
             # self.node)
         else:
             raise RuntimeError(
@@ -231,7 +231,7 @@ class Module(object):
             # set attribute manually for parent so that we know it has the
             # start_joint variable set
             setattr(mirrorSelf, 'parent',
-                    mirrorSelf.determineParent(mirrorSelf.parent))
+                    mirrorSelf.determine_parent(mirrorSelf.parent))
 
             mirrorSelf.build()
 
@@ -239,7 +239,7 @@ class Module(object):
         else:
             return None
 
-    def determineParent(self, parent):
+    def determine_parent(self, parent):
         if parent and cmds.objExists(parent):
             return parent
         elif hasattr(self, 'start_joint'):
@@ -276,7 +276,7 @@ class Module(object):
             self.parent_constrain(
                 self.parent,
                 self.components[0].offset_grp,
-                maintainOffset=True)
+                maintain_offset=True)
         elif hasattr(self, 'start_joint'):
             parent_transform = cmds.listRelatives(self.start_joint, parent=True,
                                                   type='joint')
@@ -291,28 +291,28 @@ class Module(object):
             self.parent_constrain(
                 parent_transform,
                 self.components[0].offset_grp,
-                maintainOffset=True)
+                maintain_offset=True)
 
         elif self.mod_type != 'Layout':
             raise RuntimeError('Module must have a start joint.')
 
-    def parent_constrain(self, parent=None, child=None, maintainOffset=True):
+    def parent_constrain(self, parent=None, child=None, maintain_offset=True):
         if isinstance(parent, shapelib.ControlCurve):
             parent = parent.ctrl
         if isinstance(child, shapelib.ControlCurve):
             child = child.ctrl
 
         # create a matrix-style constraint
-        multMatrix = cmds.createNode(
+        mult_matrix = cmds.createNode(
             'multMatrix', name=child + '_parentConstraint_mm')
         cmds.connectAttr(
             parent + '.worldMatrix[0]',
-            multMatrix + '.matrixIn[0]')
+            mult_matrix + '.matrixIn[0]')
         # TODO: offset calculation
         # NOTE: offsetParentMatrix is the offset from the _child's_ parent. So the existing offset has to be taken
         # into account as well as the offset from the parent to the child
         cmds.connectAttr(
-            f'{multMatrix}.matrixSum',
+            f'{mult_matrix}.matrixSum',
             f'{child}.offsetParentMatrix')
 
         # const = cmds.parentConstraint(parent, child, mo=maintainOffset)[0]
@@ -326,7 +326,7 @@ class Module(object):
             raise NotImplementedError(
                 'This method of parenting does not work with controls that have a custom pivot')
 
-        return multMatrix
+        return mult_matrix
 
         if pivotCtrl and not cmds.objExists(const + '_offsetVector'):
             pivotCtrl = pivotCtrl[0]
@@ -455,7 +455,7 @@ class Module(object):
                     cmds.parent(driver, driver_parent, absolute=True)
 
         if constrain:
-            self.parent_constrain(driver, jnt, maintainOffset=False)
+            self.parent_constrain(driver, jnt, maintain_offset=False)
 
             # add a connection for driver and driven joint
             # only add this attribute if it's a direct constraint
@@ -466,15 +466,15 @@ class Module(object):
         return driver
 
     def create_drive_joints(self, label='DRIVER', constrain=True):
-        driveJoints = []
+        drive_joints = []
 
         for joint in self.bind_joints:
-            driveJoints.append(
+            drive_joints.append(
                 self.create_drive_joint(joint, label=label, constrain=constrain))
 
-        cmds.parent(driveJoints[0], self.driverGrp)
+        cmds.parent(drive_joints[0], self.driverGrp)
 
-        return driveJoints
+        return drive_joints
 
     def make_ik_handle(self, start_joint, end_joint, solver_type, name):
 
@@ -501,37 +501,37 @@ class Module(object):
             raise ValueError(
                 'Given joint {0} has no direct driver.'.format(joint))
 
-    def blend_chains(self, fkChain, ikChain, childChain, driveAttribute):
+    def blend_chains(self, fk_chain, ik_chain, child_chain, drive_attribute):
 
         # create the reverse node (name is now more vague)
-        reverse = cmds.createNode('reverse', name=childChain[0] + '_REV')
-        cmds.connectAttr(driveAttribute, reverse + '.inputX')
+        reverse = cmds.createNode('reverse', name=child_chain[0] + '_REV')
+        cmds.connectAttr(drive_attribute, reverse + '.inputX')
         reverseAttr = reverse + '.outputX'
 
-        for i in range(len(fkChain)):
+        for i in range(len(fk_chain)):
             const = cmds.parentConstraint(
-                fkChain[i],
-                ikChain[i],
-                childChain[i],
+                fk_chain[i],
+                ik_chain[i],
+                child_chain[i],
                 maintainOffset=True)[0]
 
             cmds.connectAttr(
                 reverseAttr, '{0}.{1}W0'.format(
-                    const, fkChain[i]))
-            cmds.connectAttr(driveAttribute,
-                             '{0}.{1}W1'.format(const, ikChain[i]))
+                    const, fk_chain[i]))
+            cmds.connectAttr(drive_attribute,
+                             '{0}.{1}W1'.format(const, ik_chain[i]))
 
             # set interpolation type to Shortest
             cmds.setAttr(const + '.interpType', 2)
 
             self.message_connect(
-                childChain[i],
-                fkChain[i],
+                child_chain[i],
+                fk_chain[i],
                 'fkDriver',
                 'driven')
             self.message_connect(
-                childChain[i],
-                ikChain[i],
+                child_chain[i],
+                ik_chain[i],
                 'ikDriver',
                 'driven')
 
@@ -590,7 +590,7 @@ class Module(object):
 
         return jnt_name
 
-    def setup_align_world(self, component, defaultValue=0):
+    def setup_align_world(self, component, default_value=0):
         if self.align_world is None:
             return
 
@@ -599,7 +599,7 @@ class Module(object):
         cmds.setAttr(const + '.interpType', 2)
 
         cmds.addAttr(component.ctrl, longName='followWorld',
-                     defaultValue=defaultValue,
+                     defaultValue=default_value,
                      attributeType='bool', keyable=True)
 
         cmds.connectAttr(component.ctrl + '.followWorld',
@@ -608,16 +608,16 @@ class Module(object):
     def find_twist_joints(self, jnt):
         children = cmds.listRelatives(jnt, type='joint', children=True)
 
-        twistJoints = []
+        twist_joints = []
 
         for c in children:
             if 'Twist' in c:
-                twistJoints.append(c)
+                twist_joints.append(c)
 
         # will ascend 00 -> 0x
-        twistJoints.sort()
+        twist_joints.sort()
 
-        return twistJoints
+        return twist_joints
 
     @classmethod
     def add_moveable_pivot(cls, ctrl):
@@ -694,17 +694,17 @@ class Module(object):
 
             components.append(ctrl)
 
-            self.parent_constrain(ctrl.ctrl, jnt, maintainOffset=True)
+            self.parent_constrain(ctrl.ctrl, jnt, maintain_offset=True)
 
             if i == 0:
                 cmds.parent(ctrl.offset_grp, self.components_grp)
             else:
-                parentJoint = cmds.listRelatives(
+                parent_joint = cmds.listRelatives(
                     jnt, parent=True, type='joint')[0]
 
-                if cmds.objExists(parentJoint + '.driveCtrl'):
+                if cmds.objExists(parent_joint + '.driveCtrl'):
                     parentCtrl = cmds.listConnections(
-                        parentJoint + '.driveCtrl')
+                        parent_joint + '.driveCtrl')
                 else:
                     parentCtrl = None
 
@@ -720,6 +720,6 @@ class Module(object):
 
         if setup_align_world:
             self.setup_align_world(
-                components[0], defaultValue=self.align_world)
+                components[0], default_value=self.align_world)
 
         return components

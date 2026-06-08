@@ -12,10 +12,10 @@ class SingleJoint(module.Module):
                  parent=None, shapeType='cube',
                  mirror=False, side='L', alignWorld=None,
                  addOffsetControl=False, offsetShapeType='cube'):
-        super(SingleJoint, self).__init__(modType='SingleJoint', name=name,
+        super(SingleJoint, self).__init__(mod_type='SingleJoint', name=name,
                                           character=character,
-                                          shapeType=shapeType, mirror=mirror,
-                                          side=side, alignWorld=alignWorld)
+                                          shape_type=shapeType, mirror=mirror,
+                                          side=side, align_world=alignWorld)
 
         self.parent = parent
         self.start_joint = start_joint
@@ -51,12 +51,12 @@ class SingleJoint(module.Module):
                 jnt=self.start_jointDriver)
             cmds.parent(offsetCtrl.offset_grp, ctrl.ctrl)
             self.parent_constrain(offsetCtrl.ctrl, self.start_jointDriver,
-                                  maintainOffset=True)
+                                  maintain_offset=True)
             self.components.append(offsetCtrl)
         else:
             self.parent_constrain(ctrl.ctrl, self.start_jointDriver,
-                                  maintainOffset=True)
+                                  maintain_offset=True)
 
         cmds.parent(ctrl.offset_grp, self.components_grp)
 
-        self.setup_align_world(ctrl, defaultValue=self.align_world)
+        self.setup_align_world(ctrl, default_value=self.align_world)

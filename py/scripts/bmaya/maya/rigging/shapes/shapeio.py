@@ -38,11 +38,11 @@ def save(cvsPath):
 
         obj_iter.getDagPath(dag)
 
-        fnNurbs = om.MFnNurbsCurve(dag)
+        fn_nurbs = om.MFnNurbsCurve(dag)
 
         # gets the cvs in world space
 
-        fnNurbs.getCVs(points, om.MSpace.kWorld)
+        fn_nurbs.getCVs(points, om.MSpace.kWorld)
 
         point_array = []
 
@@ -52,17 +52,17 @@ def save(cvsPath):
 
         shape_data[str(dag.partialPathName())] = point_array
 
-        fnNurbs.updateCurve()
+        fn_nurbs.updateCurve()
 
         obj_iter.next()
 
-    fileUtils.versionFile(cvsPath)
+    fileUtils.version_file(cvsPath)
 
     with open(cvsPath, "w+") as f:
 
-        jsonData = json.dumps(shape_data, indent=4)
+        json_data = json.dumps(shape_data, indent=4)
 
-        f.write(jsonData)
+        f.write(json_data)
 
     om.MGlobal.displayInfo("Shape data exported.")
 
@@ -71,15 +71,15 @@ def save(cvsPath):
 
 def load(cvsPath):
 
-    shapeData = None
+    shape_data = None
 
     with open(cvsPath, "r") as f:
 
-        shapeData = json.load(f)
+        shape_data = json.load(f)
 
     scene = cmds.ls()
 
-    cmds.select([obj for obj in shapeData.keys() if obj in scene])
+    cmds.select([obj for obj in shape_data.keys() if obj in scene])
 
     sel = om.MSelectionList()
 
@@ -95,15 +95,15 @@ def load(cvsPath):
 
         fn_nurbs = om.MFnNurbsCurve(dag)
 
-        storedPoints = shapeData[str(dag.partialPathName())]
+        stored_points = shape_data[str(dag.partialPathName())]
 
-        finalPoints = om.MPointArray()
+        final_points = om.MPointArray()
 
-        for point in storedPoints:
+        for point in stored_points:
 
-            finalPoints.append(*point)
+            final_points.append(*point)
 
-        fn_nurbs.setCVs(finalPoints, om.MSpace.kWorld)
+        fn_nurbs.setCVs(final_points, om.MSpace.kWorld)
 
         fn_nurbs.updateCurve()
 
@@ -117,15 +117,15 @@ def load(cvsPath):
 def mirror(cvsPath):
     mirror_directions = ["_L_", "_R_"]
 
-    shapeData = None
+    shape_data = None
 
     with open(cvsPath, "r") as f:
 
-        shapeData = json.load(f)
+        shape_data = json.load(f)
 
     scene = cmds.ls()
 
-    cmds.select([obj for obj in shapeData.keys()
+    cmds.select([obj for obj in shape_data.keys()
 
                 if obj in scene and mirror_directions[0] in obj])
 
@@ -133,54 +133,54 @@ def mirror(cvsPath):
 
     om.MGlobal.getActiveSelectionList(sel)
 
-    objIter = om.MItSelectionList(sel)
+    obj_iter = om.MItSelectionList(sel)
 
-    while not objIter.isDone():
+    while not obj_iter.isDone():
 
         dag = om.MDagPath()
 
-        objIter.getDagPath(dag)
+        obj_iter.getDagPath(dag)
 
-        dagName = str(dag.partialPathName())
+        dag_name = str(dag.partialPathName())
 
         sel = om.MSelectionList()
 
-        mirrorName = nameUtils.replace(
+        mirror_name = nameUtils.replace(
             mirror_directions[0], mirror_directions[-1])
 
-        if mirrorName in scene:
+        if mirror_name in scene:
 
-            sel.add(mirrorName)
+            sel.add(mirror_name)
 
-            mirrorDag = om.MDagPath()
+            mirror_dag = om.MDagPath()
 
-            sel.getDagPath(0, mirrorDag)
+            sel.getDagPath(0, mirror_dag)
 
-            fnNurbs = om.MFnNurbsCurve(mirrorDag)
+            fn_nurbs = om.MFnNurbsCurve(mirror_dag)
 
-            point_array = shapeData[dagName]
+            point_array = shape_data[dag_name]
 
             final_point_array = om.MPointArray()
 
             for point in point_array:
 
-                flippedX = -1 * point[0]
+                flipped_x = -1 * point[0]
 
-                final_point_array.append(flippedX, point[1], point[2])
+                final_point_array.append(flipped_x, point[1], point[2])
 
-            fnNurbs.setCVs(final_point_array, om.MSpace.kWorld)
+            fn_nurbs.setCVs(final_point_array, om.MSpace.kWorld)
 
-            fnNurbs.updateCurve()
+            fn_nurbs.updateCurve()
 
-            shapeData[mirrorName] = final_point_array
+            shape_data[mirror_name] = final_point_array
 
-            objIter.next()
+            obj_iter.next()
 
         else:
 
-            log.info("No mirror for control: " + dagName)
+            log.info("No mirror for control: " + dag_name)
 
-            objIter.next()
+            obj_iter.next()
 
     cmds.select(cl=1)
 
@@ -208,7 +208,7 @@ def remove_shape_data(cvsPath, controls=[]):
 
             modified_shape_data.pop(control)
 
-    fileUtils.versionFile(cvsPath)
+    fileUtils.version_file(cvsPath)
 
     with open(cvsPath, "w+") as f:
 

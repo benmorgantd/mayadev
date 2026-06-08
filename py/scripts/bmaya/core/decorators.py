@@ -19,7 +19,7 @@ def decorator_maker(meta_decorator):
 
 
 @decorator_maker
-def measure_time(func, *args, **kwargs):
+def log_fn_duration(func, *args, **kwargs):
     """
     Measures the execution time of a function and prints the duration.
     """

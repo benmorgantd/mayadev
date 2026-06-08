@@ -61,7 +61,7 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
 
         self.parent_constrain(self.ikComponents[1].ctrl,
                               self.footIkComponents[0].offset_grp,
-                              maintainOffset=True)
+                              maintain_offset=True)
 
         # remove parent constraint on the drive (leg) ankle and make its driver
         # the (foot) ankle
@@ -70,11 +70,11 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
             cmds.delete(cmds.listRelatives(node, type='constraint'))
 
         self.parent_constrain(self.footDriveJoints[0], self.driveJoints[2],
-                              maintainOffset=True)
+                              maintain_offset=True)
         self.parent_constrain(self.ballRollCtrl.ctrl, self.ikHandleGrp,
-                              maintainOffset=True)
+                              maintain_offset=True)
         self.parent_constrain(self.footDriveJoints[1], self.ball,
-                              maintainOffset=True)
+                              maintain_offset=True)
 
         # hook up fk and ik foot control visibility
         cmds.connectAttr(self.blendReverse,
@@ -83,7 +83,7 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
                          '{0}.v'.format(self.footIkComponents[0].offset_grp))
 
         self.addFkGimbalControl()
-        self.setup_align_world(self.fkHipGimbal, defaultValue=self.align_world)
+        self.setup_align_world(self.fkHipGimbal, default_value=self.align_world)
 
         self.addIkToeBend()
 

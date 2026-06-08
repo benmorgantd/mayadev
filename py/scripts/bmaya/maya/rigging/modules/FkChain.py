@@ -14,10 +14,10 @@ class FkChain(module.Module):
                  side='L',
                  alignWorld=False):
 
-        module.Module.__init__(self, name=name, modType='FkChain',
+        module.Module.__init__(self, name=name, mod_type='FkChain',
                                character=character,
-                               shapeType=shapeType, mirror=mirror, side=side,
-                               alignWorld=alignWorld)
+                               shape_type=shapeType, mirror=mirror, side=side,
+                               align_world=alignWorld)
 
         self.parent = parent
         self.start_joint = start_joint

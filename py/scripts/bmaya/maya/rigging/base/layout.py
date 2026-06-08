@@ -18,8 +18,8 @@ class Layout(module.Module):
         super(
             Layout,
             self).__init__(
-            modType='Layout',
-            shapeType='pointedCircle',
+            mod_type='Layout',
+            shape_type='pointedCircle',
             name='Layout',
             character=character)
 

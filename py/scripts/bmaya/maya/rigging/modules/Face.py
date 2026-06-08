@@ -17,7 +17,7 @@ class Face(module.Module):
                  jaw=None, eyeballs=[], eyelidBase=None, eyebrowBase=None,
                  drivers=[]):
         module.Module.__init__(self, character=character, name=name,
-                               modType='Face', parent=parent, side='M')
+                               mod_type='Face', parent=parent, side='M')
 
         self.upperHead = upperHead
         self.middleHead = middleHead
@@ -124,7 +124,7 @@ class Face(module.Module):
 
         self.parent_constrain(self.upperHeadControls[0],
                               self.eyebrowControls[0],
-                              maintainOffset=True)
+                              maintain_offset=True)
 
         self.eyelidBindJoints, \
             self.eyelidDriveJoints, \
@@ -134,7 +134,7 @@ class Face(module.Module):
 
         self.parent_constrain(self.middleHeadControls[0],
                               self.eyelidControls[0],
-                              maintainOffset=True)
+                              maintain_offset=True)
 
         self.jawBindJoints, \
             self.jawDriveJoints, \
@@ -144,7 +144,7 @@ class Face(module.Module):
 
         self.parent_constrain(self.lowerHeadControls[0],
                               self.jawControls[0],
-                              maintainOffset=True)
+                              maintain_offset=True)
 
     def buildFaceFkHierarchy(self, start_joint, exclude=[]):
         bindJoints = self.find_hierarchy_joints(start_joint=start_joint,

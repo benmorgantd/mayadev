@@ -30,12 +30,12 @@ class Spline(module.Module):
         super(
             Spline,
             self).__init__(
-            modType='Spline',
+            mod_type='Spline',
             name=name,
             character=character,
             mirror=mirror,
             side=side,
-            shapeType=shapeType)
+            shape_type=shapeType)
 
         self.start_joint = start_joint
         self.endJoint = endJoint
@@ -111,7 +111,7 @@ class Spline(module.Module):
 
             _components.append(ctrl)
 
-            self.parent_constrain(ctrl.ctrl, jnt, maintainOffset=True)
+            self.parent_constrain(ctrl.ctrl, jnt, maintain_offset=True)
 
             if i == 0:
                 cmds.parent(ctrl.offset_grp, self.components_grp)
@@ -157,13 +157,13 @@ class Spline(module.Module):
                 jnt, identifier='Ik'), shapeType=self.shape_type, jnt=jnt)
 
             cmds.parent(ctrl.offset_grp, self.components_grp)
-            self.parent_constrain(ctrl.ctrl, jnt, maintainOffset=True)
+            self.parent_constrain(ctrl.ctrl, jnt, maintain_offset=True)
 
             if i == 0 and self.startTwistParent:
                 self.parent_constrain(
                     self.startTwistParent,
                     ctrl.offset_grp,
-                    maintainOffset=True)
+                    maintain_offset=True)
 
             ikControls.append(ctrl)
 
@@ -322,7 +322,7 @@ class Spline(module.Module):
         mathUtils.matchTransforms(self.ikDriveJoints[-1], jnt)
 
         cmds.parent(jnt, self.ikDriveJoints[-2])
-        self.parent_constrain(self.ikComponents[-1], jnt, maintainOffset=True)
+        self.parent_constrain(self.ikComponents[-1], jnt, maintain_offset=True)
 
         # just replace the end joint with this joint so when we setup the blend
         # it just works

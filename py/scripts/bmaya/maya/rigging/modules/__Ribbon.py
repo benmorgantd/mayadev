@@ -24,7 +24,7 @@ class Ribbon(module.Module):
         super(
             Ribbon,
             self).__init__(
-            modType='Ribbon',
+            mod_type='Ribbon',
             name=name,
             character=character,
             mirror=mirror,
@@ -549,10 +549,10 @@ class Ribbon(module.Module):
             self.parent_constrain(
                 followJoints[i],
                 ctrl.offset_grp,
-                maintainOffset=True)
+                maintain_offset=True)
 
             self.parent_constrain(
-                ctrl.ctrl, bindJoints[i], maintainOffset=True)
+                ctrl.ctrl, bindJoints[i], maintain_offset=True)
 
             self.components.append(ctrl)
 
@@ -595,7 +595,7 @@ class Ribbon(module.Module):
             self.parent_constrain(
                 ctrl.ctrl,
                 driveJnt + '_offset_grp',
-                maintainOffset=True)
+                maintain_offset=True)
 
             cmds.parent(ctrl.offset_grp, driverControlGrp)
 

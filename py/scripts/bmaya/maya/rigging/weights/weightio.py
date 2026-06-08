@@ -45,7 +45,7 @@ def save(weightsDir):
         filename = os.path.join(weightsDir, dagName + '.weights')
         if os.path.exists(filename):
             # version the file
-            fileUtils.versionFile(filename)
+            fileUtils.version_file(filename)
 
         if skin:
             # exports by vertex index. Changes to the vert order will break this

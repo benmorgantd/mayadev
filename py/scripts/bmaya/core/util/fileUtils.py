@@ -1,8 +1,9 @@
 import os
+
 import shutil
 
 
-def versionFile(filepath):
+def version_file(filepath):
     """Saves off a copy of the given file to a <filename>.Versions folder.
 
     Args:
@@ -26,6 +27,7 @@ def versionFile(filepath):
     numVersions = len(os.listdir(versionFolder))
 
     versionFilename = os.path.join(versionFolder, "{0}_{1:04d}{2}".format(
+
         filename, (numVersions + 1), extension))
 
     shutil.copy(filepath, versionFilename)

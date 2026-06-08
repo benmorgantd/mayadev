@@ -1,12 +1,4 @@
 {
     "python.defaultInterpreterPath": "C:\\Users\\morga\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
     "python.languageServer": "Default",
-    "[python]": {
-        "editor.defaultFormatter": "ms-python.autopep8",
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": "never",
-            "source.fixAll": "never"
-        }
-    }
 }

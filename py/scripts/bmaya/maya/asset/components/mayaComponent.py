@@ -18,7 +18,7 @@ class MayaComponent(Component):
 
     def save(self):
         om.MGlobal.displayInfo('Saving ' + self.type + ' ...')
-        fileUtils.versionFile(self.full_path)
+        fileUtils.version_file(self.full_path)
         cmds.file(rename=self.full_path)
         cmds.file(save=True, type="mayaAscii", force=True)
 
