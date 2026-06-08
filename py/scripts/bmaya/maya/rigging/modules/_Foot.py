@@ -52,7 +52,7 @@ class Foot(object):
         for jnt in [self.ankle, self.ball, self.toeTip]:
             fkJnt = cmds.joint(
                 name=jnt.replace(constants.JOINT_SUFFIX, 'FOOTFK'))
-            mathUtils.matchTransforms(jnt, fkJnt)
+            mathUtils.match_transforms(jnt, fkJnt)
             cmds.makeIdentity(fkJnt, apply=True, rotate=True)
 
             fkJoints.append(fkJnt)
@@ -68,7 +68,7 @@ class Foot(object):
         for jnt in [self.ankle, self.ball, self.toeTip]:
             ikJnt = cmds.joint(
                 name=jnt.replace(constants.JOINT_SUFFIX, 'FOOTIK'))
-            mathUtils.matchTransforms(jnt, ikJnt)
+            mathUtils.match_transforms(jnt, ikJnt)
             cmds.makeIdentity(ikJnt, apply=True, rotate=True)
 
             ikJoints.append(ikJnt)
@@ -82,7 +82,7 @@ class Foot(object):
         for jnt in [self.ankle, self.ball, self.toeTip]:
             blendJnt = cmds.joint(
                 name=jnt.replace(constants.JOINT_SUFFIX, 'FOOTDRIVE'))
-            mathUtils.matchTransforms(jnt, blendJnt)
+            mathUtils.match_transforms(jnt, blendJnt)
             cmds.makeIdentity(blendJnt, apply=True, rotate=True)
 
             driveJoints.append(blendJnt)
@@ -113,7 +113,7 @@ class Foot(object):
 
         for jnt in self.footHierarchy + [self.ankle]:
             revJnt = cmds.joint(name=jnt + '_Reverse')
-            mathUtils.matchTransforms(jnt, revJnt)
+            mathUtils.match_transforms(jnt, revJnt)
             cmds.makeIdentity(revJnt, apply=True, rotate=True)
             cmds.setAttr(revJnt + '.rotateOrder', 2)
 

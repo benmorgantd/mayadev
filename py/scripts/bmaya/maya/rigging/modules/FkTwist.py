@@ -70,7 +70,7 @@ class FkTwist(FkChain.FkChain):
         # we already have controls built for the chain, so add offset groups
         # to drive them
 
-        endQuat = mathUtils.setupQuatTwist(self.driveJoints[1],
+        endQuat = mathUtils.setup_quat_twist(self.driveJoints[1],
                                            twistAxis=self.twistAxis)
 
         for i in range(len(self.twistComponents)):
@@ -101,7 +101,7 @@ class FkTwist(FkChain.FkChain):
                                                          'upperTwist'))
             cmds.setAttr(upperTwistGrp + '.rotateOrder',
                          cmds.getAttr(ctrl + '.rotateOrder'))
-            mathUtils.matchTransforms(self.twistComponents[i].offset_grp,
+            mathUtils.match_transforms(self.twistComponents[i].offset_grp,
                                       upperTwistGrp)
             cmds.parent(
                 upperTwistGrp,

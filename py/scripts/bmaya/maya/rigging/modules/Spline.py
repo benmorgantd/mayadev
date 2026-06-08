@@ -179,7 +179,7 @@ class Spline(module.Module):
         jntLocs = [cmds.xform(jnt, q=1, t=1, ws=1)
                    for jnt in self.ikDriveJoints]
 
-        splineCurve = mathUtils.fitCurveToPoints(
+        splineCurve = mathUtils.fit_curve_to_points(
             jntLocs, name=self.name + '_spline')
         cmds.setAttr(splineCurve + '.inheritsTransform', False)
 
@@ -268,7 +268,7 @@ class Spline(module.Module):
             cmds.select(clear=True)
 
             # make a control at a percentage distance along the curve
-            matrix = mathUtils.getMatrixAlongCurve(
+            matrix = mathUtils.get_matrix_along_curve(
                 self.splineCurve,
                 i /
                 float(
@@ -319,7 +319,7 @@ class Spline(module.Module):
             self.ikDriveJoints[-1], count=len(self.ikDriveJoints), suffix='IKDRIVER'))
         cmds.setAttr(jnt + '.rotateOrder',
                      cmds.getAttr(self.ikDriveJoints[-1] + '.rotateOrder'))
-        mathUtils.matchTransforms(self.ikDriveJoints[-1], jnt)
+        mathUtils.match_transforms(self.ikDriveJoints[-1], jnt)
 
         cmds.parent(jnt, self.ikDriveJoints[-2])
         self.parent_constrain(self.ikComponents[-1], jnt, maintain_offset=True)

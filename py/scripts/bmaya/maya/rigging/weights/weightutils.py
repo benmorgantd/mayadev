@@ -141,11 +141,11 @@ def quick_skin():
     meshes = list(set(sel) - set(joints))
 
     for mesh in meshes:
-        existingSkin = cmds.ls(cmds.listHistory(mesh), type='skinCluster')
+        existing_skin = cmds.ls(cmds.listHistory(mesh), type='skinCluster')
 
-        if existingSkin:
-            cmds.delete(existingSkin)
-            log.info(f'deleted {existingSkin}')
+        if existing_skin:
+            cmds.delete(existing_skin)
+            log.info(f'deleted {existing_skin}')
 
         cmds.select(joints)
         cmds.select(mesh, add=True)
@@ -164,22 +164,22 @@ def quick_skin():
         cmds.setAttr(cstr[0] + '.maxInfluences', 4)
 
 
-def bakeDeltaMushToSkinCluster(dag):
+def bake_delta_mush_to_skin_cluster(dag):
     cmds.select(clear=True)
-    skinClusterObj = get_skin_cluster_obj(dag)
-    fnMesh = om.MFnMesh(dag)
+    skin_cluster_obj = get_skin_cluster_obj(dag)
+    fn_mesh = om.MFnMesh(dag)
 
-    originalWeights, infIndices, infObjects = get_skin_cluster_weights(
-        skinClusterObj)
+    original_weights, inf_indices, inf_objects = get_skin_cluster_weights(
+        skin_cluster_obj)
 
-    restPoints = om.MPointArray()
+    rest_points = om.MPointArray()
     # get rest pose vertex positions
-    fnMesh.getPoints(restPoints, om.MSpace.kWorld)
-    numVerts = restPoints.length()
+    fn_mesh.getPoints(rest_points, om.MSpace.kWorld)
+    numVerts = rest_points.length()
 
-    infCount = infObjects.length()
+    inf_count = inf_objects.length()
 
-    deltaMush = cmds.deltaMush(
+    delta_mush = cmds.deltaMush(
         dag.full_pathName(),
         smoothingIterations=5,
         smoothingStep=0.5,
@@ -187,9 +187,9 @@ def bakeDeltaMushToSkinCluster(dag):
         envelope=1,
         after=True)[0]
     # makes the vertices keep their relative distances
-    cmds.setAttr(deltaMush + '.distanceWeight', 1.0)
+    cmds.setAttr(delta_mush + '.distanceWeight', 1.0)
 
-    deltaWeights = originalWeights
+    delta_weights = original_weights
     # for i in range(originalWeights.length()):
     #     deltaWeights.append(0.0)
 
@@ -200,13 +200,13 @@ def bakeDeltaMushToSkinCluster(dag):
         beginProgress=True,
         isInterruptable=True,
         status='Converting Delta Mush ...',
-        maxValue=infCount)
+        maxValue=inf_count)
 
     try:
 
-        for influenceIndex in range(infCount):
+        for influenceIndex in range(inf_count):
             # move influence object one unit
-            infName = infObjects[influenceIndex].partialPathName()
+            infName = inf_objects[influenceIndex].partialPathName()
 
             # this is where the delta mush deformer stops "working"
             # the deformation made by this move isn't affected by the delta
@@ -222,20 +222,20 @@ def bakeDeltaMushToSkinCluster(dag):
 
             # if we don't re-declare the fnMesh every time, the points don't
             # update
-            fnMesh = om.MFnMesh(dag)
+            fn_mesh = om.MFnMesh(dag)
             influencePointLocations = om.MPointArray()
-            fnMesh.getPoints(influencePointLocations, om.MSpace.kWorld)
+            fn_mesh.getPoints(influencePointLocations, om.MSpace.kWorld)
 
             for vertexIndex in range(influencePointLocations.length()):
                 restDeltaDistance = influencePointLocations[vertexIndex].distanceTo(
-                    restPoints[vertexIndex])
+                    rest_points[vertexIndex])
 
                 # after moving the joint, if the vertex moves, that joint has
                 # some influence on the mesh
                 if restDeltaDistance > 0:
                     # set the weight for that vertex at that weight index to
                     # the distance
-                    deltaWeights[(vertexIndex * infCount) +
+                    delta_weights[(vertexIndex * inf_count) +
                                  influenceIndex] = restDeltaDistance
 
             # cmds.refresh(currentView=True)
@@ -252,17 +252,17 @@ def bakeDeltaMushToSkinCluster(dag):
     finally:
         cmds.progressBar(gMainProgressBar, edit=True, endProgress=True)
 
-    set_skin_cluster_weights(skinClusterObj, infIndices, deltaWeights)
+    set_skin_cluster_weights(skin_cluster_obj, inf_indices, delta_weights)
 
     cmds.select(dag.partialPathName())
     cmds.skinPercent(get_skin_cluster_name(dag), normalize=True)
 
-    cmds.delete(deltaMush)
+    cmds.delete(delta_mush)
 
     om.MGlobal.displayInfo('Converted Delta Mush to skinCluster weights')
 
 
-def pruneWeightList(weights, maxInfluence=4):
+def prune_weight_list(weights, maxInfluence=4):
     """Prunes the given list to have only four non-zero values"""
 
     infCount = len(weights)
@@ -289,7 +289,7 @@ def pruneWeightList(weights, maxInfluence=4):
     return normalizedWeights
 
 
-def pruneSkinWeights(maxInfluence=4):
+def prune_skin_weights(maxInfluence=4):
     """Sets the weights for each vertex to the average of its neighbors."""
 
     originalSel = om.MSelectionList()
@@ -363,7 +363,7 @@ def pruneSkinWeights(maxInfluence=4):
             # makes the weights for the closest vertex equal to the outer
             # vertex
             newWeights[thisVertWeightIndex: thisVertWeightIndex +
-                       infCount] = pruneWeightList(vertWeights, maxInfluence)
+                       infCount] = prune_weight_list(vertWeights, maxInfluence)
 
         i += 1
         itVerts.next()
@@ -394,7 +394,7 @@ def pruneSkinWeights(maxInfluence=4):
         oldWeights]
 
 
-def getSkinClusterWeightDict(skinClusterObj):
+def get_skin_cluster_weight_dict(skinClusterObj):
     '''Return the weight dictionary for the given skin cluster'''
 
     weights, influenceIndices, influenceObjects = get_skin_cluster_weights(
@@ -412,7 +412,7 @@ def getSkinClusterWeightDict(skinClusterObj):
     return weightDict
 
 
-def getSkinClusterObjFromShape(shape):
+def get_skin_cluster_obj_from_shape(shape):
     sel = om.MSelectionList()
     sel.add(shape)
     mobj = om.MObject()

@@ -46,11 +46,11 @@ def find_pole_vector(joints, scaleFactor=1):
     return [poleVectorLocation.x, poleVectorLocation.y, poleVectorLocation.z]
 
 
-def setupIkTwist(
-        twistJoint=None,
-        ikstart_joint=None,
-        ikHandleParent=None,
-        twistJointParent=None,
+def setup_ik_twist(
+        twist_joint=None,
+        ik_start_joint=None,
+        ik_handle_parent=None,
+        twist_joint_parent=None,
         name=None):
     """
     start_joint (str): Required for the scik method. This joint will be the base of or single chain IK system.
@@ -62,39 +62,39 @@ def setupIkTwist(
     mathUtils.setupIkTwist(twistJoint='leg_00_L_JNT', start_joint='leg_01_L_JNT', ikParent='pelvis_00_M_JNT', twistJointParent='leg_00_L_JNT', name='legTwist_L'
     """
 
-    ikTwistStart = cmds.duplicate(
-        twistJointParent,
+    ik_twist_start = cmds.duplicate(
+        twist_joint_parent,
         parentOnly=True,
         name=name + "_twist")[0]
-    ikTwistEnd = cmds.duplicate(
-        twistJointParent,
+    ik_twist_end = cmds.duplicate(
+        twist_joint_parent,
         parentOnly=True,
         name=name + "_twistEnd")[0]
 
-    matchTransforms(ikstart_joint, ikTwistStart)
-    cmds.parent(ikTwistEnd, ikTwistStart)
+    match_transforms(ik_start_joint, ik_twist_start)
+    cmds.parent(ik_twist_end, ik_twist_start)
 
     ik = cmds.ikHandle(
-        sj=ikTwistStart,
-        ee=ikTwistEnd,
+        sj=ik_twist_start,
+        ee=ik_twist_end,
         solver="ikSCsolver",
         name=name +
         "_scikHandle")
 
-    cmds.parent(ikTwistStart, twistJoint)
+    cmds.parent(ik_twist_start, twist_joint)
 
     ikGrp = cmds.group(empty=True, name=name + '_scikGrp')
     cmds.delete(cmds.pointConstraint(ik[0], ikGrp, mo=0))
     cmds.parent(ik[0], ikGrp)
 
-    cmds.parentConstraint(ikHandleParent, ikGrp, mo=1)
+    cmds.parentConstraint(ik_handle_parent, ikGrp, mo=1)
 
-    cmds.hide(ikTwistStart)
+    cmds.hide(ik_twist_start)
 
-    return ikTwistStart, ikGrp
+    return ik_twist_start, ikGrp
 
 
-def setupQuatTwist(obj=None, twistAxis="X"):
+def setup_quat_twist(obj=None, twistAxis="X"):
     # quat twistExtractor
     if not obj:
         try:
@@ -131,7 +131,7 @@ def setupQuatTwist(obj=None, twistAxis="X"):
     return quatToEuler
 
 
-def fitCurveToPoints(points, name='fitCurve'):
+def fit_curve_to_points(points, name='fitCurve'):
     """[cmds.xform(jnt, q=1, t=1, ws=1) for jnt in joints]"""
 
     linearCurve = cmds.curve(degree=1, point=points)
@@ -146,7 +146,7 @@ def fitCurveToPoints(points, name='fitCurve'):
     return fitCurve
 
 
-def getMatrixAlongCurve(curve, parameter, downAxis='X'):
+def get_matrix_along_curve(curve, parameter, downAxis='X'):
     curveShape = cmds.listRelatives(curve, shapes=True)[0]
     curveInfo = cmds.createNode("pointOnCurveInfo")
     cmds.connectAttr(curveShape + ".worldSpace[0]", curveInfo + ".inputCurve")
@@ -199,16 +199,16 @@ def getMatrixAlongCurve(curve, parameter, downAxis='X'):
     cmds.delete(temp4x4, curveInfo)
 
     if downAxis == 'Y':
-        matrix = reorderMatrix(
-            getMMatrixFromList(matrix),
+        matrix = reorder_matrix(
+            get_mmatrix_from_list(matrix),
             downAxis=1,
             upAxis=2)
-        matrix = listFromMatrix(matrix)
+        matrix = list_from_matrix(matrix)
 
     return matrix
 
 
-def matchTransforms(source, targets, translate=True, rotate=True, scale=True):
+def match_transforms(source, targets, translate=True, rotate=True, scale=True):
     if isinstance(targets, str):
         targets = [targets]
 
@@ -220,14 +220,14 @@ def matchTransforms(source, targets, translate=True, rotate=True, scale=True):
                 maintainOffset=False))
 
 
-def getMMatrixFromList(matrixList):
+def get_mmatrix_from_list(matrixList):
     matrix = om.MMatrix()
     om.MScriptUtil.createMatrixFromList(matrixList, matrix)
 
     return matrix
 
 
-def reorderMatrix(matrix, downAxis=0, upAxis=0):
+def reorder_matrix(matrix, downAxis=0, upAxis=0):
     baseMatrix = matrix
 
     # for negative down axis, rotate 180y before reordering rows
@@ -279,7 +279,7 @@ def reorderMatrix(matrix, downAxis=0, upAxis=0):
     return reorderedMatrix
 
 
-def listFromMatrix(matrix):
+def list_from_matrix(matrix):
     util = om.MScriptUtil()
 
     matrixList = []
@@ -291,16 +291,16 @@ def listFromMatrix(matrix):
     return matrixList
 
 
-def getMatrix(transform, worldSpace=True):
+def get_matrix(transform, worldSpace=True):
     if worldSpace:
         return cmds.xform(transform, q=1, matrix=1, ws=1)
     else:
         return cmds.xform(transform, q=1, matrix=1, os=1)
 
 
-def getWorldMatrix(transform):
-    return getMatrix(transform, worldSpace=True)
+def get_world_matrix(transform):
+    return get_matrix(transform, worldSpace=True)
 
 
-def getObjectMatrix(transform):
-    return getMatrix(transform, worldSpace=False)
+def get_local_matrix(transform):
+    return get_matrix(transform, worldSpace=False)

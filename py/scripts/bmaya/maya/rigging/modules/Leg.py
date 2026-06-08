@@ -120,7 +120,7 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
 
         ballIkGrp = cmds.group(empty=True, name=ballIkGrpName)
 
-        mathUtils.matchTransforms(self.reverseHierarchy[1], ballIkGrp)
+        mathUtils.match_transforms(self.reverseHierarchy[1], ballIkGrp)
 
         cmds.parent(ballIkGrp, self.reverseHierarchy[0])
 

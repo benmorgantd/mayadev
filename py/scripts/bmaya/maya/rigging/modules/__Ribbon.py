@@ -277,7 +277,7 @@ class Ribbon(module.Module):
                 type='sine', name=deformerPlane + '_sineDef')
 
             sineHandleGrp = cmds.group(empty=True, name=sineHandle + '_grp')
-            mathUtils.matchTransforms(sineHandle, sineHandleGrp)
+            mathUtils.match_transforms(sineHandle, sineHandleGrp)
             cmds.parent(sineHandleGrp, self.driverGrp)
             cmds.parent(sineHandle, sineHandleGrp)
             cmds.xform(sineHandle, scale=(1, 1, 1), absolute=True)
@@ -490,8 +490,8 @@ class Ribbon(module.Module):
             orientGrp = cmds.group(empty=True, name=joint + "_offset_grp")
             sdkGrp = cmds.group(empty=True, name=joint + "_sdkGrp")
 
-            mathUtils.matchTransforms(joint, orientGrp)
-            mathUtils.matchTransforms(joint, orientGrp)
+            mathUtils.match_transforms(joint, orientGrp)
+            mathUtils.match_transforms(joint, orientGrp)
 
             cmds.parent(joint, sdkGrp)
             cmds.parent(sdkGrp, orientGrp)

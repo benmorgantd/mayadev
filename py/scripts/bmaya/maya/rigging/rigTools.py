@@ -15,12 +15,12 @@ import maya.cmds as cmds
 
 from bmaya.core import log
 
-from bmaya.core.util import constants
+from bmaya.core import constants
 
 from bmaya.maya.util import mathUtils
 
 
-def toggleSkinMode():
+def toggle_skin_mode():
     """Toggles skinning mode on the currently built rig."""
 
     characterNodes = cmds.ls('*.referenceMesh')
@@ -33,10 +33,10 @@ def toggleSkinMode():
 
         cmds.setAttr('SKELETON.visibility', currentValue)
 
-    sizeJoints()
+    size_joints()
 
 
-def sizeJoints():
+def size_joints():
 
     skeletonJoints = cmds.listRelatives(
 
@@ -67,7 +67,7 @@ def sizeJoints():
             cmds.setAttr(jnt + '.drawStyle', 0)
 
 
-def labelJoints():
+def label_joints():
 
     for jnt in cmds.ls(type='joint'):
 
@@ -102,7 +102,7 @@ def labelJoints():
             log.info(jnt + ' may be named incorrectly.')
 
 
-def getModuleNode(ctrl):
+def get_module_node(ctrl):
 
     if 'module' not in cmds.listAttr(ctrl):
 
@@ -122,21 +122,21 @@ def getModuleNode(ctrl):
     return mod
 
 
-def getCharacterNode(ctrl):
+def get_character_node(ctrl):
 
-    mod = getModuleNode(ctrl)
+    mod = get_module_node(ctrl)
 
     character = cmds.listConnections(mod + '.character')[0]
 
     return character
 
 
-def getCharacterModules(characterNode):
+def get_character_modules(characterNode):
 
     return cmds.listConnections(characterNode + '.modules')
 
 
-def resetControl(ctrl):
+def reset_control(ctrl):
 
     if 'defaultValues' not in cmds.listAttr(ctrl):
 
@@ -152,13 +152,13 @@ def resetControl(ctrl):
         cmds.setAttr('{0}.{1}'.format(ctrl, attr), value)
 
 
-def resetModule(mod):
+def reset_module(mod):
 
     components = cmds.listConnections(mod + '.components')
 
     for component in components:
 
-        resetControl(component)
+        reset_control(component)
 
     if 'defaultValues' not in cmds.listAttr(mod):
 
@@ -174,20 +174,20 @@ def resetModule(mod):
         cmds.setAttr('{0}.{1}'.format(mod, attr), value)
 
 
-def resetCharacter(ctrl):
+def reset_character(ctrl):
 
-    character = getCharacterNode(ctrl)
+    character = get_character_node(ctrl)
 
-    modules = getCharacterModules(character)
+    modules = get_character_modules(character)
 
     for module in modules:
 
-        resetModule(module)
+        reset_module(module)
 
 
-def selectModule(ctrl):
+def select_module(ctrl):
 
-    mod = getModuleNode(ctrl)
+    mod = get_module_node(ctrl)
 
     components = cmds.listConnections(mod + '.components')
 
@@ -196,11 +196,12 @@ def selectModule(ctrl):
         cmds.select(ctrl, add=1)
 
 
-def keyAll(ctrl):
+# TODO: this should be on the Character class
+def key_all(ctrl):
 
-    character = getCharacterNode(ctrl)
+    character = get_character_node(ctrl)
 
-    modules = getCharacterModules(character)
+    modules = get_character_modules(character)
 
     for mod in modules:
 
@@ -225,9 +226,9 @@ def keyAll(ctrl):
                 cmds.setKeyframe(ctrl + '.' + attr)
 
 
-def keyIk(ctrl):
+def key_ik(ctrl):
 
-    mod = getModuleNode(ctrl)
+    mod = get_module_node(ctrl)
 
     ikControls = literal_eval(cmds.getAttr(mod + '.ikComponents'))
 
@@ -242,9 +243,9 @@ def keyIk(ctrl):
             cmds.setKeyframe(ikCtrl + '.' + attr)
 
 
-def keyFk(ctrl):
+def key_fk(ctrl):
 
-    mod = getModuleNode(ctrl)
+    mod = get_module_node(ctrl)
 
     ikControls = literal_eval(cmds.getAttr(mod + '.fkComponents'))
 
@@ -259,11 +260,11 @@ def keyFk(ctrl):
             cmds.setKeyframe(fkCtrl + '.' + attr)
 
 
-def matchIkToFk(ctrl):
+def match_ik_to_fk(ctrl):
 
     # get the module of the selection
 
-    mod = getModuleNode(ctrl)
+    mod = get_module_node(ctrl)
 
     # get the position of the fk joints
 
@@ -271,7 +272,7 @@ def matchIkToFk(ctrl):
 
     # get the ik controls
 
-    ikControls = literal_eval(cmds.getAttr(mod + '.ikComponents'))
+    ik_controls = literal_eval(cmds.getAttr(mod + '.ikComponents'))
 
     # this is a little more complicated if its a spline module
 
@@ -281,19 +282,19 @@ def matchIkToFk(ctrl):
 
         # This will give us start and end twist.
 
-        mathUtils.matchTransforms(fkJoints[0], ikControls[0])
+        mathUtils.match_transforms(fkJoints[0], ik_controls[0])
 
-        mathUtils.matchTransforms(fkJoints[-1], ikControls[-1])
+        mathUtils.match_transforms(fkJoints[-1], ik_controls[-1])
 
         # now we need to make an approximation for the middle controls
 
         # We'll do this by fitting a curve through the fk joints
 
-        fitCurve = mathUtils.fitCurveToPoints(
+        fitCurve = mathUtils.fit_curve_to_points(
 
             [cmds.xform(jnt, q=1, t=1, ws=1) for jnt in fkJoints])
 
-        numMiddleControls = len(ikControls) - 2
+        numMiddleControls = len(ik_controls) - 2
 
         for i in range(1, numMiddleControls + 1):
 
@@ -301,7 +302,7 @@ def matchIkToFk(ctrl):
 
             # along the curve (assumes controls were created this way to begin)
 
-            matrix = mathUtils.getMatrixAlongCurve(
+            matrix = mathUtils.get_matrix_along_curve(
 
                 fitCurve,
 
@@ -314,7 +315,7 @@ def matchIkToFk(ctrl):
 
                 downAxis=constants.SPINE_UP_AXIS)
 
-            cmds.xform(ikControls[i], matrix=matrix, worldSpace=True)
+            cmds.xform(ik_controls[i], matrix=matrix, worldSpace=True)
 
         cmds.delete(fitCurve)
 
@@ -327,19 +328,19 @@ def matchIkToFk(ctrl):
 
                 fkJoints[0],
 
-                ikControls[0],
+                ik_controls[0],
 
                 maintainOffset=False))
 
         # match the ik end control to the last fk joint position
 
-        mathUtils.matchTransforms(fkJoints[2], ikControls[1])
+        mathUtils.match_transforms(fkJoints[2], ik_controls[1])
 
         # find the pole vector position for the fk joints
 
         cmds.xform(
 
-            ikControls[2],
+            ik_controls[2],
 
             translation=mathUtils.find_pole_vector(
 
@@ -352,11 +353,11 @@ def matchIkToFk(ctrl):
     cmds.setAttr(mod + '.FKIK', 1)
 
 
-def matchFkToIk(ctrl):
+def match_fk_to_ik(ctrl):
 
     # get the module of the selection
 
-    mod = getModuleNode(ctrl)
+    mod = get_module_node(ctrl)
 
     # get the position of the fk joints
 
@@ -383,7 +384,7 @@ def matchFkToIk(ctrl):
     cmds.setAttr(mod + '.FKIK', 0)
 
 
-def bakeFkToIk(ctrl, bakeRange=None):
+def bake_fk_to_ik(ctrl, bakeRange=None):
 
     if bakeRange:
 
@@ -397,51 +398,26 @@ def bakeFkToIk(ctrl, bakeRange=None):
 
         bakeEnd = int(cmds.playbackOptions(query=True, maxTime=True))
 
-    mod = getModuleNode(ctrl)
-    fk_controls = literal_eval(cmds.getAttr(mod + '.fkComponents'))
-
     for i in range(bakeStart, bakeEnd):
 
         cmds.currentTime(i)
 
-        matchFkToIk(ctrl)
+        match_fk_to_ik(ctrl)
 
-        keyFk(ctrl)
+        key_fk(ctrl)
 
 
-def bakeIkToFk(ctrl, bakeRange=None):
+def bake_ik_to_fk(ctrl, bakeRange=None):
 
     if bakeRange:
-
         bakeStart = bakeRange[0]
-
         bakeEnd = bakeRange[1]
-
     else:
-
         bakeStart = int(cmds.playbackOptions(query=True, minTime=True))
-
         bakeEnd = int(cmds.playbackOptions(query=True, maxTime=True))
 
-    mod = getModuleNode(ctrl)
-
-    fkControls = literal_eval(cmds.getAttr(mod + '.ikComponents'))
-
     for i in range(bakeStart, bakeEnd):
-
         cmds.currentTime(i)
+        match_ik_to_fk(ctrl)
+        key_ik(ctrl)
 
-        matchIkToFk(ctrl)
-
-        keyIk(ctrl)
-
-
-def _getFirstSelection():
-
-    selection = cmds.ls(selection=True) or []
-
-    if not selection or 'module' not in cmds.listAttr(selection[0]):
-
-        raise ValueError('Please select at least one control.')
-
-    return selection[0]

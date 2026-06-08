@@ -77,9 +77,9 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
             self.parent_constrain(ctrl.ctrl, driveJnt, maintain_offset=True)
             self.upperTwistControls.append(ctrl)
 
-        startTwistJoint, ikGrp = mathUtils.setupIkTwist(
-            twistJoint=self.driveJoints[0], ikstart_joint=self.driveJoints[1],
-            ikHandleParent=self.parent, twistJointParent=self.start_joint,
+        startTwistJoint, ikGrp = mathUtils.setup_ik_twist(
+            twist_joint=self.driveJoints[0], ik_start_joint=self.driveJoints[1],
+            ik_handle_parent=self.parent, twist_joint_parent=self.start_joint,
             name=self.name + 'upperTwist_' + self.side)
 
         numTwistJoints = float(len(self.upperTwistJoints))
@@ -131,7 +131,7 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         # extract twist from start and end joint and connect it to the
         # twistOffset variables
 
-        endQuat = mathUtils.setupQuatTwist(self.driveJoints[2], twistAxis='X')
+        endQuat = mathUtils.setup_quat_twist(self.driveJoints[2], twistAxis='X')
 
         numTwistJoints = float(len(self.lowerTwistJoints))
 

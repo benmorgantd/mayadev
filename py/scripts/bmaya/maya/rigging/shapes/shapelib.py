@@ -602,7 +602,7 @@ class ControlCurve(object):
 
         if self.jnt:
 
-            mathUtils.matchTransforms(self.jnt, self.offset_grp)
+            mathUtils.match_transforms(self.jnt, self.offset_grp)
 
     def setup_bboundin_b_box(self):
 

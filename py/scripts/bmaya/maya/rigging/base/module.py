@@ -483,7 +483,7 @@ class Module(object):
 
         grp = cmds.group(empty=True, name=name + '_grp')
 
-        mathUtils.matchTransforms(ik, grp)
+        mathUtils.match_transforms(ik, grp)
 
         cmds.parent(ik, grp)
 
