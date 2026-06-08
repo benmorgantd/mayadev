@@ -16,7 +16,6 @@ from bmaya.maya.asset.asset import Asset
 from bmaya.maya.asset.components import *
 from bmaya.core import log, decorators
 import bmaya.core.constants
-import bmaya.maya.rigging.constants
 from bmaya.core.util import fileUtils
 # from bmaya.maya.ui import qtbase
 
@@ -541,7 +540,7 @@ class Rig(Asset):
             log.info(">> Creating build file using default LayoutRig template.")
             # give it a LayoutRig template
             layoutRigPath = os.path.join(
-                bmaya.maya.rigging.constants.RIG_TEMPLATES_DIR,
+                bmaya.maya.constants.RIG_TEMPLATES_DIR,
                 "LayoutRig.json")
 
             with open(layoutRigPath, "r") as f:

@@ -91,10 +91,10 @@ def _setup_tool_views(registry):
     from bmaya.maya.ui.tool_views.tool_menu import ToolMenu
     from bmaya.maya import constants as maya_constants
 
-    main_menu = ToolMenu("test")
+    # Tool menu
+    main_menu = ToolMenu(None)
     main_menu.load_layout(os.path.join(
         maya_constants.TOOLS_PATH, 'bmaya_menu.json'))
-
     main_menu.build_ui(registry)
 
 
@@ -110,3 +110,7 @@ def run_user_setup():
 
 # Run the userSetup function on startup
 cmds.evalDeferred(run_user_setup)
+
+# Create convenient selection functions. This has to be done at the top level
+sl1 = lambda: cmds.ls(selection=True)[0]
+selected = lambda: cmds.ls(selection=True)

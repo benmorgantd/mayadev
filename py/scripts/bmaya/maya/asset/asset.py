@@ -16,7 +16,7 @@ import shutil
 import maya.cmds as cmds
 from .components import *
 from bmaya.core import constants, log
-import bmaya.maya.rigging.constants
+import bmaya.maya.constants
 
 
 class Asset(object):
@@ -28,7 +28,7 @@ class Asset(object):
     @property
     def root_dir(self):
         root = self.clean_path(
-            os.path.join(bmaya.maya.rigging.constants.RIGGING_PROJECT_DIR,
+            os.path.join(bmaya.maya.constants.RIGGING_PROJECT_DIR,
                          self.project, self.asset_type, self.name)
         )
 
@@ -103,7 +103,7 @@ class Asset(object):
 
         root_dir = os.path.abspath(
             os.path.join(
-                bmaya.maya.rigging.constants.RIGGING_PROJECT_DIR,
+                bmaya.maya.constants.RIGGING_PROJECT_DIR,
                 project,
                 asset_type,
                 name))
@@ -151,14 +151,14 @@ class Asset(object):
 
         # see if it's in a subdirectory of PROJECT_ROOT
 
-        for directory, subdirectory, directory_files in os.walk(bmaya.maya.rigging.constants.RIGGING_PROJECT_DIR):
+        for directory, subdirectory, directory_files in os.walk(bmaya.maya.constants.RIGGING_PROJECT_DIR):
             if dirname in cls.clean_path(directory) and any(
                 basename in cls.clean_path(f) for f in directory_files
             ):
                 # this file is within this asset's directory
                 root_directory = cls.clean_path(
                     os.path.dirname(os.path.join(
-                        bmaya.maya.rigging.constants.RIGGING_PROJECT_DIR, "projects"))
+                        bmaya.maya.constants.RIGGING_PROJECT_DIR, "projects"))
                 )
                 # returns [project, type, name, ..., basename]
                 split_root_relative_path = cls.split_path(

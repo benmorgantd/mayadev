@@ -1,5 +1,6 @@
 import os
 import json
+import uuid
 import maya.cmds as cmds
 from bmaya.core import log
 
@@ -8,7 +9,7 @@ class ToolMenu(object):
     """Generates an editable, cascading Maya native window menu from a layout file."""
 
     def __init__(self, menu_id=None):
-        self.menu_id = menu_id or "{0}Menu".format(label.replace(" ", ""))
+        self.menu_id = menu_id if menu_id else f"ToolMenu_{str(uuid.uuid4())}".replace("-", "_")
         self.hierarchy = []
 
     def load_layout(self, filepath):
