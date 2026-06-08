@@ -56,10 +56,10 @@ class ExtrudeWeights(omMPx.MPxCommand):
 
     def extrude_weights(self):
         """
-          Copies the weights for each selected vertex to the vertex closest in
-          its inverse normal direction.
+        Copies the weights for each selected vertex to the vertex closest in
+        its inverse normal direction.
 
-          Great for quickly fixing intersections on an thick mesh.
+        Great for quickly fixing intersections on an thick mesh.
 
         """
 
@@ -131,9 +131,14 @@ class ExtrudeWeights(omMPx.MPxCommand):
             intersectionPoints = om.MPointArray()
             polygonIds = om.MIntArray()
             #  shoots a ray inwards  {<----}
-            fnMesh.intersect(raySource, rayDirection,
-                             intersectionPoints, 1.0e-10,
-                             om.MSpace.kWorld, polygonIds)
+            fnMesh.intersect(
+                raySource,
+                rayDirection,
+                intersectionPoints,
+                1.0e-10,
+                om.MSpace.kWorld,
+                polygonIds,
+            )
 
             # get the verts on the intersected polygons and find the closest
             # one
@@ -146,20 +151,18 @@ class ExtrudeWeights(omMPx.MPxCommand):
                 for i in range(polygonIds.length()):
                     this_polygon_vert_ids = om.MIntArray()
                     # get the vertices on this polygon
-                    fnMesh.getPolygonVertices(
-                        polygonIds[i], this_polygon_vert_ids)
+                    fnMesh.getPolygonVertices(polygonIds[i], this_polygon_vert_ids)
                     # measure the distance
                     for j in range(this_polygon_vert_ids.length()):
                         if this_polygon_vert_ids[j] != outer_vertex_index:
                             vertex_point = om.MPoint()
                             # get this vert's position
                             fnMesh.getPoint(
-                                this_polygon_vert_ids[j], vertex_point, om.MSpace.kWorld)
+                                this_polygon_vert_ids[j], vertex_point, om.MSpace.kWorld
+                            )
                             # measure the distance between the parent vert and
                             # this vert
-                            distance = (
-                                om.MVector(vertex_point) -
-                                vert_vector).length()
+                            distance = (om.MVector(vertex_point) - vert_vector).length()
 
                             if distance < shortest_distance:
                                 shortest_distance = distance
@@ -167,29 +170,33 @@ class ExtrudeWeights(omMPx.MPxCommand):
 
                 # now that we have the closest vertex, we can transfer the weights for this vert
                 # partition the weights for this vertex
-                outer_vertex_weights = new_weights[(
-                    outer_vertex_index * inf_count_int): (outer_vertex_index * inf_count_int) + inf_count_int]
+                outer_vertex_weights = new_weights[
+                    (outer_vertex_index * inf_count_int) : (
+                        outer_vertex_index * inf_count_int
+                    )
+                    + inf_count_int
+                ]
                 # makes the weights for the closest vertex equal to the outer
                 # vertex
-                new_weights[(closest_vertex_id *
-                             inf_count_int): (closest_vertex_id *
-                                              inf_count_int) +
-                            inf_count_int] = outer_vertex_weights
+                new_weights[
+                    (closest_vertex_id * inf_count_int) : (
+                        closest_vertex_id * inf_count_int
+                    )
+                    + inf_count_int
+                ] = outer_vertex_weights
 
             itMesh.next()
 
         # set weights all at once
         mFnSkinCluster.setWeights(
-            dag,
-            comps,
-            influence_indices,
-            new_weights,
-            False,
-            old_weights)
+            dag, comps, influence_indices, new_weights, False, old_weights
+        )
 
         om.MGlobal.displayInfo(
             "Finished extruding skin weights in {0} milliseconds.".format(
-                (time.time() - startTime) * 1000))
+                (time.time() - startTime) * 1000
+            )
+        )
 
         return [
             mFnSkinCluster,
@@ -198,7 +205,9 @@ class ExtrudeWeights(omMPx.MPxCommand):
             influence_indices,
             old_weights,
             False,
-            old_weights]
+            old_weights,
+        ]
+
 
 ##########################################################
 # Plug-in initialization.
@@ -214,8 +223,7 @@ def initializePlugin(mObject):
     try:
         fnPlugin.registerCommand(kPluginCmdName, cmdCreator)
     except BaseException:
-        om.MGlobal.displayError(
-            "Failed to register command {0}".format(kPluginCmdName))
+        om.MGlobal.displayError("Failed to register command {0}".format(kPluginCmdName))
 
 
 def uninitializePlugin(mObject):
@@ -224,4 +232,5 @@ def uninitializePlugin(mObject):
         fnPlugin.deregisterCommand(kPluginCmdName)
     except BaseException:
         om.MGlobal.displayError(
-            "Failed to deregister command {0}".format(kPluginCmdName))
+            "Failed to deregister command {0}".format(kPluginCmdName)
+        )

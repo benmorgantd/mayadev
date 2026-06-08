@@ -1,6 +1,7 @@
 """Purpose:
 Utility functions for working with joints in maya.
 """
+
 import math
 import maya.cmds as cmds
 import maya.api.OpenMaya as om
@@ -28,10 +29,7 @@ def get_selection_center():
         # get world space position of each selected vertex
         current_point = it_verts.position(om.MSpace.kWorld)
 
-        current_vector = om.MVector(
-            current_point.x,
-            current_point.y,
-            current_point.z)
+        current_vector = om.MVector(current_point.x, current_point.y, current_point.z)
         vector_sum += current_vector
         vectors.append(current_vector)
 
@@ -41,7 +39,8 @@ def get_selection_center():
 
     return centroid
 
-'''
+
+"""
 def best_fit_plane():
     centroid = get_selection_center()
     loc = cmds.spaceLocator()[0]
@@ -158,7 +157,8 @@ def best_fit_plane():
     fnTrans.rotateBy(quaternion, om.MSpace.kWorld)
 
     cmds.delete(aimLoc)
-'''
+"""
+
 
 def add_twist_joints(start_joint, end_joint, joint_count=3):
     """Add twist joints as a child of the given joint.
@@ -176,19 +176,15 @@ def add_twist_joints(start_joint, end_joint, joint_count=3):
     """
 
     start_joint_vector = om.MVector(
-        *
-        cmds.xform(
-            'skel:shoulder_00_L_JNT',
-            query=True,
-            translation=True,
-            worldSpace=True))
+        *cmds.xform(
+            "skel:shoulder_00_L_JNT", query=True, translation=True, worldSpace=True
+        )
+    )
     end_joint_vector = om.MVector(
-        *
-        cmds.xform(
-            'skel:elbow_00_L_JNT',
-            query=True,
-            translation=True,
-            worldSpace=True))
+        *cmds.xform(
+            "skel:elbow_00_L_JNT", query=True, translation=True, worldSpace=True
+        )
+    )
 
     joint_vector = om.MVector(end_joint_vector - start_joint_vector)
 
@@ -199,11 +195,12 @@ def add_twist_joints(start_joint, end_joint, joint_count=3):
         j = cmds.joint(
             nameUtils.find_joint_name(
                 start_joint.shortName,
-                identifier='Twist',
+                identifier="Twist",
                 count=i,
-                suffix=constants.JOINT_SUFFIX))
-        newPosition = start_joint_vector + \
-            ((joint_vector * i) / float(joint_count - 1))
+                suffix=constants.JOINT_SUFFIX,
+            )
+        )
+        newPosition = start_joint_vector + ((joint_vector * i) / float(joint_count - 1))
         cmds.xform(j, translation=newPosition)
         cmds.parent(j, start_joint)
 
@@ -214,7 +211,7 @@ def add_twist_joints(start_joint, end_joint, joint_count=3):
 
 def orient_to_world(joints):
 
-    worldLoc = cmds.group(empty=True, name='worldSpace')
+    worldLoc = cmds.group(empty=True, name="worldSpace")
 
     # orient joints to world
     for jnt in joints:
@@ -236,11 +233,10 @@ def orient_to_world(joints):
 def orient_to_mesh(joints, mesh):
     for jnt in joints:
         cmds.delete(
-            cmds.normalConstraint(
-                mesh, jnt, aimVector=[
-                    0, 0, 1], worldUpType='scene'))
-        cmds.setAttr(jnt + '.rx', 0)
-        cmds.setAttr(jnt + '.rz', 0)
+            cmds.normalConstraint(mesh, jnt, aimVector=[0, 0, 1], worldUpType="scene")
+        )
+        cmds.setAttr(jnt + ".rx", 0)
+        cmds.setAttr(jnt + ".rz", 0)
         cmds.makeIdentity(jnt, apply=True, rotate=True)
 
 
@@ -249,19 +245,20 @@ def mirror_face_joints(joints):
     for jnt in joints:
         jnt_children = cmds.listRelatives(jnt, children=True)
         if not jnt_children:
-            mirror = cmds.mirrorJoint(jnt, mirrorYZ=True, mirrorBehavior=True,
-                                      searchReplace=['_L_', '_R_'])
+            mirror = cmds.mirrorJoint(
+                jnt, mirrorYZ=True, mirrorBehavior=True, searchReplace=["_L_", "_R_"]
+            )
             cmds.xform(mirror, rotation=[180, 180, 0], objectSpace=True)
             cmds.makeIdentity(mirror, apply=True, rotate=True)
         else:
-            mirror = cmds.mirrorJoint(jnt, mirrorYZ=True, mirrorBehavior=True,
-                                      searchReplace=['_L_', '_R_'])
+            mirror = cmds.mirrorJoint(
+                jnt, mirrorYZ=True, mirrorBehavior=True, searchReplace=["_L_", "_R_"]
+            )
             for mirror_jnt in mirror:
                 mirror_children = cmds.listRelatives(mirror_jnt, children=True)
                 if mirror_children:
                     cmds.parent(mirror_children, world=True)
-                cmds.xform(mirror_jnt, rotation=[
-                           180, 180, 0], objectSpace=True)
+                cmds.xform(mirror_jnt, rotation=[180, 180, 0], objectSpace=True)
                 cmds.makeIdentity(mirror_jnt, apply=True, rotate=True)
                 if mirror_children:
                     cmds.parent(mirror_children, mirror_jnt)

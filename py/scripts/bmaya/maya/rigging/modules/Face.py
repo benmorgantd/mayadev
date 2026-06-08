@@ -12,12 +12,28 @@ from . import FkChain
 
 class Face(module.Module):
 
-    def __init__(self, character=None, name='face', parent=None,
-                 upperHead=None, middleHead=None, lowerHead=None,
-                 jaw=None, eyeballs=[], eyelidBase=None, eyebrowBase=None,
-                 drivers=[]):
-        module.Module.__init__(self, character=character, name=name,
-                               mod_type='Face', parent=parent, side='M')
+    def __init__(
+        self,
+        character=None,
+        name="face",
+        parent=None,
+        upperHead=None,
+        middleHead=None,
+        lowerHead=None,
+        jaw=None,
+        eyeballs=[],
+        eyelidBase=None,
+        eyebrowBase=None,
+        drivers=[],
+    ):
+        module.Module.__init__(
+            self,
+            character=character,
+            name=name,
+            mod_type="Face",
+            parent=parent,
+            side="M",
+        )
 
         self.upperHead = upperHead
         self.middleHead = middleHead
@@ -28,15 +44,17 @@ class Face(module.Module):
         self.eyebrowBase = eyebrowBase
         self.drivers = drivers
 
-        self.contract = [self.character.facePoses,
-                         self.upperHead,
-                         self.middleHead,
-                         self.lowerHead,
-                         self.jaw,
-                         self.eyeballs,
-                         self.eyelidBase,
-                         self.eyebrowBase,
-                         self.drivers]
+        self.contract = [
+            self.character.facePoses,
+            self.upperHead,
+            self.middleHead,
+            self.lowerHead,
+            self.jaw,
+            self.eyeballs,
+            self.eyelidBase,
+            self.eyebrowBase,
+            self.drivers,
+        ]
 
         # # ----- Init Regions ------- #
         # # Upper Head
@@ -62,7 +80,7 @@ class Face(module.Module):
 
     @wrapBuild
     def build(self):
-        '''
+        """
         The "Face" module could do the work of building the different FKHierarchy
         modules sort of like how the Leg builds the Foot module as well.
 
@@ -93,63 +111,57 @@ class Face(module.Module):
              translate that data to an sdk where the control is the driver
 
 
-        '''
+        """
 
         # Gather the hierarchy joints for each region, create their drive joints,
         # and build the fk controls
 
-        self.upperHeadBindJoints, \
-            self.upperHeadDriveJoints, \
-            self.upperHeadControls = self.buildFaceFkHierarchy(
-                start_joint=self.upperHead,
-                exclude=[self.eyebrowBase])
+        self.upperHeadBindJoints, self.upperHeadDriveJoints, self.upperHeadControls = (
+            self.buildFaceFkHierarchy(
+                start_joint=self.upperHead, exclude=[self.eyebrowBase]
+            )
+        )
 
-        self.middleHeadBindJoints, \
-            self.middleHeadDriveJoints, \
-            self.middleHeadControls = self.buildFaceFkHierarchy(
-                start_joint=self.middleHead,
-                exclude=[self.eyelidBase] + self.eyeballs)
+        (
+            self.middleHeadBindJoints,
+            self.middleHeadDriveJoints,
+            self.middleHeadControls,
+        ) = self.buildFaceFkHierarchy(
+            start_joint=self.middleHead, exclude=[self.eyelidBase] + self.eyeballs
+        )
 
-        self.lowerHeadBindJoints, \
-            self.lowerHeadDriveJoints, \
-            self.lowerHeadControls = self.buildFaceFkHierarchy(
-                start_joint=self.lowerHead,
-                exclude=self.jaw)
+        self.lowerHeadBindJoints, self.lowerHeadDriveJoints, self.lowerHeadControls = (
+            self.buildFaceFkHierarchy(start_joint=self.lowerHead, exclude=self.jaw)
+        )
 
-        self.eyebrowBindJoints, \
-            self.eyebrowDriveJoints, \
-            self.eyebrowControls = self.buildFaceFkHierarchy(
-                start_joint=self.eyebrowBase,
-                exclude=[])
+        self.eyebrowBindJoints, self.eyebrowDriveJoints, self.eyebrowControls = (
+            self.buildFaceFkHierarchy(start_joint=self.eyebrowBase, exclude=[])
+        )
 
-        self.parent_constrain(self.upperHeadControls[0],
-                              self.eyebrowControls[0],
-                              maintain_offset=True)
+        self.parent_constrain(
+            self.upperHeadControls[0], self.eyebrowControls[0], maintain_offset=True
+        )
 
-        self.eyelidBindJoints, \
-            self.eyelidDriveJoints, \
-            self.eyelidControls = self.buildFaceFkHierarchy(
-                start_joint=self.eyelidBase,
-                exclude=[])
+        self.eyelidBindJoints, self.eyelidDriveJoints, self.eyelidControls = (
+            self.buildFaceFkHierarchy(start_joint=self.eyelidBase, exclude=[])
+        )
 
-        self.parent_constrain(self.middleHeadControls[0],
-                              self.eyelidControls[0],
-                              maintain_offset=True)
+        self.parent_constrain(
+            self.middleHeadControls[0], self.eyelidControls[0], maintain_offset=True
+        )
 
-        self.jawBindJoints, \
-            self.jawDriveJoints, \
-            self.jawControls = self.buildFaceFkHierarchy(
-                start_joint=self.jaw,
-                exclude=[])
+        self.jawBindJoints, self.jawDriveJoints, self.jawControls = (
+            self.buildFaceFkHierarchy(start_joint=self.jaw, exclude=[])
+        )
 
-        self.parent_constrain(self.lowerHeadControls[0],
-                              self.jawControls[0],
-                              maintain_offset=True)
+        self.parent_constrain(
+            self.lowerHeadControls[0], self.jawControls[0], maintain_offset=True
+        )
 
     def buildFaceFkHierarchy(self, start_joint, exclude=[]):
-        bindJoints = self.find_hierarchy_joints(start_joint=start_joint,
-                                                exclude=exclude,
-                                                shortest_distance=False)
+        bindJoints = self.find_hierarchy_joints(
+            start_joint=start_joint, exclude=exclude, shortest_distance=False
+        )
 
         self.bindJoints += bindJoints
 

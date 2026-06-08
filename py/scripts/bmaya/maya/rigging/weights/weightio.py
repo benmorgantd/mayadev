@@ -41,9 +41,9 @@ def save(weights_dir):
 
         dag_name = str(dag.partialPathName())
 
-        skin = cmds.ls(cmds.listHistory(dag_name), type='skinCluster') or []
+        skin = cmds.ls(cmds.listHistory(dag_name), type="skinCluster") or []
 
-        filename = os.path.join(weights_dir, dag_name + '.weights')
+        filename = os.path.join(weights_dir, dag_name + ".weights")
         if os.path.exists(filename):
             # version the file
             fileUtils.version_file(filename)
@@ -58,9 +58,10 @@ def save(weights_dir):
                 export=True,
                 path=weights_dir,
                 method="index",
-                format='XML')
+                format="XML",
+            )
         else:
-            log.info(dag_name, ' has no skin cluster to save.')
+            log.info(dag_name, " has no skin cluster to save.")
             it_sel.next()
 
         log.info("Saved weights for {}".format(dag_name))
@@ -74,8 +75,8 @@ def load(weights_path):
     if not os.path.exists(weights_path):
         raise ValueError("Given weights path doesn't exist")
 
-    if not weights_path.endswith('.weights'):
-        raise ValueError('Given file must be in .weights format')
+    if not weights_path.endswith(".weights"):
+        raise ValueError("Given file must be in .weights format")
 
     obj_name = os.path.basename(weights_path).replace(".weights", "")
     weights_dirname = os.path.dirname(weights_path)
@@ -84,12 +85,12 @@ def load(weights_path):
         om.MGlobal.displayInfo("{0} does not exist in scene.".format(obj_name))
         return
 
-    log.info('Loading weights for <' + obj_name + '> ...')
+    log.info("Loading weights for <" + obj_name + "> ...")
 
     # look for and delete old clusters if they exist
-    existing_skin_cluster = cmds.ls(
-        cmds.listHistory(obj_name),
-        type="skinCluster") or []
+    existing_skin_cluster = (
+        cmds.ls(cmds.listHistory(obj_name), type="skinCluster") or []
+    )
 
     if existing_skin_cluster:
         cmds.delete(existing_skin_cluster)
@@ -115,7 +116,8 @@ def load(weights_path):
         obeyMaxInfluences=False,
         toSelectedBones=True,
         skinMethod=0,
-        bindMethod=1)
+        bindMethod=1,
+    )
 
     cmds.deformerWeights(
         "{0}.weights".format(obj_name),
@@ -123,10 +125,10 @@ def load(weights_path):
         path=weights_dirname,
         ignoreName=True,
         method="index",
-        deformer=new_cluster[0])
+        deformer=new_cluster[0],
+    )
     cmds.select(obj_name)
     cmds.skinPercent(new_cluster[0], normalize=True)
-    om.MGlobal.displayInfo(
-        "Loaded skinCluster weights onto {0}".format(obj_name))
+    om.MGlobal.displayInfo("Loaded skinCluster weights onto {0}".format(obj_name))
 
     log.info(">>> Weight data loaded from {0}".format(weights_path))

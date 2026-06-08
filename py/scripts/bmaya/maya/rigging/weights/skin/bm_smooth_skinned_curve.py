@@ -4,8 +4,8 @@ import maya.api.OpenMaya as om
 import maya.OpenMayaAnim as omAnim
 import maya.mel
 
-
 # smooth skinned nurbs curve weights using a moving average method
+
 
 def find_skin_cluster(dag):
 
@@ -28,7 +28,8 @@ def find_skin_cluster(dag):
 # right now the effect is pretty strong. Let's see how we can make a
 # multiplier for that.
 
-def smooth_weights(curve=None, smooth_strength=.25):
+
+def smooth_weights(curve=None, smooth_strength=0.25):
 
     # before we get our selection, convert our selection to CVs
     # this has to be done with a MEL command I guess
@@ -86,12 +87,11 @@ def smooth_weights(curve=None, smooth_strength=.25):
     for i in range(1, num_cvs - 1):
         # get the weights of the neighboring CVs. That's at index (i-1) *
         # num_influences to i * num_influences
-        left_cv_weights = old_weights[(
-            i - 1) * num_influences: i * num_influences]
-        this_cv_weights = old_weights[i *
-                                      num_influences: (i + 1) * num_influences]
-        right_cv_weights = old_weights[(
-            i + 1) * num_influences: (i + 2) * num_influences]
+        left_cv_weights = old_weights[(i - 1) * num_influences : i * num_influences]
+        this_cv_weights = old_weights[i * num_influences : (i + 1) * num_influences]
+        right_cv_weights = old_weights[
+            (i + 1) * num_influences : (i + 2) * num_influences
+        ]
 
         # we're just converting our MDoubleArray to another type of list now.
         # So just skip that!
@@ -100,7 +100,8 @@ def smooth_weights(curve=None, smooth_strength=.25):
         u = 0
         for u in range(num_influences):
             avg_weight_vector.append(
-                (left_cv_weights[u] + this_cv_weights[u] + right_cv_weights[u]) / 3.0)
+                (left_cv_weights[u] + this_cv_weights[u] + right_cv_weights[u]) / 3.0
+            )
 
         # set this cv's weights to the average weight vector (will need to
         # double check this is normalized)
@@ -108,8 +109,9 @@ def smooth_weights(curve=None, smooth_strength=.25):
             new_weights.append(num)
 
     # and set our last CV's weights to what it was before
-    last_cv_weight_slice = old_weights[(
-        num_cvs - 2) * num_influences: (num_cvs - 1) * num_influences]
+    last_cv_weight_slice = old_weights[
+        (num_cvs - 2) * num_influences : (num_cvs - 1) * num_influences
+    ]
 
     for weight in last_cv_weight_slice:
         new_weights.append(weight)
@@ -120,17 +122,15 @@ def smooth_weights(curve=None, smooth_strength=.25):
     # where 0 is fully the old weights and 1 is fully the new weights
     weighted_list = om.MDoubleArray()
     for i in range(old_weights.length()):
-        weighted_weight = ((1 - smooth_strength) *
-                           old_weights[i] + ((smooth_strength) * new_weights[i]))
+        weighted_weight = (1 - smooth_strength) * old_weights[i] + (
+            (smooth_strength) * new_weights[i]
+        )
         weighted_list.append(weighted_weight)
 
     # set our new weights on the curve
     fnSkin.setWeights(
-        dag,
-        components,
-        influence_indices,
-        weighted_list,
-        False,
-        old_weights)
+        dag, components, influence_indices, weighted_list, False, old_weights
+    )
+
 
 # smooth_weights(curve=cmds.ls(sl=1), smooth_strength=.25)

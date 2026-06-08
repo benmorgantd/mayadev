@@ -31,35 +31,31 @@ def copy_weights(source_mesh=None, target_meshes=None, method="closestPoint"):
 
     # get the skin cluster
     try:
-        skin_cluster = cmds.ls(
-            cmds.listHistory(source_mesh),
-            type="skinCluster")[0]
+        skin_cluster = cmds.ls(cmds.listHistory(source_mesh), type="skinCluster")[0]
     except IndexError:
         # target_meshect has no skin cluster
-        om.MGlobal.displayError(
-            "%s has no skinCluster to copy from." %
-            source_mesh)
+        om.MGlobal.displayError("%s has no skinCluster to copy from." % source_mesh)
         return
 
     # if we're copying only to the selected verts, the destination mesh must
     # already be skinned.
     if use_verts:
         # todo: check if they have the same influences
-        cmds.copySkinWeights(sourceSkin=skin_cluster,
-                             surfaceAssociation=method,
-                             noMirror=1,
-                             influenceAssociation=["oneToOne", "closestJoint"],
-                             normalize=1)
+        cmds.copySkinWeights(
+            sourceSkin=skin_cluster,
+            surfaceAssociation=method,
+            noMirror=1,
+            influenceAssociation=["oneToOne", "closestJoint"],
+            normalize=1,
+        )
         om.MGlobal.displayInfo(
-            "Weights copied from %s to selected components." %
-            source_mesh)
+            "Weights copied from %s to selected components." % source_mesh
+        )
 
     else:
         # get info from skinCluster
-        max_influences = cmds.skinCluster(
-            skin_cluster, q=1, maximumInfluences=1)
-        weight_distribution = cmds.skinCluster(
-            skin_cluster, q=1, weightDistribution=1)
+        max_influences = cmds.skinCluster(skin_cluster, q=1, maximumInfluences=1)
+        weight_distribution = cmds.skinCluster(skin_cluster, q=1, weightDistribution=1)
         maintain_max = cmds.skinCluster(skin_cluster, q=1, obeyMaxInfluences=1)
         # only returns joints that have non-zero influence
         joint_list = cmds.skinCluster(skin_cluster, q=1, weightedInfluence=1)
@@ -70,21 +66,21 @@ def copy_weights(source_mesh=None, target_meshes=None, method="closestPoint"):
             cmds.select(joint_list, replace=1)
 
             # look for and delete old clusters if they exist
-            old_cstr = cmds.ls(
-                cmds.listHistory(target_mesh),
-                type="skinCluster")
+            old_cstr = cmds.ls(cmds.listHistory(target_mesh), type="skinCluster")
             if len(old_cstr) > 0:
                 cmds.delete(old_cstr)
 
             cmds.select(target_mesh, add=1)
 
             # add the skin cluster
-            new_cstr = cmds.skinCluster(maximumInfluences=max_influences,
-                                        weightDistribution=weight_distribution,
-                                        obeyMaxInfluences=maintain_max,
-                                        toSelectedBones=True,
-                                        skinMethod=0,
-                                        bindMethod=0)
+            new_cstr = cmds.skinCluster(
+                maximumInfluences=max_influences,
+                weightDistribution=weight_distribution,
+                obeyMaxInfluences=maintain_max,
+                toSelectedBones=True,
+                skinMethod=0,
+                bindMethod=0,
+            )
 
             # copy skin weights
             cmds.copySkinWeights(
@@ -92,14 +88,13 @@ def copy_weights(source_mesh=None, target_meshes=None, method="closestPoint"):
                 destinationSkin=new_cstr[0],
                 surfaceAssociation=method,
                 noMirror=1,
-                influenceAssociation=[
-                    "oneToOne",
-                    "closestJoint"],
-                normalize=1)
+                influenceAssociation=["oneToOne", "closestJoint"],
+                normalize=1,
+            )
 
             om.MGlobal.displayInfo(
-                "Weights copied from %s to %s" %
-                (source_mesh, target_mesh))
+                "Weights copied from %s to %s" % (source_mesh, target_mesh)
+            )
 
             # prune joints with zero influences
             cmds.select(target_mesh, replace=1)
@@ -136,6 +131,7 @@ def get_selection():
 
     else:
         return None
+
 
 # copy the skin cluster weights from the first in selection to the rest
 # copy_weights()

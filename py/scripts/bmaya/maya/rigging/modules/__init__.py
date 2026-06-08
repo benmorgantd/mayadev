@@ -5,8 +5,11 @@ import importlib
 
 dirname = os.path.dirname(os.path.abspath(__file__))
 
-__all__ = [mod[0:-3] for mod in os.listdir(
-    dirname) if mod.endswith('.py') and not mod.startswith('_')]
+__all__ = [
+    mod[0:-3]
+    for mod in os.listdir(dirname)
+    if mod.endswith(".py") and not mod.startswith("_")
+]
 
 MODULE_CLASSES = {}
 MODULE_ARGS = {}
@@ -14,7 +17,7 @@ MODULE_ARGS = {}
 for modType in __all__:
 
     # Python 3 compatible dynamic import
-    module_path = f'bmaya.maya.rigging.modules.{modType}'
+    module_path = f"bmaya.maya.rigging.modules.{modType}"
     importlib.import_module(module_path)
 
     # find the classes in that file
@@ -42,7 +45,7 @@ for modType in __all__:
     j = 1
 
     for i in range(numDefaults - 1, startIndex, -1):
-        if args[numArgs - j] not in ['name', 'modType', 'self', 'character']:
+        if args[numArgs - j] not in ["name", "modType", "self", "character"]:
             classArgs[args[numArgs - j]] = defaults[i]
         j += 1
 

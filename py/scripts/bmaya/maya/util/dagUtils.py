@@ -8,10 +8,9 @@ import maya.api.OpenMaya as om
 
 
 def get_children(dagNode, ofType=None, all_descendents=False):
-    children = cmds.listRelatives(
-        dagNode,
-        children=True,
-        allDescendents=all_descendents) or []
+    children = (
+        cmds.listRelatives(dagNode, children=True, allDescendents=all_descendents) or []
+    )
     if ofType:
         children = cmds.ls(children, type=ofType)
     return children
@@ -30,7 +29,7 @@ def get_parent(dag_node, ofType=None):
 
 def get_dag_path(node):
     """Get the MDagPath for a given node.
-    
+
     :return MDagPath: The MDagPath for the given node.
     """
     sel = om.MSelectionList()

@@ -9,13 +9,8 @@ class Tool(object):
     """Encapsulates the core data configuration and execution logic for a single tool."""
 
     def __init__(
-            self,
-            name,
-            script,
-            short_name=None,
-            icon=None,
-            enabled=True,
-            guid=None):
+        self, name, script, short_name=None, icon=None, enabled=True, guid=None
+    ):
         self.guid = guid or str(uuid.uuid4())
         self.name = name
         self.short_name = short_name or name
@@ -31,7 +26,7 @@ class Tool(object):
             "short_name": self.short_name,
             "script": self.script,
             "icon": self.icon,
-            "enabled": self.enabled
+            "enabled": self.enabled,
         }
 
     @classmethod
@@ -43,7 +38,7 @@ class Tool(object):
             short_name=data.get("short_name"),
             icon=data.get("icon"),
             enabled=data.get("enabled", True),
-            guid=data.get("guid")
+            guid=data.get("guid"),
         )
 
 
@@ -61,7 +56,7 @@ class ToolRegistry(object):
         if not os.path.exists(filepath):
             return False
 
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             data = json.load(f)
 
         for tool_data in data.get("tools", []):
@@ -74,5 +69,5 @@ class ToolRegistry(object):
     def save_registry(self, filepath):
         """Saves current memory state out to the master JSON manifest."""
         data = {"tools": [tool.to_dict() for tool in self.tools.values()]}
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(data, f, indent=4)

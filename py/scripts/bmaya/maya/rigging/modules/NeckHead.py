@@ -9,20 +9,37 @@ from bmaya.core import constants
 
 class NeckHead(FkTwist.FkTwist):
 
-    def __init__(self, start_joint=None, endJoint=None, exclude=[],
-                 name='NeckHead1',
-                 character=None, parent=None, shapeType='cube', mirror=False,
-                 side='L',
-                 alignWorld=False, twistAxis='X', exponent=1):
-        FkTwist.FkTwist.__init__(self, name=name, character=character,
-                                 shapeType=shapeType,
-                                 mirror=mirror, side=side,
-                                 alignWorld=alignWorld,
-                                 start_joint=start_joint, endJoint=endJoint,
-                                 exclude=exclude,
-                                 exponent=exponent, twistAxis=twistAxis)
+    def __init__(
+        self,
+        start_joint=None,
+        endJoint=None,
+        exclude=[],
+        name="NeckHead1",
+        character=None,
+        parent=None,
+        shapeType="cube",
+        mirror=False,
+        side="L",
+        alignWorld=False,
+        twistAxis="X",
+        exponent=1,
+    ):
+        FkTwist.FkTwist.__init__(
+            self,
+            name=name,
+            character=character,
+            shapeType=shapeType,
+            mirror=mirror,
+            side=side,
+            alignWorld=alignWorld,
+            start_joint=start_joint,
+            endJoint=endJoint,
+            exclude=exclude,
+            exponent=exponent,
+            twistAxis=twistAxis,
+        )
 
-        self.modType = 'NeckHead'
+        self.modType = "NeckHead"
 
         self.contract = [self.start_joint, self.endJoint]
 
@@ -34,14 +51,15 @@ class NeckHead(FkTwist.FkTwist):
         self.buildFkTwist()
 
         startPoint = om.MVector(
-            *
-            cmds.xform(
-                self.components[0].ctrl,
-                query=True,
-                worldSpace=True,
-                translation=True))
+            *cmds.xform(
+                self.components[0].ctrl, query=True, worldSpace=True, translation=True
+            )
+        )
         endPoint = om.MVector(
-            *cmds.xform(self.components[-1].ctrl, query=True, worldSpace=True, translation=True))
+            *cmds.xform(
+                self.components[-1].ctrl, query=True, worldSpace=True, translation=True
+            )
+        )
         startEndDistance = (endPoint - startPoint).length()
 
         # add constraints for twist controls
@@ -49,36 +67,39 @@ class NeckHead(FkTwist.FkTwist):
             twistCtrl = self.components[i]
 
             twistPoint = om.MVector(
-                *cmds.xform(twistCtrl.ctrl, query=True, translation=True,
-                            worldSpace=True))
+                *cmds.xform(
+                    twistCtrl.ctrl, query=True, translation=True, worldSpace=True
+                )
+            )
 
             # get the distance between the start and end component
             startTwistDistance = (twistPoint - startPoint).length()
 
             # get the percentage it is along that distance
-            distancePercent = float(
-                startTwistDistance /
-                float(startEndDistance))
+            distancePercent = float(startTwistDistance / float(startEndDistance))
 
-            pConstraint = cmds.pointConstraint(self.components[0].ctrl,
-                                               self.components[-1].ctrl,
-                                               twistCtrl.space_grp,
-                                               maintainOffset=False)[0]
+            pConstraint = cmds.pointConstraint(
+                self.components[0].ctrl,
+                self.components[-1].ctrl,
+                twistCtrl.space_grp,
+                maintainOffset=False,
+            )[0]
 
-            weightList = cmds.pointConstraint(pConstraint, query=True,
-                                              weightAliasList=True)
-            cmds.setAttr('{0}.{1}'.format(pConstraint, weightList[0]),
-                         1 - distancePercent)
-            cmds.setAttr('{0}.{1}'.format(pConstraint, weightList[1]),
-                         distancePercent)
+            weightList = cmds.pointConstraint(
+                pConstraint, query=True, weightAliasList=True
+            )
+            cmds.setAttr(
+                "{0}.{1}".format(pConstraint, weightList[0]), 1 - distancePercent
+            )
+            cmds.setAttr("{0}.{1}".format(pConstraint, weightList[1]), distancePercent)
 
-            cmds.aimConstraint(self.components[-1].ctrl, twistCtrl.space_grp,
-                               aimVector=constants.UNIT_VECTORS[
-                                   constants.DOWN_AXIS],
-                               upVector=constants.UNIT_VECTORS[
-                                   constants.UP_AXIS],
-                               worldUpType='objectrotation',
-                               worldUpObject=self.components[0].ctrl,
-                               worldUpVector=constants.UNIT_VECTORS[
-                                   constants.UP_AXIS],
-                               maintainOffset=True)
+            cmds.aimConstraint(
+                self.components[-1].ctrl,
+                twistCtrl.space_grp,
+                aimVector=constants.UNIT_VECTORS[constants.DOWN_AXIS],
+                upVector=constants.UNIT_VECTORS[constants.UP_AXIS],
+                worldUpType="objectrotation",
+                worldUpObject=self.components[0].ctrl,
+                worldUpVector=constants.UNIT_VECTORS[constants.UP_AXIS],
+                maintainOffset=True,
+            )

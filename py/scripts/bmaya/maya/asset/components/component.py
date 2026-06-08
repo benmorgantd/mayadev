@@ -7,15 +7,17 @@ Also handles the unimplemented logic for loading and saving and referencing, whi
 
 import os
 
-TYPE_EXTENSIONS = {'mesh': '.ma',
-                   'skeleton': '.ma',
-                   'cvs': '.json',
-                   'animRig': '.ma',
-                   'weights': '.weights',
-                   'build': '.json',
-                   'components': '',
-                   'postops': '.py',
-                   'facePoses': '.json'}
+TYPE_EXTENSIONS = {
+    "mesh": ".ma",
+    "skeleton": ".ma",
+    "cvs": ".json",
+    "animRig": ".ma",
+    "weights": ".weights",
+    "build": ".json",
+    "components": "",
+    "postops": ".py",
+    "facePoses": ".json",
+}
 
 
 class Component(object):
@@ -28,7 +30,8 @@ class Component(object):
             self._component_type = component_type
         else:
             raise RuntimeError(
-                'Given component type <{}> invalid.'.format(component_type))
+                "Given component type <{}> invalid.".format(component_type)
+            )
 
     @property
     def type(self):
@@ -41,7 +44,7 @@ class Component(object):
     @property
     def relative_path(self):
         # /rig/components
-        return os.path.join('rig', 'components')
+        return os.path.join("rig", "components")
 
     @property
     def full_path(self):

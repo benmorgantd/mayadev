@@ -6,6 +6,7 @@ That code can include things like locking attributes, capturing component defaul
 
 import maya.standalone
 import maya.cmds as cmds
+from bmaya.core import log
 
 
 def wrapStandalone(fn):
@@ -24,9 +25,10 @@ def wrapStandalone(fn):
 def wrapBuild(fn):
     def wrapper(self, *args, **kwargs):
         log.info(
-            ">>> Building limb type <{0}> : \'{1}\'\n".format(
-                self.__class__.__name__,
-                self.name))
+            ">>> Building limb type <{0}> : '{1}'\n".format(
+                self.__class__.__name__, self.name
+            )
+        )
 
         self.checkContract()
         self.makeNode()
@@ -38,36 +40,29 @@ def wrapBuild(fn):
         self.connectBindJoints()
         self.parentModule()
 
-        for transform in ['translate', 'rotate', 'scale']:
-            for axis in ['X', 'Y', 'Z']:
+        for transform in ["translate", "rotate", "scale"]:
+            for axis in ["X", "Y", "Z"]:
                 cmds.setAttr(
-                    '{0}.{1}{2}'.format(
-                        self.modGrp,
-                        transform,
-                        axis),
+                    "{0}.{1}{2}".format(self.modGrp, transform, axis),
                     lock=True,
-                    keyable=False)
+                    keyable=False,
+                )
 
         for ctrl in self.components:
-            for attr in ['scaleX', 'scaleY', 'scaleZ']:
+            for attr in ["scaleX", "scaleY", "scaleZ"]:
                 cmds.setAttr(
-                    '{0}.{1}'.format(
-                        ctrl.ctrl,
-                        attr,
-                        lock=True,
-                        keyable=False))
-            cmds.setAttr(ctrl.ctrl + '.visibility', lock=True, keyable=False)
+                    "{0}.{1}".format(ctrl.ctrl, attr, lock=True, keyable=False)
+                )
+            cmds.setAttr(ctrl.ctrl + ".visibility", lock=True, keyable=False)
 
             for grp in ctrl.groupHierarchy:
-                for transform in ['translate', 'rotate', 'scale']:
-                    for axis in ['X', 'Y', 'Z']:
+                for transform in ["translate", "rotate", "scale"]:
+                    for axis in ["X", "Y", "Z"]:
                         cmds.setAttr(
-                            '{0}.{1}{2}'.format(
-                                grp,
-                                transform,
-                                axis),
+                            "{0}.{1}{2}".format(grp, transform, axis),
                             lock=True,
-                            keyable=False)
+                            keyable=False,
+                        )
 
         self.captureComponentDefaults()
 

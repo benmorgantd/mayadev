@@ -125,9 +125,13 @@ def mirror(cvsPath):
 
     scene = cmds.ls()
 
-    cmds.select([obj for obj in shape_data.keys()
-
-                if obj in scene and mirror_directions[0] in obj])
+    cmds.select(
+        [
+            obj
+            for obj in shape_data.keys()
+            if obj in scene and mirror_directions[0] in obj
+        ]
+    )
 
     sel = om.MSelectionList()
 
@@ -145,8 +149,7 @@ def mirror(cvsPath):
 
         sel = om.MSelectionList()
 
-        mirror_name = nameUtils.replace(
-            mirror_directions[0], mirror_directions[-1])
+        mirror_name = nameUtils.replace(mirror_directions[0], mirror_directions[-1])
 
         if mirror_name in scene:
 
@@ -184,7 +187,7 @@ def mirror(cvsPath):
 
     cmds.select(cl=1)
 
-    log.info('CV data mirrored.')
+    log.info("CV data mirrored.")
 
     save(cvsPath)
 

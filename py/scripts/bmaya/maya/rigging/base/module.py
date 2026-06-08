@@ -5,6 +5,7 @@ finding mirror nodes, etc. Each specific module (such as Arm, Leg, Spine, etc.) 
 and implement its own build method to create the specific rig for that module.
 The module also contains some class methods that are used by various modules, such as adding a moveable pivot to a control, etc.
 """
+
 import json
 import inspect
 
@@ -17,11 +18,19 @@ from bmaya.maya.rigging.shapes import shapelib
 
 
 class Module(object):
-    mirrorPairs = {'L': 'R', 'R': 'L', 'M': None}
+    mirrorPairs = {"L": "R", "R": "L", "M": None}
 
-    def __init__(self, character=None, name='module1', mod_type='Module',
-                 parent=None, side='L',
-                 mirror=False, shape_type='cube', align_world=None):
+    def __init__(
+        self,
+        character=None,
+        name="module1",
+        mod_type="Module",
+        parent=None,
+        side="L",
+        mirror=False,
+        shape_type="cube",
+        align_world=None,
+    ):
 
         self.character = character
 
@@ -39,34 +48,28 @@ class Module(object):
 
     @property
     def dict(self):
-        return {key: value for key, value in self.__dict__.items() if
-                '__' not in key}
+        return {key: value for key, value in self.__dict__.items() if "__" not in key}
 
     def build(self):
         # should get defined by child class
-        raise NotImplementedError(
-            'Each module must implement its own build method.')
+        raise NotImplementedError("Each module must implement its own build method.")
 
     def make_node(self):
         # create the module node before anything gets built.
-        if not cmds.objExists(
-            '{0}_{1}'.format(
-                self.name,
-                constants.MODULE_SUFFIX)):
+        if not cmds.objExists("{0}_{1}".format(self.name, constants.MODULE_SUFFIX)):
             # this creates a locator shape of the given name
             self.node = cmds.createNode(
-                'network', name='{0}_{1}'.format(
-                    self.name, constants.MODULE_SUFFIX))
+                "network", name="{0}_{1}".format(self.name, constants.MODULE_SUFFIX)
+            )
             # holds all the parts of the module. Not for transforming
-            self.mod_grp = cmds.createNode(
-                'transform', name=self.name + '_GRP')
+            self.mod_grp = cmds.createNode("transform", name=self.name + "_GRP")
             # holds the components of the node. Transform this should not
             # result in double xforms
             self.components_grp = cmds.createNode(
-                'transform', name=self.name + '_COMPONENTS')
+                "transform", name=self.name + "_COMPONENTS"
+            )
             # holds the driver joints for the node
-            self.driverGrp = cmds.createNode(
-                'transform', name=self.name + '_DRIVERS')
+            self.driverGrp = cmds.createNode("transform", name=self.name + "_DRIVERS")
             cmds.hide(self.driverGrp)
             cmds.parent(self.driverGrp, self.components_grp)
 
@@ -74,17 +77,19 @@ class Module(object):
             # self.node)
         else:
             raise RuntimeError(
-                'Module of name {0} already exists.'.format(
-                    '{0}_{1}'.format(self.name, constants.MODULE_SUFFIX)))
+                "Module of name {0} already exists.".format(
+                    "{0}_{1}".format(self.name, constants.MODULE_SUFFIX)
+                )
+            )
 
     def parse_for_maya_attr(self, attr):
 
         if isinstance(attr, bool):
-            mayaAttrType = 'bool'
+            mayaAttrType = "bool"
             mayaAttrVal = attr
 
         elif isinstance(attr, str):
-            mayaAttrType = 'string'
+            mayaAttrType = "string"
             mayaAttrVal = str(attr)
 
         elif isinstance(attr, list):
@@ -96,7 +101,7 @@ class Module(object):
                 elif isinstance(val, shapelib.ControlCurve):
                     cleanList.append(val.ctrl)
 
-            mayaAttrType = 'string'
+            mayaAttrType = "string"
             mayaAttrVal = json.dumps(cleanList)
 
         elif isinstance(attr, dict):
@@ -108,27 +113,26 @@ class Module(object):
                 elif isinstance(value, shapelib.ControlCurve):
                     cleanDict[key] = value.ctrl
 
-            mayaAttrType = 'string'
+            mayaAttrType = "string"
             mayaAttrVal = json.dumps(cleanDict)
 
         elif not attr:
-            mayaAttrType = 'string'
-            mayaAttrVal = 'None'
+            mayaAttrType = "string"
+            mayaAttrVal = "None"
 
         elif isinstance(attr, shapelib.ControlCurve):
-            mayaAttrType = 'string'
+            mayaAttrType = "string"
             mayaAttrVal = attr.ctrl
 
         else:
-            mayaAttrType = 'string'
+            mayaAttrType = "string"
             mayaAttrVal = str(attr)
 
         return mayaAttrType, mayaAttrVal
 
     def add_node_attrs(self):
         if not self.node:
-            raise RuntimeError(
-                'Module node does not exist yet for ' + self.name)
+            raise RuntimeError("Module node does not exist yet for " + self.name)
 
         for attrName, attrVal in self.__dict__.items():
             attrType = type(attrVal)
@@ -137,30 +141,31 @@ class Module(object):
 
             # add the attribute
 
-            if mayaAttrType == 'string':
+            if mayaAttrType == "string":
+                cmds.addAttr(self.node, ln=attrName, dt="string", keyable=False)
+                cmds.setAttr(self.node + "." + attrName, mayaAttrVal, type="string")
+            elif mayaAttrType == "bool":
                 cmds.addAttr(
-                    self.node,
-                    ln=attrName,
-                    dt='string',
-                    keyable=False)
-                cmds.setAttr(self.node + '.' + attrName, mayaAttrVal,
-                             type='string')
-            elif mayaAttrType == 'bool':
-                cmds.addAttr(self.node, ln=attrName, at='bool', dv=mayaAttrVal,
-                             keyable=False)
-            elif mayaAttrType == 'message':
-                cmds.addAttr(self.node, ln=attrName, at=mayaAttrType,
-                             keyable=False)
+                    self.node, ln=attrName, at="bool", dv=mayaAttrVal, keyable=False
+                )
+            elif mayaAttrType == "message":
+                cmds.addAttr(self.node, ln=attrName, at=mayaAttrType, keyable=False)
             else:
                 try:
-                    cmds.addAttr(self.node, ln=attrName, at=mayaAttrType,
-                                 dv=mayaAttrVal, keyable=False)
+                    cmds.addAttr(
+                        self.node,
+                        ln=attrName,
+                        at=mayaAttrType,
+                        dv=mayaAttrVal,
+                        keyable=False,
+                    )
                 except TypeError:
-                    log.info('--')
-                    log.info('type: ', mayaAttrType)
-                    log.info('value: ', mayaAttrVal)
+                    log.info("--")
+                    log.info("type: ", mayaAttrType)
+                    log.info("value: ", mayaAttrVal)
                     log.info(
-                        'Warning: Failed to add attribute \'{0}\'\n--'.format(attrName))
+                        "Warning: Failed to add attribute '{0}'\n--".format(attrName)
+                    )
 
     def find_mirror(self, node):
         """Returns the mirrored node of the same type if it's in the scene.
@@ -174,11 +179,10 @@ class Module(object):
 
         mirror_side = Module.mirrorPairs[self.side]
 
-        if node in ['R', 'L']:
+        if node in ["R", "L"]:
             return mirror_side
 
-        mirror_node = node.replace(('_' + self.side + '_'),
-                                   ('_' + mirror_side + '_'))
+        mirror_node = node.replace(("_" + self.side + "_"), ("_" + mirror_side + "_"))
 
         try:
             nodeType = cmds.objectType(node)
@@ -219,19 +223,20 @@ class Module(object):
 
             # we don't want to worry about a name convention for mirrored
             # modules
-            mirrored_init_args['name'] = self.name + '_mirror'
-            mirrored_init_args['mirror'] = False
+            mirrored_init_args["name"] = self.name + "_mirror"
+            mirrored_init_args["mirror"] = False
 
             mirrorSelf = self.__class__()
 
             for arg in mirrored_init_args.keys():
-                if arg != 'parent':
+                if arg != "parent":
                     setattr(mirrorSelf, arg, mirrored_init_args[arg])
 
             # set attribute manually for parent so that we know it has the
             # start_joint variable set
-            setattr(mirrorSelf, 'parent',
-                    mirrorSelf.determine_parent(mirrorSelf.parent))
+            setattr(
+                mirrorSelf, "parent", mirrorSelf.determine_parent(mirrorSelf.parent)
+            )
 
             mirrorSelf.build()
 
@@ -242,9 +247,10 @@ class Module(object):
     def determine_parent(self, parent):
         if parent and cmds.objExists(parent):
             return parent
-        elif hasattr(self, 'start_joint'):
-            parent_transform = cmds.listRelatives(self.start_joint, parent=True,
-                                                  type='joint')
+        elif hasattr(self, "start_joint"):
+            parent_transform = cmds.listRelatives(
+                self.start_joint, parent=True, type="joint"
+            )
             if parent_transform:
                 parent_transform = parent_transform[0]
             else:
@@ -258,7 +264,7 @@ class Module(object):
         # check if a specific joint parent was given. If not then check the parent of the start_joint
         # This means every module except Root will need a start_joint
 
-        if self.mod_type == 'Layout':
+        if self.mod_type == "Layout":
             cmds.parent(self.components_grp, self.mod_grp)
             cmds.parent(self.mod_grp, self.character.modules_grp)
             return
@@ -274,12 +280,12 @@ class Module(object):
             # TODO: we'd have to do this for all groups under self.componentsGrp
             # TODO: we'd want to move the drivers group out
             self.parent_constrain(
-                self.parent,
-                self.components[0].offset_grp,
-                maintain_offset=True)
-        elif hasattr(self, 'start_joint'):
-            parent_transform = cmds.listRelatives(self.start_joint, parent=True,
-                                                  type='joint')
+                self.parent, self.components[0].offset_grp, maintain_offset=True
+            )
+        elif hasattr(self, "start_joint"):
+            parent_transform = cmds.listRelatives(
+                self.start_joint, parent=True, type="joint"
+            )
             if parent_transform:
                 parent_transform = parent_transform[0]
             else:
@@ -289,12 +295,11 @@ class Module(object):
             # ONLY constrain the components of the module, not the driver
             # joints, or else we'll get double transforms
             self.parent_constrain(
-                parent_transform,
-                self.components[0].offset_grp,
-                maintain_offset=True)
+                parent_transform, self.components[0].offset_grp, maintain_offset=True
+            )
 
-        elif self.mod_type != 'Layout':
-            raise RuntimeError('Module must have a start joint.')
+        elif self.mod_type != "Layout":
+            raise RuntimeError("Module must have a start joint.")
 
     def parent_constrain(self, parent=None, child=None, maintain_offset=True):
         if isinstance(parent, shapelib.ControlCurve):
@@ -303,56 +308,54 @@ class Module(object):
             child = child.ctrl
 
         # create a matrix-style constraint
-        mult_matrix = cmds.createNode(
-            'multMatrix', name=child + '_parentConstraint_mm')
-        cmds.connectAttr(
-            parent + '.worldMatrix[0]',
-            mult_matrix + '.matrixIn[0]')
+        mult_matrix = cmds.createNode("multMatrix", name=child + "_parentConstraint_mm")
+        cmds.connectAttr(parent + ".worldMatrix[0]", mult_matrix + ".matrixIn[0]")
         # TODO: offset calculation
         # NOTE: offsetParentMatrix is the offset from the _child's_ parent. So the existing offset has to be taken
         # into account as well as the offset from the parent to the child
-        cmds.connectAttr(
-            f'{mult_matrix}.matrixSum',
-            f'{child}.offsetParentMatrix')
+        cmds.connectAttr(f"{mult_matrix}.matrixSum", f"{child}.offsetParentMatrix")
 
         # const = cmds.parentConstraint(parent, child, mo=maintainOffset)[0]
 
         pivotCtrl = cmds.listConnections(
-            parent + '.rotatePivot',
-            type='transform',
-            exactType=True)
+            parent + ".rotatePivot", type="transform", exactType=True
+        )
 
         if pivotCtrl:
             raise NotImplementedError(
-                'This method of parenting does not work with controls that have a custom pivot')
+                "This method of parenting does not work with controls that have a custom pivot"
+            )
 
         return mult_matrix
 
-        if pivotCtrl and not cmds.objExists(const + '_offsetVector'):
+        if pivotCtrl and not cmds.objExists(const + "_offsetVector"):
             pivotCtrl = pivotCtrl[0]
             # create a node to calculate the vector from the pivot to that
             # transform's constraint start location
-            offsetVector = cmds.createNode('plusMinusAverage',
-                                           name=const + '_offsetVector')
+            offsetVector = cmds.createNode(
+                "plusMinusAverage", name=const + "_offsetVector"
+            )
             # set the operation to subtract
-            cmds.setAttr(offsetVector + '.operation', 2)
-            cmds.connectAttr(pivotCtrl + '.translate',
-                             offsetVector + '.input3D[1]')
-            for i in range(len(cmds.parentConstraint(
-                    const, query=True, targetList=True))):
-                for axis in 'xyz':
+            cmds.setAttr(offsetVector + ".operation", 2)
+            cmds.connectAttr(pivotCtrl + ".translate", offsetVector + ".input3D[1]")
+            for i in range(
+                len(cmds.parentConstraint(const, query=True, targetList=True))
+            ):
+                for axis in "xyz":
                     cmds.setAttr(
-                        offsetVector +
-                        '.input3D[0].input3D{0}'.format(axis),
+                        offsetVector + ".input3D[0].input3D{0}".format(axis),
                         cmds.getAttr(
-                            const +
-                            '.target[{0}].targetOffsetTranslate{1}'.format(
-                                i,
-                                axis.upper())))
+                            const
+                            + ".target[{0}].targetOffsetTranslate{1}".format(
+                                i, axis.upper()
+                            )
+                        ),
+                    )
 
                 cmds.connectAttr(
-                    offsetVector + '.output3D',
-                    const + '.target[{0}].targetOffsetTranslate'.format(i))
+                    offsetVector + ".output3D",
+                    const + ".target[{0}].targetOffsetTranslate".format(i),
+                )
 
         return const
 
@@ -376,39 +379,39 @@ class Module(object):
         """Connects the module's compenents to the module"""
 
         for ctrl in self.components:
-            if not cmds.objExists(ctrl.ctrl + '.module'):
-                cmds.addAttr(ctrl.ctrl, longName='module',
-                             attributeType='message')
+            if not cmds.objExists(ctrl.ctrl + ".module"):
+                cmds.addAttr(ctrl.ctrl, longName="module", attributeType="message")
 
-            cmds.connectAttr(self.node + '.components', ctrl.ctrl + '.module',
-                             force=True)
+            cmds.connectAttr(
+                self.node + ".components", ctrl.ctrl + ".module", force=True
+            )
 
     def connect_bind_joints(self):
         """Connects the module's bind joints to their control"""
 
         for jnt in self.bind_joints:
-            if not cmds.objExists(jnt + '.module'):
-                cmds.addAttr(jnt, longName='module', attributeType='message')
+            if not cmds.objExists(jnt + ".module"):
+                cmds.addAttr(jnt, longName="module", attributeType="message")
             else:
-                raise RuntimeError(
-                    '{0} already belongs to a module'.format(jnt))
+                raise RuntimeError("{0} already belongs to a module".format(jnt))
 
-            cmds.connectAttr(self.node + '.bindJoints', jnt + '.module')
+            cmds.connectAttr(self.node + ".bindJoints", jnt + ".module")
 
-    def find_hierarchy_joints(self, shortest_distance=False, start_joint=None,
-                              end_joint=None, exclude=[]):
+    def find_hierarchy_joints(
+        self, shortest_distance=False, start_joint=None, end_joint=None, exclude=[]
+    ):
         """Expands from a start joint and until it hits excluded joints."""
 
         if not start_joint:
             start_joint = self.start_joint
-        if not end_joint and hasattr(self, 'endJoint'):
+        if not end_joint and hasattr(self, "endJoint"):
             end_joint = self.endJoint
 
         sel = om.MSelectionList()
         bind_joints = []
 
         if not start_joint:
-            raise RuntimeError('Need a start joint.')
+            raise RuntimeError("Need a start joint.")
 
         sel.add(start_joint)
         dag = om.MDagPath()
@@ -422,9 +425,12 @@ class Module(object):
 
             if jnt not in exclude:
                 if jnt != end_joint:
-                    jnt_children = cmds.listRelatives(jnt, type='joint',
-                                                      children=True,
-                                                      allDescendents=True) or []
+                    jnt_children = (
+                        cmds.listRelatives(
+                            jnt, type="joint", children=True, allDescendents=True
+                        )
+                        or []
+                    )
                     if shortest_distance and end_joint not in jnt_children:
                         it_dag.prune()
                     else:
@@ -440,16 +446,15 @@ class Module(object):
 
         return bind_joints
 
-    def create_drive_joint(self, jnt, label='Driver', constrain=True):
-        driver = cmds.duplicate(jnt, parentO2nly=True,
-                                name=jnt.replace(constants.JOINT_SUFFIX,
-                                                 label))[0]
+    def create_drive_joint(self, jnt, label="Driver", constrain=True):
+        driver = cmds.duplicate(
+            jnt, parentO2nly=True, name=jnt.replace(constants.JOINT_SUFFIX, label)
+        )[0]
 
-        jointParent = cmds.listRelatives(jnt, parent=True, type='joint')
+        jointParent = cmds.listRelatives(jnt, parent=True, type="joint")
 
         if jointParent:
-            driver_parent = jointParent[0].replace(
-                constants.JOINT_SUFFIX, label)
+            driver_parent = jointParent[0].replace(constants.JOINT_SUFFIX, label)
             if cmds.objExists(driver_parent):
                 if cmds.listRelatives(driver, parent=True)[0] != driver_parent:
                     cmds.parent(driver, driver_parent, absolute=True)
@@ -459,18 +464,19 @@ class Module(object):
 
             # add a connection for driver and driven joint
             # only add this attribute if it's a direct constraint
-            cmds.addAttr(jnt, longName='driver', attributeType='message')
-            cmds.addAttr(driver, longName='driven', attributeType='message')
-            cmds.connectAttr(driver + '.driven', jnt + '.driver')
+            cmds.addAttr(jnt, longName="driver", attributeType="message")
+            cmds.addAttr(driver, longName="driven", attributeType="message")
+            cmds.connectAttr(driver + ".driven", jnt + ".driver")
 
         return driver
 
-    def create_drive_joints(self, label='DRIVER', constrain=True):
+    def create_drive_joints(self, label="DRIVER", constrain=True):
         drive_joints = []
 
         for joint in self.bind_joints:
             drive_joints.append(
-                self.create_drive_joint(joint, label=label, constrain=constrain))
+                self.create_drive_joint(joint, label=label, constrain=constrain)
+            )
 
         cmds.parent(drive_joints[0], self.driverGrp)
 
@@ -478,10 +484,14 @@ class Module(object):
 
     def make_ik_handle(self, start_joint, end_joint, solver_type, name):
 
-        ik = cmds.ikHandle(start_joint=start_joint, endEffector=end_joint,
-                           name=name, solver=solver_type)[0]
+        ik = cmds.ikHandle(
+            start_joint=start_joint,
+            endEffector=end_joint,
+            name=name,
+            solver=solver_type,
+        )[0]
 
-        grp = cmds.group(empty=True, name=name + '_grp')
+        grp = cmds.group(empty=True, name=name + "_grp")
 
         mathUtils.match_transforms(ik, grp)
 
@@ -491,49 +501,35 @@ class Module(object):
 
     def get_driver(self, joint):
 
-        if 'driver' in cmds.listAttr(joint):
-            driver = cmds.listConnections(joint + '.driver', source=True)
+        if "driver" in cmds.listAttr(joint):
+            driver = cmds.listConnections(joint + ".driver", source=True)
             if driver:
                 return driver[0]
             else:
-                raise ValueError('Driver connection lost on {0}'.format(joint))
+                raise ValueError("Driver connection lost on {0}".format(joint))
         else:
-            raise ValueError(
-                'Given joint {0} has no direct driver.'.format(joint))
+            raise ValueError("Given joint {0} has no direct driver.".format(joint))
 
     def blend_chains(self, fk_chain, ik_chain, child_chain, drive_attribute):
 
         # create the reverse node (name is now more vague)
-        reverse = cmds.createNode('reverse', name=child_chain[0] + '_REV')
-        cmds.connectAttr(drive_attribute, reverse + '.inputX')
-        reverseAttr = reverse + '.outputX'
+        reverse = cmds.createNode("reverse", name=child_chain[0] + "_REV")
+        cmds.connectAttr(drive_attribute, reverse + ".inputX")
+        reverseAttr = reverse + ".outputX"
 
         for i in range(len(fk_chain)):
             const = cmds.parentConstraint(
-                fk_chain[i],
-                ik_chain[i],
-                child_chain[i],
-                maintainOffset=True)[0]
+                fk_chain[i], ik_chain[i], child_chain[i], maintainOffset=True
+            )[0]
 
-            cmds.connectAttr(
-                reverseAttr, '{0}.{1}W0'.format(
-                    const, fk_chain[i]))
-            cmds.connectAttr(drive_attribute,
-                             '{0}.{1}W1'.format(const, ik_chain[i]))
+            cmds.connectAttr(reverseAttr, "{0}.{1}W0".format(const, fk_chain[i]))
+            cmds.connectAttr(drive_attribute, "{0}.{1}W1".format(const, ik_chain[i]))
 
             # set interpolation type to Shortest
-            cmds.setAttr(const + '.interpType', 2)
+            cmds.setAttr(const + ".interpType", 2)
 
-            self.message_connect(
-                child_chain[i],
-                fk_chain[i],
-                'fkDriver',
-                'driven')
-            self.message_connect(
-                child_chain[i],
-                ik_chain[i],
-                'ikDriver',
-                'driven')
+            self.message_connect(child_chain[i], fk_chain[i], "fkDriver", "driven")
+            self.message_connect(child_chain[i], ik_chain[i], "ikDriver", "driven")
 
         return reverseAttr
 
@@ -542,51 +538,56 @@ class Module(object):
     def message_connect(self, node_a, node_b, longName_a, longName_b):
 
         if longName_a not in cmds.listAttr(node_a):
-            cmds.addAttr(node_a, longName=longName_a, attributeType='message')
+            cmds.addAttr(node_a, longName=longName_a, attributeType="message")
         if longName_b not in cmds.listAttr(node_b):
-            cmds.addAttr(node_b, longName=longName_b, attributeType='message')
+            cmds.addAttr(node_b, longName=longName_b, attributeType="message")
 
-        cmds.connectAttr('{0}.{1}'.format(node_a, longName_a),
-                         '{0}.{1}'.format(node_b, longName_b))
+        cmds.connectAttr(
+            "{0}.{1}".format(node_a, longName_a), "{0}.{1}".format(node_b, longName_b)
+        )
 
     def capture_component_defaults(self):
         # get the controls that are in the module
         for component in self.components:
-            cmds.addAttr(component.ctrl, longName='defaultValues', dt='string')
+            cmds.addAttr(component.ctrl, longName="defaultValues", dt="string")
 
             default_values = {}
 
             for attr in cmds.listAttr(component.ctrl, keyable=True):
                 default_values[attr] = cmds.getAttr(
-                    '{0}.{1}'.format(component.ctrl, attr))
+                    "{0}.{1}".format(component.ctrl, attr)
+                )
 
-            cmds.setAttr(component.ctrl + '.defaultValues',
-                         json.dumps(default_values), type='string')
+            cmds.setAttr(
+                component.ctrl + ".defaultValues",
+                json.dumps(default_values),
+                type="string",
+            )
 
         # capture defaults for keyable module attributes as well
-        cmds.addAttr(self.node, longName='defaultValues', dt='string')
+        cmds.addAttr(self.node, longName="defaultValues", dt="string")
 
         default_values = {}
 
         for attr in cmds.listAttr(self.node, keyable=True) or []:
-            default_values[attr] = cmds.getAttr(
-                '{0}.{1}'.format(self.node, attr))
+            default_values[attr] = cmds.getAttr("{0}.{1}".format(self.node, attr))
 
-        cmds.setAttr(self.node + '.defaultValues', json.dumps(default_values),
-                     type='string')
+        cmds.setAttr(
+            self.node + ".defaultValues", json.dumps(default_values), type="string"
+        )
 
-    def find_joint_name(self, node, identifier=None, count=0, suffix='DRIVER'):
-        node_split = node.split('_')
+    def find_joint_name(self, node, identifier=None, count=0, suffix="DRIVER"):
+        node_split = node.split("_")
         if identifier:
             node_split[0] += identifier
         if isinstance(count, int):
             node_split[1] = str(count).zfill(2)
 
-        jnt_name = '_'.join(node_split[0:-1])
+        jnt_name = "_".join(node_split[0:-1])
 
-        suffix = suffix.replace('_', '')
+        suffix = suffix.replace("_", "")
 
-        jnt_name = jnt_name + '_' + suffix
+        jnt_name = jnt_name + "_" + suffix
 
         return jnt_name
 
@@ -594,24 +595,31 @@ class Module(object):
         if self.align_world is None:
             return
 
-        const = cmds.orientConstraint(constants.BOTTOM_LAYOUT_CONTROL,
-                                      component.space_grp, mo=1)[0]
-        cmds.setAttr(const + '.interpType', 2)
+        const = cmds.orientConstraint(
+            constants.BOTTOM_LAYOUT_CONTROL, component.space_grp, mo=1
+        )[0]
+        cmds.setAttr(const + ".interpType", 2)
 
-        cmds.addAttr(component.ctrl, longName='followWorld',
-                     defaultValue=default_value,
-                     attributeType='bool', keyable=True)
+        cmds.addAttr(
+            component.ctrl,
+            longName="followWorld",
+            defaultValue=default_value,
+            attributeType="bool",
+            keyable=True,
+        )
 
-        cmds.connectAttr(component.ctrl + '.followWorld',
-                         const + '.' + constants.BOTTOM_LAYOUT_CONTROL + 'W0')
+        cmds.connectAttr(
+            component.ctrl + ".followWorld",
+            const + "." + constants.BOTTOM_LAYOUT_CONTROL + "W0",
+        )
 
     def find_twist_joints(self, jnt):
-        children = cmds.listRelatives(jnt, type='joint', children=True)
+        children = cmds.listRelatives(jnt, type="joint", children=True)
 
         twist_joints = []
 
         for c in children:
-            if 'Twist' in c:
+            if "Twist" in c:
                 twist_joints.append(c)
 
         # will ascend 00 -> 0x
@@ -626,48 +634,59 @@ class Module(object):
 
         # add a new control that represents the pivot for this control
         pivot = shapelib.ControlCurve(
-            name=nameUtils.find_control_name(ctrl, identifier='Pivot'),
-            shapeType='pivot')
+            name=nameUtils.find_control_name(ctrl, identifier="Pivot"),
+            shapeType="pivot",
+        )
         cmds.parent(pivot.offset_grp, ctrl)
-        cmds.connectAttr('{0}.translate'.format(pivot.ctrl),
-                         '{0}.rotatePivot'.format(ctrl))
-        cmds.connectAttr('{0}.translate'.format(pivot.ctrl),
-                         '{0}.scalePivot'.format(ctrl))
+        cmds.connectAttr(
+            "{0}.translate".format(pivot.ctrl), "{0}.rotatePivot".format(ctrl)
+        )
+        cmds.connectAttr(
+            "{0}.translate".format(pivot.ctrl), "{0}.scalePivot".format(ctrl)
+        )
 
         parent_constraints = list(
-            set(cmds.listConnections(ctrl, type='parentConstraint') or []))
+            set(cmds.listConnections(ctrl, type="parentConstraint") or [])
+        )
 
         # At the time of the pivot's creation, it could be that no child modules
         # have been constrained to that control yet.
         for const in parent_constraints:
             # create a node to calculate the vector from the pivot to that
             # transform's constraint start location
-            offset_vector = cmds.createNode('plusMinusAverage',
-                                            name=const + '_offsetVector')
+            offset_vector = cmds.createNode(
+                "plusMinusAverage", name=const + "_offsetVector"
+            )
             # set the operation to subtract
-            cmds.setAttr(offset_vector + '.operation', 2)
-            cmds.connectAttr(pivot.ctrl + '.translate',
-                             offset_vector + '.input3D[1]')
-            for i in range(len(cmds.parentConstraint(
-                    const, query=True, targetList=True))):
-                for axis in 'xyz':
+            cmds.setAttr(offset_vector + ".operation", 2)
+            cmds.connectAttr(pivot.ctrl + ".translate", offset_vector + ".input3D[1]")
+            for i in range(
+                len(cmds.parentConstraint(const, query=True, targetList=True))
+            ):
+                for axis in "xyz":
                     cmds.setAttr(
-                        offset_vector +
-                        '.input3D[0].input3D{0}'.format(axis),
+                        offset_vector + ".input3D[0].input3D{0}".format(axis),
                         cmds.getAttr(
-                            const +
-                            '.target[{0}].targetOffsetTranslate{1}'.format(
-                                i,
-                                axis.upper())))
+                            const
+                            + ".target[{0}].targetOffsetTranslate{1}".format(
+                                i, axis.upper()
+                            )
+                        ),
+                    )
 
                 cmds.connectAttr(
-                    offset_vector + '.output3D',
-                    const + '.target[{0}].targetOffsetTranslate'.format(i))
+                    offset_vector + ".output3D",
+                    const + ".target[{0}].targetOffsetTranslate".format(i),
+                )
 
-        cmds.addAttr(ctrl, longName='showMoveablePivot', attributeType='bool',
-                     keyable=True, defaultValue=False)
-        cmds.connectAttr(ctrl + '.showMoveablePivot',
-                         pivot.ctrl + '.visibility')
+        cmds.addAttr(
+            ctrl,
+            longName="showMoveablePivot",
+            attributeType="bool",
+            keyable=True,
+            defaultValue=False,
+        )
+        cmds.connectAttr(ctrl + ".showMoveablePivot", pivot.ctrl + ".visibility")
 
         return pivot
 
@@ -681,16 +700,18 @@ class Module(object):
             # easy naming override for face controls...
             # TODO: This could be replaced if I ever made a shape swapping
             # system
-            if 'Driver_' in jnt:
-                shape_type_override = 'diamond'
-            elif 'Base_' in jnt:
-                shape_type_override = 'circle'
+            if "Driver_" in jnt:
+                shape_type_override = "diamond"
+            elif "Base_" in jnt:
+                shape_type_override = "circle"
             else:
-                shape_type_override = 'cube'
+                shape_type_override = "cube"
 
             ctrl = shapelib.ControlCurve(
-                name=nameUtils.find_control_name(jnt, identifier='Fk'),
-                shapeType=shape_type_override, jnt=jnt)
+                name=nameUtils.find_control_name(jnt, identifier="Fk"),
+                shapeType=shape_type_override,
+                jnt=jnt,
+            )
 
             components.append(ctrl)
 
@@ -699,12 +720,10 @@ class Module(object):
             if i == 0:
                 cmds.parent(ctrl.offset_grp, self.components_grp)
             else:
-                parent_joint = cmds.listRelatives(
-                    jnt, parent=True, type='joint')[0]
+                parent_joint = cmds.listRelatives(jnt, parent=True, type="joint")[0]
 
-                if cmds.objExists(parent_joint + '.driveCtrl'):
-                    parentCtrl = cmds.listConnections(
-                        parent_joint + '.driveCtrl')
+                if cmds.objExists(parent_joint + ".driveCtrl"):
+                    parentCtrl = cmds.listConnections(parent_joint + ".driveCtrl")
                 else:
                     parentCtrl = None
 
@@ -713,13 +732,11 @@ class Module(object):
                 else:
                     cmds.parent(ctrl.offset_grp, components[0].ctrl)
 
-            cmds.addAttr(jnt, longName='driveCtrl', attributeType='message')
-            cmds.addAttr(ctrl.ctrl, longName='driveJoint',
-                         attributeType='message')
-            cmds.connectAttr(ctrl.ctrl + '.driveJoint', jnt + '.driveCtrl')
+            cmds.addAttr(jnt, longName="driveCtrl", attributeType="message")
+            cmds.addAttr(ctrl.ctrl, longName="driveJoint", attributeType="message")
+            cmds.connectAttr(ctrl.ctrl + ".driveJoint", jnt + ".driveCtrl")
 
         if setup_align_world:
-            self.setup_align_world(
-                components[0], default_value=self.align_world)
+            self.setup_align_world(components[0], default_value=self.align_world)
 
         return components

@@ -9,7 +9,9 @@ class ToolMenu(object):
     """Generates an editable, cascading Maya native window menu from a layout file."""
 
     def __init__(self, menu_id=None):
-        self.menu_id = menu_id if menu_id else f"ToolMenu_{str(uuid.uuid4())}".replace("-", "_")
+        self.menu_id = (
+            menu_id if menu_id else f"ToolMenu_{str(uuid.uuid4())}".replace("-", "_")
+        )
         self.hierarchy = []
 
     def load_layout(self, filepath):
@@ -17,7 +19,7 @@ class ToolMenu(object):
         if not os.path.exists(filepath):
             return False
 
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             data = json.load(f)
 
         # NOTE: Maya will need this to be unique. We should append a guid.
@@ -33,15 +35,10 @@ class ToolMenu(object):
 
         main_window = "MayaWindow"
         if not cmds.window(main_window, exists=True):
-            raise RuntimeError(
-                "Maya Main Window container could not be found.")
+            raise RuntimeError("Maya Main Window container could not be found.")
 
         # Create root layout wrapper
-        cmds.menu(
-            self.menu_id,
-            label=self.label,
-            parent=main_window,
-            tearOff=True)
+        cmds.menu(self.menu_id, label=self.label, parent=main_window, tearOff=True)
 
         # Traverse layout rules recursively
         self._build_recursive(self.menu_id, self.hierarchy, registry)
@@ -58,14 +55,9 @@ class ToolMenu(object):
             elif item_type == "submenu":
                 sub_label = item.get("label", "SubMenu")
                 sub_menu = cmds.menuItem(
-                    label=sub_label,
-                    subMenu=True,
-                    tearOff=True,
-                    parent=parent_layout
+                    label=sub_label, subMenu=True, tearOff=True, parent=parent_layout
                 )
-                self._build_recursive(
-                    sub_menu, item.get(
-                        "items", []), registry)
+                self._build_recursive(sub_menu, item.get("items", []), registry)
 
             elif item_type == "tool":
                 guid = item.get("guid")
@@ -77,7 +69,7 @@ class ToolMenu(object):
                     cmds.menuItem(
                         label="Missing Tool (Ref: {0})".format(guid[:8]),
                         enable=False,
-                        parent=parent_layout
+                        parent=parent_layout,
                     )
                     continue
 
@@ -93,7 +85,7 @@ class ToolMenu(object):
                     "label": tool.name,
                     "command": execute_callback,
                     "enable": is_enabled,
-                    "parent": parent_layout
+                    "parent": parent_layout,
                 }
                 if tool.icon:
                     kwargs["image"] = tool.icon

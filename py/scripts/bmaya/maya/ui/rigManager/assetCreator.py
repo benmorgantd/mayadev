@@ -11,7 +11,7 @@ from bmaya.core import asset
 
 
 class AssetCreator(QtWidgets.QMainWindow):
-    def __init__(self, parent=None, designerFile=None, title='Asset Creator'):
+    def __init__(self, parent=None, designerFile=None, title="Asset Creator"):
         super(AssetCreator, self).__init__(parent)
 
         if designerFile and isinstance(designerFile, str):
@@ -20,7 +20,7 @@ class AssetCreator(QtWidgets.QMainWindow):
                 self.widget = QtCompat.load_ui(designPath)
                 self.setCentralWidget(self.widget)
             else:
-                raise RuntimeError('Given Qt Designer file not in folder.')
+                raise RuntimeError("Given Qt Designer file not in folder.")
 
         self.setWindowTitle(title)
 
@@ -33,13 +33,12 @@ class AssetCreator(QtWidgets.QMainWindow):
         assetType = self.widget.assetType.text().strip()
         name = self.widget.assetnameUtils.text().strip()
 
-        asset_id = '|'.join([project, assetType, name])
+        asset_id = "|".join([project, assetType, name])
 
         assetPath = asset.Asset.exists(project, name, assetType)
 
         if assetPath:
-            om.MGlobal.displayInfo(
-                'An asset of this description already exists')
+            om.MGlobal.displayInfo("An asset of this description already exists")
             return
         else:
             rig.Rig(asset_id)

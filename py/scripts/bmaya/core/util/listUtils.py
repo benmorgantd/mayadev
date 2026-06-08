@@ -1,5 +1,3 @@
-
-
 def firstOrDefault(iterable, default=None):
     try:
         iterator = iter(iterable)

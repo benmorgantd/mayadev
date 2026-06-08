@@ -18,8 +18,8 @@ def gather_border_info(meshObj):
     for vert in meshObj.verts:
         if vert.isOnBoundary():
             border.append(vert)
-            points.append(vert.getPosition(space='world'))
-            normals.append(vert.getNormal(space='world'))
+            points.append(vert.getPosition(space="world"))
+            normals.append(vert.getNormal(space="world"))
 
     return border, points, normals
 
@@ -36,19 +36,18 @@ def blend_boundary(mesh_a, mesh_b, distance_tolerance=0.001):
     border_a = [vert for vert in verts_a if vert.isOnBoundary()]
     border_b = [vert for vert in verts_b if vert.isOnBoundary()]
 
-    points_b = [vert.getPosition(space='world') for vert in border_b]
+    points_b = [vert.getPosition(space="world") for vert in border_b]
 
     for vert_a in border_a:
         indexA = vert_a.index()
-        pointA = vert_a.getPosition(space='world')
-        normalA = vert_a.getNormal(space='world')
+        pointA = vert_a.getPosition(space="world")
+        normalA = vert_a.getNormal(space="world")
 
         for j in range(len(border_b)):
             if (pointA - points_b[j]).length() <= distance_tolerance:
                 indexB = border_b[j].index()
 
-                averageNormal = (
-                    normalA + border_b[j].getNormal(space='world')) / 2.0
+                averageNormal = (normalA + border_b[j].getNormal(space="world")) / 2.0
 
                 mesh_a.setVertexNormal(averageNormal, indexA)
                 mesh_b.setVertexNormal(averageNormal, indexB)
@@ -62,8 +61,7 @@ def blend_boundary(mesh_a, mesh_b, distance_tolerance=0.001):
     mesh_b.updateSurface()
 
     log.info(
-        'Blending complete for {0} and {1} in {2} seconds.'.format(
-            mesh_a,
-            mesh_b,
-            time.time() -
-            startTime))
+        "Blending complete for {0} and {1} in {2} seconds.".format(
+            mesh_a, mesh_b, time.time() - startTime
+        )
+    )

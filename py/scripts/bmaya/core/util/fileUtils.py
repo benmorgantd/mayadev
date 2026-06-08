@@ -26,9 +26,9 @@ def version_file(filepath):
 
     numVersions = len(os.listdir(versionFolder))
 
-    versionFilename = os.path.join(versionFolder, "{0}_{1:04d}{2}".format(
-
-        filename, (numVersions + 1), extension))
+    versionFilename = os.path.join(
+        versionFolder, "{0}_{1:04d}{2}".format(filename, (numVersions + 1), extension)
+    )
 
     shutil.copy(filepath, versionFilename)
 

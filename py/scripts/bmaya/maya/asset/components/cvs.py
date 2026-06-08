@@ -16,7 +16,7 @@ class Cvs(Component):
     @property
     def relative_path(self):
         # /rig/components/cvs.json
-        return os.path.join('rig', 'components', self.type + self.extension)
+        return os.path.join("rig", "components", self.type + self.extension)
 
     def load(self):
         shapeio.load(self.full_path)

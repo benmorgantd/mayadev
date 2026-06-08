@@ -8,14 +8,28 @@ from bmaya.maya.util import nameUtils
 
 class SingleJoint(module.Module):
 
-    def __init__(self, start_joint=None, name='singleJoint1', character=None,
-                 parent=None, shapeType='cube',
-                 mirror=False, side='L', alignWorld=None,
-                 addOffsetControl=False, offsetShapeType='cube'):
-        super(SingleJoint, self).__init__(mod_type='SingleJoint', name=name,
-                                          character=character,
-                                          shape_type=shapeType, mirror=mirror,
-                                          side=side, align_world=alignWorld)
+    def __init__(
+        self,
+        start_joint=None,
+        name="singleJoint1",
+        character=None,
+        parent=None,
+        shapeType="cube",
+        mirror=False,
+        side="L",
+        alignWorld=None,
+        addOffsetControl=False,
+        offsetShapeType="cube",
+    ):
+        super(SingleJoint, self).__init__(
+            mod_type="SingleJoint",
+            name=name,
+            character=character,
+            shape_type=shapeType,
+            mirror=mirror,
+            side=side,
+            align_world=alignWorld,
+        )
 
         self.parent = parent
         self.start_joint = start_joint
@@ -36,26 +50,30 @@ class SingleJoint(module.Module):
         self.start_jointDriver = self.get_driver(self.start_joint)
 
         ctrl = shapelib.ControlCurve(
-            name=nameUtils.find_control_name(
-                self.start_jointDriver),
+            name=nameUtils.find_control_name(self.start_jointDriver),
             shapeType=self.shape_type,
-            jnt=self.start_jointDriver)
+            jnt=self.start_jointDriver,
+        )
 
         self.components.append(ctrl)
 
         if self.addOffsetControl:
             offsetCtrl = shapelib.ControlCurve(
-                name=nameUtils.find_control_name(self.start_jointDriver,
-                                                 identifier='Offset'),
+                name=nameUtils.find_control_name(
+                    self.start_jointDriver, identifier="Offset"
+                ),
                 shapeType=self.offsetShapeType,
-                jnt=self.start_jointDriver)
+                jnt=self.start_jointDriver,
+            )
             cmds.parent(offsetCtrl.offset_grp, ctrl.ctrl)
-            self.parent_constrain(offsetCtrl.ctrl, self.start_jointDriver,
-                                  maintain_offset=True)
+            self.parent_constrain(
+                offsetCtrl.ctrl, self.start_jointDriver, maintain_offset=True
+            )
             self.components.append(offsetCtrl)
         else:
-            self.parent_constrain(ctrl.ctrl, self.start_jointDriver,
-                                  maintain_offset=True)
+            self.parent_constrain(
+                ctrl.ctrl, self.start_jointDriver, maintain_offset=True
+            )
 
         cmds.parent(ctrl.offset_grp, self.components_grp)
 

@@ -2,13 +2,13 @@ import maya.mel as mel
 from maya.cmds import pluginInfo as pluginInfo
 from maya.cmds import loadPlugin as loadPlugin
 
-pluginFileName = 'averageVertexSkinWeightCmd.py'
+pluginFileName = "averageVertexSkinWeightCmd.py"
 if pluginInfo(pluginFileName, q=True, l=True) == False:
     loadPlugin(pluginFileName)
 
 
 def initPaint():
-    cmd = '''
+    cmd = """
   global string $avgVertexSkinWeightsBrushSel[];
 
   global proc averageVertexWeightBrush(string $context) {
@@ -44,15 +44,15 @@ def initPaint():
       }
       averageVertexSkinWeight -i $index -v $val;
   }
-  '''
+  """
     mel.eval(cmd)
 
 
 def paint():
-    cmd = '''
+    cmd = """
   ScriptPaintTool;
   artUserPaintCtx -e -tsc "averageVertexWeightBrush" `currentCtx`;
-  '''
+  """
     mel.eval(cmd)
 
 

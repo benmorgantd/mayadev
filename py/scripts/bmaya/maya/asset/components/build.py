@@ -14,4 +14,4 @@ class Build(Component):
     @property
     def relative_path(self):
         # /rig/components/animRig.ma
-        return os.path.join('rig', 'components', self.type + self.extension)
+        return os.path.join("rig", "components", self.type + self.extension)

@@ -17,7 +17,7 @@ class Weights(Component):
     @property
     def relative_path(self):
         # /rig/components/weights/
-        return os.path.join('rig', 'components', self.type)
+        return os.path.join("rig", "components", self.type)
 
     @property
     def files(self):

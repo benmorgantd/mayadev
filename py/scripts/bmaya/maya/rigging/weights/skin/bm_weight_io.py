@@ -18,7 +18,8 @@ def parse_xml(filepath):
 
 
 def export_weights(
-        path=r"D:/Documents/Google Drive/01 BFA/Thesis Project Local Files/Rig/skin_library/Alpha/"):
+    path=r"D:/Documents/Google Drive/01 BFA/Thesis Project Local Files/Rig/skin_library/Alpha/",
+):
 
     # export each selected object to the selected path
     for obj in cmds.ls(selection=True):
@@ -31,14 +32,17 @@ def export_weights(
                 path=path,
                 export=True,
                 method="index",
-                deformer=skin_cluster[0])
+                deformer=skin_cluster[0],
+            )
             om.MGlobal.displayInfo("Exported weights from {0}..".format(obj))
+
 
 # export_weights()
 
 
 def import_weights(
-        path=r"D:/Documents/Google Drive/01 BFA/Thesis Project Local Files/Rig/skin_library/Alpha/"):
+    path=r"D:/Documents/Google Drive/01 BFA/Thesis Project Local Files/Rig/skin_library/Alpha/",
+):
     original_selection = cmds.ls(selection=True)
     # import the weights for each selected object.
     for obj in original_selection:
@@ -62,12 +66,14 @@ def import_weights(
             cmds.select(obj, add=1)
 
             # add the skin cluster
-            new_cstr = cmds.skinCluster(maximumInfluences=4,
-                                        weightDistribution=1,
-                                        obeyMaxInfluences=True,
-                                        toSelectedBones=True,
-                                        skinMethod=0,
-                                        bindMethod=1)
+            new_cstr = cmds.skinCluster(
+                maximumInfluences=4,
+                weightDistribution=1,
+                obeyMaxInfluences=True,
+                toSelectedBones=True,
+                skinMethod=0,
+                bindMethod=1,
+            )
 
             cmds.deformerWeights(
                 "{0}.weights".format(obj),
@@ -75,15 +81,14 @@ def import_weights(
                 path=path,
                 ignoreName=True,
                 method="index",
-                deformer=new_cstr[0])
+                deformer=new_cstr[0],
+            )
             cmds.select(obj)
             cmds.skinPercent(new_cstr[0], normalize=True)
-            om.MGlobal.displayInfo(
-                "Loaded skinCluster weights onto {0}".format(obj))
+            om.MGlobal.displayInfo("Loaded skinCluster weights onto {0}".format(obj))
 
         else:
-            om.MGlobal.displayError(
-                "Weights file doesn't exist for {0}".format(obj))
+            om.MGlobal.displayError("Weights file doesn't exist for {0}".format(obj))
 
     cmds.select(original_selection)
 

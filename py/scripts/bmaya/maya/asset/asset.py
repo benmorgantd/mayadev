@@ -28,8 +28,12 @@ class Asset(object):
     @property
     def root_dir(self):
         root = self.clean_path(
-            os.path.join(bmaya.maya.constants.RIGGING_PROJECT_DIR,
-                         self.project, self.asset_type, self.name)
+            os.path.join(
+                bmaya.maya.constants.RIGGING_PROJECT_DIR,
+                self.project,
+                self.asset_type,
+                self.name,
+            )
         )
 
         if os.path.exists(root):
@@ -59,8 +63,7 @@ class Asset(object):
         assert isinstance(asset_id, str)
 
         if "|" not in asset_id:
-            raise ValueError(
-                "Id should have tokens split by the pike character.")
+            raise ValueError("Id should have tokens split by the pike character.")
 
         split_id = asset_id.split("|")
 
@@ -69,8 +72,7 @@ class Asset(object):
 
         # check for illegal characters that may cause path errors
         if any(not token.isalnum() for token in split_id):
-            raise ValueError(
-                "Id is not alphanumeric and contains illegal characters.")
+            raise ValueError("Id is not alphanumeric and contains illegal characters.")
 
         return asset_id
 
@@ -103,10 +105,9 @@ class Asset(object):
 
         root_dir = os.path.abspath(
             os.path.join(
-                bmaya.maya.constants.RIGGING_PROJECT_DIR,
-                project,
-                asset_type,
-                name))
+                bmaya.maya.constants.RIGGING_PROJECT_DIR, project, asset_type, name
+            )
+        )
 
         if os.path.exists(root_dir):
             return root_dir
@@ -151,18 +152,24 @@ class Asset(object):
 
         # see if it's in a subdirectory of PROJECT_ROOT
 
-        for directory, subdirectory, directory_files in os.walk(bmaya.maya.constants.RIGGING_PROJECT_DIR):
+        for directory, subdirectory, directory_files in os.walk(
+            bmaya.maya.constants.RIGGING_PROJECT_DIR
+        ):
             if dirname in cls.clean_path(directory) and any(
                 basename in cls.clean_path(f) for f in directory_files
             ):
                 # this file is within this asset's directory
                 root_directory = cls.clean_path(
-                    os.path.dirname(os.path.join(
-                        bmaya.maya.constants.RIGGING_PROJECT_DIR, "projects"))
+                    os.path.dirname(
+                        os.path.join(
+                            bmaya.maya.constants.RIGGING_PROJECT_DIR, "projects"
+                        )
+                    )
                 )
                 # returns [project, type, name, ..., basename]
                 split_root_relative_path = cls.split_path(
-                    filepath.split(root_directory)[1])
+                    filepath.split(root_directory)[1]
+                )
                 asset_name = split_root_relative_path[2]
                 asset_type = split_root_relative_path[1]
                 asset_project = split_root_relative_path[0]
@@ -192,8 +199,7 @@ class Asset(object):
         version_num = str(num_versions + 1)
         version_num = version_num.zfill(3)
 
-        new_version_folder = os.path.join(
-            version_folder, self.name + version_num)
+        new_version_folder = os.path.join(version_folder, self.name + version_num)
 
         log.info("\n>> Creating asset version " + version_num)
 

@@ -9,21 +9,30 @@ from . import _ThreeJointIkFkTwist
 
 class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
 
-    def __init__(self, start_joint=None, endJoint=None, name='Arm1',
-                 character=None,
-                 parent=None, mirror=False, side='L', fkikDefault=0,
-                 alignWorld=True):
+    def __init__(
+        self,
+        start_joint=None,
+        endJoint=None,
+        name="Arm1",
+        character=None,
+        parent=None,
+        mirror=False,
+        side="L",
+        fkikDefault=0,
+        alignWorld=True,
+    ):
         _ThreeJointIkFkTwist.ThreeJointIkFkTwist.__init__(
             self,
             start_joint=start_joint,
             endJoint=endJoint,
-            name=name + '_ikFkChain',
+            name=name + "_ikFkChain",
             character=character,
             parent=parent,
             mirror=mirror,
             side=side,
             fkikDefault=fkikDefault,
-            alignWorld=alignWorld)
+            alignWorld=alignWorld,
+        )
 
         self.modType = "Arm"
 
@@ -31,13 +40,12 @@ class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
 
     @wrapBuild
     def build(self):
-        _ThreeJointIkFkTwist.ThreeJointIkFkTwist.build(self, self.start_joint,
-                                                       self.endJoint,
-                                                       followWorld=1)
+        _ThreeJointIkFkTwist.ThreeJointIkFkTwist.build(
+            self, self.start_joint, self.endJoint, followWorld=1
+        )
 
         self.addFkGimbalControl()
-        self.setup_align_world(self.fkShoulderGimbal,
-                               default_value=self.align_world)
+        self.setup_align_world(self.fkShoulderGimbal, default_value=self.align_world)
 
     def addFkGimbalControl(self):
         # add a second control on top of the existing shoulder fk
@@ -45,21 +53,20 @@ class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
 
         shoulderFkOffset = self.fkComponents[0].offset_grp
 
-        ctrlName = nameUtils.find_control_name(self.fkComponents[0].ctrl,
-                                               identifier='Gimbal')
-        self.fkShoulderGimbal = shapelib.ControlCurve(name=ctrlName,
-                                                      shapeType='sphere',
-                                                      jnt=shoulderFkOffset)
+        ctrlName = nameUtils.find_control_name(
+            self.fkComponents[0].ctrl, identifier="Gimbal"
+        )
+        self.fkShoulderGimbal = shapelib.ControlCurve(
+            name=ctrlName, shapeType="sphere", jnt=shoulderFkOffset
+        )
 
         # change its rotate order to zxy from that of the shoulder fk offset group
         # cmds.setAttr(self.fkShoulderGimbal.ctrl + '.rotateOrder', 0)
 
         cmds.parent(self.fkShoulderGimbal.offset_grp, self.components_grp, a=1)
-        cmds.parent(self.fkComponents[0].offset_grp, self.fkShoulderGimbal.ctrl,
-                    a=1)
+        cmds.parent(self.fkComponents[0].offset_grp, self.fkShoulderGimbal.ctrl, a=1)
 
         # hook it up to the visibility switch
-        cmds.connectAttr(self.blendReverse,
-                         self.fkShoulderGimbal.offset_grp + '.v')
+        cmds.connectAttr(self.blendReverse, self.fkShoulderGimbal.offset_grp + ".v")
 
         self.components.append(self.fkShoulderGimbal)

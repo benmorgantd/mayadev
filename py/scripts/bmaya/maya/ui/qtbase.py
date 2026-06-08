@@ -10,12 +10,11 @@ import maya.OpenMayaUI as omui
 
 
 def getMayaMainWindow():
-    return QtCompat.wrapInstance(long(omui.MQtUtil.mainWindow()),
-                                 QtWidgets.QWidget)
+    return QtCompat.wrapInstance(long(omui.MQtUtil.mainWindow()), QtWidgets.QWidget)
 
 
 class SimpleWindow(QtWidgets.QMainWindow):
-    def __init__(self, parent=None, designerFile=None, title='Simple Widget'):
+    def __init__(self, parent=None, designerFile=None, title="Simple Widget"):
         super(SimpleWindow, self).__init__(parent=parent)
 
         assert isinstance(title, str)
@@ -34,7 +33,7 @@ class SimpleWindow(QtWidgets.QMainWindow):
                 self.widget = QtCompat.load_ui(designerFile)
                 self.widget.setParent(self)
             else:
-                raise RuntimeError('Given Qt Designer file not in folder.')
+                raise RuntimeError("Given Qt Designer file not in folder.")
         else:
             self.widget = QtWidgets.QWidget()
             self.mainLayout = QtWidgets.QVBoxLayout()
@@ -43,7 +42,7 @@ class SimpleWindow(QtWidgets.QMainWindow):
 
 
 class SimpleWidget(QtWidgets.QWidget):
-    def __init__(self, parent=None, designerFile=None, title='Simple Widget'):
+    def __init__(self, parent=None, designerFile=None, title="Simple Widget"):
         super(SimpleWidget, self).__init__(parent=parent)
 
         assert isinstance(title, str)
@@ -63,7 +62,7 @@ class SimpleWidget(QtWidgets.QWidget):
                 self.widget = QtCompat.load_ui(designerFile)
                 self.widget.setParent(self)
             else:
-                raise RuntimeError('Given Qt Designer file not in folder.')
+                raise RuntimeError("Given Qt Designer file not in folder.")
 
 
 class Table(QtWidgets.QTableWidget):
@@ -156,7 +155,7 @@ class TreeItem(QtWidgets.QTreeWidgetItem):
         self.setSizeHint(0, QtCore.QSize(50, 20))
         self.setFirstColumnSpanned(True)
 
-        self.setText(0, 'Tree Item')
+        self.setText(0, "Tree Item")
 
     @property
     def parents(self):
@@ -186,7 +185,7 @@ class TreeItem(QtWidgets.QTreeWidgetItem):
 
 
 class DockableWidget(SimpleWidget):
-    def __init__(self, parent=None, designerFile=None, title='rigManager'):
+    def __init__(self, parent=None, designerFile=None, title="rigManager"):
         super(DockableWidget, self).__init__(parent, designerFile, title)
 
     def dock(self, width=385, height=735):
@@ -197,7 +196,8 @@ class DockableWidget(SimpleWidget):
             minimumWidth=True,
             initialHeight=height,
             widthProperty="preferred",
-            label=self.title)
+            label=self.title,
+        )
 
         dockPtr = omui.MQtUtil.findControl(dockControl)
         dockWidget = QtCompat.wrapInstance(long(dockPtr), QtWidgets.QWidget)
@@ -206,16 +206,12 @@ class DockableWidget(SimpleWidget):
         dockWidget.layout().addWidget(self.widget)
 
         cmds.evalDeferred(
-            lambda *args: cmds.workspaceControl(
-                dockControl,
-                edit=True,
-                restore=True
-            )
+            lambda *args: cmds.workspaceControl(dockControl, edit=True, restore=True)
         )
 
 
 class Dialog(QtWidgets.QMainWindow):
-    def __init__(self, parent=None, windowTitle='Dialog'):
+    def __init__(self, parent=None, windowTitle="Dialog"):
         super(Dialog, self).__init__(parent)
 
         self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint)
@@ -226,11 +222,11 @@ class Dialog(QtWidgets.QMainWindow):
 
 
 class ConfirmDialog(Dialog):
-    def __init__(self, parent=None, windowTitle='Confirm Dialog'):
+    def __init__(self, parent=None, windowTitle="Confirm Dialog"):
         super(ConfirmDialog, self).__init__(parent, windowTitle)
 
-        _yesBtn = QtWidgets.QPushButton('Yes')
-        _noBtn = QtWidgets.QPushButton('No')
+        _yesBtn = QtWidgets.QPushButton("Yes")
+        _noBtn = QtWidgets.QPushButton("No")
 
         self.hLayout.addWidget(_yesBtn)
         self.hLayout.addWidget(_noBtn)
@@ -242,16 +238,16 @@ class ConfirmDialog(Dialog):
 class ProgressWindow(SimpleWindow):
     windowSize = QtCore.QSize(350, 75)
 
-    def __init__(self, parent=None, designerFile=None, title='Simple Widget'):
-        super(ProgressWindow, self).__init__(parent=parent,
-                                             designerFile=designerFile,
-                                             title=title)
+    def __init__(self, parent=None, designerFile=None, title="Simple Widget"):
+        super(ProgressWindow, self).__init__(
+            parent=parent, designerFile=designerFile, title=title
+        )
 
         self.progress = 0
         self.minProgress = 0
         self.maxProgress = 100
 
-        self.statusTextWidget = QtWidgets.QLabel('Doing Something...')
+        self.statusTextWidget = QtWidgets.QLabel("Doing Something...")
 
         self.progressBarWidget = QtWidgets.QProgressBar()
 
@@ -263,9 +259,8 @@ class ProgressWindow(SimpleWindow):
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 
     def increment(self, value):
-        self.progressBarWidget.setValue(
-            self.progressBarWidget.value() + int(value))
+        self.progressBarWidget.setValue(self.progressBarWidget.value() + int(value))
 
     def setStatus(self, text):
-        self.statusTextWidget.setText(text.replace('...', '') + '...')
+        self.statusTextWidget.setText(text.replace("...", "") + "...")
         log.info(text)

@@ -15,4 +15,4 @@ class AnimRig(MayaComponent):
     @property
     def relative_path(self):
         # /rig/animRig.ma
-        return os.path.join('rig', self.type + self.extension)
+        return os.path.join("rig", self.type + self.extension)

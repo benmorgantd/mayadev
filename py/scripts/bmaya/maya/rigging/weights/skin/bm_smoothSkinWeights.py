@@ -12,10 +12,7 @@ def getSkinCluster(dag):
     """
 
     # useful one-liner for finding a skinCluster on a mesh
-    skin_cluster = cmds.ls(
-        cmds.listHistory(
-            dag.full_pathName()),
-        type="skinCluster")
+    skin_cluster = cmds.ls(cmds.listHistory(dag.full_pathName()), type="skinCluster")
 
     if len(skin_cluster) > 0:
         # get the MObject for that skinCluster node if there is one
@@ -32,7 +29,7 @@ def getSkinCluster(dag):
 
 def smoothSkinWeights():
     """
-      Sets the weights for each vertex to the average of its neighbors.
+    Sets the weights for each vertex to the average of its neighbors.
 
     """
 
@@ -86,8 +83,9 @@ def smoothSkinWeights():
 
     while not itVerts.isDone():
         this_vert_weight_index = itVerts.index() * inf_count
-        vert_weights = new_weights[this_vert_weight_index:
-                                   this_vert_weight_index + inf_count]
+        vert_weights = new_weights[
+            this_vert_weight_index : this_vert_weight_index + inf_count
+        ]
 
         # get this vert's neighbors and their weights
         vert_neighbors = om.MIntArray()
@@ -97,7 +95,10 @@ def smoothSkinWeights():
         for i in range(vert_neighbors.length()):
             neighbor_vert_weight_index = vert_neighbors[i] * inf_count
             neighbor_weights.append(
-                new_weights[neighbor_vert_weight_index: neighbor_vert_weight_index + inf_count])
+                new_weights[
+                    neighbor_vert_weight_index : neighbor_vert_weight_index + inf_count
+                ]
+            )
 
         # average_weights =
         # makes the weights for the closest vertex equal to the outer vertex
@@ -109,11 +110,7 @@ def smoothSkinWeights():
     # make a new empty object
     empty_object = om.MObject()
     mFnSkinCluster.setWeights(
-        dag,
-        empty_object,
-        influence_indices,
-        new_weights,
-        False,
-        old_weights)
+        dag, empty_object, influence_indices, new_weights, False, old_weights
+    )
 
     om.MGlobal.setActiveSelectionList(original_sel)

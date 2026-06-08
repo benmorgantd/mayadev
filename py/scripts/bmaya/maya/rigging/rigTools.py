@@ -23,7 +23,7 @@ from bmaya.maya.util import mathUtils
 def toggle_skin_mode():
     """Toggles skinning mode on the currently built rig."""
 
-    characterNodes = cmds.ls('*.referenceMesh')
+    characterNodes = cmds.ls("*.referenceMesh")
 
     for node in characterNodes:
 
@@ -31,7 +31,7 @@ def toggle_skin_mode():
 
         cmds.setAttr(node, not currentValue)
 
-        cmds.setAttr('SKELETON.visibility', currentValue)
+        cmds.setAttr("SKELETON.visibility", currentValue)
 
     size_joints()
 
@@ -39,74 +39,62 @@ def toggle_skin_mode():
 def size_joints():
 
     skeletonJoints = cmds.listRelatives(
+        "SKELETON", type="joint", allDescendents=True, full_path=True
+    )
 
-        'SKELETON',
-
-        type='joint',
-
-        allDescendents=True,
-
-        full_path=True)
-
-    bindJoints = cmds.sets('BIND_set', query=True)
+    bindJoints = cmds.sets("BIND_set", query=True)
 
     for jnt in skeletonJoints:
 
         if jnt in bindJoints:
 
-            if 'hand' in jnt:
+            if "hand" in jnt:
 
-                cmds.setAttr(jnt + '.radius', 1)
+                cmds.setAttr(jnt + ".radius", 1)
 
             else:
 
-                cmds.setAttr(jnt + '.radius', 3)
+                cmds.setAttr(jnt + ".radius", 3)
 
         else:
 
-            cmds.setAttr(jnt + '.drawStyle', 0)
+            cmds.setAttr(jnt + ".drawStyle", 0)
 
 
 def label_joints():
 
-    for jnt in cmds.ls(type='joint'):
+    for jnt in cmds.ls(type="joint"):
 
-        jntSplit = jnt.split('_')
+        jntSplit = jnt.split("_")
 
-        if '_M_' in jnt:
+        if "_M_" in jnt:
 
-            cmds.setAttr(jnt + '.side', 0)
+            cmds.setAttr(jnt + ".side", 0)
 
-        if '_L_' in jnt:
+        if "_L_" in jnt:
 
-            cmds.setAttr(jnt + '.side', 1)
+            cmds.setAttr(jnt + ".side", 1)
 
-        if '_R_' in jnt:
+        if "_R_" in jnt:
 
-            cmds.setAttr(jnt + '.side', 2)
+            cmds.setAttr(jnt + ".side", 2)
 
-        cmds.setAttr(jnt + '.type', 18)
+        cmds.setAttr(jnt + ".type", 18)
 
         try:
 
-            cmds.setAttr(
-
-                jnt + '.otherType',
-
-                jntSplit[0] + jntSplit[1],
-
-                type='string')
+            cmds.setAttr(jnt + ".otherType", jntSplit[0] + jntSplit[1], type="string")
 
         except IndexError:
 
-            log.info(jnt + ' may be named incorrectly.')
+            log.info(jnt + " may be named incorrectly.")
 
 
 def get_module_node(ctrl):
 
-    if 'module' not in cmds.listAttr(ctrl):
+    if "module" not in cmds.listAttr(ctrl):
 
-        if any(attr in ['node', 'modType'] for attr in cmds.listAttr(ctrl)):
+        if any(attr in ["node", "modType"] for attr in cmds.listAttr(ctrl)):
 
             # ctrl is a module
             return ctrl
@@ -114,10 +102,10 @@ def get_module_node(ctrl):
         else:
 
             raise ValueError(
+                "Given control {0} is not connected to a module".format(ctrl)
+            )
 
-                'Given control {0} is not connected to a module'.format(ctrl))
-
-    mod = cmds.listConnections(ctrl + '.module')[0]
+    mod = cmds.listConnections(ctrl + ".module")[0]
 
     return mod
 
@@ -126,52 +114,52 @@ def get_character_node(ctrl):
 
     mod = get_module_node(ctrl)
 
-    character = cmds.listConnections(mod + '.character')[0]
+    character = cmds.listConnections(mod + ".character")[0]
 
     return character
 
 
 def get_character_modules(characterNode):
 
-    return cmds.listConnections(characterNode + '.modules')
+    return cmds.listConnections(characterNode + ".modules")
 
 
 def reset_control(ctrl):
 
-    if 'defaultValues' not in cmds.listAttr(ctrl):
+    if "defaultValues" not in cmds.listAttr(ctrl):
 
-        log.info('Control {0} has no default value attribute'.format(ctrl))
+        log.info("Control {0} has no default value attribute".format(ctrl))
         return
 
-    defaultValues = cmds.getAttr(ctrl + '.defaultValues')
+    defaultValues = cmds.getAttr(ctrl + ".defaultValues")
 
     defaultValues = json.loads(defaultValues)
 
     for attr, value in defaultValues.items():
 
-        cmds.setAttr('{0}.{1}'.format(ctrl, attr), value)
+        cmds.setAttr("{0}.{1}".format(ctrl, attr), value)
 
 
 def reset_module(mod):
 
-    components = cmds.listConnections(mod + '.components')
+    components = cmds.listConnections(mod + ".components")
 
     for component in components:
 
         reset_control(component)
 
-    if 'defaultValues' not in cmds.listAttr(mod):
+    if "defaultValues" not in cmds.listAttr(mod):
 
-        log.info('Module {0} has no default value attribute'.format(mod))
+        log.info("Module {0} has no default value attribute".format(mod))
         return
 
-    defaultValues = cmds.getAttr(mod + '.defaultValues')
+    defaultValues = cmds.getAttr(mod + ".defaultValues")
 
     defaultValues = json.loads(defaultValues)
 
     for attr, value in defaultValues.items():
 
-        cmds.setAttr('{0}.{1}'.format(mod, attr), value)
+        cmds.setAttr("{0}.{1}".format(mod, attr), value)
 
 
 def reset_character(ctrl):
@@ -189,7 +177,7 @@ def select_module(ctrl):
 
     mod = get_module_node(ctrl)
 
-    components = cmds.listConnections(mod + '.components')
+    components = cmds.listConnections(mod + ".components")
 
     for ctrl in components:
 
@@ -211,9 +199,9 @@ def key_all(ctrl):
 
             # set a keyframe
 
-            cmds.setKeyframe(mod + '.' + attr)
+            cmds.setKeyframe(mod + "." + attr)
 
-        components = cmds.listConnections(mod + '.components')
+        components = cmds.listConnections(mod + ".components")
 
         for ctrl in components:
 
@@ -223,14 +211,14 @@ def key_all(ctrl):
 
                 # set a keyframe
 
-                cmds.setKeyframe(ctrl + '.' + attr)
+                cmds.setKeyframe(ctrl + "." + attr)
 
 
 def key_ik(ctrl):
 
     mod = get_module_node(ctrl)
 
-    ikControls = literal_eval(cmds.getAttr(mod + '.ikComponents'))
+    ikControls = literal_eval(cmds.getAttr(mod + ".ikComponents"))
 
     for ikCtrl in ikControls:
 
@@ -240,14 +228,14 @@ def key_ik(ctrl):
 
             # set a keyframe
 
-            cmds.setKeyframe(ikCtrl + '.' + attr)
+            cmds.setKeyframe(ikCtrl + "." + attr)
 
 
 def key_fk(ctrl):
 
     mod = get_module_node(ctrl)
 
-    ikControls = literal_eval(cmds.getAttr(mod + '.fkComponents'))
+    ikControls = literal_eval(cmds.getAttr(mod + ".fkComponents"))
 
     for fkCtrl in ikControls:
 
@@ -257,7 +245,7 @@ def key_fk(ctrl):
 
             # set a keyframe
 
-            cmds.setKeyframe(fkCtrl + '.' + attr)
+            cmds.setKeyframe(fkCtrl + "." + attr)
 
 
 def match_ik_to_fk(ctrl):
@@ -268,15 +256,15 @@ def match_ik_to_fk(ctrl):
 
     # get the position of the fk joints
 
-    fkJoints = literal_eval(cmds.getAttr(mod + '.fkDriveJoints'))
+    fkJoints = literal_eval(cmds.getAttr(mod + ".fkDriveJoints"))
 
     # get the ik controls
 
-    ik_controls = literal_eval(cmds.getAttr(mod + '.ikComponents'))
+    ik_controls = literal_eval(cmds.getAttr(mod + ".ikComponents"))
 
     # this is a little more complicated if its a spline module
 
-    if cmds.getAttr(mod + '.modType') == 'Spline':
+    if cmds.getAttr(mod + ".modType") == "Spline":
 
         # we can easily match the start and end controls.
 
@@ -291,8 +279,8 @@ def match_ik_to_fk(ctrl):
         # We'll do this by fitting a curve through the fk joints
 
         fitCurve = mathUtils.fit_curve_to_points(
-
-            [cmds.xform(jnt, q=1, t=1, ws=1) for jnt in fkJoints])
+            [cmds.xform(jnt, q=1, t=1, ws=1) for jnt in fkJoints]
+        )
 
         numMiddleControls = len(ik_controls) - 2
 
@@ -303,17 +291,10 @@ def match_ik_to_fk(ctrl):
             # along the curve (assumes controls were created this way to begin)
 
             matrix = mathUtils.get_matrix_along_curve(
-
                 fitCurve,
-
-                i /
-                float(
-
-                    numMiddleControls +
-
-                    1),
-
-                downAxis=constants.SPINE_UP_AXIS)
+                i / float(numMiddleControls + 1),
+                downAxis=constants.SPINE_UP_AXIS,
+            )
 
             cmds.xform(ik_controls[i], matrix=matrix, worldSpace=True)
 
@@ -323,14 +304,8 @@ def match_ik_to_fk(ctrl):
 
         # match the ik start control to the first fk joint position
         cmds.delete(
-
-            cmds.pointConstraint(
-
-                fkJoints[0],
-
-                ik_controls[0],
-
-                maintainOffset=False))
+            cmds.pointConstraint(fkJoints[0], ik_controls[0], maintainOffset=False)
+        )
 
         # match the ik end control to the last fk joint position
 
@@ -339,18 +314,12 @@ def match_ik_to_fk(ctrl):
         # find the pole vector position for the fk joints
 
         cmds.xform(
-
             ik_controls[2],
+            translation=mathUtils.find_pole_vector(fkJoints, scaleFactor=1.5),
+            worldSpace=True,
+        )
 
-            translation=mathUtils.find_pole_vector(
-
-                fkJoints,
-
-                scaleFactor=1.5),
-
-            worldSpace=True)
-
-    cmds.setAttr(mod + '.FKIK', 1)
+    cmds.setAttr(mod + ".FKIK", 1)
 
 
 def match_fk_to_ik(ctrl):
@@ -361,27 +330,21 @@ def match_fk_to_ik(ctrl):
 
     # get the position of the fk joints
 
-    ikJoints = literal_eval(cmds.getAttr(mod + '.ikDriveJoints'))
+    ikJoints = literal_eval(cmds.getAttr(mod + ".ikDriveJoints"))
 
     # get the ik controls
 
-    fkControls = literal_eval(cmds.getAttr(mod + '.fkComponents'))
+    fkControls = literal_eval(cmds.getAttr(mod + ".fkComponents"))
 
     for i in range(len(ikJoints)):
 
         cmds.xform(
-
             fkControls[i],
+            matrix=cmds.getAttr(ikJoints[i] + ".worldMatrix[0]"),
+            worldSpace=True,
+        )
 
-            matrix=cmds.getAttr(
-
-                ikJoints[i] +
-
-                '.worldMatrix[0]'),
-
-            worldSpace=True)
-
-    cmds.setAttr(mod + '.FKIK', 0)
+    cmds.setAttr(mod + ".FKIK", 0)
 
 
 def bake_fk_to_ik(ctrl, bakeRange=None):
@@ -420,4 +383,3 @@ def bake_ik_to_fk(ctrl, bakeRange=None):
         cmds.currentTime(i)
         match_ik_to_fk(ctrl)
         key_ik(ctrl)
-

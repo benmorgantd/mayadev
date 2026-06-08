@@ -8,16 +8,30 @@ from bmaya.maya.util import nameUtils
 
 class FkChain(module.Module):
 
-    def __init__(self, start_joint=None, endJoint=None, exclude=[],
-                 name='FkChain1',
-                 character=None, parent=None, shapeType='cube', mirror=False,
-                 side='L',
-                 alignWorld=False):
+    def __init__(
+        self,
+        start_joint=None,
+        endJoint=None,
+        exclude=[],
+        name="FkChain1",
+        character=None,
+        parent=None,
+        shapeType="cube",
+        mirror=False,
+        side="L",
+        alignWorld=False,
+    ):
 
-        module.Module.__init__(self, name=name, mod_type='FkChain',
-                               character=character,
-                               shape_type=shapeType, mirror=mirror, side=side,
-                               align_world=alignWorld)
+        module.Module.__init__(
+            self,
+            name=name,
+            mod_type="FkChain",
+            character=character,
+            shape_type=shapeType,
+            mirror=mirror,
+            side=side,
+            align_world=alignWorld,
+        )
 
         self.parent = parent
         self.start_joint = start_joint
@@ -34,5 +48,6 @@ class FkChain(module.Module):
         self.bindJoints = self.find_hierarchy_joints(exclude=self.exclude)
         self.driveJoints = self.create_drive_joints()
 
-        self.components = self.build_fk_controls(self.driveJoints,
-                                                 setup_align_world=True)
+        self.components = self.build_fk_controls(
+            self.driveJoints, setup_align_world=True
+        )

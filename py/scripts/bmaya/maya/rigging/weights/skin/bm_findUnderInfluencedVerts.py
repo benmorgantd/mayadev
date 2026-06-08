@@ -37,21 +37,21 @@ def find_under_influenced_verts(max_influences=4):
 
             old_weights = om.MDoubleArray()
 
-            mFnSkinCluster.getWeights(
-                mesh_dag, components, old_weights, inf_count_ptr)
+            mFnSkinCluster.getWeights(mesh_dag, components, old_weights, inf_count_ptr)
 
             new_weights = om.MDoubleArray()
 
             for i in range(0, old_weights.length(), inf_count_int):
-                this_vertex_weights = old_weights[i:i + inf_count_int]
-                this_vertex_num_influences = inf_count_int - \
-                    list(this_vertex_weights).count(0.0)
+                this_vertex_weights = old_weights[i : i + inf_count_int]
+                this_vertex_num_influences = inf_count_int - list(
+                    this_vertex_weights
+                ).count(0.0)
                 # here we could sort, prune, relax, etc
 
                 if this_vertex_num_influences < max_influences:
                     available_verts.add(
-                        "{0}.vtx[{1}]".format(
-                            mesh_dag.full_pathName(), i))
+                        "{0}.vtx[{1}]".format(mesh_dag.full_pathName(), i)
+                    )
 
         obj_iter.next()
 
@@ -60,7 +60,9 @@ def find_under_influenced_verts(max_influences=4):
 
     om.MGlobal.displayInfo(
         "{0} greedy vertices pruned in {1} seconds.".format(
-            available_verts.length(),
-            time.time() - start_time))
+            available_verts.length(), time.time() - start_time
+        )
+    )
+
 
 # prune_influences(max_influences=3)

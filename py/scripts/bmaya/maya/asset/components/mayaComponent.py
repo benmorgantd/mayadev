@@ -17,7 +17,7 @@ class MayaComponent(Component):
         super(MayaComponent, self).__init__(asset, component_type)
 
     def save(self):
-        om.MGlobal.displayInfo('Saving ' + self.type + ' ...')
+        om.MGlobal.displayInfo("Saving " + self.type + " ...")
         fileUtils.version_file(self.full_path)
         cmds.file(rename=self.full_path)
         cmds.file(save=True, type="mayaAscii", force=True)
@@ -29,6 +29,5 @@ class MayaComponent(Component):
         cmds.file(
             self.full_path,
             reference=True,
-            namespace=os.path.splitext(
-                os.path.basename(
-                    self.full_path))[0])
+            namespace=os.path.splitext(os.path.basename(self.full_path))[0],
+        )
