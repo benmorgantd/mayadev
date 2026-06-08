@@ -197,7 +197,7 @@ def add_twist_joints(start_joint, end_joint, joint_count=3):
     for i in range(joint_count):
         cmds.select(clear=True)
         j = cmds.joint(
-            nameUtils.findJointName(
+            nameUtils.find_joint_name(
                 start_joint.shortName,
                 identifier='Twist',
                 count=i,

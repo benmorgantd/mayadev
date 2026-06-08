@@ -176,7 +176,7 @@ class IkChain(module.Module):
                        relative=True, objectSpace=True)
         else:
             cmds.xform(poleVectorCtrl.offset_grp,
-                       translation=mathUtils.findPoleVector(driveJoints,
+                       translation=mathUtils.find_pole_vector(driveJoints,
                                                             scaleFactor=1.5),
                        worldSpace=True)
             cmds.xform(

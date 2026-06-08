@@ -6,7 +6,7 @@ import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
 
-def findPoleVector(joints, scaleFactor=1):
+def find_pole_vector(joints, scaleFactor=1):
     if len(joints) < 3:
         raise ValueError('Pass at least 3 joints to this function.')
 

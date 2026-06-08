@@ -341,7 +341,7 @@ def matchIkToFk(ctrl):
 
             ikControls[2],
 
-            translation=mathUtils.findPoleVector(
+            translation=mathUtils.find_pole_vector(
 
                 fkJoints,
 

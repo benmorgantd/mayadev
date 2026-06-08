@@ -8,46 +8,46 @@ import maya.api.OpenMaya as om
 from bmaya.core import constants
 
 
-def nameSelection(selection, name='joint', side='L', suffix='JNT'):
+def name_selection(selection, name='joint', side='L', suffix='JNT'):
 
     if not selection:
         return
 
-    selLen = len(selection)
+    sel_len = len(selection)
 
-    for i in range(selLen - 1, -1, -1):
-        newName = '_'.join([name, str(i).zfill(2), side, suffix])
+    for i in range(sel_len - 1, -1, -1):
+        new_name = '_'.join([name, str(i).zfill(2), side, suffix])
 
-        if cmds.objExists(newName) and newName not in selection:
+        if cmds.objExists(new_name) and new_name not in selection:
             om.MGlobal.displayWarning(
-                'An object with the name \'{0}\' already exists'.format(newName))
+                'An object with the name \'{0}\' already exists'.format(new_name))
 
-        cmds.rename(selection[i], newName)
+        cmds.rename(selection[i], new_name)
 
 
 def find_control_name(node, identifier=None):
-    nodeSplit = node.split('_')
+    node_split = node.split('_')
     if identifier:
-        nodeSplit[0] += identifier
+        node_split[0] += identifier
 
-    ctrlName = '_'.join(nodeSplit[0:-1])
+    ctrl_name = '_'.join(node_split[0:-1])
 
-    ctrlName = '_'.join([ctrlName, constants.CTRL_SUFFIX])
+    ctrl_name = '_'.join([ctrl_name, constants.CTRL_SUFFIX])
 
-    return ctrlName
+    return ctrl_name
 
 
-def findJointName(node, identifier=None, count=0, suffix='DRIVER'):
-    nodeSplit = node.split('_')
+def find_joint_name(node, identifier=None, count=0, suffix='DRIVER'):
+    node_split = node.split('_')
     if identifier:
-        nodeSplit[0] += identifier
+        node_split[0] += identifier
     if isinstance(count, int):
-        nodeSplit[1] = str(count).zfill(2)
+        node_split[1] = str(count).zfill(2)
 
-    jntName = '_'.join(nodeSplit[0:-1])
+    jnt_name = '_'.join(node_split[0:-1])
 
     suffix = suffix.replace('_', '')
 
-    jntName = jntName + '_' + suffix
+    jnt_name = jnt_name + '_' + suffix
 
-    return jntName
+    return jnt_name

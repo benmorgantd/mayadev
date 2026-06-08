@@ -277,7 +277,7 @@ class Spline(module.Module):
                 downAxis=constants.SPINE_UP_AXIS)
 
             jnt = cmds.joint(
-                name=nameUtils.findJointName(
+                name=nameUtils.find_joint_name(
                     self.bindJoints[0],
                     count=i,
                     suffix='CURVEDRIVER'))
@@ -315,7 +315,7 @@ class Spline(module.Module):
         """Create a joint at the end of the ik chain that serves as more of an fk-style control"""
 
         cmds.select(clear=True)
-        jnt = cmds.joint(name=nameUtils.findJointName(
+        jnt = cmds.joint(name=nameUtils.find_joint_name(
             self.ikDriveJoints[-1], count=len(self.ikDriveJoints), suffix='IKDRIVER'))
         cmds.setAttr(jnt + '.rotateOrder',
                      cmds.getAttr(self.ikDriveJoints[-1] + '.rotateOrder'))

@@ -637,7 +637,7 @@ class ControlCurve(object):
             self.ctrl + '.cv[0:]',
 
 
-            translation=boundingBoxUtils.getBoundingBoxCenter(
+            translation=boundingBoxUtils.get_bounding_box_center(
 
                 scene_bounding_box),
 

@@ -4,24 +4,36 @@ tasks on DAG nodes, such as getting children, parents, etc.
 """
 
 import maya.cmds as cmds
+import maya.api.OpenMaya as om
 
 
-def getChildren(dagNode, ofType=None, allDescendents=False):
+def get_children(dagNode, ofType=None, all_descendents=False):
     children = cmds.listRelatives(
         dagNode,
         children=True,
-        allDescendents=allDescendents) or []
+        allDescendents=all_descendents) or []
     if ofType:
         children = cmds.ls(children, type=ofType)
     return children
 
 
-def getAllChildren(dagNode, ofType=None):
-    return getChildren(dagNode, ofType=ofType, allDescendents=True)
+def get_all_children(dag_node, of_type=None):
+    return get_children(dag_node, ofType=of_type, all_descendents=True)
 
 
-def getParent(dagNode, ofType=None):
-    parent = cmds.listRelatives(dagNode, parent=True) or []
+def get_parent(dag_node, ofType=None):
+    parent = cmds.listRelatives(dag_node, parent=True) or []
     if ofType and parent:
         parent = cmds.ls(parent, type=ofType)
     return parent[0] if parent else None
+
+
+def get_dag_path(node):
+    """Get the MDagPath for a given node.
+    
+    :return MDagPath: The MDagPath for the given node.
+    """
+    sel = om.MSelectionList()
+    sel.add(node)
+    # NOTE: this will raise a TypeError if the node is not a DAG node and a RuntimeError if the node doesn't exist
+    return sel.getDagPath(0)
