@@ -1,0 +1,20 @@
+{
+    "tools": [
+        {
+            "guid": "5d2bf61a-ec4b-468a-bf90-ec73b2df76a1",
+            "name": "Create a Cube",
+            "short_name": "Cube",
+            "script": "import maya.cmds as cmds\ncmds.polyCube()",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "8fa176df-2041-4c74-88db-410a7114d567",
+            "name": "Zero Transforms",
+            "short_name": "Zero",
+            "script": "import maya.cmds as cmds\ncmds.makeIdentity(apply=True, t=1, r=1, s=1)",
+            "icon": null,
+            "enabled": true
+        }
+    ]
+}

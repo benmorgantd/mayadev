@@ -1,0 +1,24 @@
+{
+    "label": "Bmaya Tool Menu",
+    "items": [
+        {
+            "type": "submenu",
+            "label": "Rigging Utilities",
+            "items": [
+                {
+                    "type": "tool",
+                    "guid": "5d2bf61a-ec4b-468a-bf90-ec73b2df76a1",
+                    "enabled": true
+                },
+                {
+                    "type": "separator"
+                },
+                {
+                    "type": "tool",
+                    "guid": "8fa176df-2041-4c74-88db-410a7114d567",
+                    "enabled": true
+                }
+            ]
+        }
+    ]
+}
