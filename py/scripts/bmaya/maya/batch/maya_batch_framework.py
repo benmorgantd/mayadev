@@ -2,14 +2,12 @@ import os
 import logging
 from bmaya.core.batch.base_batch_framework import BaseBatchEnvironment, BaseBatchPackage
 
-
 class MayaBatchEnvironment(BaseBatchEnvironment):
     """Subclass managing the standalone Maya environment and native logger integration."""
     
     def __init__(self, results_dir_name=None):
         super().__init__(log_dir_name=results_dir_name, folder_prefix="mayabatch_results")
         
-        # Re-route the results directory under documents/maya/logs using os.path.join
         home_dir = os.path.expanduser("~")
         folder_name = os.path.basename(self.results_dir)
         
@@ -22,13 +20,11 @@ class MayaBatchEnvironment(BaseBatchEnvironment):
     def __enter__(self):
         import maya.standalone
         maya.standalone.initialize()
-        
         super().__enter__()
         return self
 
     def _initialize_logging(self):
         import bmaya.core.log as b_log
-        
         logger = b_log.get_logger()
         
         self._file_handler = logging.FileHandler(self.log_file, encoding="utf-8")
@@ -55,7 +51,7 @@ class MayaBatchEnvironment(BaseBatchEnvironment):
 
 
 class MayaStandaloneBatchPackage(BaseBatchPackage):
-    """Subclass handling Maya scene loading mechanics and file verification loops."""
+    """Subclass handling Maya scene loading mechanics."""
     
     def _prepare_item(self, item_path, idx, total):
         import maya.cmds as cmds

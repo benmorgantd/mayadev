@@ -14,7 +14,6 @@ class BaseBatchEnvironment:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         folder_name = log_dir_name or f"{folder_prefix}_{timestamp}"
         
-        # Using os.path.join to construct the target log directory path
         home_dir = os.path.expanduser("~")
         self.results_dir = os.path.join(home_dir, "Documents", "batch", "logs", folder_name)
         
@@ -45,7 +44,7 @@ class BaseBatchEnvironment:
 
 
 class BaseBatchPackage:
-    """Engine-agnostic execution runner handling queue states and manifest tracking."""
+    """Ancestor class for all file-batching operations and test cases."""
     
     def __init__(self, file_list=None, config_source_path=None):
         self.file_list = file_list or []
@@ -63,8 +62,16 @@ class BaseBatchPackage:
             
         return cls(file_list=data.get("file_list", []), config_source_path=json_path)
 
-    def run_suite(self, test_callback, environment):
-        self._write_manifest(environment.results_dir, test_callback)
+    def execute(self, item_path):
+        """Core execution hook. Must be overridden by individual test classes.
+        
+        Returns:
+            tuple: (bool success, str message)
+        """
+        raise NotImplementedError("Subclasses must implement the execute method.")
+
+    def run_suite(self, environment):
+        self._write_manifest(environment.results_dir)
         
         processing_queue = self.file_list if self.file_list else [None]
         total_items = len(processing_queue)
@@ -78,13 +85,14 @@ class BaseBatchPackage:
                 continue
 
             try:
-                success, message = test_callback(item_path)
+                # The class now routes directly into its own instance execution method
+                success, message = self.execute(item_path)
                 if success:
                     self.succeeded.append(current_id)
                 else:
                     self.failed.append((current_id, message))
             except Exception as script_err:
-                err_msg = f"Unhandled Exception during callback processing:\n{traceback.format_exc()}"
+                err_msg = f"Unhandled Exception during execution:\n{traceback.format_exc()}"
                 self.failed.append((current_id, err_msg))
 
         self._write_output_artifacts(environment.results_dir)
@@ -94,15 +102,16 @@ class BaseBatchPackage:
             return "Blank_Execution"
         return item_path
 
-    def _write_manifest(self, output_dir, callback):
+    def _write_manifest(self, output_dir):
         try:
-            script_file = inspect.getfile(callback)
+            script_file = inspect.getfile(self.__class__)
             shutil.copy(script_file, os.path.join(output_dir, "executed_script.py"))
         except Exception:
             with open(os.path.join(output_dir, "executed_script.py"), "w", encoding="utf-8") as sf:
-                sf.write(inspect.getsource(callback))
+                sf.write(inspect.getsource(self.__class__))
 
         manifest_data = {
+            "test_class": self.__class__.__name__,
             "file_list": self.file_list,
             "original_config_source": self.config_source_path,
             "timestamp": datetime.now().isoformat()
