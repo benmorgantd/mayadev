@@ -3,26 +3,6 @@ import sys
 from bmaya.core.batch.base_batch_framework import BaseBatchEnvironment, BaseBatchPackage
 
 
-class StreamTee(object):
-    """Intercepts and mirrors standard stream writes to both the terminal and a log file."""
-    
-    def __init__(self, original_stream, file_object):
-        self.original_stream = original_stream
-        self.file_object = file_object
-
-    def write(self, data):
-        # Handle cases where data might be passed as bytes or empty strings safely
-        if data:
-            self.original_stream.write(data)
-            self.file_object.write(data)
-            # Optional: flush frequently so logs write out in real-time
-            self.file_object.flush()
-
-    def flush(self):
-        self.original_stream.flush()
-        self.file_object.flush()
-
-
 class MayaBatchEnvironment(BaseBatchEnvironment):
     """Subclass managing the standalone Maya environment and native logger integration."""
     
@@ -38,28 +18,37 @@ class MayaBatchEnvironment(BaseBatchEnvironment):
             
         self.log_file = os.path.join(self.results_dir, "session_output.log")
         
-        self._file_stream = None
+        self._log_file_handle = None
+        self._saved_stdout_fd = None
+        self._saved_stderr_fd = None
         self._orig_stdout = None
         self._orig_stderr = None
 
     def __enter__(self):
-        # 1. Flag batch context before modules configure logging handlers
         os.environ["BMAYA_BATCH_MODE"] = "1"
         
-        import maya.standalone
+        # 1. Open the physical file handle
+        self._log_file_handle = open(self.log_file, "w", encoding="utf-8")
+        file_fd = self._log_file_handle.fileno()
         
-        # 2. Wake up the engine core
-        maya.standalone.initialize()
+        # 2. Save original low-level OS file descriptors (1=stdout, 2=stderr)
+        self._saved_stdout_fd = os.dup(1)
+        self._saved_stderr_fd = os.dup(2)
         
-        # 3. Open the file stream
-        self._file_stream = open(self.log_file, "w", encoding="utf-8")
-        
-        # 4. Wrap active streams AFTER Maya initialization to prevent Maya from wiping them
+        # 3. Save original high-level Python stream objects
         self._orig_stdout = sys.stdout
         self._orig_stderr = sys.stderr
         
-        sys.stdout = StreamTee(self._orig_stdout, self._file_stream)
-        sys.stderr = StreamTee(self._orig_stderr, self._file_stream)
+        # 4. Redirect at the OS level (captures raw C++ engine noise)
+        os.dup2(file_fd, 1)
+        os.dup2(file_fd, 2)
+        
+        # 5. Redirect at the Python level (prevents WinError 6 on sys.stdout.flush)
+        sys.stdout = self._log_file_handle
+        sys.stderr = self._log_file_handle
+        
+        import maya.standalone
+        maya.standalone.initialize()
         
         super().__enter__()
         return self
@@ -78,15 +67,23 @@ class MayaBatchEnvironment(BaseBatchEnvironment):
             super().__exit__(exc_type, exc_val, exc_tb)
             maya.standalone.uninitialize()
             
-            # 5. Restore original terminal streams and close the file handle cleanly
+            # 6. Restore high-level Python objects
             if self._orig_stdout:
                 sys.stdout = self._orig_stdout
             if self._orig_stderr:
                 sys.stderr = self._orig_stderr
                 
-            if self._file_stream:
-                self._file_stream.flush()
-                self._file_stream.close()
+            # 7. Restore low-level OS handles
+            if self._saved_stdout_fd is not None:
+                os.dup2(self._saved_stdout_fd, 1)
+                os.close(self._saved_stdout_fd)
+            if self._saved_stderr_fd is not None:
+                os.dup2(self._saved_stderr_fd, 2)
+                os.close(self._saved_stderr_fd)
+                
+            # 8. Close the file handle completely
+            if self._log_file_handle:
+                self._log_file_handle.close()
                 
             if "BMAYA_BATCH_MODE" in os.environ:
                 del os.environ["BMAYA_BATCH_MODE"]

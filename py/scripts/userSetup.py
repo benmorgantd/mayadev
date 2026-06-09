@@ -4,13 +4,16 @@ import maya.cmds as cmds
 import bmaya.core.log as log
 
 _IS_BATCH = cmds.about(batch=True)
+# only needed here for visual consistency in print statements before the logger has been set up.
+_print_prefix = '' if _IS_BATCH else '# '
+
 if _IS_BATCH:
     # NOTE: for mayabatch processes we won't be able to get log streaming in this way. There is an arg.
-    print("[bmaya][startup] This instance is a mayabatch.exe process")
+    print(f"{_print_prefix}[bmaya][startup] This instance is a mayabatch.exe process")
 
 
 def _run_deferred_setup():
-    print("[bmaya][startup] Starting custom startup")
+    print(f"{_print_prefix}[bmaya][startup] Starting custom startup")
 
     # Setup logger
     log.init_logger()
