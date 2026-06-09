@@ -81,6 +81,7 @@ class BaseBatchPackage:
                 current_id = self._prepare_item(item_path, idx, total_items)
             except Exception as prep_err:
                 fallback_id = item_path if item_path else "Blank_Execution"
+                print(f"Environment preparation crash: {prep_err}")
                 self.failed.append((fallback_id, f"Environment preparation crash: {prep_err}"))
                 continue
 
@@ -93,6 +94,7 @@ class BaseBatchPackage:
                     self.failed.append((current_id, message))
             except Exception as script_err:
                 err_msg = f"Unhandled Exception during execution:\n{traceback.format_exc()}"
+                print(err_msg)
                 self.failed.append((current_id, err_msg))
 
         self._write_output_artifacts(environment.results_dir)

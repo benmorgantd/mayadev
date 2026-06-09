@@ -7,9 +7,9 @@ class TestMayaStartup(MayaStandaloneBatchPackage):
     def execute(self, item_path):
         """Your explicit test logic here."""
         import bmaya.core.log
-        import bmaya.maya.rigging.base
+        from bmaya.maya.rigging.base import rig # this was bmaya.rigging.rigging.base, which was wrong
 
-        r = bmaya.rigging.rigging.base.Rig('dev|test|cube')
+        r = rig.Rig('dev|test|cube')
         r.build_rig()
         bmaya.core.log.info("[Test] Single joint rig build complete!")
         return True, "[Test] Single joint rig build complete!"

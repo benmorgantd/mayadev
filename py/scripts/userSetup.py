@@ -9,7 +9,7 @@ _print_prefix = '' if _IS_BATCH else '# '
 
 if _IS_BATCH:
     # NOTE: for mayabatch processes we won't be able to get log streaming in this way. There is an arg.
-    print(f"{_print_prefix}[bmaya][startup] This instance is a mayabatch.exe process")
+    print(f"{_print_prefix}[bmaya][startup] This Maya instance is a batch process")
 
 
 def _run_deferred_setup():
@@ -69,11 +69,10 @@ def _setup_tool_registry():
 
 def _setup_tool_views(registry):
     from bmaya.maya.ui.tool_views.tool_menu import ToolMenu
+    from bmaya.maya import constants
 
     main_menu = ToolMenu("test")
-    main_menu.load_layout(
-        r"C:\Users\bmorgan\Documents\dev\maya\mayadev\toolsets\bmaya_menu.json"
-    )
+    main_menu.load_layout(os.path.join(constants.TOOLS_PATH, 'bmaya_menu.json'))
     main_menu.build_ui(registry)
 
 
