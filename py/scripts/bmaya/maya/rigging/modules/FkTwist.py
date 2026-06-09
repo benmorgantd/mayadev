@@ -11,7 +11,7 @@ class FkTwist(FkChain.FkChain):
     def __init__(
         self,
         start_joint=None,
-        endJoint=None,
+        end_joint=None,
         exclude=[],
         name="FkTwist1",
         character=None,
@@ -33,7 +33,7 @@ class FkTwist(FkChain.FkChain):
             side=side,
             alignWorld=alignWorld,
             start_joint=start_joint,
-            endJoint=endJoint,
+            end_joint=end_joint,
             exclude=exclude,
         )
 
@@ -41,7 +41,7 @@ class FkTwist(FkChain.FkChain):
         self.exponent = exponent
         self.modType = "FkTwist"
 
-        self.contract = [self.start_joint, self.endJoint]
+        self.contract = [self.start_joint, self.end_joint]
 
     @wrapBuild
     def build(self):

@@ -95,7 +95,7 @@ class Rig(Asset):
         return layout_mod.dict, layout_mod.components
 
     @decorators.log_fn_duration
-    def buildRig(self):
+    def build_rig(self):
 
         # progressWindow = qtbase.#progressWindow(title='Building Rig')
         # progressWindow.show()
@@ -227,9 +227,9 @@ class Rig(Asset):
         # progressWindow.setStatus('Loading weights')
         # progressWindow.increment(5)
         weights_dir = self.component_path_from_type("weights")
-        weightFiles = self.find_files_of_type(weights_dir, "weights")
+        weight_files = self.find_files_of_type(weights_dir, "weights")
 
-        for f in weightFiles:
+        for f in weight_files:
             weightio.load(os.path.join(weights_dir, f))
 
         # create influences set
@@ -269,7 +269,7 @@ class Rig(Asset):
             # create an attribute to glue other parts to the rig to
             cmds.addAttr(self.node, longName="connector", attributeType="message")
 
-            log.info(">>> Created character node >> {0} <<".format(self.node))
+            log.info("Created character node {0} <<".format(self.node))
 
     def add_node_attrs(self):
 
@@ -521,22 +521,22 @@ class Rig(Asset):
             if not os.path.exists(dirpath):
                 os.makedirs(dirpath)
 
-        log.info(">> Component folders initialized")
+        log.info("Component folders initialized")
 
     def init_component_files(self):
 
         if not os.path.exists(self.mesh.full_path):
-            log.info(">> Creating mesh file.")
+            log.info("Creating mesh file.")
             # mesh file is just a blank ma
             cmds.file(new=True, force=True)
             cmds.file(rename=self.mesh.full_path)
             cmds.file(save=True, type="mayaAscii", force=True)
             fileUtils.version_file(self.mesh.full_path)
         else:
-            log.info(">> A working mesh file already exists for " + self.name)
+            log.info("A working mesh file already exists for " + self.name)
 
         if not os.path.exists(self.skeleton.full_path):
-            log.info(">> Creating skeleton file.")
+            log.info("Creating skeleton file.")
             # create a single joint for the default skeleton file
             cmds.file(new=True, force=True)
             cmds.joint(name=bmaya.core.constants.ROOT_JOINT)
@@ -544,18 +544,18 @@ class Rig(Asset):
             cmds.file(save=True, type="mayaAscii", force=True)
             fileUtils.version_file(self.skeleton.full_path)
         else:
-            log.info(">> A working skeleton file already exists for " + self.name)
+            log.info("A working skeleton file already exists for " + self.name)
 
         if not os.path.exists(self.cvs.full_path):
-            log.info(">> Creating cvs file.")
+            log.info("Creating cvs file.")
             with open(self.cvs.full_path, "w") as f:
                 json.dump({}, f)
             fileUtils.version_file(self.cvs.full_path)
         else:
-            log.info(">> A working cvs file already exists for " + self.name)
+            log.info("A working cvs file already exists for " + self.name)
 
         if not os.path.exists(self.build.full_path):
-            log.info(">> Creating build file using default LayoutRig template.")
+            log.info("Creating build file using default LayoutRig template.")
             # give it a LayoutRig template
             layoutRigPath = os.path.join(
                 bmaya.maya.constants.RIG_TEMPLATES_DIR, "LayoutRig.json"
@@ -571,7 +571,7 @@ class Rig(Asset):
             fileUtils.version_file(self.build.full_path)
 
         if not os.path.exists(self.postops.full_path):
-            log.info(">> Creating postops file")
+            log.info("Creating postops file")
 
             # Write the template python file
             with open(self.postops.full_path, "w") as f:
@@ -581,7 +581,7 @@ class Rig(Asset):
 
         if self.has_face:
             if not os.path.exists(self.facePoses.full_path):
-                log.info(">> Creating facePoses file")
+                log.info("Creating facePoses file")
 
                 # write a blank json file
                 with open(self.facePoses.full_path, "w") as f:

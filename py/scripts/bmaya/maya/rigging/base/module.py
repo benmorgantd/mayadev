@@ -46,6 +46,13 @@ class Module(object):
         self.bind_joints = []
         self.drive_joints = []
 
+        self.node = None
+        self.driver_grp = None
+        self.mod_grp = None
+        self.components_grp = None
+        self.start_joint = None
+        self.end_joint = None
+
     @property
     def dict(self):
         return {key: value for key, value in self.__dict__.items() if "__" not in key}
@@ -69,11 +76,11 @@ class Module(object):
                 "transform", name=self.name + "_COMPONENTS"
             )
             # holds the driver joints for the node
-            self.driverGrp = cmds.createNode("transform", name=self.name + "_DRIVERS")
-            cmds.hide(self.driverGrp)
-            cmds.parent(self.driverGrp, self.components_grp)
+            self.driver_grp = cmds.createNode("transform", name=self.name + "_DRIVERS")
+            cmds.hide(self.driver_grp)
+            cmds.parent(self.driver_grp, self.components_grp)
 
-            # print '>>> Created {0} node >> {1} <<'.format(self.mod_type,
+            # print 'Created {0} node {1} <<'.format(self.mod_type,
             # self.node)
         else:
             raise RuntimeError(
@@ -202,7 +209,10 @@ class Module(object):
 
             mirrored_init_args = {}
 
-            for attr in inspect.getargspec(self.__init__).args:
+            raise NotImplementedError("Mirroring is not implemented yet for py3")
+
+            # TODO: py3
+            for attr in inspect.getfullargspec(self.__init__).args:
                 try:
                     value = getattr(self, attr)
                 except AttributeError:
@@ -372,7 +382,7 @@ class Module(object):
         #     raise RuntimeError(
         #         'Contract for {0} not yet fulfilled.'.format(self.name))
         #
-        # print '>>> Contract for {0} fulfilled'.format(self.modType)
+        # print 'Contract for {0} fulfilled'.format(self.modType)
         # return True
 
     def connect_components(self):
@@ -404,8 +414,8 @@ class Module(object):
 
         if not start_joint:
             start_joint = self.start_joint
-        if not end_joint and hasattr(self, "endJoint"):
-            end_joint = self.endJoint
+        if not end_joint and hasattr(self, "end_joint"):
+            end_joint = self.end_joint
 
         sel = om.MSelectionList()
         bind_joints = []
@@ -448,7 +458,7 @@ class Module(object):
 
     def create_drive_joint(self, jnt, label="Driver", constrain=True):
         driver = cmds.duplicate(
-            jnt, parentO2nly=True, name=jnt.replace(constants.JOINT_SUFFIX, label)
+            jnt, parentOnly=True, name=jnt.replace(constants.JOINT_SUFFIX, label)
         )[0]
 
         jointParent = cmds.listRelatives(jnt, parent=True, type="joint")
@@ -473,19 +483,21 @@ class Module(object):
     def create_drive_joints(self, label="DRIVER", constrain=True):
         drive_joints = []
 
+        log.info(f"Creating drive joints for {self.bind_joints}")
+
         for joint in self.bind_joints:
             drive_joints.append(
                 self.create_drive_joint(joint, label=label, constrain=constrain)
             )
 
-        cmds.parent(drive_joints[0], self.driverGrp)
+        cmds.parent(drive_joints[0], self.driver_grp)
 
         return drive_joints
 
     def make_ik_handle(self, start_joint, end_joint, solver_type, name):
 
         ik = cmds.ikHandle(
-            start_joint=start_joint,
+            startJoint=start_joint,
             endEffector=end_joint,
             name=name,
             solver=solver_type,

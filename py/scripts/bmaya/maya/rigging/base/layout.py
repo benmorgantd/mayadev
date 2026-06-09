@@ -35,7 +35,7 @@ class Layout(module.Module):
             applyTo=":",
             loadReferenceDepth="none",
         )
-        log.info(">>> Imported skeleton component <<<<")
+        log.info("Imported skeleton component <<<<")
 
         # import the mesh
         cmds.file(
@@ -44,7 +44,7 @@ class Layout(module.Module):
             applyTo=":",
             loadReferenceDepth="none",
         )
-        log.info(">>> Imported mesh component <<<<")
+        log.info("Imported mesh component <<<<")
 
         self.make_rig_sets()
         self.make_rig_groups()

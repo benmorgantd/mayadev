@@ -13,7 +13,7 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
     def __init__(
         self,
         start_joint=None,
-        endJoint=None,
+        end_joint=None,
         name="ThreeJointIkFkTwist1",
         character=None,
         parent=None,
@@ -26,7 +26,7 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         IkFkChain.IkFkChain.__init__(
             self,
             start_joint=start_joint,
-            endJoint=endJoint,
+            end_joint=end_joint,
             name=name + "_ikFkChain",
             character=character,
             parent=parent,
@@ -37,19 +37,19 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         )
 
         self.modType = "ThreeJointIkFkTwist"
-        self.contract = [self.start_joint, self.endJoint]
+        self.contract = [self.start_joint, self.end_joint]
 
     def build(
         self,
         start_joint,
-        endJoint,
+        end_joint,
         worldAimTarget=None,
         downAxis="X",
         upAxis="Y",
         followWorld=True,
     ):
         self.bindJoints = self.find_hierarchy_joints(
-            shortest_distance=True, start_joint=start_joint, end_joint=endJoint
+            shortest_distance=True, start_joint=start_joint, end_joint=end_joint
         )
 
         # # force the bind joint start and ends to zyx rotate order
@@ -125,7 +125,7 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
 
             j -= 1
 
-        cmds.parent(ikGrp, self.driverGrp)
+        cmds.parent(ikGrp, self.driver_grp)
 
         cmds.addAttr(
             self.node,

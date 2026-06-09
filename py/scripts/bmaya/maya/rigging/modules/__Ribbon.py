@@ -12,7 +12,7 @@ class Ribbon(module.Module):
     def __init__(
         self,
         start_joint=None,
-        endJoint=None,
+        end_joint=None,
         controlAmount=3,
         name="Ribbon1",
         character=None,
@@ -27,7 +27,7 @@ class Ribbon(module.Module):
 
         self.parent = parent
         self.start_joint = start_joint
-        self.endJoint = endJoint
+        self.end_joint = end_joint
 
         self.controlAmount = controlAmount
         self.addDeformers = addDeformers
@@ -35,19 +35,19 @@ class Ribbon(module.Module):
         if self.controlAmount < 2:
             raise ValueError("Ribbons must have at least 2 controls")
 
-        self.contract = [self.start_joint, self.endJoint]
+        self.contract = [self.start_joint, self.end_joint]
 
     @wrapBuild
     def build(self):
 
         self.bindJoints = self.find_hierarchy_joints(
             start_joint=self.start_joint,
-            end_joint=self.endJoint,
+            end_joint=self.end_joint,
             shortest_distance=True,
         )
         self.jointAmount = len(self.bindJoints)
 
-        self.skinnedPlane = self.buildSkinnedPlane(self.start_joint, self.endJoint)
+        self.skinnedPlane = self.buildSkinnedPlane(self.start_joint, self.end_joint)
         if self.addDeformers:
             self.deformerPlane = self.buildDeformerPlane(
                 self.start_joint, self.endJoint, self.skinnedPlane
@@ -112,7 +112,7 @@ class Ribbon(module.Module):
             constructionHistory=False,
         )[0]
 
-        cmds.parent(skinnedPlane, self.driverGrp)
+        cmds.parent(skinnedPlane, self.driver_grp)
 
         # align plane
         cmds.delete(cmds.pointConstraint(start_joint, endJoint, skinnedPlane, mo=0))
@@ -160,7 +160,7 @@ class Ribbon(module.Module):
                 type="twist", name=deformerPlane + "_twistDef"
             )
 
-            cmds.parent(twistHandle, self.driverGrp)
+            cmds.parent(twistHandle, self.driver_grp)
 
             cmds.delete(
                 cmds.aimConstraint(
@@ -247,7 +247,7 @@ class Ribbon(module.Module):
 
             sineHandleGrp = cmds.group(empty=True, name=sineHandle + "_grp")
             mathUtils.match_transforms(sineHandle, sineHandleGrp)
-            cmds.parent(sineHandleGrp, self.driverGrp)
+            cmds.parent(sineHandleGrp, self.driver_grp)
             cmds.parent(sineHandle, sineHandleGrp)
             cmds.xform(sineHandle, scale=(1, 1, 1), absolute=True)
             dist = mathUtils.getDistance(start_joint, endJoint)
@@ -466,11 +466,11 @@ class Ribbon(module.Module):
 
             cmds.delete(decompMatrix, matrix4x4, infoNode)
 
-        cmds.parent(driverJointsGrp, self.driverGrp)
+        cmds.parent(driverJointsGrp, self.driver_grp)
 
         # turn off inherit transform on driver group to get rid of double
         # xforms
-        cmds.setAttr(self.driverGrp + ".inheritsTransform", 0)
+        cmds.setAttr(self.driver_grp + ".inheritsTransform", 0)
 
         return driveJoints
 

@@ -12,7 +12,7 @@ class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
     def __init__(
         self,
         start_joint=None,
-        endJoint=None,
+        end_joint=None,
         name="Arm1",
         character=None,
         parent=None,
@@ -24,7 +24,7 @@ class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
         _ThreeJointIkFkTwist.ThreeJointIkFkTwist.__init__(
             self,
             start_joint=start_joint,
-            endJoint=endJoint,
+            end_joint=end_joint,
             name=name + "_ikFkChain",
             character=character,
             parent=parent,
@@ -36,12 +36,12 @@ class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
 
         self.modType = "Arm"
 
-        self.contract = [self.start_joint, self.endJoint]
+        self.contract = [self.start_joint, self.end_joint]
 
     @wrapBuild
     def build(self):
         _ThreeJointIkFkTwist.ThreeJointIkFkTwist.build(
-            self, self.start_joint, self.endJoint, followWorld=1
+            self, self.start_joint, self.end_joint, followWorld=1
         )
 
         self.addFkGimbalControl()

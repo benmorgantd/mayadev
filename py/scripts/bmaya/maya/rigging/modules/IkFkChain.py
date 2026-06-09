@@ -12,7 +12,7 @@ class IkFkChain(FkChain.FkChain, IkChain.IkChain):
     def __init__(
         self,
         start_joint=None,
-        endJoint=None,
+        end_joint=None,
         name="IkFkChain1",
         character=None,
         parent=None,
@@ -26,7 +26,7 @@ class IkFkChain(FkChain.FkChain, IkChain.IkChain):
         IkChain.IkChain.__init__(
             self,
             start_joint=start_joint,
-            endJoint=endJoint,
+            end_joint=end_joint,
             name=name,
             character=character,
             parent=parent,
@@ -39,7 +39,7 @@ class IkFkChain(FkChain.FkChain, IkChain.IkChain):
         FkChain.FkChain.__init__(
             self,
             start_joint=start_joint,
-            endJoint=endJoint,
+            end_joint=end_joint,
             name=name,
             character=character,
             parent=parent,
@@ -50,7 +50,7 @@ class IkFkChain(FkChain.FkChain, IkChain.IkChain):
         )
 
         self.modType = "IkFkChain"
-        self.contract = [self.start_joint, self.endJoint]
+        self.contract = [self.start_joint, self.end_joint]
         self.fkikDefault = fkikDefault
 
     @wrapBuild

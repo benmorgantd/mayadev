@@ -131,4 +131,4 @@ def load(weights_path):
     cmds.skinPercent(new_cluster[0], normalize=True)
     om.MGlobal.displayInfo("Loaded skinCluster weights onto {0}".format(obj_name))
 
-    log.info(">>> Weight data loaded from {0}".format(weights_path))
+    log.info("Weight data loaded from {0}".format(weights_path))

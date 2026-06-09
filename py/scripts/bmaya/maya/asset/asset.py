@@ -201,14 +201,14 @@ class Asset(object):
 
         new_version_folder = os.path.join(version_folder, self.name + version_num)
 
-        log.info("\n>> Creating asset version " + version_num)
+        log.info("\nCreating asset version " + version_num)
 
         os.mkdir(new_version_folder)
 
         for component in self.components:
             component_file = component.full_path
 
-            log.info(">>> Versioning asset component " + component.type)
+            log.info("Versioning asset component " + component.type)
 
             if component.type == "weights":
                 weights_dir = os.path.join(new_version_folder, "weights")
@@ -226,7 +226,7 @@ class Asset(object):
             elif component_file and os.path.exists(component_file):
                 shutil.copy(component_file, new_version_folder)
 
-        log.info("\n>> Asset versioned successfully to: " + new_version_folder)
+        log.info("\nAsset versioned successfully to: " + new_version_folder)
 
     @classmethod
     def clean_path(cls, filepath):

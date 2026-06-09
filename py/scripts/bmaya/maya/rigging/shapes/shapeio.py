@@ -111,7 +111,7 @@ def load(cvsPath):
 
     cmds.select(cl=1)
 
-    log.info(">>> Shape data loaded from " + cvsPath)
+    log.info("Shape data loaded from " + cvsPath)
 
 
 def mirror(cvsPath):

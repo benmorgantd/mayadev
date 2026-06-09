@@ -213,7 +213,7 @@ class RigManager(qtbase.DockableWidget):
 
             self.saveBuild(buildPath)
 
-            self.rigInstance.buildRig()
+            self.rigInstance.build_rig()
 
     def exploreToBuildPath(self, action="Open", fileMode=1):
 

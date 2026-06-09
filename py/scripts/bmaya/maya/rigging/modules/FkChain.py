@@ -11,7 +11,7 @@ class FkChain(module.Module):
     def __init__(
         self,
         start_joint=None,
-        endJoint=None,
+        end_joint=None,
         exclude=[],
         name="FkChain1",
         character=None,
@@ -35,9 +35,9 @@ class FkChain(module.Module):
 
         self.parent = parent
         self.start_joint = start_joint
-        # If no endJoint is given, the chain will expand through the dag
+        # If no end_joint is given, the chain will expand through the dag
         # and trim itself at joints in the exclude list
-        self.endJoint = endJoint
+        self.end_joint = end_joint
         self.exclude = exclude
 
         self.contract = [self.start_joint]

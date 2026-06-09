@@ -25,25 +25,25 @@ def wrapStandalone(fn):
 def wrapBuild(fn):
     def wrapper(self, *args, **kwargs):
         log.info(
-            ">>> Building limb type <{0}> : '{1}'\n".format(
+            "Building limb type <{0}> : '{1}'\n".format(
                 self.__class__.__name__, self.name
             )
         )
 
-        self.checkContract()
-        self.makeNode()
+        self.check_contract()
+        self.make_node()
 
         result = fn(self, *args, **kwargs)
 
-        self.addNodeAttrs()
-        self.connectComponents()
-        self.connectBindJoints()
-        self.parentModule()
+        self.add_node_attrs()
+        self.connect_components()
+        self.connect_bind_joints()
+        self.parent_module()
 
         for transform in ["translate", "rotate", "scale"]:
             for axis in ["X", "Y", "Z"]:
                 cmds.setAttr(
-                    "{0}.{1}{2}".format(self.modGrp, transform, axis),
+                    "{0}.{1}{2}".format(self.mod_grp, transform, axis),
                     lock=True,
                     keyable=False,
                 )
@@ -55,7 +55,7 @@ def wrapBuild(fn):
                 )
             cmds.setAttr(ctrl.ctrl + ".visibility", lock=True, keyable=False)
 
-            for grp in ctrl.groupHierarchy:
+            for grp in ctrl.group_hierarchy:
                 for transform in ["translate", "rotate", "scale"]:
                     for axis in ["X", "Y", "Z"]:
                         cmds.setAttr(
@@ -64,7 +64,7 @@ def wrapBuild(fn):
                             keyable=False,
                         )
 
-        self.captureComponentDefaults()
+        self.capture_component_defaults()
 
         return result
 

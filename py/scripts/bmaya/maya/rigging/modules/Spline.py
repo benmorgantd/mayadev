@@ -16,7 +16,7 @@ class Spline(module.Module):
     def __init__(
         self,
         start_joint=None,
-        endJoint=None,
+        end_joint=None,
         name="Spline1",
         character=None,
         side="M",
@@ -38,19 +38,19 @@ class Spline(module.Module):
         )
 
         self.start_joint = start_joint
-        self.endJoint = endJoint
+        self.end_joint = end_joint
         self.setupTwist = setupTwist
         self.controlAmount = controlAmount
         self.stretchy = stretchy
         self.startTwistParent = startTwistParent
 
-        self.contract = [self.start_joint, self.endJoint]
+        self.contract = [self.start_joint, self.end_joint]
 
     @wrapBuild
     def build(self):
         self.bindJoints = self.find_hierarchy_joints(
             start_joint=self.start_joint,
-            end_joint=self.endJoint,
+            end_joint=self.end_joint,
             shortest_distance=True,
         )
 

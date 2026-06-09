@@ -12,7 +12,7 @@ class NeckHead(FkTwist.FkTwist):
     def __init__(
         self,
         start_joint=None,
-        endJoint=None,
+        end_joint=None,
         exclude=[],
         name="NeckHead1",
         character=None,
@@ -33,7 +33,7 @@ class NeckHead(FkTwist.FkTwist):
             side=side,
             alignWorld=alignWorld,
             start_joint=start_joint,
-            endJoint=endJoint,
+            end_joint=end_joint,
             exclude=exclude,
             exponent=exponent,
             twistAxis=twistAxis,
@@ -41,7 +41,7 @@ class NeckHead(FkTwist.FkTwist):
 
         self.modType = "NeckHead"
 
-        self.contract = [self.start_joint, self.endJoint]
+        self.contract = [self.start_joint, self.end_joint]
 
     @wrapBuild
     def build(self):

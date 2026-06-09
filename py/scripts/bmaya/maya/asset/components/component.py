@@ -48,7 +48,7 @@ class Component(object):
 
     @property
     def full_path(self):
-        return os.path.join(self.asset.rootDir, self.relative_path)
+        return os.path.join(self.asset.root_dir, self.relative_path)
 
     def save(self):
         raise NotImplementedError()

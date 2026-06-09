@@ -440,7 +440,7 @@ class AttributeLayout(QtWidgets.QWidget):
 
         commonAttrs = [
             "start_joint",
-            "endJoint",
+            "end_joint",
             "parent",
             "side",
             "mirror",

@@ -1,6 +1,7 @@
 import os
 
 import shutil
+from bmaya.core import log
 
 
 def version_file(filepath):
@@ -18,18 +19,18 @@ def version_file(filepath):
 
     filename, extension = os.path.splitext(os.path.basename(filepath))
 
-    versionFolder = os.path.join(dirname, (filename + ".Versions"))
+    version_folder = os.path.join(dirname, (filename + ".Versions"))
 
     # create the version folder if it doesn't exist
-    if not os.path.exists(versionFolder):
-        os.mkdir(versionFolder)
+    if not os.path.exists(version_folder):
+        os.mkdir(version_folder)
 
-    numVersions = len(os.listdir(versionFolder))
+    num_versions = len(os.listdir(version_folder))
 
-    versionFilename = os.path.join(
-        versionFolder, "{0}_{1:04d}{2}".format(filename, (numVersions + 1), extension)
+    version_filename = os.path.join(
+        version_folder, "{0}_{1:04d}{2}".format(filename, (num_versions + 1), extension)
     )
 
-    shutil.copy(filepath, versionFilename)
+    shutil.copy(filepath, version_filename)
 
-    log.info("Versioned file to {0}".format(versionFilename))
+    log.info("Versioned file to {0}".format(version_filename))

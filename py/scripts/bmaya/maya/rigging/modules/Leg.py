@@ -28,7 +28,7 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
         _ThreeJointIkFkTwist.ThreeJointIkFkTwist.__init__(
             self,
             start_joint=start_joint,
-            endJoint=ankle,
+            end_joint=ankle,
             name=name + "_ikFkChain",
             character=character,
             parent=parent,
@@ -53,7 +53,7 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
 
         self.contract = [
             self.start_joint,
-            self.endJoint,
+            self.end_joint,
             self.ankle,
             self.ball,
             self.toeTip,
@@ -86,7 +86,7 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
 
         cmds.parent(self.footIkDriveJoints[0], self.ikDriveJoints[2])
         cmds.parent(self.footFkDriveJoints[0], self.fkDriveJoints[2])
-        cmds.parent(self.footDriveJoints[0], self.driverGrp)
+        cmds.parent(self.footDriveJoints[0], self.driver_grp)
         cmds.parent(self.footIkComponents[0].offset_grp, self.components_grp)
         cmds.parent(self.footFkComponents[0].offset_grp, self.fkComponents[-1].ctrl)
 

@@ -13,7 +13,7 @@ class IkChain(module.Module):
     def __init__(
         self,
         start_joint=None,
-        endJoint=None,
+        end_joint=None,
         name="IkChain1",
         character=None,
         parent=None,
@@ -35,11 +35,11 @@ class IkChain(module.Module):
 
         self.parent = parent
         self.start_joint = start_joint
-        self.endJoint = endJoint
+        self.end_joint = end_joint
         self.upVector = upVector
         self.exclude = exclude
 
-        self.contract = [self.start_joint, self.endJoint]
+        self.contract = [self.start_joint, self.end_joint]
 
     @wrapBuild
     def build(self):
