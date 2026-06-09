@@ -405,7 +405,7 @@ class Module(object):
             else:
                 raise RuntimeError("{0} already belongs to a module".format(jnt))
 
-            cmds.connectAttr(self.node + ".bindJoints", jnt + ".module")
+            cmds.connectAttr(self.node + ".bind_joints", jnt + ".module")
 
     def find_hierarchy_joints(
         self, shortest_distance=False, start_joint=None, end_joint=None, exclude=[]

@@ -1,12 +1,6 @@
 import json
-
-
 import maya.api.OpenMaya as om
-
-
 import maya.cmds as cmds
-
-
 from bmaya.core.util import fileUtils
 
 
@@ -154,7 +148,6 @@ def mirror(cvsPath):
         if mirror_name in scene:
 
             sel.add(mirror_name)
-
             mirror_dag = om.MDagPath()
 
             sel.getDagPath(0, mirror_dag)

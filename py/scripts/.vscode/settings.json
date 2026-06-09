@@ -1,5 +1,5 @@
 {
-    "python.defaultInterpreterPath": "C:\\Users\\morga\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+    "python.defaultInterpreterPath": "C:\\Users\\bmorgan\\AppData\\Local\\Microsoft\\WindowsApps\\python3.13.exe",
     "python.languageServer": "Default",
     "[python]": {
         "editor.formatOnPaste": true,

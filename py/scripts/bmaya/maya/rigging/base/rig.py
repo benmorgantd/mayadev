@@ -182,7 +182,7 @@ class Rig(Asset):
             self.all_controls += [comp.ctrl for comp in mod_instance.components]
 
             # it'll mirror if its mirror attribute is True
-            mirror_instance = mod_instance.doMirror()
+            mirror_instance = mod_instance.do_mirror()
 
             # optional, adds time.
             cmds.refresh(currentView=True)
