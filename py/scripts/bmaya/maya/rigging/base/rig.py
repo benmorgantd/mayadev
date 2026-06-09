@@ -258,7 +258,8 @@ class Rig(Asset):
         cmds.file(save=True, type="mayaAscii", force=True)
         fileUtils.version_file(self.animRig.full_path)
 
-        cmds.viewFit(allObjects=True, fitFactor=1)
+        if not bmaya.maya.constants.IS_BATCH:
+            cmds.viewFit(allObjects=True, fitFactor=1)
 
         # progressWindow.hide()
 

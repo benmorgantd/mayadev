@@ -66,7 +66,6 @@ class ExtrudeWeights(omMPx.MPxCommand):
         startTime = time.time()
 
         # get the selected mesh and components
-        sel = om.MSelectionList()
         sel = om.MGlobal.getActiveSelectionList()
 
         verts = om.MObject()

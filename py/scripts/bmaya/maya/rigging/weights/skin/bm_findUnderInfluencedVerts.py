@@ -8,7 +8,6 @@ def find_under_influenced_verts(max_influences=4):
 
     cmds.select(cmds.polyListComponentConversion(toVertex=True), replace=True)
 
-    sel = om.MSelectionList()
     sel = om.MGlobal.getActiveSelectionList()
 
     available_verts = om.MSelectionList()
