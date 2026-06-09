@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import maya.api.OpenMaya as om
+import bmaya.maya.constants
 
 _LOGGER = None
 
@@ -31,7 +32,8 @@ def init_logger():
         _LOGGER.removeHandler(handler)
 
     # Branch logging behavior for headless batch execution
-    if os.environ.get("BMAYA_BATCH_MODE") == "1":
+    #if os.environ.get("BMAYA_BATCH_MODE") == "1":
+    if bmaya.maya.constants.IS_BATCH:
         log_format = "[%(name)s][%(asctime)s.%(msecs)02d][%(filename)s:%(lineno)d] %(message)s"
         formatter = logging.Formatter(log_format, datefmt="%H:%M:%S")
         
@@ -57,12 +59,15 @@ def get_logger():
     return _LOGGER
 
 def info(msg, *args, **kwargs):
+    kwargs.setdefault("stacklevel", 2)
     get_logger().info(msg, *args, **kwargs)
 
 def warning(msg, *args, **kwargs):
+    kwargs.setdefault("stacklevel", 2)
     get_logger().warning(msg, *args, **kwargs)
 
 def error(msg, *args, **kwargs):
     if "exc_info" not in kwargs and sys.exc_info()[0] is not None:
         kwargs["exc_info"] = True
+    kwargs.setdefault("stacklevel", 2)
     get_logger().error(msg, *args, **kwargs)

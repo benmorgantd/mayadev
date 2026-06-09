@@ -1,4 +1,3 @@
-import os
 from bmaya.maya.batch.runner import run_batch_test
 from bmaya.maya.batch.maya_batch_framework import MayaStandaloneBatchPackage
 
@@ -7,11 +6,10 @@ class TestMayaStartup(MayaStandaloneBatchPackage):
 
     def execute(self, item_path):
         """Your explicit test logic here."""
-        import maya.cmds as cmds
         import bmaya.core.log
         
-        bmaya.core.log.info("Maya startup complete!")
-        return True, "Maya startup complete"
+        bmaya.core.log.info("[Test] Maya startup complete!")
+        return True, "[Test] Maya startup complete"
 
 
 if __name__ == '__main__':

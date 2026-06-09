@@ -25,7 +25,8 @@ class MayaBatchEnvironment(BaseBatchEnvironment):
         self._orig_stderr = None
 
     def __enter__(self):
-        os.environ["BMAYA_BATCH_MODE"] = "1"
+        #print('setting batch mode to 1')
+        #os.environ["BMAYA_BATCH_MODE"] = "1"
         
         # 1. Open the physical file handle
         self._log_file_handle = open(self.log_file, "w", encoding="utf-8")
@@ -84,9 +85,9 @@ class MayaBatchEnvironment(BaseBatchEnvironment):
             # 8. Close the file handle completely
             if self._log_file_handle:
                 self._log_file_handle.close()
-                
-            if "BMAYA_BATCH_MODE" in os.environ:
-                del os.environ["BMAYA_BATCH_MODE"]
+            
+            #if "BMAYA_BATCH_MODE" in os.environ:
+                #del os.environ["BMAYA_BATCH_MODE"]
 
 
 class MayaStandaloneBatchPackage(BaseBatchPackage):
