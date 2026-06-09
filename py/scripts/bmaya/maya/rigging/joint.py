@@ -12,8 +12,7 @@ from bmaya.maya.util import nameUtils
 def get_selection_center():
     cmds.select(cmds.polyListComponentConversion(toVertex=True))
 
-    sel = om.MSelectionList()
-    om.MGlobal.getActiveSelectionList(sel)
+    sel = om.MGlobal.getActiveSelectionList()
 
     dag = om.MDagPath()
     components = om.MObject()

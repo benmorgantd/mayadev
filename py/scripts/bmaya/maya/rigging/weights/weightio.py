@@ -27,8 +27,7 @@ def save(weights_dir):
     # Saves each selected object to a file in the given directory
     # with its nameUtils.
 
-    sel = om.MSelectionList()
-    om.MGlobal.getActiveSelectionList(sel)
+    sel = om.MGlobal.getActiveSelectionList()
 
     it_sel = om.MItSelectionList(sel)
 

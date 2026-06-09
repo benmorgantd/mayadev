@@ -33,14 +33,12 @@ def smoothSkinWeights():
 
     """
 
-    original_sel = om.MSelectionList()
-    om.MGlobal.getActiveSelectionList(original_sel)
+    original_sel = om.MGlobal.getActiveSelectionList()
 
     cmds.select(cmds.polyListComponentConversion(toVertex=True))
 
     # get the selected mesh and components
-    sel = om.MSelectionList()
-    om.MGlobal.getActiveSelectionList(sel)
+    sel = om.MGlobal.getActiveSelectionList()
 
     if not sel.length():
         return

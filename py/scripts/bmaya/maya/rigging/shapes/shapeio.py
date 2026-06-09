@@ -2,8 +2,6 @@ import json
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
 from bmaya.core.util import fileUtils
-
-
 from bmaya.maya.util import nameUtils
 
 
@@ -14,9 +12,7 @@ def save(cvsPath):
 
     cmds.select(cmds.ls("*_ctrl"))
 
-    sel = om.MSelectionList()
-
-    om.MGlobal.getActiveSelectionList(sel)
+    sel = om.MGlobal.getActiveSelectionList()
 
     obj_iter = om.MItSelectionList(sel)
 
@@ -25,9 +21,7 @@ def save(cvsPath):
     # get cv point data
 
     while not obj_iter.isDone():
-
         points = om.MPointArray()
-
         dag = om.MDagPath()
 
         obj_iter.getDagPath(dag)
@@ -75,9 +69,7 @@ def load(cvsPath):
 
     cmds.select([obj for obj in shape_data.keys() if obj in scene])
 
-    sel = om.MSelectionList()
-
-    om.MGlobal.getActiveSelectionList(sel)
+    sel = om.MGlobal.getActiveSelectionList()
 
     obj_iter = om.MItSelectionList(sel)
 
@@ -127,10 +119,7 @@ def mirror(cvsPath):
         ]
     )
 
-    sel = om.MSelectionList()
-
-    om.MGlobal.getActiveSelectionList(sel)
-
+    sel = om.MGlobal.getActiveSelectionList()
     obj_iter = om.MItSelectionList(sel)
 
     while not obj_iter.isDone():

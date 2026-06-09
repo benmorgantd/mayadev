@@ -299,7 +299,7 @@ def prune_skin_weights(maxInfluence=4):
 
     # get the selected mesh and components
     sel = om.MSelectionList()
-    om.MGlobal.getActiveSelectionList(sel)
+    sel = om.MGlobal.getActiveSelectionList()
 
     if not sel.length():
         return

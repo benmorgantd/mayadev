@@ -67,7 +67,7 @@ class ExtrudeWeights(omMPx.MPxCommand):
 
         # get the selected mesh and components
         sel = om.MSelectionList()
-        om.MGlobal.getActiveSelectionList(sel)
+        sel = om.MGlobal.getActiveSelectionList()
 
         verts = om.MObject()
         dag = om.MDagPath()

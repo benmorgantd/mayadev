@@ -40,8 +40,7 @@ def smooth_weights(curve=None, smooth_strength=0.25):
     maya.mel.eval("SelectCurveCVsAll;")
 
     # first get the selection
-    sel = om.MSelectionList()
-    om.MGlobal.getActiveSelectionList(sel)
+    sel = om.MGlobal.getActiveSelectionList()
     dag = om.MDagPath()
     components = om.MObject()
 
