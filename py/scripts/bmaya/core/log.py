@@ -32,8 +32,8 @@ def init_logger():
 
     # Branch logging behavior for headless batch execution
     if os.environ.get("BMAYA_BATCH_MODE") == "1":
-        log_format = "[%(name)s][%(asctime)s][%(filename)s:%(lineno)d] %(message)s"
-        formatter = logging.Formatter(log_format, datefmt="%Y-%m-%d %H:%M:%S")
+        log_format = "[%(name)s][%(asctime)s.%(msecs)02d][%(filename)s:%(lineno)d] %(message)s"
+        formatter = logging.Formatter(log_format, datefmt="%H:%M:%S")
         
         # Target sys.stdout so the framework's StreamTee can intercept it
         stdout_handler = logging.StreamHandler(sys.stdout)
@@ -41,8 +41,8 @@ def init_logger():
         _LOGGER.addHandler(stdout_handler)
     else:
         # Standard Interactive UI Configuration
-        log_format = "[%(name)s][%(asctime)s][%(filename)s:%(lineno)d] %(message)s"
-        formatter = logging.Formatter(log_format)
+        log_format = "[%(name)s][%(asctime)s.%(msecs)02d][%(filename)s:%(lineno)d] %(message)s"
+        formatter = logging.Formatter(log_format, datefmt="%H:%M:%S")
         handler = MayaLogHandler()
         handler.setFormatter(formatter)
         _LOGGER.addHandler(handler)
