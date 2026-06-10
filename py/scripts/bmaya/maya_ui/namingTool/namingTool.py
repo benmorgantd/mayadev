@@ -1,5 +1,5 @@
-from bmaya.lib.Qt import QtWidgets
-from bmaya.maya.ui import qtbase
+from PySide6 import QtWidgets
+from bmaya.maya_ui import qtbase
 
 
 class NamingTool(qtbase.SimpleWindow):

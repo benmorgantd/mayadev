@@ -2,12 +2,11 @@
 
 import os
 
-import maya.api.OpenMaya as om
+from PySide6 import QtWidgets, QtCompat
 
-from bmaya.lib.Qt import QtWidgets, QtCompat
-
+from bmaya.core import log
 from bmaya.maya.rigging.base import rig
-from bmaya.core import asset
+from bmaya.maya.asset import asset
 
 
 class AssetCreator(QtWidgets.QMainWindow):
@@ -38,9 +37,8 @@ class AssetCreator(QtWidgets.QMainWindow):
         assetPath = asset.Asset.exists(project, name, assetType)
 
         if assetPath:
-            om.MGlobal.displayInfo("An asset of this description already exists")
+            log.info("An asset of this description already exists")
             return
         else:
             rig.Rig(asset_id)
-
             self.close()

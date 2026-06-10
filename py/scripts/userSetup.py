@@ -68,7 +68,7 @@ def _setup_tool_registry():
 
 
 def _setup_tool_views(registry):
-    from bmaya.maya.ui.tool_views.tool_menu import ToolMenu
+    from bmaya.maya_ui.tool_views.tool_menu import ToolMenu
     from bmaya.maya import constants
 
     main_menu = ToolMenu("test")
@@ -82,6 +82,6 @@ def user_setup():
     # Run all deferred setup
     cmds.evalDeferred(_run_deferred_setup, lowestPriority=True)
 
-
+from importlib import reload
 # The start of userSetup has to be deferred but now to lowest priority
 cmds.evalDeferred(user_setup)

@@ -2,9 +2,9 @@
 
 import ast
 
-from bmaya.lib.Qt import QtWidgets, QtGui, QtCore, QtCompat
+from PySide6 import QtWidgets, QtGui, QtCore, QtCompat
 
-from bmaya.core import qtbase
+from bmaya.maya_ui import qtbase
 from bmaya.maya.rigging.shapes import shapelib
 
 import maya.cmds as cmds

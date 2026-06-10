@@ -2,18 +2,19 @@ import os
 import json
 from functools import partial
 
+from . import assetCreator
 import maya.cmds as cmds
-import maya.api.OpenMaya as om
 
-from bmaya.lib.Qt import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore
 
-from bmaya.maya.ui import qtbase
-from bmaya.maya.util import fileUtils
+from bmaya.core import log
+from bmaya.maya_ui import qtbase
+from bmaya.core.util import fileUtils
 from bmaya.maya.asset import asset
-from . import customWidgets, assetCreator
+from . import customWidgets
 
 from bmaya.maya.rigging.base import rig
-from bmaya.rigging import buildio
+from bmaya.maya.rigging import buildio
 
 
 class RigManager(qtbase.DockableWidget):
@@ -122,7 +123,7 @@ class RigManager(qtbase.DockableWidget):
                 os.path.split(self.rigInstance.animRig.full_path)[0]
             )
         except AttributeError:
-            om.MGlobal.displayWarning("An asset instance has not been established")
+            log.warning("An asset instance has not been established")
 
     def launchAssetWidget(self):
 
@@ -170,7 +171,7 @@ class RigManager(qtbase.DockableWidget):
         if componentType not in [
             component.type for component in self.rigInstance.components
         ]:
-            om.MGlobal.displayError("Invalid component type {}".format(componentType))
+            log.error("Invalid component type {}".format(componentType))
             return
 
         componentInstance = getattr(self.rigInstance, componentType)
@@ -189,7 +190,7 @@ class RigManager(qtbase.DockableWidget):
         if componentType not in [
             component.type for component in self.rigInstance.components
         ]:
-            om.MGlobal.displayError("Invalid component type {}".format(componentType))
+            log.error("Invalid component type {}".format(componentType))
             return
 
         componentInstance = getattr(self.rigInstance, componentType)
@@ -202,7 +203,7 @@ class RigManager(qtbase.DockableWidget):
         if hasattr(componentInstance, "reference"):
             componentInstance.reference()
         else:
-            om.MGlobal.displayInfo("Cannot reference component type " + componentType)
+            log.info("Cannot reference component type " + componentType)
 
     def buildCharacter(self):
         if self.rigInstance:
@@ -244,7 +245,7 @@ class RigManager(qtbase.DockableWidget):
         asset_id = asset.Asset.get_asset_id_from_file(filepath)
 
         if not asset_id:
-            om.MGlobal.displayWarning(
+            log.warning(
                 "{} is not a part of an asset. Building is disabled.".format(filepath)
             )
             self.widget.build.setEnabled(False)
