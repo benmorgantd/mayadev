@@ -2,11 +2,12 @@
 
 import os
 
-from PySide6 import QtWidgets, QtCompat
+from PySide6 import QtWidgets
 
 from bmaya.core import log
 from bmaya.maya.rigging.base import rig
 from bmaya.maya.asset import asset
+from bmaya.maya_ui import qtbase
 
 
 class AssetCreator(QtWidgets.QMainWindow):
@@ -16,7 +17,7 @@ class AssetCreator(QtWidgets.QMainWindow):
         if designerFile and isinstance(designerFile, str):
             designPath = os.path.join(os.path.dirname(__file__), designerFile)
             if os.path.exists(designPath):
-                self.widget = QtCompat.load_ui(designPath)
+                self.widget = qtbase.loadUiFile(designPath)
                 self.setCentralWidget(self.widget)
             else:
                 raise RuntimeError("Given Qt Designer file not in folder.")
@@ -42,3 +43,8 @@ class AssetCreator(QtWidgets.QMainWindow):
         else:
             rig.Rig(asset_id)
             self.close()
+
+def show_asset_creator():
+    window = AssetCreator(parent=None, designerFile="assetCreator.ui")
+    window.show()
+    return window

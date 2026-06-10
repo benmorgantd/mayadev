@@ -7,18 +7,18 @@ import maya.cmds as cmds
 import maya.OpenMayaUI as omui
 from bmaya.core import log
 
-# PySide6 fixes: QtCompat does not exist. Use QtUiTools for loading .ui files.
+# PySide6 Fix: QtCompat removed. Use QtUiTools for loading designer layouts.
 from PySide6 import QtWidgets, QtCore, QtUiTools
 import shiboken6
 
 
 def getMayaMainWindow():
-    # Fix: shiboken6 method is case-sensitive (wrapInstance)
+    # Python 3: long() removed, use int()
     return shiboken6.wrapInstance(int(omui.MQtUtil.mainWindow()), QtWidgets.QWidget)
 
 
 def loadUiFile(designerFile, parent=None):
-    """Helper replacement for the old QtCompat.load_ui"""
+    """Helper replacement for the old QtCompat.load_ui layout stream"""
     loader = QtUiTools.QUiLoader()
     ui_file = QtCore.QFile(designerFile)
     if ui_file.open(QtCore.QFile.OpenModeFlag.ReadOnly):
@@ -46,7 +46,6 @@ class SimpleWindow(QtWidgets.QMainWindow):
 
         if designerFile and isinstance(designerFile, str):
             if os.path.exists(designerFile):
-                # Fix: Use native QUiLoader helper
                 self.widget = loadUiFile(designerFile, self)
                 self.setCentralWidget(self.widget)
             else:
@@ -75,12 +74,11 @@ class SimpleWidget(QtWidgets.QWidget):
 
         if designerFile and isinstance(designerFile, str):
             if os.path.exists(designerFile):
-                # Fix: Use native QUiLoader helper and place it inside a layout 
-                # to prevent geometry/rendering dead zones in Maya custom panels.
                 self.widget = loadUiFile(designerFile, self)
-                layout = QtWidgets.QVBoxLayout(self)
+                layout = QtWidgets.QVBoxLayout()
                 layout.setContentsMargins(0, 0, 0, 0)
                 layout.addWidget(self.widget)
+                self.setLayout(layout)
             else:
                 raise RuntimeError("Given Qt Designer file not in folder.")
 
@@ -94,6 +92,7 @@ class Table(QtWidgets.QTableWidget):
         self.horizontalHeader().hide()
         self.verticalHeader().hide()
         
+        # PySide6 Scoped Enums
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
 
         self.cellObjects = {}
@@ -101,8 +100,7 @@ class Table(QtWidgets.QTableWidget):
 
     def translateToType(self, item):
         try:
-            translated = ast.literal_eval(str(item))
-            return translated
+            return ast.literal_eval(str(item))
         except (ValueError, SyntaxError):
             return item
 
@@ -215,14 +213,14 @@ class DockableWidget(SimpleWidget):
         
         dockWidget.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
 
-        # Fix: Ensure safe extraction of loaded ui layout elements
         target_widget = self.widget if hasattr(self, 'widget') else self
 
         if dockWidget.layout():
             dockWidget.layout().addWidget(target_widget)
         else:
-            layout = QtWidgets.QVBoxLayout(dockWidget)
+            layout = QtWidgets.QVBoxLayout()
             layout.addWidget(target_widget)
+            dockWidget.setLayout(layout)
 
         cmds.evalDeferred(
             lambda *args: cmds.workspaceControl(dockControl, edit=True, restore=True)
@@ -231,58 +229,42 @@ class DockableWidget(SimpleWidget):
 
 class Dialog(QtWidgets.QDialog):
     def __init__(self, parent=None, windowTitle="Dialog"):
-        # Ensure we always pass the Maya main window as parent if none is provided
-        # This keeps the dialog owned by Maya so it doesn't drop behind the main UI
         parent = parent or getMayaMainWindow()
         super(Dialog, self).__init__(parent)
 
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
-        
-        # Changed to Vertical Layout to cleanly support a message prompt on top 
-        # and action buttons on the bottom.
-        self.mainLayout = QtWidgets.QVBoxLayout(self)
+        self.mainLayout = QtWidgets.QVBoxLayout()
+        self.setLayout(self.mainLayout)
         self.setWindowTitle(windowTitle)
 
 
 class ConfirmDialog(Dialog):
-    """Modal confirm dialog that pauses execution and returns a boolean result.
-    
-    Call "exec()" to show this modally and to get the result.
-    """
-    
+    """Modal confirm dialog that pauses execution and returns a boolean result."""
     def __init__(self, message, parent=None, windowTitle="Confirm Dialog"):
         super(ConfirmDialog, self).__init__(parent=parent, windowTitle=windowTitle)
 
-        # Message Label
         self.messageLabel = QtWidgets.QLabel(message)
-        # Allows text wrapping if the message string is long
         self.messageLabel.setWordWrap(True) 
         self.messageLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.mainLayout.addWidget(self.messageLabel)
 
-        # Horizontal layout button row
         self.btnLayout = QtWidgets.QHBoxLayout()
+        self.btnLayout.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.mainLayout.addLayout(self.btnLayout)
 
         self._yesBtn = QtWidgets.QPushButton("Yes")
         self._noBtn = QtWidgets.QPushButton("No")
+        self._yesBtn.setFixedWidth(80)
+        self._noBtn.setFixedWidth(80)
 
         self.btnLayout.addWidget(self._yesBtn)
         self.btnLayout.addWidget(self._noBtn)
 
-        self.setMinimumWidth(250)
-        self.setMinimumHeight(80)
+        self.setMinimumWidth(300)
+        self.setMinimumHeight(100)
 
-        # Connect slots
         self._yesBtn.clicked.connect(self.accept)
         self._noBtn.clicked.connect(self.reject)
-    
-
-def show_confirm_dialog(message="Are you sure?", windowTitle="Confirm"):
-    '''Show a confirm dialog and return the user's choice.'''
-    
-    dialog = ConfirmDialog(message=message, windowTitle=windowTitle)
-    return dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted
 
 
 class ProgressWindow(SimpleWindow):
