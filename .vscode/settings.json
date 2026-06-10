@@ -10,4 +10,7 @@
         "editor.defaultColorDecorators": "auto",
         "editor.wordBasedSuggestions": "allDocuments"
     },
+    "workbench.editorAssociations": {
+        "*.md": "vscode.markdown.preview.editor"
+    }
 }
