@@ -8,6 +8,7 @@ import maya.cmds as cmds
 from PySide6 import QtWidgets, QtCore
 
 from bmaya.core import log
+import bmaya.maya.constants
 from bmaya.maya_ui import qtbase
 from bmaya.core.util import fileUtils
 from bmaya.maya.asset import asset
@@ -183,7 +184,7 @@ class RigManager(qtbase.DockableWidget):
             self.rigInstance.build_rig()
 
     def exploreToBuildPath(self, action="Open", fileMode=1):
-        buildpath = asset.PROJECT_DIR
+        buildpath = bmaya.maya.constants.RIGGING_PROJECT_DIR
         filepath = cmds.fileDialog2(
             okCaption=action,
             fileMode=fileMode,

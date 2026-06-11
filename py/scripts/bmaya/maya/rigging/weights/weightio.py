@@ -1,7 +1,6 @@
 # weights
-
+import json
 import os
-from xml.etree import ElementTree
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as om
@@ -10,15 +9,20 @@ from bmaya.core.util import fileUtils
 from bmaya.core import log
 
 
-def get_joints_from_xml(weights_dir):
-    tree = ElementTree.parse(weights_dir)
-    root = tree.getroot()
+def get_joints_from_json(weights_json_path):
+    """Parses a Maya deformerWeights JSON file to extract source joint names."""
+    with open(weights_json_path, 'r') as f:
+        data = json.load(f)
 
     joints = []
+    
+    # Navigate through the Maya JSON deformer schema
+    deformer_data = data.get("deformerWeight", {})
+    weights_list = deformer_data.get("weights", [])
 
-    for child in root:
-        if child.tag == "weights":
-            joints.append(child.attrib["source"])
+    for weight_block in weights_list:
+        if "source" in weight_block:
+            joints.append(weight_block["source"])
 
     return joints
 
@@ -35,14 +39,13 @@ def save(weights_dir):
         os.makedirs(weights_dir)
 
     while not it_sel.isDone():
-        dag = om.MDagPath()
-        it_sel.getDagPath(dag)
+        dag = it_sel.getDagPath()
 
         dag_name = str(dag.partialPathName())
 
         skin = cmds.ls(cmds.listHistory(dag_name), type="skinCluster") or []
 
-        filename = os.path.join(weights_dir, dag_name + ".weights")
+        filename = os.path.join(weights_dir, dag_name + ".json")
         if os.path.exists(filename):
             # version the file
             fileUtils.version_file(filename)
@@ -52,12 +55,12 @@ def save(weights_dir):
             # with the new 'format' argument, this might not be backwards
             # compatible... - _-
             cmds.deformerWeights(
-                "{0}.weights".format(dag_name),
+                "{0}.json".format(dag_name),
                 deformer=skin[0],
                 export=True,
                 path=weights_dir,
                 method="index",
-                format="XML",
+                format="JSON",
             )
         else:
             log.info(dag_name, " has no skin cluster to save.")
@@ -73,11 +76,13 @@ def load(weights_path):
 
     if not os.path.exists(weights_path):
         raise ValueError("Given weights path doesn't exist")
+    
+    log.info(f'Loading weight data from {weights_path}')
 
-    if not weights_path.endswith(".weights"):
-        raise ValueError("Given file must be in .weights format")
+    if not weights_path.endswith(".json"):
+        raise ValueError("Given file must be in .json format")
 
-    obj_name = os.path.basename(weights_path).replace(".weights", "")
+    obj_name = os.path.basename(weights_path).replace(".json", "")
     weights_dirname = os.path.dirname(weights_path)
 
     if not cmds.objExists(obj_name):
@@ -94,7 +99,7 @@ def load(weights_path):
     if existing_skin_cluster:
         cmds.delete(existing_skin_cluster)
 
-    joint_list = get_joints_from_xml(weights_path)
+    joint_list = get_joints_from_json(weights_path)
 
     cmds.select(cl=1)
 
@@ -119,12 +124,13 @@ def load(weights_path):
     )
 
     cmds.deformerWeights(
-        "{0}.weights".format(obj_name),
+        "{0}.json".format(obj_name),
         im=True,
         path=weights_dirname,
         ignoreName=True,
         method="index",
         deformer=new_cluster[0],
+        format='JSON'
     )
     cmds.select(obj_name)
     cmds.skinPercent(new_cluster[0], normalize=True)

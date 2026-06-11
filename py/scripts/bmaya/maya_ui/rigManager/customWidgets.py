@@ -222,7 +222,7 @@ class BuildListItem(qtbase.TreeItem):
         return attrValues
 
     def loadAttributeTemplates(self):
-        from bmaya.rigging import modules
+        from bmaya.maya.rigging import modules
         return modules.MODULE_ARGS[self.modType]
 
 

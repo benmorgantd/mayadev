@@ -22,21 +22,19 @@ def save(cvsPath):
 
     while not obj_iter.isDone():
         points = om.MPointArray()
-        dag = om.MDagPath()
-
-        obj_iter.getDagPath(dag)
+        dag = obj_iter.getDagPath()
 
         fn_nurbs = om.MFnNurbsCurve(dag)
 
         # gets the cvs in world space
 
-        fn_nurbs.getCVs(points, om.MSpace.kWorld)
+        points = fn_nurbs.cvPositions(om.MSpace.kWorld)
 
         point_array = []
 
-        for i in range(points.length()):
+        for i, point in enumerate(points):
 
-            point_array.append([points[i].x, points[i].y, points[i].z])
+            point_array.append([point.x, point.y, point.z])
 
         shape_data[str(dag.partialPathName())] = point_array
 
@@ -74,10 +72,7 @@ def load(cvsPath):
     obj_iter = om.MItSelectionList(sel)
 
     while not obj_iter.isDone():
-
-        dag = om.MDagPath()
-
-        obj_iter.getDagPath(dag)
+        dag = obj_iter.getDagPath()
 
         fn_nurbs = om.MFnNurbsCurve(dag)
 
@@ -86,10 +81,9 @@ def load(cvsPath):
         final_points = om.MPointArray()
 
         for point in stored_points:
+            final_points.append(om.MPoint(*point))
 
-            final_points.append(*point)
-
-        fn_nurbs.setCVs(final_points, om.MSpace.kWorld)
+        fn_nurbs.setCVPositions(final_points, om.MSpace.kWorld)
 
         fn_nurbs.updateCurve()
 
@@ -123,16 +117,13 @@ def mirror(cvsPath):
     obj_iter = om.MItSelectionList(sel)
 
     while not obj_iter.isDone():
-
-        dag = om.MDagPath()
-
-        obj_iter.getDagPath(dag)
+        dag = obj_iter.getDagPath()
 
         dag_name = str(dag.partialPathName())
 
         sel = om.MSelectionList()
 
-        mirror_name = nameUtils.replace(mirror_directions[0], mirror_directions[-1])
+        mirror_name = dag_name.replace(mirror_directions[0], mirror_directions[-1])
 
         if mirror_name in scene:
 

@@ -12,7 +12,7 @@ TYPE_EXTENSIONS = {
     "skeleton": ".ma",
     "cvs": ".json",
     "animRig": ".ma",
-    "weights": ".weights",
+    "weights": ".json",
     "build": ".json",
     "components": "",
     "postops": ".py",
