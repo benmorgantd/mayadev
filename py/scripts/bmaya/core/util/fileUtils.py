@@ -4,7 +4,7 @@ import shutil
 from bmaya.core import log
 
 
-def version_file(filepath):
+def version_file(filepath: str) -> None:
     """Saves off a copy of the given file to a <filename>.Versions folder.
 
     Args:

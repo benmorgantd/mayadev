@@ -12,7 +12,7 @@ from datetime import datetime
 class BaseBatchEnvironment:
     """Pure Python context manager handling filesystem initialization and basic logging."""
 
-    def __init__(self, log_dir_name=None, folder_prefix="batch_results"):
+    def __init__(self, log_dir_name: str | None = None, folder_prefix: str = "batch_results") -> None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         folder_name = log_dir_name or f"{folder_prefix}_{timestamp}"
 
@@ -27,7 +27,7 @@ class BaseBatchEnvironment:
         self.log_file = os.path.join(self.results_dir, "session_output.log")
         self._file_handler = None
 
-    def __enter__(self):
+    def __enter__(self) -> "BaseBatchEnvironment":
         self._initialize_logging()
         return self
 
@@ -52,14 +52,14 @@ class BaseBatchEnvironment:
 class BaseBatchPackage:
     """Ancestor class for all file-batching operations and test cases."""
 
-    def __init__(self, file_list=None, config_source_path=None):
+    def __init__(self, file_list: list | None = None, config_source_path: str | None = None):
         self.file_list = file_list or []
         self.config_source_path = config_source_path
         self.succeeded = []
         self.failed = []
 
     @classmethod
-    def from_json(cls, json_path):
+    def from_json(cls, json_path: str) -> "BaseBatchPackage":
         if not os.path.exists(json_path):
             raise FileNotFoundError(f"Configuration profile missing: {json_path}")
 
@@ -68,7 +68,7 @@ class BaseBatchPackage:
 
         return cls(file_list=data.get("file_list", []), config_source_path=json_path)
 
-    def execute(self, item_path):
+    def execute(self, item_path: str | None) -> tuple[bool, str]:
         """Core execution hook. Must be overridden by individual test classes.
 
         Returns:
@@ -76,7 +76,7 @@ class BaseBatchPackage:
         """
         raise NotImplementedError("Subclasses must implement the execute method.")
 
-    def run_suite(self, environment):
+    def run_suite(self, environment: BaseBatchEnvironment) -> None:
         self._write_manifest(environment.results_dir)
 
         processing_queue = self.file_list if self.file_list else [None]
@@ -112,12 +112,12 @@ class BaseBatchPackage:
         # Automatically show report on completion
         self._open_report(summary_file)
 
-    def _prepare_item(self, item_path, idx, total):
+    def _prepare_item(self, item_path: str | None, idx: int, total: int) -> str:
         if item_path is None:
             return "Blank_Execution"
         return item_path
 
-    def _write_manifest(self, output_dir):
+    def _write_manifest(self, output_dir: str) -> None:
         try:
             script_file = inspect.getfile(self.__class__)
             shutil.copy(script_file, os.path.join(output_dir, "executed_script.py"))
@@ -139,7 +139,7 @@ class BaseBatchPackage:
         ) as mf:
             json.dump(manifest_data, mf, indent=4)
 
-    def _write_output_artifacts(self, output_dir):
+    def _write_output_artifacts(self, output_dir: str) -> None:
         with open(
             os.path.join(output_dir, "processed_files.txt"), "w", encoding="utf-8"
         ) as f:
@@ -159,7 +159,7 @@ class BaseBatchPackage:
             for path, error in self.failed:
                 f.write(f"ENTRY: {path}\nEXCEPTION:\n{error}\n{'-'*40}\n")
 
-    def _write_summary_markdown(self, output_dir):
+    def _write_summary_markdown(self, output_dir: str) -> str:
         """Generates a comprehensive Markdown report summarizing the batch operation."""
         total_count = len(self.file_list) if self.file_list else 1
         success_count = len(self.succeeded)
@@ -212,7 +212,7 @@ class BaseBatchPackage:
 
         return summary_path
 
-    def _open_report(self, file_path):
+    def _open_report(self, file_path: str) -> None:
         """Cross-platform utility to open the generated file in the default OS application."""
         try:
             if sys.platform == "win32":

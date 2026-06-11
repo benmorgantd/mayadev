@@ -1,8 +1,21 @@
 # Module: cvshapeinverter_plugin
 
 ### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\bmorgan\Documents\dev\maya\mayadev\py\scripts\bmaya\maya\rigging\weights\skin\cvshapeinverter_plugin.py`
+- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya\rigging\weights\skin\cvshapeinverter_plugin.py`
 - **Full Hierarchy:** `bmaya.maya.rigging.weights.skin.cvshapeinverter_plugin`
 - **Status:** Fast stub generation active.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+### Scraped Symbols (AST Metadata Map)
+#### Classes
+- **`class cvShapeInverter`** (Line 8)
+    - `def __init__(self, ...)` (Line 15)
+    - `def deform(self, ...)` (Line 21)
+
+#### Global Functions
+- `def creator(...)` (Line 66)
+- `def initialize(...)` (Line 70)
+- `def initializePlugin(...)` (Line 96)
+- `def uninitializePlugin(...)` (Line 107)
+
+#### Global Variables / Constants
+- `API_VERSION` (Line 5)

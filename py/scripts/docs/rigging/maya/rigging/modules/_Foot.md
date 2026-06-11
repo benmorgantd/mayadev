@@ -1,8 +1,15 @@
-# Module: _Foot
+# Module: `_Foot`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\bmorgan\Documents\dev\maya\mayadev\py\scripts\bmaya\maya\rigging\modules\_Foot.py`
-- **Full Hierarchy:** `bmaya.maya.rigging.modules._Foot`
-- **Status:** Fast stub generation active.
+### Pipeline Intent
+The `_Foot` module is responsible for creating a rigging system for the foot of a character. It defines a class `Foot` that represents the foot and its components, including joints, controllers, and IK handles.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+### Technical Implementation
+The module imports necessary classes from other modules, such as `maya.cmds`, `shapelib`, `nameUtils`, and `mathUtils`. The `Foot` class has several methods for creating joints, IK handles, and controllers. These methods include `build`, `createFkHierarchy`, `createIkHierarchy`, `createDriveHierarchy`, `createReverseHierarchy`, `createIkHandles`, and `createIkControls`.
+
+### Overview
+The `_Foot` module is used to create a rigging system for the foot of a character. It defines a class `Foot` that represents the foot and its components, including joints, controllers, and IK handles.
+
+### Cross-Module Dependencies
+
+* **Internal Framework Links:** The module relies on other modules in the codebase, such as `maya.cmds`, `shapelib`, `nameUtils`, and `mathUtils`.
+* **External Dependencies:** None

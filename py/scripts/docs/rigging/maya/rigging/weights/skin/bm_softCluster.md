@@ -1,8 +1,9 @@
 # Module: bm_softCluster
 
 ### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\bmorgan\Documents\dev\maya\mayadev\py\scripts\bmaya\maya\rigging\weights\skin\bm_softCluster.py`
+- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya\rigging\weights\skin\bm_softCluster.py`
 - **Full Hierarchy:** `bmaya.maya.rigging.weights.skin.bm_softCluster`
 - **Status:** Fast stub generation active.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+### Scraped Symbols (AST Metadata Map)
+_No explicit symbols or declarations discovered in this module workspace._

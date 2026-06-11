@@ -1,8 +1,26 @@
+Here is the Markdown documentation for the `constants` module:
+
 # Module: constants
+### Pipeline Intent
+This module provides a collection of constant values used throughout the rigging pipeline.
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\bmorgan\Documents\dev\maya\mayadev\py\scripts\bmaya\maya\rigging\constants.py`
-- **Full Hierarchy:** `bmaya.maya.rigging.constants`
-- **Status:** Fast stub generation active.
+### Technical Implementation
+The implementation involves setting environment variables as global constants using the `os.environ` dictionary.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+### Overview
+This module contains two globally accessible constants that are used to store important directory paths for the rigging project. These constants are essential for maintaining consistency and organization in the project's file structure.
+
+### Cross-Module Dependencies
+* **Internal Framework Links:** None
+
+## API Taxonomy Reference
+
+### 🏷️ `GLOBAL VARIABLE` :: `RIG_TEMPLATES_DIR`
+- **Type:** str
+- **Value/Purpose:** Path to the rig templates directory, accessed through environment variables.
+  * Line: 3
+
+### 🏷️ `GLOBAL VARIABLE` :: `RIGGING_PROJECT_DIR`
+- **Type:** str
+- **Value/Purpose:** Path to the rigging project directory, accessed through environment variables.
+  * Line: 4

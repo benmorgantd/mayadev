@@ -1,0 +1,45 @@
+# Module: customWidgets
+
+### 🔬 DEBUG MODE MOCK DOCS
+- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya_ui\rigManager\customWidgets.py`
+- **Full Hierarchy:** `bmaya.maya_ui.rigManager.customWidgets`
+- **Status:** Fast stub generation active.
+
+### Scraped Symbols (AST Metadata Map)
+#### Classes
+- **`class ModuleList`** (Line 13)
+    - `def __init__(self, ...)` (Line 14)
+    - `def setBuildList(self, ...)` (Line 20)
+    - `def mouseDoubleClickEvent(self, ...)` (Line 23)
+- **`class BuildList`** (Line 44)
+    - `def __init__(self, ...)` (Line 45)
+    - `def mousePressEvent(self, ...)` (Line 63)
+    - `def mouseDoubleClickEvent(self, ...)` (Line 80)
+    - `def loadList(self, ...)` (Line 85)
+    - `def getAllValues(self, ...)` (Line 117)
+    - `def hideAttrLayouts(self, ...)` (Line 137)
+    - `def renameItem(self, ...)` (Line 142)
+    - `def disableItem(self, ...)` (Line 147)
+    - `def deleteItem(self, ...)` (Line 150)
+    - `def duplicateItem(self, ...)` (Line 170)
+- **`class BuildListItem`** (Line 193)
+    - `def __init__(self, ...)` (Line 194)
+    - `def values(self, ...)` (Line 212)
+    - `def loadAttributeTemplates(self, ...)` (Line 224)
+- **`class BuildListContextMenu`** (Line 229)
+    - `def __init__(self, ...)` (Line 230)
+- **`class CustomLineEdit`** (Line 248)
+    - `def __init__(self, ...)` (Line 249)
+    - `def mousePressEvent(self, ...)` (Line 256)
+    - `def replaceWithSelection(self, ...)` (Line 264)
+    - `def resetToDefault(self, ...)` (Line 272)
+- **`class LineEditMenu`** (Line 276)
+    - `def __init__(self, ...)` (Line 277)
+- **`class AttributeLayoutValue`** (Line 286)
+    - `def __init__(self, ...)` (Line 287)
+    - `def build(self, ...)` (Line 299)
+    - `def translateToType(self, ...)` (Line 322)
+    - `def toJson(self, ...)` (Line 328)
+- **`class AttributeLayout`** (Line 337)
+    - `def __init__(self, ...)` (Line 338)
+    - `def build(self, ...)` (Line 349)

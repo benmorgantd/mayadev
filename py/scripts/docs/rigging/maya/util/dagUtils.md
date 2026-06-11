@@ -1,8 +1,14 @@
 # Module: dagUtils
 
 ### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\bmorgan\Documents\dev\maya\mayadev\py\scripts\bmaya\maya\util\dagUtils.py`
+- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya\util\dagUtils.py`
 - **Full Hierarchy:** `bmaya.maya.util.dagUtils`
 - **Status:** Fast stub generation active.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+### Scraped Symbols (AST Metadata Map)
+
+#### Global Functions
+- `def get_children(...)` (Line 10)
+- `def get_all_children(...)` (Line 19)
+- `def get_parent(...)` (Line 23)
+- `def get_dag_path(...)` (Line 30)

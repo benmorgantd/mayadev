@@ -19,8 +19,6 @@ from bmaya.core import log, decorators
 import bmaya.core.constants
 from bmaya.core.util import fileUtils
 
-# from bmaya.maya.ui import qtbase
-
 from bmaya.maya.rigging.shapes import shapelib, shapeio
 from bmaya.maya.rigging.weights import weightio
 from bmaya.maya.rigging import buildio

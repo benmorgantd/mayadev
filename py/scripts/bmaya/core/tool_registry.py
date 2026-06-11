@@ -1,16 +1,14 @@
 import os
 import json
 import uuid
-
+from typing import Any
 from . import log
 
 
 class Tool(object):
     """Encapsulates the core data configuration and execution logic for a single tool."""
 
-    def __init__(
-        self, name, script, short_name=None, icon=None, enabled=True, guid=None
-    ):
+    def __init__(self, name: str, script: str, short_name: str | None = None, icon: str | None = None, enabled: bool = True, guid: str | None = None) -> None:
         self.guid = guid or str(uuid.uuid4())
         self.name = name
         self.short_name = short_name or name
@@ -18,7 +16,7 @@ class Tool(object):
         self.icon = icon
         self.enabled = enabled
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, object]:
         """Serializes the tool instances to a primitive dictionary."""
         return {
             "guid": self.guid,
@@ -30,7 +28,7 @@ class Tool(object):
         }
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data: dict[str, Any]) -> "Tool":
         """Deserializes a dictionary configuration into a Tool instance."""
         return cls(
             name=data["name"],
@@ -45,13 +43,13 @@ class Tool(object):
 class ToolRegistry(object):
     """Manages the source of truth database containing all production tools."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.tools = {}
 
-    def register_tool(self, tool):
+    def register_tool(self, tool: Tool) -> None:
         self.tools[tool.guid] = tool
 
-    def load_registry(self, filepath):
+    def load_registry(self, filepath: str) -> bool:
         """Loads and parses the master tool tracking file."""
         if not os.path.exists(filepath):
             return False
@@ -66,7 +64,7 @@ class ToolRegistry(object):
         log.info("Initialized the Tools Registry")
         return True
 
-    def save_registry(self, filepath):
+    def save_registry(self, filepath: str) -> None:
         """Saves current memory state out to the master JSON manifest."""
         data = {"tools": [tool.to_dict() for tool in self.tools.values()]}
         with open(filepath, "w") as f:

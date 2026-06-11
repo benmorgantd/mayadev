@@ -29,12 +29,18 @@ plugins:
 nav:
   - Home: index.md
   - core:
+    - batch:
+      - base_batch_framework: rigging/core/batch/base_batch_framework.md
     - constants: rigging/core/constants.md
+    - decorators: rigging/core/decorators.md
+    - log: rigging/core/log.md
+    - tool_registry: rigging/core/tool_registry.md
     - util:
       - fileUtils: rigging/core/util/fileUtils.md
       - listUtils: rigging/core/util/listUtils.md
   - guides:
     - How To Build a Rig: guides/How To Build a Rig.md
+    - Mayadev Env Setup: guides/Mayadev Env Setup.md
   - maya:
     - asset:
       - asset: rigging/maya/asset/asset.md
@@ -49,6 +55,10 @@ nav:
         - postops: rigging/maya/asset/components/postops.md
         - skeleton: rigging/maya/asset/components/skeleton.md
         - weights: rigging/maya/asset/components/weights.md
+    - batch:
+      - maya_batch_framework: rigging/maya/batch/maya_batch_framework.md
+      - runner: rigging/maya/batch/runner.md
+    - constants: rigging/maya/constants.md
     - modeling:
       - blendBoundary: rigging/maya/modeling/blendBoundary.md
     - rigging:
@@ -94,14 +104,6 @@ nav:
           - cvshapeinverter_plugin: rigging/maya/rigging/weights/skin/cvshapeinverter_plugin.md
         - weightio: rigging/maya/rigging/weights/weightio.md
         - weightutils: rigging/maya/rigging/weights/weightutils.md
-    - ui:
-      - namingTool:
-        - namingTool: rigging/maya/ui/namingTool/namingTool.md
-      - qtbase: rigging/maya/ui/qtbase.md
-      - rigManager:
-        - assetCreator: rigging/maya/ui/rigManager/assetCreator.md
-        - customWidgets: rigging/maya/ui/rigManager/customWidgets.md
-        - rigManager: rigging/maya/ui/rigManager/rigManager.md
     - util:
       - boundingBoxUtils: rigging/maya/util/boundingBoxUtils.md
       - dagUtils: rigging/maya/util/dagUtils.md
@@ -109,3 +111,13 @@ nav:
       - mathUtils: rigging/maya/util/mathUtils.md
       - nameUtils: rigging/maya/util/nameUtils.md
       - selectionUtils: rigging/maya/util/selectionUtils.md
+  - maya_ui:
+    - namingTool:
+      - namingTool: rigging/maya_ui/namingTool/namingTool.md
+    - qtbase: rigging/maya_ui/qtbase.md
+    - rigManager:
+      - assetCreator: rigging/maya_ui/rigManager/assetCreator.md
+      - customWidgets: rigging/maya_ui/rigManager/customWidgets.md
+      - rigManager: rigging/maya_ui/rigManager/rigManager.md
+    - tool_views:
+      - tool_menu: rigging/maya_ui/tool_views/tool_menu.md

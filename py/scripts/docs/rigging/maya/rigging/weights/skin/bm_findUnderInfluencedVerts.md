@@ -1,8 +1,11 @@
 # Module: bm_findUnderInfluencedVerts
 
 ### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\bmorgan\Documents\dev\maya\mayadev\py\scripts\bmaya\maya\rigging\weights\skin\bm_findUnderInfluencedVerts.py`
+- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya\rigging\weights\skin\bm_findUnderInfluencedVerts.py`
 - **Full Hierarchy:** `bmaya.maya.rigging.weights.skin.bm_findUnderInfluencedVerts`
 - **Status:** Fast stub generation active.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+### Scraped Symbols (AST Metadata Map)
+
+#### Global Functions
+- `def find_under_influenced_verts(...)` (Line 5)

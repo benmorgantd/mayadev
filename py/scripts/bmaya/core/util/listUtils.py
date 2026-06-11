@@ -1,4 +1,6 @@
-def firstOrDefault(iterable, default=None):
+from typing import Any
+
+def firstOrDefault(iterable: list, default: Any = None) -> Any:
     try:
         iterator = iter(iterable)
     except TypeError:
