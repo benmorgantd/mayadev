@@ -1,8 +1,16 @@
-# Module: fileUtils
+# Reference Component: `bmaya.core.util.fileUtils`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya3\core\util\fileUtils.py`
-- **Full Hierarchy:** `bmaya3.core.util.fileUtils`
-- **Status:** Fast stub generation active.
+## Module Level Context
+No module documentation provided.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+---
+## Object Taxonomy Reference (Dynamic Introspection)
+
+### 🛠️ `version_file(filepath: str) -> None`
+
+```text
+Saves off a copy of the given file to a <filename>.Versions folder.
+
+Args:
+    filepath (str): The file to version.
+```

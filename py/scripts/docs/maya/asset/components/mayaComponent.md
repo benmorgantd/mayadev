@@ -1,8 +1,47 @@
-# Module: mayaComponent
+# Reference Component: `bmaya.maya.asset.components.mayaComponent`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya3\maya\asset\components\mayaComponent.py`
-- **Full Hierarchy:** `bmaya3.maya.asset.components.mayaComponent`
-- **Status:** Fast stub generation active.
+## Module Level Context
+Purpose:
+A MayaComponent is a type of Component that is specific to Maya.
+It contains the file handling logic for components that are Maya files.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+---
+## Object Taxonomy Reference (Dynamic Introspection)
+
+### 🏷️ `CLASS` :: **MayaComponent**
+
+**Description Summary:**
+No class descriptions detailed.
+
+#### Methods & Interceptors
+
+#### 🛠️ `__init__(self, asset, component_type)`
+
+```text
+Initialize self.  See help(type(self)) for accurate signature.
+```
+
+
+#### 🛠️ `load(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `reference(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `save(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+
+---

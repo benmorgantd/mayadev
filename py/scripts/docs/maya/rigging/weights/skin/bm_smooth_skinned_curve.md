@@ -1,8 +1,19 @@
-# Module: bm_smooth_skinned_curve
+# Reference Component: `bmaya.maya.rigging.weights.skin.bm_smooth_skinned_curve`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya3\maya\rigging\weights\skin\bm_smooth_skinned_curve.py`
-- **Full Hierarchy:** `bmaya3.maya.rigging.weights.skin.bm_smooth_skinned_curve`
-- **Status:** Fast stub generation active.
+## Module Level Context
+No module documentation provided.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+---
+## Object Taxonomy Reference (Dynamic Introspection)
+
+### 🛠️ `find_skin_cluster(dag)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `smooth_weights(curve=None, smooth_strength=0.25)`
+
+```text
+No functional arguments or usage blocks specified.
+```

@@ -1,9 +1,0 @@
-# Module: bm_softCluster
-
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya\rigging\weights\skin\bm_softCluster.py`
-- **Full Hierarchy:** `bmaya.maya.rigging.weights.skin.bm_softCluster`
-- **Status:** Fast stub generation active.
-
-### Scraped Symbols (AST Metadata Map)
-_No explicit symbols or declarations discovered in this module workspace._

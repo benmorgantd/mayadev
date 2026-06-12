@@ -1,8 +1,27 @@
-# Module: blendBoundary
+# Reference Component: `bmaya.maya.modeling.blendBoundary`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya3\maya\modeling\blendBoundary.py`
-- **Full Hierarchy:** `bmaya3.maya.modeling.blendBoundary`
-- **Status:** Fast stub generation active.
+## Module Level Context
+Purpose:
+This is a utility for blending the vertex normals between two separate meshes where vertices have the same world space position.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+---
+## Object Taxonomy Reference (Static Fallback)
+
+### ⚙️ Global Constants & Mappings
+
+| Constant Name | Default Value / Type | Definition Type |
+| :--- | :--- | :--- |
+| `__all__` | List Definition | Static Configuration Variable |
+
+---
+### 🛠️ `gather_border_info(meshObj)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `blend_boundary(mesh_a, mesh_b, distance_tolerance)`
+
+```text
+No functional arguments or usage blocks specified.
+```

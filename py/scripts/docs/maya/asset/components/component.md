@@ -1,8 +1,56 @@
-# Module: component
+# Reference Component: `bmaya.maya.asset.components.component`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya3\maya\asset\components\component.py`
-- **Full Hierarchy:** `bmaya3.maya.asset.components.component`
-- **Status:** Fast stub generation active.
+## Module Level Context
+Purpose:
+Base class for production Components that handles logic for asset Id, file management, and versioning.
+Components are the individual files that make up an asset.
+Contains the type extensions for each component type, as well as the base class for all components.
+Also handles the unimplemented logic for loading and saving and referencing, which must be defined by each specific component type.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+---
+## Object Taxonomy Reference (Dynamic Introspection)
+
+### ⚙️ Global Constants & Configurations
+
+| Constant Name | Live Runtime Value | Type / Category |
+| :--- | :--- | :--- |
+| `TYPE_EXTENSIONS` | `{'mesh': '.ma', 'skeleton': '.ma', 'cvs': '.json', 'animRig': '.ma', 'weights': '.json', 'build': '.json', 'component...` | Runtime Extracted Value |
+
+---
+### 🏷️ `CLASS` :: **Component**
+
+**Description Summary:**
+No class descriptions detailed.
+
+#### Methods & Interceptors
+
+#### 🛠️ `__init__(self, asset, component_type)`
+
+```text
+Initialize self.  See help(type(self)) for accurate signature.
+```
+
+
+#### 🛠️ `load(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `reference(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `save(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+
+---

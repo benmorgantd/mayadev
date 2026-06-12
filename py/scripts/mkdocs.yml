@@ -21,10 +21,91 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Manual Guides:
-    - Architecture Overview: guides/architecture_overview.md
+      - How To Build A Rig: guides/How To Build a Rig.md
+      - Mayadev Env Setup: guides/Mayadev Env Setup.md
   - API Reference:
-    - Core:
-      - Eventsregistry: rigging/core/eventsregistry.md
-      - Log: rigging/core/log.md
-    - Utils:
-      - Decorators: rigging/utils/decorators.md
+      - Core:
+          - Constants: core/constants.md
+          - Decorators: core/decorators.md
+          - Log: core/log.md
+          - Progressmanager: core/progressmanager.md
+          - Tool Registry: core/tool_registry.md
+          - Util:
+              - Fileutils: core/util/fileUtils.md
+              - Listutils: core/util/listUtils.md
+      - Maya:
+          - Asset:
+              - Asset: maya/asset/asset.md
+              - Components:
+                  - Animrig: maya/asset/components/animRig.md
+                  - Build: maya/asset/components/build.md
+                  - Component: maya/asset/components/component.md
+                  - Cvs: maya/asset/components/cvs.md
+                  - Faceposes: maya/asset/components/facePoses.md
+                  - Mayacomponent: maya/asset/components/mayaComponent.md
+                  - Mesh: maya/asset/components/mesh.md
+                  - Postops: maya/asset/components/postops.md
+                  - Skeleton: maya/asset/components/skeleton.md
+                  - Weights: maya/asset/components/weights.md
+          - Constants: maya/constants.md
+          - Eventsregistry: maya/eventsregistry.md
+          - Modeling:
+              - Blendboundary: maya/modeling/blendBoundary.md
+          - Rigging:
+              - Base:
+                  - Decorators: maya/rigging/base/decorators.md
+                  - Layout: maya/rigging/base/layout.md
+                  - Module: maya/rigging/base/module.md
+                  - Rig: maya/rigging/base/rig.md
+              - Buildio: maya/rigging/buildio.md
+              - Constants: maya/rigging/constants.md
+              - Joint: maya/rigging/joint.md
+              - Modules:
+                  - Arm: maya/rigging/modules/Arm.md
+                  - Face: maya/rigging/modules/Face.md
+                  - Fkchain: maya/rigging/modules/FkChain.md
+                  - Fktwist: maya/rigging/modules/FkTwist.md
+                  - Ikchain: maya/rigging/modules/IkChain.md
+                  - Ikfkchain: maya/rigging/modules/IkFkChain.md
+                  - Leg: maya/rigging/modules/Leg.md
+                  - Neckhead: maya/rigging/modules/NeckHead.md
+                  - Singlejoint: maya/rigging/modules/SingleJoint.md
+                  - Spline: maya/rigging/modules/Spline.md
+                  -  Foot: maya/rigging/modules/_Foot.md
+                  -  Threejointikfktwist: maya/rigging/modules/_ThreeJointIkFkTwist.md
+                  -   Ribbon: maya/rigging/modules/__Ribbon.md
+              - Rigtools: maya/rigging/rigTools.md
+              - Shapes:
+                  - Shapeio: maya/rigging/shapes/shapeio.md
+                  - Shapelib: maya/rigging/shapes/shapelib.md
+              - Weights:
+                  - Skin:
+                      - Averagevertexskinweightbrush: maya/rigging/weights/skin/averageVertexSkinWeightBrush.md
+                      - Bm Copyweights: maya/rigging/weights/skin/bm_copyWeights.md
+                      - Bm Extrude Weights: maya/rigging/weights/skin/bm_extrude_weights.md
+                      - Bm Findunderinfluencedverts: maya/rigging/weights/skin/bm_findUnderInfluencedVerts.md
+                      - Bm Pruneskinweightsplugin: maya/rigging/weights/skin/bm_pruneSkinWeightsPlugin.md
+                      - Bm Smoothskinweights: maya/rigging/weights/skin/bm_smoothSkinWeights.md
+                      - Bm Smooth Skinned Curve: maya/rigging/weights/skin/bm_smooth_skinned_curve.md
+                      - Bm Weight Io: maya/rigging/weights/skin/bm_weight_io.md
+                      - Cvshapeinverter Plugin: maya/rigging/weights/skin/cvshapeinverter_plugin.md
+                  - Weightio: maya/rigging/weights/weightio.md
+                  - Weightutils: maya/rigging/weights/weightutils.md
+          - Util:
+              - Boundingboxutils: maya/util/boundingBoxUtils.md
+              - Dagutils: maya/util/dagUtils.md
+              - Dgutils: maya/util/dgUtils.md
+              - Mathutils: maya/util/mathUtils.md
+              - Nameutils: maya/util/nameUtils.md
+              - Selectionutils: maya/util/selectionUtils.md
+      - Maya Ui:
+          - Namingtool:
+              - Namingtool: maya_ui/namingTool/namingTool.md
+          - Qtbase: maya_ui/qtbase.md
+          - Rigmanager:
+              - Assetcreator: maya_ui/rigManager/assetCreator.md
+              - Customwidgets: maya_ui/rigManager/customWidgets.md
+              - Rigmanager: maya_ui/rigManager/rigManager.md
+          - Tool Registry Editor: maya_ui/tool_registry_editor.md
+          - Tool Views:
+              - Tool Menu: maya_ui/tool_views/tool_menu.md

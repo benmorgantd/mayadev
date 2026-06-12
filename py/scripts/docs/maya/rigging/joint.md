@@ -1,8 +1,48 @@
-# Module: joint
+# Reference Component: `bmaya.maya.rigging.joint`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya3\maya\rigging\joint.py`
-- **Full Hierarchy:** `bmaya3.maya.rigging.joint`
-- **Status:** Fast stub generation active.
+## Module Level Context
+Purpose:
+Utility functions for working with joints in maya.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+---
+## Object Taxonomy Reference (Static Fallback)
+
+### 🛠️ `get_selection_center()`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `add_twist_joints(start_joint, end_joint, joint_count)`
+
+```text
+Add twist joints as a child of the given joint.
+The child of the given joint will be used as the end joint to determine length.
+
+Args:
+    start_joint (str): The joint to use as the start point.
+    end_joint (str): The joint to use as the end point.
+    joint_count (int): The number of twist joints to add.
+    count=3 (int): The amount of twist joints to add
+
+Returns:
+    (list): An array of Joint classes
+```
+
+### 🛠️ `orient_to_world(joints)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `orient_to_mesh(joints, mesh)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `mirror_face_joints(joints)`
+
+```text
+No functional arguments or usage blocks specified.
+```

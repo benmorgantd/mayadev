@@ -1,8 +1,22 @@
-# Module: bm_smoothSkinWeights
+# Reference Component: `bmaya.maya.rigging.weights.skin.bm_smoothSkinWeights`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya3\maya\rigging\weights\skin\bm_smoothSkinWeights.py`
-- **Full Hierarchy:** `bmaya3.maya.rigging.weights.skin.bm_smoothSkinWeights`
-- **Status:** Fast stub generation active.
+## Module Level Context
+No module documentation provided.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+---
+## Object Taxonomy Reference (Dynamic Introspection)
+
+### 🛠️ `getSkinCluster(dag)`
+
+```text
+A convenience function for finding the skinCluster deforming a mesh.
+
+params:
+  dag (MDagPath): A MDagPath for the mesh we want to investigate.
+```
+
+### 🛠️ `smoothSkinWeights()`
+
+```text
+Sets the weights for each vertex to the average of its neighbors.
+```

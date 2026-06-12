@@ -1,8 +1,23 @@
-# Module: dgUtils
+# Reference Component: `bmaya.maya.util.dgUtils`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya3\maya\util\dgUtils.py`
-- **Full Hierarchy:** `bmaya3.maya.util.dgUtils`
-- **Status:** Fast stub generation active.
+## Module Level Context
+Purpose:
+Utility functions for working with the DG in maya. These are used by various components to perform common
+tasks on DG nodes, such as getting the nodes in the scene, listing attribute connections, getting and setting attributes, etc.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+---
+## Object Taxonomy Reference (Dynamic Introspection)
+
+### 🛠️ `get_mobject(node)`
+
+```text
+Get the MOBject for a given node.
+
+:return MOBject: The MOBject for the given node.
+```
+
+### 🛠️ `get_nodes_in_scene(ofType=None)`
+
+```text
+No functional arguments or usage blocks specified.
+```

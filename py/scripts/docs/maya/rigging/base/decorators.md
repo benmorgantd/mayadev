@@ -1,8 +1,22 @@
-# Module: decorators
+# Reference Component: `bmaya.maya.rigging.base.decorators`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya3\maya\rigging\base\decorators.py`
-- **Full Hierarchy:** `bmaya3.maya.rigging.base.decorators`
-- **Status:** Fast stub generation active.
+## Module Level Context
+Purpose:
+Decorators for rigging operations that allow the user to run code before and after the main logic of a function,
+such as initializing and uninitializing maya.standalone, or running code before and after building a rig.
+That code can include things like locking attributes, capturing component defaults, etc.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+---
+## Object Taxonomy Reference (Dynamic Introspection)
+
+### 🛠️ `wrapBuild(fn)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `wrapStandalone(fn)`
+
+```text
+No functional arguments or usage blocks specified.
+```

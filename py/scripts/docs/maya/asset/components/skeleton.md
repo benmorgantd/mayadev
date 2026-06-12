@@ -1,8 +1,47 @@
-# Module: skeleton
+# Reference Component: `bmaya.maya.asset.components.skeleton`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya3\maya\asset\components\skeleton.py`
-- **Full Hierarchy:** `bmaya3.maya.asset.components.skeleton`
-- **Status:** Fast stub generation active.
+## Module Level Context
+Purpose:
+The Skeleton class is a MayaComponent that contains the joint hierarchy for a rig.
+It contains the logic for serializing and deserializing a joint hierarchy, which is used to save and load the skeleton component of a rig.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+---
+## Object Taxonomy Reference (Dynamic Introspection)
+
+### 🏷️ `CLASS` :: **Skeleton**
+
+**Description Summary:**
+No class descriptions detailed.
+
+#### Methods & Interceptors
+
+#### 🛠️ `__init__(self, asset, component_type)`
+
+```text
+Initialize self.  See help(type(self)) for accurate signature.
+```
+
+
+#### 🛠️ `load(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `reference(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `save(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+
+---

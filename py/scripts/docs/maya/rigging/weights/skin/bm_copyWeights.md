@@ -1,8 +1,32 @@
-# Module: bm_copyWeights
+# Reference Component: `bmaya.maya.rigging.weights.skin.bm_copyWeights`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya3\maya\rigging\weights\skin\bm_copyWeights.py`
-- **Full Hierarchy:** `bmaya3.maya.rigging.weights.skin.bm_copyWeights`
-- **Status:** Fast stub generation active.
+## Module Level Context
+No module documentation provided.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+---
+## Object Taxonomy Reference (Dynamic Introspection)
+
+### 🛠️ `copy_weights(source_mesh=None, target_meshes=None, method='closestPoint')`
+
+```text
+Copies the skin cluster and weights from a target mesh to other meshes.
+
+    :param source_mesh: The source mesh to copy from
+    :param target_meshes: The destination meshes to copy to
+    :param method: Derived from the copyWeights "surfaceAssociation" tag.
+Options include "closestPoint", "rayCast", or "closestComponent"
+    :type source_mesh: str
+    :type target_meshes: list
+    :type method: str
+    :return: None
+    
+```
+
+### 🛠️ `get_selection()`
+
+```text
+Returns our selection and determines if we'll copy only to vertices or not.
+
+:return: [use_verts (bool), source_mesh (str), target_meshes (list)]
+:rtype: list
+```

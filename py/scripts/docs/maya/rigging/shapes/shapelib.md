@@ -1,8 +1,51 @@
-# Module: shapelib
+# Reference Component: `bmaya.maya.rigging.shapes.shapelib`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya3\maya\rigging\shapes\shapelib.py`
-- **Full Hierarchy:** `bmaya3.maya.rigging.shapes.shapelib`
-- **Status:** Fast stub generation active.
+## Module Level Context
+No module documentation provided.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+---
+## Object Taxonomy Reference (Dynamic Introspection)
+
+### ⚙️ Global Constants & Configurations
+
+| Constant Name | Live Runtime Value | Type / Category |
+| :--- | :--- | :--- |
+| `CONTROL_TYPES_PATH` | `'C:\\Users\\bmorgan\\Documents\\dev\\maya\\mayadev\\py\\scripts\\bmaya\\maya\\rigging\\shapes\\controlTypes.json'` | Runtime Extracted Value |
+| `CV_LIMIT` | `128` | Runtime Extracted Value |
+
+---
+### 🏷️ `CLASS` :: **ControlCurve**
+
+**Description Summary:**
+No class descriptions detailed.
+
+#### Methods & Interceptors
+
+#### 🛠️ `__init__(self, name='example_00_M_ctrl', shapeType='cube', scale=None, jnt=None)`
+
+```text
+Initialize self.  See help(type(self)) for accurate signature.
+```
+
+
+#### 🛠️ `build(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `setup_bboundin_b_box(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+
+---
+### 🛠️ `get_control_type_data()`
+
+```text
+No functional arguments or usage blocks specified.
+```

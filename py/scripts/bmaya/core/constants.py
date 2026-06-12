@@ -1,3 +1,5 @@
+"""General pipeline constants not related to the dcc implementation."""
+
 # possible asset types
 ASSET_TYPES = ["prop", "environment", "character", "head"]
 

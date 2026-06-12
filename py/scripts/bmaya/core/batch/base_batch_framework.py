@@ -12,7 +12,9 @@ from datetime import datetime
 class BaseBatchEnvironment:
     """Pure Python context manager handling filesystem initialization and basic logging."""
 
-    def __init__(self, log_dir_name: str | None = None, folder_prefix: str = "batch_results") -> None:
+    def __init__(
+        self, log_dir_name: str | None = None, folder_prefix: str = "batch_results"
+    ) -> None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         folder_name = log_dir_name or f"{folder_prefix}_{timestamp}"
 
@@ -42,17 +44,24 @@ class BaseBatchEnvironment:
         self._file_handler.setFormatter(formatter)
         logger.addHandler(self._file_handler)
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def close_logging(self):
+        """Explicitly shutdown and remove the file handler to allow reading/releasing the log."""
         if self._file_handler:
             logger = logging.getLogger()
             logger.removeHandler(self._file_handler)
             self._file_handler.close()
+            self._file_handler = None
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close_logging()
 
 
 class BaseBatchPackage:
     """Ancestor class for all file-batching operations and test cases."""
 
-    def __init__(self, file_list: list | None = None, config_source_path: str | None = None):
+    def __init__(
+        self, file_list: list | None = None, config_source_path: str | None = None
+    ):
         self.file_list = file_list or []
         self.config_source_path = config_source_path
         self.succeeded = []
@@ -107,7 +116,13 @@ class BaseBatchPackage:
                 self.failed.append((current_id, err_msg))
 
         self._write_output_artifacts(environment.results_dir)
-        summary_file = self._write_summary_markdown(environment.results_dir)
+
+        # Flush and close logging early so the markdown builder can safely read the log file
+        environment.close_logging()
+
+        summary_file = self._write_summary_markdown(
+            environment.results_dir, environment.log_file
+        )
 
         # Automatically show report on completion
         self._open_report(summary_file)
@@ -159,13 +174,12 @@ class BaseBatchPackage:
             for path, error in self.failed:
                 f.write(f"ENTRY: {path}\nEXCEPTION:\n{error}\n{'-'*40}\n")
 
-    def _write_summary_markdown(self, output_dir: str) -> str:
+    def _write_summary_markdown(self, output_dir: str, log_file_path: str) -> str:
         """Generates a comprehensive Markdown report summarizing the batch operation."""
         total_count = len(self.file_list) if self.file_list else 1
         success_count = len(self.succeeded)
         failed_count = len(self.failed)
 
-        # Visual indicator emoji based on run health
         overall_status = "🟢 PASSED" if failed_count == 0 else "🔴 FAILED"
 
         md_lines = [
@@ -205,6 +219,23 @@ class BaseBatchPackage:
                 )
         else:
             md_lines.append("*No failures encountered.*")
+        md_lines.append("")
+
+        # Embedded Session Log Section
+        md_lines.append("## 📜 Session Log Output")
+        if os.path.exists(log_file_path):
+            try:
+                with open(log_file_path, "r", encoding="utf-8") as lf:
+                    log_content = lf.read().strip()
+
+                if log_content:
+                    md_lines.extend(["```text", log_content, "```"])
+                else:
+                    md_lines.append("*Log file was empty.*")
+            except Exception as log_read_err:
+                md_lines.append(f"⚠️ *Failed to read log contents:* `{log_read_err}`")
+        else:
+            md_lines.append("⚠️ *Log file not found.*")
 
         summary_path = os.path.join(output_dir, "report_summary.md")
         with open(summary_path, "w", encoding="utf-8") as f:

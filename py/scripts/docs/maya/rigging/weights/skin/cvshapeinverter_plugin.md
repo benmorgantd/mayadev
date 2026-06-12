@@ -1,8 +1,61 @@
-# Module: cvshapeinverter_plugin
+# Reference Component: `bmaya.maya.rigging.weights.skin.cvshapeinverter_plugin`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya3\maya\rigging\weights\skin\cvshapeinverter_plugin.py`
-- **Full Hierarchy:** `bmaya3.maya.rigging.weights.skin.cvshapeinverter_plugin`
-- **Status:** Fast stub generation active.
+## Module Level Context
+No module documentation provided.
 
-This is a mock placeholder documentation file. Switch `DEBUG_MODE = False` in the execution script to call the local Ollama instance and build structural reference blocks for this module.
+---
+## Object Taxonomy Reference (Dynamic Introspection)
+
+### ⚙️ Global Constants & Configurations
+
+| Constant Name | Live Runtime Value | Type / Category |
+| :--- | :--- | :--- |
+| `API_VERSION` | `20260300` | Runtime Extracted Value |
+
+---
+### 🛠️ `creator()`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🏷️ `CLASS` :: **cvShapeInverter**
+
+**Description Summary:**
+No class descriptions detailed.
+
+#### Methods & Interceptors
+
+#### 🛠️ `__init__(self)`
+
+```text
+Initialize self.  See help(type(self)) for accurate signature.
+```
+
+
+#### 🛠️ `deform(self, data, itGeo, localToWorldMatrix, geomIndex)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+
+---
+### 🛠️ `initialize()`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `initializePlugin(mobject)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `uninitializePlugin(mobject)`
+
+```text
+No functional arguments or usage blocks specified.
+```
