@@ -17,6 +17,8 @@ from . import customWidgets
 from bmaya.maya.rigging.base import rig
 from bmaya.maya.rigging import buildio
 
+from bmaya.maya_ui.qtbase import ProgressWindow
+
 
 class RigManager(qtbase.DockableWidget):
     def __init__(self, parent=None, designerFile=None, title="Rig Manager"):
@@ -115,7 +117,7 @@ class RigManager(qtbase.DockableWidget):
 
     def launchAssetWidget(self):
         assetCreatorUI = assetCreator.AssetCreator(
-            parent=qtbase.getMayaMainWindow(),
+            parent=qtbase.get_maya_main_window(),
             designerFile=os.path.join(os.path.dirname(__file__), "assetCreator.ui"),
         )
         assetCreatorUI.show()
@@ -178,6 +180,8 @@ class RigManager(qtbase.DockableWidget):
 
     def buildCharacter(self):
         if self.rigInstance:
+            progress_window = ProgressWindow()
+            progress_window.show()
             buildPath = self.rigInstance.build.full_path
             fileUtils.version_file(buildPath)
             self.saveBuild(buildPath)
@@ -280,7 +284,7 @@ class RigManager(qtbase.DockableWidget):
 
 def run():
     ui = RigManager(
-        parent=qtbase.getMayaMainWindow(),
+        parent=qtbase.get_maya_main_window(),
         designerFile=os.path.join(os.path.dirname(__file__), "rigManager.ui")
     )
     ui.dock()

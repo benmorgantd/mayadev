@@ -15,6 +15,30 @@
             "script": "import maya.cmds as cmds\ncmds.makeIdentity(apply=True, t=1, r=1, s=1)",
             "icon": null,
             "enabled": true
+        },
+        {
+            "guid": "a18abe7d-6597-4b25-8661-8d5f984467d4",
+            "name": "Tool Registry Editor",
+            "short_name": "Tool Registry Editor",
+            "script": "import bmaya.maya_ui.tool_registry_editor as tre\ntre.show_ui()",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "62b3145e-b306-453e-9c9b-5776baa45198",
+            "name": "Rig Manager",
+            "short_name": "Rig Manager",
+            "script": "import bmaya.maya_ui.rigManager.rigManager as rm\nrm.run()",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "b123de41-a6c4-4f79-8e43-d28b48038028",
+            "name": "Tool Menu Editor",
+            "short_name": "Tool Menu Editor",
+            "script": "import bmaya.maya_ui.tool_views.tool_menu\nbmaya.maya_ui.tool_views.tool_menu.show_menu_editor_ui()",
+            "icon": null,
+            "enabled": true
         }
     ]
 }

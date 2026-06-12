@@ -15,7 +15,7 @@ import maya.cmds as cmds
 
 from bmaya.maya.asset.asset import Asset
 from bmaya.maya.asset.components import *
-from bmaya.core import log, decorators
+from bmaya.core import log, decorators, progressmanager
 import bmaya.core.constants
 from bmaya.core.util import fileUtils
 
@@ -94,40 +94,34 @@ class Rig(Asset):
 
     @decorators.log_fn_duration
     def build_rig(self):
-
-        # progressWindow = qtbase.#progressWindow(title='Building Rig')
-        # progressWindow.show()
+        pmanager = progressmanager.ProgressManager()
+        pmanager.start("Building Rig")
 
         self.modules = []
         self.all_controls = []
         mirror_modules = []
 
-        # progressWindow.setStatus('Creating blank scene')
-        # progressWindow.increment(5)
+        pmanager.update(5, "Creating blank scene")
 
         # create a new scene
         cmds.file(new=True, force=True)
 
-        # progressWindow.setStatus('Loading plugins')
-        # progressWindow.increment(5)
+        pmanager.update(10, "Loading plugins")
         # load required plugins
         self.load_plugins()
 
-        # progressWindow.setStatus('Making character node')
-        # progressWindow.increment(5)
+        pmanager.update(15, 'Making character node')
 
         self.make_node()
 
-        # progressWindow.setStatus('Reading build file')
-        # progressWindow.increment(5)
+        pmanager.update(20, 'Reading build file')
 
         # open up the character's build file (json)
         self.build_data = buildio.load(self.build.full_path)
 
         build_list = []
 
-        # progressWindow.setStatus('Building layout rig')
-        # progressWindow.increment(5)
+        pmanager.update(25, 'Building layout rig')
 
         layout_dict, layout_components = self.build_layout()
         self.modules.append(layout_dict)
@@ -143,8 +137,7 @@ class Rig(Asset):
             for child in mod["children"]:
                 add_children(child)
 
-        # progressWindow.setStatus('Flattening build tree')
-        # progressWindow.increment(5)
+        pmanager.update(30, 'Flattening build tree')
 
         for mod in self.build_data:
             if mod["children"]:
@@ -154,8 +147,7 @@ class Rig(Asset):
                 self.add_module(mod)
                 build_list.append(mod)
 
-        # progressWindow.setStatus('Building limbs')
-        # progressWindow.increment(5)
+        pmanager.update(35, 'Building limbs')
 
         if not build_list:
             raise RuntimeError
@@ -191,22 +183,19 @@ class Rig(Asset):
 
         self.modules += mirror_modules
 
-        # progressWindow.setStatus('Making sets')
-        # progressWindow.increment(5)
+        pmanager.update(40, 'Making sets')
 
         self.ctrl_set = cmds.sets(self.all_controls, name="CTRL_set")
         if self.has_face:
             self.faceCtrlSet = cmds.sets(name="FACE_CTRL_set")
             cmds.sets(self.faceCtrlSet, edit=True, forceElement=self.ctrl_set)
 
-        # progressWindow.setStatus('Adding default skinning')
-        # progressWindow.increment(5)
+        pmanager.update(45, 'Adding skinning')
         # skinning after the components have been built allows us to create
         # bind joints
         self.skin()
 
-        # progressWindow.setStatus('Writing character node attributes')
-        # progressWindow.increment(5)
+        pmanager.update(50, 'Writing character node attributes')
         self.add_node_attrs()
 
         for mod in self.modules:
@@ -218,8 +207,7 @@ class Rig(Asset):
                     ),
                 )
 
-        # progressWindow.setStatus('Loading control shapes')
-        # progressWindow.increment(5)
+        pmanager.update(55, 'Loading control shapes')
         shapeio.load(self.component_path_from_type("cvs"))
 
         # progressWindow.setStatus('Loading weights')
@@ -233,24 +221,23 @@ class Rig(Asset):
         # create influences set
         self.bind_set = self.make_bind_set()
 
-        # progressWindow.setStatus('Coloring controls')
-        # progressWindow.increment(5)
+        pmanager.update(60, 'Coloring controls')
         self.color_controls()
 
         cmds.refresh(currentView=True)
 
-        # progressWindow.setStatus('Cleaning up')
+        pmanager.update(85, 'Cleaning up')
         # scene cleanup:
         self.setup_mesh_referencing()
         self.lock_down_constraints()
 
         cmds.hide(cmds.ls(type="ikHandle"))
 
-        # progressWindow.setStatus('Running post operations')
-        # progressWindow.increment(5)
+        pmanager.update(95, 'Running post operations')
         self.run_post_ops()
 
-        # progressWindow.setStatus('Finished building rig')
+        pmanager.update(100, 'Finished building rig')
+        pmanager.end()
 
         cmds.file(rename=self.animRig.full_path)
         cmds.file(save=True, type="mayaAscii", force=True)
@@ -258,8 +245,6 @@ class Rig(Asset):
 
         if not bmaya.maya.constants.IS_BATCH:
             cmds.viewFit(allObjects=True, fitFactor=1)
-
-        # progressWindow.hide()
 
     def make_node(self):
         if not cmds.objExists(self.name + "_CHAR"):

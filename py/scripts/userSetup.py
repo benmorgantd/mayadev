@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 import maya.cmds as cmds
 import bmaya.core.log as log
+from bmaya.core import progressmanager
 
 _IS_BATCH = cmds.about(batch=True)
 # only needed here for visual consistency in print statements before the logger has been set up.
@@ -11,25 +12,40 @@ if _IS_BATCH:
     # NOTE: for mayabatch processes we won't be able to get log streaming in this way. There is an arg.
     print(f"{_print_prefix}[bmaya][startup] This Maya instance is a batch process")
 
+if not _IS_BATCH:
+    # ui-related imports
+    from bmaya.maya_ui.qtbase import ProgressWindow
+
 
 def _run_deferred_setup():
     print(f"{_print_prefix}[bmaya][startup] Starting custom startup")
 
+    
     # Setup logger
     log.init_logger()
 
-    # Setup log streaming
+    # Start progress window
+    pmanager.start("Running Deferred Startup")
+    
+    if not _IS_BATCH:
+        ProgressWindow().show()
 
+    pmanager.update(10, "Set up log streaming")
+    
     # Setup local helper functions
 
-    # Setup tools menu and hotkeys
+    # Setup tools menus
     tools_registry = _setup_tool_registry()
+
+    # Only setup tool views if we're not in batch mode
     if not _IS_BATCH:
         _setup_tool_views(tools_registry)
 
     # Load required plugins
-
+    
     log.info("Custom startup scripts complete!")
+
+    pmanager.end()
 
 
 def _setup_log_streaming():
@@ -61,6 +77,8 @@ def _setup_tool_registry():
     from bmaya.core.tool_registry import ToolRegistry
     from bmaya.maya import constants
 
+    pmanager.update(30, "Building tool registry")
+
     registry = ToolRegistry()  # TODO: make this a singleton
     registry.load_registry(constants.TOOL_REGISTRY_PATH)
 
@@ -71,6 +89,8 @@ def _setup_tool_views(registry):
     from bmaya.maya_ui.tool_views.tool_menu import ToolMenu
     from bmaya.maya import constants
 
+    pmanager.update(50, "Building tool views")
+
     main_menu = ToolMenu("test")
     main_menu.load_layout(os.path.join(constants.TOOLS_PATH, 'bmaya_menu.json'))
     main_menu.build_ui(registry)
@@ -79,9 +99,12 @@ def _setup_tool_views(registry):
 def user_setup():
     if not _IS_BATCH:
         _setup_log_streaming()
+
     # Run all deferred setup
     cmds.evalDeferred(_run_deferred_setup, lowestPriority=True)
 
+# Convenience imports
 from importlib import reload
+pmanager = progressmanager.ProgressManager()
 # The start of userSetup has to be deferred but now to lowest priority
 cmds.evalDeferred(user_setup)

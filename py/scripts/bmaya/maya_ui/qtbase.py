@@ -5,14 +5,14 @@ import ast
 
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui
-from bmaya.core import log
+from bmaya.core import log, progressmanager
 
 # PySide6 Fix: QtCompat removed. Use QtUiTools for loading designer layouts.
-from PySide6 import QtWidgets, QtCore, QtUiTools
+from PySide6 import QtWidgets, QtCore, QtUiTools, QtGui
 import shiboken6
 
 
-def getMayaMainWindow():
+def get_maya_main_window():
     # Python 3: long() removed, use int()
     return shiboken6.wrapInstance(int(omui.MQtUtil.mainWindow()), QtWidgets.QWidget)
 
@@ -229,7 +229,7 @@ class DockableWidget(SimpleWidget):
 
 class Dialog(QtWidgets.QDialog):
     def __init__(self, parent=None, windowTitle="Dialog"):
-        parent = parent or getMayaMainWindow()
+        parent = parent or get_maya_main_window()
         super(Dialog, self).__init__(parent)
 
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
@@ -270,30 +270,107 @@ class ConfirmDialog(Dialog):
 class ProgressWindow(SimpleWindow):
     windowSize = QtCore.QSize(350, 75)
 
-    def __init__(self, parent=None, designerFile=None, title="Simple Widget"):
+    def __init__(self, parent=None, designerFile=None, title="Progress Tracker"):
         super(ProgressWindow, self).__init__(
             parent=parent, designerFile=designerFile, title=title
         )
 
-        self.progress = 0
-        self.minProgress = 0
-        self.maxProgress = 100
-
-        self.statusTextWidget = QtWidgets.QLabel("Doing Something...")
+        # UI Initialization
+        self.statusTextWidget = QtWidgets.QLabel("Ready...")
         self.progressBarWidget = QtWidgets.QProgressBar()
+        self.progressBarWidget.setRange(0, 100)
 
         self.mainLayout.addWidget(self.statusTextWidget)
         self.mainLayout.addWidget(self.progressBarWidget)
 
         self.setFixedSize(self.windowSize)
-        
         self.setWindowFlags(
             QtCore.Qt.WindowType.Drawer | QtCore.Qt.WindowType.WindowStaysOnTopHint
         )
 
-    def increment(self, value):
-        self.progressBarWidget.setValue(self.progressBarWidget.value() + int(value))
+        # Connect to Singleton
+        self.manager = progressmanager.ProgressManager()
+        self.manager.register_callback(self.refresh_ui)
 
-    def setStatus(self, text):
-        self.statusTextWidget.setText(text.replace("...", "") + "...")
-        log.info(text)
+        # Polling fallback timer (just in case callbacks drop during aggressive loops)
+        self.poll_timer = QtCore.QTimer(self)
+        self.poll_timer.timeout.connect(self.refresh_ui)
+        self.poll_timer.start(100)  # Check every 100ms
+
+        # Initial Sync
+        self.refresh_ui()
+
+    def refresh_ui(self) -> None:
+        """Syncs the Qt widgets to the current state of the pure python singleton."""
+        if not self.manager.active:
+            if self.isVisible():
+                self.hide()  # Or self.hide() depending on reuse preference
+            return
+
+        if not self.isVisible():
+            self.show()
+
+        # Update Progress Bar Range and Value
+        if self.progressBarWidget.maximum() != self.manager.max_value:
+            self.progressBarWidget.setMaximum(self.manager.max_value)
+        
+        self.progressBarWidget.setValue(self.manager.current_value)
+
+        # Update Status Text
+        clean_text = self.manager.status_text.replace("...", "") + "..."
+        if self.statusTextWidget.text() != clean_text:
+            self.statusTextWidget.setText(clean_text)
+            log.info(self.manager.status_text)
+            
+        # Force Maya UI to draw updates during tight execution loops
+        QtWidgets.QApplication.processEvents()
+
+
+class PythonSyntaxHighlighter(QtGui.QSyntaxHighlighter):
+    """Provides fundamental Python syntax highlighting for the embedded script editor."""
+
+    def __init__(self, parent: QtGui.QTextDocument | None = None) -> None:
+        super().__init__(parent)
+        self.rules = []
+
+        # Keyword styling
+        keyword_format = QtGui.QTextCharFormat()
+        keyword_format.setForeground(QtGui.QColor("#CC7832"))
+        keyword_format.setFontWeight(QtGui.QFont.Weight.Bold)
+        keywords = [
+            "and", "as", "assert", "async", "await", "break", "class", "continue",
+            "def", "del", "elif", "else", "except", "False", "finally", "for",
+            "from", "global", "if", "import", "in", "is", "lambda", "None",
+            "nonlocal", "not", "or", "pass", "raise", "return", "True", "try",
+            "while", "with", "yield"
+        ]
+        for word in keywords:
+            pattern = QtCore.QRegularExpression(rf"\b{word}\b")
+            self.rules.append((pattern, keyword_format))
+
+        # Builtins / Functions styling
+        builtin_format = QtGui.QTextCharFormat()
+        builtin_format.setForeground(QtGui.QColor("#8888C6"))
+        pattern = QtCore.QRegularExpression(r"\b(print|exec|eval|len|range|str|int|dict|list|set|tuple)\b")
+        self.rules.append((pattern, builtin_format))
+
+        # String styling
+        string_format = QtGui.QTextCharFormat()
+        string_format.setForeground(QtGui.QColor("#6A8759"))
+        self.rules.append((QtCore.QRegularExpression(r'".*?"'), string_format))
+        self.rules.append((QtCore.QRegularExpression(r"'.*?'"), string_format))
+
+        # Comment styling
+        comment_format = QtGui.QTextCharFormat()
+        comment_format.setForeground(QtGui.QColor("#808080"))
+        comment_format.setFontItalic(True)
+        self.rules.append((QtCore.QRegularExpression(r"#.*"), comment_format))
+
+    def highlightBlock(self, text: str) -> None:
+        """Applies formatting rules across the text block contextually."""
+        for pattern, text_format in self.rules:
+            expression = QtCore.QRegularExpression(pattern)
+            iterator = expression.globalMatch(text)
+            while iterator.hasNext():
+                match = iterator.next()
+                self.setFormat(match.capturedStart(), match.capturedLength(), text_format)

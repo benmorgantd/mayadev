@@ -2,21 +2,34 @@
     "label": "Bmaya Tool Menu",
     "items": [
         {
+            "type": "tool",
+            "guid": "a18abe7d-6597-4b25-8661-8d5f984467d4",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "b123de41-a6c4-4f79-8e43-d28b48038028",
+            "enabled": true
+        },
+        {
             "type": "submenu",
-            "label": "Rigging Utilities",
+            "label": "Rigging",
             "items": [
                 {
                     "type": "tool",
-                    "guid": "5d2bf61a-ec4b-468a-bf90-ec73b2df76a1",
+                    "guid": "62b3145e-b306-453e-9c9b-5776baa45198",
                     "enabled": true
                 },
                 {
-                    "type": "separator"
-                },
-                {
-                    "type": "tool",
-                    "guid": "8fa176df-2041-4c74-88db-410a7114d567",
-                    "enabled": true
+                    "type": "submenu",
+                    "label": "Utilities",
+                    "items": [
+                        {
+                            "type": "tool",
+                            "guid": "8fa176df-2041-4c74-88db-410a7114d567",
+                            "enabled": true
+                        }
+                    ]
                 }
             ]
         }

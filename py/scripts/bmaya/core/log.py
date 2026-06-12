@@ -11,7 +11,7 @@ class MayaLogHandler(logging.Handler):
         try:
             msg = self.format(record)
             if record.levelno >= logging.ERROR:
-                om.MGlobal.DisplayError(msg)
+                om.MGlobal.displayError(msg)
             elif record.levelno >= logging.WARNING:
                 om.MGlobal.displayWarning(msg)
             else:
@@ -25,13 +25,17 @@ def init_logger() -> logging.Logger:
 
     logger_name = "bmaya"
     _LOGGER = logging.getLogger(logger_name)
+    
+    # Keep the logger at DEBUG so it can capture all event types
     _LOGGER.setLevel(logging.DEBUG)
 
     for handler in _LOGGER.handlers[:]:
         _LOGGER.removeHandler(handler)
 
+    # Set default visibility threshold for handlers to INFO
+    default_handler_level = logging.INFO
+
     # Branch logging behavior for headless batch execution
-    #if os.environ.get("BMAYA_BATCH_MODE") == "1":
     if bmaya.maya.constants.IS_BATCH:
         log_format = "[%(name)s][%(asctime)s.%(msecs)02d][%(filename)s:%(lineno)d] %(message)s"
         formatter = logging.Formatter(log_format, datefmt="%H:%M:%S")
@@ -39,6 +43,7 @@ def init_logger() -> logging.Logger:
         # Target sys.stdout so the framework's StreamTee can intercept it
         stdout_handler = logging.StreamHandler(sys.stdout)
         stdout_handler.setFormatter(formatter)
+        stdout_handler.setLevel(default_handler_level)
         _LOGGER.addHandler(stdout_handler)
     else:
         # Standard Interactive UI Configuration
@@ -46,6 +51,7 @@ def init_logger() -> logging.Logger:
         formatter = logging.Formatter(log_format, datefmt="%H:%M:%S")
         handler = MayaLogHandler()
         handler.setFormatter(formatter)
+        handler.setLevel(default_handler_level)
         _LOGGER.addHandler(handler)
 
     _LOGGER.propagate = False
@@ -56,6 +62,10 @@ def get_logger() -> logging.Logger:
     if _LOGGER is None:
         return init_logger()
     return _LOGGER
+
+def debug(msg, *args, **kwargs) -> None:
+    kwargs.setdefault("stacklevel", 2)
+    get_logger().debug(msg, *args, **kwargs)
 
 def info(msg, *args, **kwargs) -> None:
     kwargs.setdefault("stacklevel", 2)

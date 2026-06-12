@@ -50,5 +50,5 @@ class NamingTool(qtbase.SimpleWindow):
 
 
 def run():
-    ui = NamingTool(parent=qtbase.getMayaMainWindow())
+    ui = NamingTool(parent=qtbase.get_maya_main_window())
     ui.show()
