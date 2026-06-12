@@ -1,19 +1,47 @@
-# Module: facePoses
+# Reference Component: `bmaya.maya.asset.components.facePoses`
 
-### Pipeline Intent
-Class for the FacePoses component, which is a maya file that contains an animation of poses. An animator can hand-animate each pose on the rig and save these off.
+## Module Level Context
+Purpose:
+Class for the FacePoses component, which is a maya file that contains an animation of poses.
+An animator can hand-animate each pose on the rig and save these off.
 
-### Technical Implementation
-The `FacePoses` class inherits from `MayaComponent`. In the constructor (`__init__`), it calls the parent's constructor with the `asset` and `component_type`.
+---
+## Object Taxonomy Reference
 
-#### Methods
-- `__init__(self, asset, component_type)`: Initializes the FacePoses component.
-- `@property relative_path(self)`: Returns the relative path of the FacePoses file.
+### 🏷️ `CLASS` :: **FacePoses**
 
-### Overview
-The `FacePoses` class represents a maya file that contains an animation of poses. It inherits from `MayaComponent`.
+**Description Summary:**
+No class descriptions detailed.
 
-### Cross-Module Dependencies
+#### Methods & Interceptors
 
-* **Internal Framework Links:** `mayaComponent`
-* **External Dependencies:** None
+#### 🛠️ `__init__(self, asset, component_type)`
+
+```text
+Initialize self.  See help(type(self)) for accurate signature.
+```
+
+
+#### 🛠️ `load(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `reference(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `save(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+
+---

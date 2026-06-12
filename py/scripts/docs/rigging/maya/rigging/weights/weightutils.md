@@ -1,42 +1,85 @@
-Here is the documentation for the `weightutils` module:
+# Reference Component: `bmaya.maya.rigging.weights.weightutils`
 
-# Module: weightutils
+## Module Level Context
+No module documentation provided.
 
-### Pipeline Intent
-The `weightutils` module provides a set of convenience functions and utilities for working with skin clusters, weights, and mesh deformation in Maya.
+---
+## Object Taxonomy Reference
 
-### Technical Implementation
-This module relies on the Maya Python API (OpenMaya) to interact with the Maya scene graph. It uses various OpenMaya classes such as `MFnSkinCluster`, `MDagPath`, and `MObject` to access and manipulate skin clusters, meshes, and joints.
+### 🛠️ `bake_delta_mush_to_skin_cluster(dag)`
 
-### Overview
-The `weightutils` module provides a range of functions for:
+```text
+No functional arguments or usage blocks specified.
+```
 
-1. Finding and retrieving skin cluster objects from the Maya scene.
-2. Getting and setting skin cluster weights.
-3. Pruning weight lists to reduce influence count.
-4. Converting delta mush deformation to skin cluster weights.
-5. Normalizing and pruning skin weights.
+### 🛠️ `get_skin_cluster_name(dag)`
 
-### Cross-Module Dependencies
-* **Internal Framework Links:** None
-* **External Dependencies:**
-	+ Maya.cmds (for scene manipulation)
-	+ OpenMaya (for Python API access)
+```text
+A convenience function for finding the skinCluster deforming a mesh.
+params:
+    dag (MDagPath): A MDagPath for the mesh we want to investigate.
+returns:
+    skinCluster (str), skinClusterObj (MObject)
+```
 
-## API Taxonomy Reference
+### 🛠️ `get_skin_cluster_obj(dag)`
 
-### 🏷️ `CLASS` :: N/A
+```text
+A convenience function for finding the skinCluster deforming a mesh.
+params:
+    dag (MDagPath): A MDagPath for the mesh we want to investigate.
+returns:
+    skinCluster (str), skinClusterObj (MObject)
+```
 
-No classes are defined in this module.
+### 🛠️ `get_skin_cluster_obj_from_shape(shape)`
 
-### 🏷️ `FUNCTION` :: Various
+```text
+No functional arguments or usage blocks specified.
+```
 
-#### Functions
-- `get_skin_cluster_name(dag)`: Returns the name of a skin cluster associated with a given mesh.
-- `get_skin_cluster_obj(dag)`: Returns the MObject for a skin cluster associated with a given mesh.
-- `get_skin_cluster_weights(skinClusterObj, components=None)`: Returns the weights from a skin cluster and any data necessary for setting the weights later down the road.
-- `set_skin_cluster_weights(skin_cluster_obj, influence_indices, weights, components=None)`: Sets the weights for a skin cluster.
-- `skin(joints, mesh)`: Skins a mesh to a set of joints using Maya's skinning algorithm.
-- `quick_skin()`: Quickly skins a selection of meshes to their associated joints.
-- `bake_delta_mush_to_skin_cluster(dag)`: Converts delta mush deformation to skin cluster weights.
--
+### 🛠️ `get_skin_cluster_weight_dict(skinClusterObj)`
+
+```text
+Return the weight dictionary for the given skin cluster
+```
+
+### 🛠️ `get_skin_cluster_weights(skinClusterObj, components=None)`
+
+```text
+Returns the weights from a skinCluster and any data necessary for setting
+the weights later down the road
+params:
+    skinClusterObj (MObject) : The MObject for the skinCluster you want to get weights from
+    components (MObject) : If given, the skinCluster will only gives weights for these verts
+```
+
+### 🛠️ `prune_skin_weights(maxInfluence=4)`
+
+```text
+Sets the weights for each vertex to the average of its neighbors.
+```
+
+### 🛠️ `prune_weight_list(weights, maxInfluence=4)`
+
+```text
+Prunes the given list to have only four non-zero values
+```
+
+### 🛠️ `quick_skin()`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `set_skin_cluster_weights(skin_cluster_obj, influence_indices, weights, components=None)`
+
+```text
+needs API type arrays
+```
+
+### 🛠️ `skin(joints, mesh)`
+
+```text
+No functional arguments or usage blocks specified.
+```

@@ -1,25 +1,46 @@
-Here is the documentation for the `postops` module:
+# Reference Component: `bmaya.maya.asset.components.postops`
 
-# Module: postops
-
-### Pipeline Intent
+## Module Level Context
+Purpose:
 The PostOps component is a python file that allows the user to run custom logic on a rig after it is built.
 
-### Technical Implementation
-This module inherits from the `Component` class and overrides the `__init__` method to set up the necessary asset and component type information. The `relative_path` property returns the path of the PostOps script based on the asset's type and extension.
+---
+## Object Taxonomy Reference
 
-### Overview
-The PostOps component is a part of the rigging pipeline that allows for custom logic to be executed after a rig has been built. This module provides a way to access the relative path of the PostOps script, which can be used to locate the script in the file system.
+### 🏷️ `CLASS` :: **PostOps**
 
-### Cross-Module Dependencies
-* **Internal Framework Links:** `Component` from `component.py`
-* **External Dependencies:** None
+**Description Summary:**
+No class descriptions detailed.
 
-## API Taxonomy Reference
+#### Methods & Interceptors
 
-### CLASS :: PostOps
-**Purpose:** A Python class that represents a PostOps component, inheriting from the `Component` class.
-*Inherits from:* `Component`
+#### 🛠️ `__init__(self, asset, component_type)`
 
-#### Methods
-- `__init__(self, asset, component_type)`: Initializes the PostOps component with the given asset and component type.
+```text
+Initialize self.  See help(type(self)) for accurate signature.
+```
+
+
+#### 🛠️ `load(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `reference(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `save(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+
+---

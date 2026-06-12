@@ -5,3 +5,5 @@ set "PYTHONPATH=%MAYADEV_ROOT%\py\scripts;%PYTHONPATH%"
 
 :: Execute the test class file using the Maya 2026 python interpreter
 "C:\Program Files\Autodesk\Maya2026\bin\mayapy.exe" %~dp0main.py
+
+pause

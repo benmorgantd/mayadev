@@ -1,12 +1,19 @@
-# Module: bm_smooth_skinned_curve
+# Reference Component: `bmaya.maya.rigging.weights.skin.bm_smooth_skinned_curve`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya\rigging\weights\skin\bm_smooth_skinned_curve.py`
-- **Full Hierarchy:** `bmaya.maya.rigging.weights.skin.bm_smooth_skinned_curve`
-- **Status:** Fast stub generation active.
+## Module Level Context
+No module documentation provided.
 
-### Scraped Symbols (AST Metadata Map)
+---
+## Object Taxonomy Reference
 
-#### Global Functions
-- `def find_skin_cluster(...)` (Line 10)
-- `def smooth_weights(...)` (Line 32)
+### 🛠️ `find_skin_cluster(dag)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `smooth_weights(curve=None, smooth_strength=0.25)`
+
+```text
+No functional arguments or usage blocks specified.
+```

@@ -1,12 +1,23 @@
-# Module: dgUtils
+# Reference Component: `bmaya.maya.util.dgUtils`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya\util\dgUtils.py`
-- **Full Hierarchy:** `bmaya.maya.util.dgUtils`
-- **Status:** Fast stub generation active.
+## Module Level Context
+Purpose:
+Utility functions for working with the DG in maya. These are used by various components to perform common
+tasks on DG nodes, such as getting the nodes in the scene, listing attribute connections, getting and setting attributes, etc.
 
-### Scraped Symbols (AST Metadata Map)
+---
+## Object Taxonomy Reference
 
-#### Global Functions
-- `def get_nodes_in_scene(...)` (Line 10)
-- `def get_mobject(...)` (Line 17)
+### 🛠️ `get_mobject(node)`
+
+```text
+Get the MOBject for a given node.
+
+:return MOBject: The MOBject for the given node.
+```
+
+### 🛠️ `get_nodes_in_scene(ofType=None)`
+
+```text
+No functional arguments or usage blocks specified.
+```

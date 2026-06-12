@@ -1,15 +1,80 @@
-# Module: `_Foot`
+# Reference Component: `bmaya.maya.rigging.modules._Foot`
 
-### Pipeline Intent
-The `_Foot` module is responsible for creating a rigging system for the foot of a character. It defines a class `Foot` that represents the foot and its components, including joints, controllers, and IK handles.
+## Module Level Context
+No module documentation provided.
 
-### Technical Implementation
-The module imports necessary classes from other modules, such as `maya.cmds`, `shapelib`, `nameUtils`, and `mathUtils`. The `Foot` class has several methods for creating joints, IK handles, and controllers. These methods include `build`, `createFkHierarchy`, `createIkHierarchy`, `createDriveHierarchy`, `createReverseHierarchy`, `createIkHandles`, and `createIkControls`.
+---
+## Object Taxonomy Reference
 
-### Overview
-The `_Foot` module is used to create a rigging system for the foot of a character. It defines a class `Foot` that represents the foot and its components, including joints, controllers, and IK handles.
+### 🏷️ `CLASS` :: **Foot**
 
-### Cross-Module Dependencies
+**Description Summary:**
+No class descriptions detailed.
 
-* **Internal Framework Links:** The module relies on other modules in the codebase, such as `maya.cmds`, `shapelib`, `nameUtils`, and `mathUtils`.
-* **External Dependencies:** None
+#### Methods & Interceptors
+
+#### 🛠️ `__init__(self, name='Foot1', ankle=None, ball=None, heel=None, bankOut=None, bankIn=None, toeTip=None)`
+
+```text
+Initialize self.  See help(type(self)) for accurate signature.
+```
+
+
+#### 🛠️ `build(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `createDriveHierarchy(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `createFkControls(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `createFkHierarchy(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `createIkControls(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `createIkHandles(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `createIkHierarchy(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `createReverseHierarchy(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+
+---

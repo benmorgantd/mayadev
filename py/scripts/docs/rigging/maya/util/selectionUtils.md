@@ -1,15 +1,27 @@
-# Module: selectionUtils
+# Reference Component: `bmaya.maya.util.selectionUtils`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya\util\selectionUtils.py`
-- **Full Hierarchy:** `bmaya.maya.util.selectionUtils`
-- **Status:** Fast stub generation active.
+## Module Level Context
+Purpose:
+Utility functions for working with selections in maya. These are used by various components to perform common tasks that involve selections,
+such as getting the selected joints, etc.
 
-### Scraped Symbols (AST Metadata Map)
+---
+## Object Taxonomy Reference
 
-#### Global Functions
-- `def get_selection(...)` (Line 9)
+### 🛠️ `get_selection(ofType=None)`
 
-#### Global Variables / Constants
-- `sl1` (Line 17)
-- `selected` (Line 18)
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `selected()`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `sl1()`
+
+```text
+No functional arguments or usage blocks specified.
+```

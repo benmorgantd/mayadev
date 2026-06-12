@@ -1,38 +1,200 @@
-Here is the Markdown documentation for the `Face` module:
+# Reference Component: `bmaya.maya.rigging.modules.Face`
 
-# Module: Face
-
-### Pipeline Intent
-The "Face" module is responsible for setting up facial rigging components and hierarchies.
-
-### Technical Implementation
-This module imports necessary modules from the `bmaya` package, including `module`, `shapelib`, and `nameUtils`. It defines a class `Face` that inherits from `module.Module`.
-
-#### Methods
-
-- **`__init__`**: Initializes the Face module with various parameters and sets up its components.
-- **`build`**: Builds the facial rig hierarchy by creating drive joints, bind joints, and controls for each region of the face (upper head, middle head, lower head, jaw, eyes, eyebrows).
-- **`buildFaceFkHierarchy`**: A helper method that recursively finds hierarchy joints, creates drive joints and controls, and binds them to the facial rig.
-
-### Overview
-The `Face` module sets up a hierarchical structure for facial rigging, allowing for control over various regions of the face (upper head, middle head, lower head, jaw, eyes, eyebrows). It uses the `FkChain` class from the `bmaya.maya.rigging.modules.FkChain` module to create drive joints and controls.
-
-### Cross-Module Dependencies
-* **Internal Framework Links:** `module`, `shapelib`, `nameUtils`
-* **External Dependencies:** None
-
-## API Taxonomy Reference
-
-### CLASS :: Face
-
-**Purpose:** Initializes and sets up facial rigging components and hierarchies.
-
-**Methods:**
-
-- **`__init__`**: Initializes the Face module with various parameters and sets up its components.
-- **`build`**: Builds the facial rig hierarchy by creating drive joints, bind joints, and controls for each region of the face (upper head, middle head, lower head, jaw, eyes, eyebrows).
-- **`buildFaceFkHierarchy`**: A helper method that recursively finds hierarchy joints, creates drive joints and controls, and binds them to the facial rig.
+## Module Level Context
+Facial rig setup
 
 ---
+## Object Taxonomy Reference
 
-I hope this meets your requirements! Let me know if you need any further assistance.
+### 🏷️ `CLASS` :: **Face**
+
+**Description Summary:**
+No class descriptions detailed.
+
+#### Methods & Interceptors
+
+#### 🛠️ `__init__(self, character=None, name='face', parent=None, upperHead=None, middleHead=None, lowerHead=None, jaw=None, eyeballs=[], eyelidBase=None, eyebrowBase=None, drivers=[])`
+
+```text
+Initialize self.  See help(type(self)) for accurate signature.
+```
+
+
+#### 🛠️ `add_node_attrs(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `blend_chains(self, fk_chain, ik_chain, child_chain, drive_attribute)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `build(self, *args, **kwargs)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `buildFaceFkHierarchy(self, start_joint, exclude=[])`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `build_fk_controls(self, drive_joints, setup_align_world=False)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `capture_component_defaults(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `check_contract(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `connect_bind_joints(self)`
+
+```text
+Connects the module's bind joints to their control
+```
+
+
+#### 🛠️ `connect_components(self)`
+
+```text
+Connects the module's compenents to the module
+```
+
+
+#### 🛠️ `create_drive_joint(self, jnt, label='Driver', constrain=True)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `create_drive_joints(self, label='DRIVER', constrain=True)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `determine_parent(self, parent)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `do_mirror(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `find_hierarchy_joints(self, shortest_distance=False, start_joint=None, end_joint=None, exclude=[])`
+
+```text
+Expands from a start joint and until it hits excluded joints.
+```
+
+
+#### 🛠️ `find_joint_name(self, node, identifier=None, count=0, suffix='DRIVER')`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `find_mirror(self, node)`
+
+```text
+Returns the mirrored node of the same type if it's in the scene.
+Else returns None
+```
+
+
+#### 🛠️ `find_twist_joints(self, jnt)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `get_driver(self, joint)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `make_ik_handle(self, start_joint, end_joint, solver_type, name)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `make_node(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `message_connect(self, node_a, node_b, longName_a, longName_b)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `parent_constrain(self, parent=None, child=None, maintain_offset=True)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `parent_module(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `parse_for_maya_attr(self, attr)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `setup_align_world(self, component, default_value=0)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+
+---

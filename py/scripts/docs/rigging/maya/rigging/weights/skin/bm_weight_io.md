@@ -1,13 +1,25 @@
-# Module: bm_weight_io
+# Reference Component: `bmaya.maya.rigging.weights.skin.bm_weight_io`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya\rigging\weights\skin\bm_weight_io.py`
-- **Full Hierarchy:** `bmaya.maya.rigging.weights.skin.bm_weight_io`
-- **Status:** Fast stub generation active.
+## Module Level Context
+No module documentation provided.
 
-### Scraped Symbols (AST Metadata Map)
+---
+## Object Taxonomy Reference
 
-#### Global Functions
-- `def parse_xml(...)` (Line 7)
-- `def export_weights(...)` (Line 20)
-- `def import_weights(...)` (Line 43)
+### 🛠️ `export_weights(path='D:/Documents/Google Drive/01 BFA/Thesis Project Local Files/Rig/skin_library/Alpha/')`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `import_weights(path='D:/Documents/Google Drive/01 BFA/Thesis Project Local Files/Rig/skin_library/Alpha/')`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `parse_xml(filepath)`
+
+```text
+No functional arguments or usage blocks specified.
+```

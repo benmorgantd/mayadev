@@ -1,13 +1,27 @@
-# Module: nameUtils
+# Reference Component: `bmaya.maya.util.nameUtils`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya\util\nameUtils.py`
-- **Full Hierarchy:** `bmaya.maya.util.nameUtils`
-- **Status:** Fast stub generation active.
+## Module Level Context
+Purpose:
+Utility functions for working with names in maya. These are used by various components to perform common tasks
+that involve naming, such as naming joints and controls based on a consistent naming convention.
 
-### Scraped Symbols (AST Metadata Map)
+---
+## Object Taxonomy Reference
 
-#### Global Functions
-- `def name_selection(...)` (Line 12)
-- `def find_control_name(...)` (Line 30)
-- `def find_joint_name(...)` (Line 42)
+### 🛠️ `find_control_name(node, identifier=None)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `find_joint_name(node, identifier=None, count=0, suffix='DRIVER')`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `name_selection(selection, name='joint', side='L', suffix='JNT')`
+
+```text
+No functional arguments or usage blocks specified.
+```

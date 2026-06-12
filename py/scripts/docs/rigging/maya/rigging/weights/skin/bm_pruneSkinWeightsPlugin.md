@@ -1,26 +1,93 @@
-# Module: bm_pruneSkinWeightsPlugin
+# Reference Component: `bmaya.maya.rigging.weights.skin.bm_pruneSkinWeightsPlugin`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya\rigging\weights\skin\bm_pruneSkinWeightsPlugin.py`
-- **Full Hierarchy:** `bmaya.maya.rigging.weights.skin.bm_pruneSkinWeightsPlugin`
-- **Status:** Fast stub generation active.
+## Module Level Context
+No module documentation provided.
 
-### Scraped Symbols (AST Metadata Map)
-#### Classes
-- **`class PruneWeights`** (Line 10)
-    - `def __init__(self, ...)` (Line 11)
-    - `def isUndoable(self, ...)` (Line 18)
-    - `def doIt(self, ...)` (Line 23)
-    - `def redoIt(self, ...)` (Line 26)
-    - `def undoIt(self, ...)` (Line 30)
-    - `def pruneWeightList(self, ...)` (Line 34)
-    - `def getSkinCluster(self, ...)` (Line 59)
-    - `def pruneSkinWeights(self, ...)` (Line 83)
+---
+## Object Taxonomy Reference
 
-#### Global Functions
-- `def cmdCreator(...)` (Line 175)
-- `def initializePlugin(...)` (Line 179)
-- `def uninitializePlugin(...)` (Line 187)
+### 🏷️ `CLASS` :: **PruneWeights**
 
-#### Global Variables / Constants
-- `kPluginCmdName` (Line 7)
+**Description Summary:**
+No class descriptions detailed.
+
+#### Methods & Interceptors
+
+#### 🛠️ `__init__(self)`
+
+```text
+Initialize self.  See help(type(self)) for accurate signature.
+```
+
+
+#### 🛠️ `doIt(self, args)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `getSkinCluster(self, dag)`
+
+```text
+A convenience function for finding the skinCluster deforming a mesh.
+
+params:
+  dag (MDagPath): A MDagPath for the mesh we want to investigate.
+```
+
+
+#### 🛠️ `isUndoable(self)`
+
+```text
+To make this command undoable, we need to override this function to return True
+```
+
+
+#### 🛠️ `pruneSkinWeights(self, maxInfluence=4)`
+
+```text
+Sets the weights for each vertex to the average of its neighbors.
+```
+
+
+#### 🛠️ `pruneWeightList(self, weights, maxInfluence=4)`
+
+```text
+Prunes the given list to have only four non-zero values
+```
+
+
+#### 🛠️ `redoIt(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `undoIt(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+
+---
+### 🛠️ `cmdCreator()`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `initializePlugin(mObject)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `uninitializePlugin(mObject)`
+
+```text
+No functional arguments or usage blocks specified.
+```

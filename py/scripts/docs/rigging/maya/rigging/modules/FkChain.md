@@ -1,42 +1,193 @@
-Here is the generated Markdown documentation for the `FkChain` module:
+# Reference Component: `bmaya.maya.rigging.modules.FkChain`
 
-# Module: FkChain
-### Pipeline Intent
-The `FkChain` module is designed to create a forward kinematic (FK) chain of joints in Maya. It allows users to specify start and end joints, as well as exclude certain joints from the chain.
+## Module Level Context
+No module documentation provided.
 
-### Technical Implementation
-The `FkChain` class inherits from `module.Module`, which provides basic functionality for rigging modules. The class has several attributes: `start_joint`, `end_joint`, `exclude`, `name`, `character`, `parent`, `shape_type`, `mirror`, and `align_world`. These attributes are used to customize the FK chain's behavior.
+---
+## Object Taxonomy Reference
 
-The `__init__` method initializes the module, setting its name, type, character, shape type, mirror side, and alignment world. It also sets the parent joint, start joint, end joint (if specified), and exclusion list.
+### 🏷️ `CLASS` :: **FkChain**
 
-The `build` method is decorated with `@wrapBuild`, which indicates that it should be executed in a build context. This method finds the joints that belong in the chain using the `find_hierarchy_joints` method, creates drive joints using the `create_drive_joints` method, and builds FK controls using the `build_fk_controls` method.
+**Description Summary:**
+No class descriptions detailed.
 
-### Overview
-The `FkChain` module provides a way to create complex FK chains in Maya. It can be used to create realistic character animations by specifying start and end joints, as well as excluding certain joints from the chain.
+#### Methods & Interceptors
 
-### Cross-Module Dependencies
-* **Internal Framework Links:** `module`, `base.decorators`, `shapes.shapelib`, `util.nameUtils`
-* **External Dependencies:** None
+#### 🛠️ `__init__(self, start_joint=None, end_joint=None, exclude=[], name='FkChain1', character=None, parent=None, shapeType='cube', mirror=False, side='L', alignWorld=False)`
 
-## API Taxonomy Reference
+```text
+Initialize self.  See help(type(self)) for accurate signature.
+```
 
-### 🏷️ `CLASS` :: `FkChain`
-**Purpose:** Create a forward kinematic (FK) chain of joints in Maya.
 
-**Attributes:**
+#### 🛠️ `add_node_attrs(self)`
 
-- `start_joint`: The starting joint of the FK chain.
-- `end_joint`: The ending joint of the FK chain. If not specified, the chain will expand through the DAG and trim itself at excluded joints.
-- `exclude`: A list of joints to exclude from the FK chain.
-- `name`: The name of the FK chain module.
-- `character`: The character associated with the FK chain.
-- `parent`: The parent joint of the FK chain.
-- `shape_type`: The shape type of the FK chain (e.g., "cube").
-- `mirror`: A boolean indicating whether to mirror the FK chain.
-- `side`: The side of the body (L or R) for mirroring.
-- `align_world`: A boolean indicating whether to align the FK chain with the world.
+```text
+No functional arguments or usage blocks specified.
+```
 
-#### Methods:
 
-- `__init__(self, ...)`: Initializes the FK chain module.
-- `build(self)`: Builds the FK chain using the specified joints and attributes.
+#### 🛠️ `blend_chains(self, fk_chain, ik_chain, child_chain, drive_attribute)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `build(self, *args, **kwargs)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `build_fk_controls(self, drive_joints, setup_align_world=False)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `capture_component_defaults(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `check_contract(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `connect_bind_joints(self)`
+
+```text
+Connects the module's bind joints to their control
+```
+
+
+#### 🛠️ `connect_components(self)`
+
+```text
+Connects the module's compenents to the module
+```
+
+
+#### 🛠️ `create_drive_joint(self, jnt, label='Driver', constrain=True)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `create_drive_joints(self, label='DRIVER', constrain=True)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `determine_parent(self, parent)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `do_mirror(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `find_hierarchy_joints(self, shortest_distance=False, start_joint=None, end_joint=None, exclude=[])`
+
+```text
+Expands from a start joint and until it hits excluded joints.
+```
+
+
+#### 🛠️ `find_joint_name(self, node, identifier=None, count=0, suffix='DRIVER')`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `find_mirror(self, node)`
+
+```text
+Returns the mirrored node of the same type if it's in the scene.
+Else returns None
+```
+
+
+#### 🛠️ `find_twist_joints(self, jnt)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `get_driver(self, joint)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `make_ik_handle(self, start_joint, end_joint, solver_type, name)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `make_node(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `message_connect(self, node_a, node_b, longName_a, longName_b)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `parent_constrain(self, parent=None, child=None, maintain_offset=True)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `parent_module(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `parse_for_maya_attr(self, attr)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `setup_align_world(self, component, default_value=0)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+
+---

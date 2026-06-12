@@ -1,123 +1,30 @@
-site_name: bmaya Documentation
+site_name: bmaya Pipeline Documentation
+site_description: Rigging & Tool Pipeline Framework Architecture
 
 theme:
   name: material
-  features:
-    - search.suggest
-    - search.highlight
-  
-  # --- DARK MODE & PALETTE TOGGLE SETUP ---
   palette:
-    # Scheme toggle for Dark Mode
     - scheme: slate
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
-      # Scheme toggle for Light Mode
-    - scheme: default
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
+      primary: teal
+      accent: cyan
+  features:
+    - navigation.tabs
+    - navigation.top
+    - search.suggest
 
-plugins:
-  - search
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
 
+# Managed automatically by your batch suite post-run callback loop
 nav:
   - Home: index.md
-  - core:
-    - batch:
-      - base_batch_framework: rigging/core/batch/base_batch_framework.md
-    - constants: rigging/core/constants.md
-    - decorators: rigging/core/decorators.md
-    - log: rigging/core/log.md
-    - tool_registry: rigging/core/tool_registry.md
-    - util:
-      - fileUtils: rigging/core/util/fileUtils.md
-      - listUtils: rigging/core/util/listUtils.md
-  - guides:
-    - How To Build a Rig: guides/How To Build a Rig.md
-    - Mayadev Env Setup: guides/Mayadev Env Setup.md
-  - maya:
-    - asset:
-      - asset: rigging/maya/asset/asset.md
-      - components:
-        - animRig: rigging/maya/asset/components/animRig.md
-        - build: rigging/maya/asset/components/build.md
-        - component: rigging/maya/asset/components/component.md
-        - cvs: rigging/maya/asset/components/cvs.md
-        - facePoses: rigging/maya/asset/components/facePoses.md
-        - mayaComponent: rigging/maya/asset/components/mayaComponent.md
-        - mesh: rigging/maya/asset/components/mesh.md
-        - postops: rigging/maya/asset/components/postops.md
-        - skeleton: rigging/maya/asset/components/skeleton.md
-        - weights: rigging/maya/asset/components/weights.md
-    - batch:
-      - maya_batch_framework: rigging/maya/batch/maya_batch_framework.md
-      - runner: rigging/maya/batch/runner.md
-    - constants: rigging/maya/constants.md
-    - modeling:
-      - blendBoundary: rigging/maya/modeling/blendBoundary.md
-    - rigging:
-      - base:
-        - decorators: rigging/maya/rigging/base/decorators.md
-        - layout: rigging/maya/rigging/base/layout.md
-        - module: rigging/maya/rigging/base/module.md
-        - rig: rigging/maya/rigging/base/rig.md
-      - buildio: rigging/maya/rigging/buildio.md
-      - constants: rigging/maya/rigging/constants.md
-      - joint: rigging/maya/rigging/joint.md
-      - modules:
-        - Arm: rigging/maya/rigging/modules/Arm.md
-        - Face: rigging/maya/rigging/modules/Face.md
-        - FkChain: rigging/maya/rigging/modules/FkChain.md
-        - FkTwist: rigging/maya/rigging/modules/FkTwist.md
-        - IkChain: rigging/maya/rigging/modules/IkChain.md
-        - IkFkChain: rigging/maya/rigging/modules/IkFkChain.md
-        - Leg: rigging/maya/rigging/modules/Leg.md
-        - NeckHead: rigging/maya/rigging/modules/NeckHead.md
-        - SingleJoint: rigging/maya/rigging/modules/SingleJoint.md
-        - Spline: rigging/maya/rigging/modules/Spline.md
-        - _Foot: rigging/maya/rigging/modules/_Foot.md
-        - _ThreeJointIkFkTwist: rigging/maya/rigging/modules/_ThreeJointIkFkTwist.md
-        - __Ribbon: rigging/maya/rigging/modules/__Ribbon.md
-      - rigTools: rigging/maya/rigging/rigTools.md
-      - shapes:
-        - shapeio: rigging/maya/rigging/shapes/shapeio.md
-        - shapelib: rigging/maya/rigging/shapes/shapelib.md
-      - weights:
-        - skin:
-          - averageVertexSkinWeightBrush: rigging/maya/rigging/weights/skin/averageVertexSkinWeightBrush.md
-          - averageVertexSkinWeightCmd: rigging/maya/rigging/weights/skin/averageVertexSkinWeightCmd.md
-          - bm_copyWeights: rigging/maya/rigging/weights/skin/bm_copyWeights.md
-          - bm_extrude_weights: rigging/maya/rigging/weights/skin/bm_extrude_weights.md
-          - bm_findUnderInfluencedVerts: rigging/maya/rigging/weights/skin/bm_findUnderInfluencedVerts.md
-          - bm_pruneSkinWeightsPlugin: rigging/maya/rigging/weights/skin/bm_pruneSkinWeightsPlugin.md
-          - bm_smoothSkinWeights: rigging/maya/rigging/weights/skin/bm_smoothSkinWeights.md
-          - bm_smooth_skinned_curve: rigging/maya/rigging/weights/skin/bm_smooth_skinned_curve.md
-          - bm_softCluster: rigging/maya/rigging/weights/skin/bm_softCluster.md
-          - bm_weight_io: rigging/maya/rigging/weights/skin/bm_weight_io.md
-          - cvshapeinverter: rigging/maya/rigging/weights/skin/cvshapeinverter.md
-          - cvshapeinverter_plugin: rigging/maya/rigging/weights/skin/cvshapeinverter_plugin.md
-        - weightio: rigging/maya/rigging/weights/weightio.md
-        - weightutils: rigging/maya/rigging/weights/weightutils.md
-    - util:
-      - boundingBoxUtils: rigging/maya/util/boundingBoxUtils.md
-      - dagUtils: rigging/maya/util/dagUtils.md
-      - dgUtils: rigging/maya/util/dgUtils.md
-      - mathUtils: rigging/maya/util/mathUtils.md
-      - nameUtils: rigging/maya/util/nameUtils.md
-      - selectionUtils: rigging/maya/util/selectionUtils.md
-  - maya_ui:
-    - namingTool:
-      - namingTool: rigging/maya_ui/namingTool/namingTool.md
-    - qtbase: rigging/maya_ui/qtbase.md
-    - rigManager:
-      - assetCreator: rigging/maya_ui/rigManager/assetCreator.md
-      - customWidgets: rigging/maya_ui/rigManager/customWidgets.md
-      - rigManager: rigging/maya_ui/rigManager/rigManager.md
-    - tool_views:
-      - tool_menu: rigging/maya_ui/tool_views/tool_menu.md
+  - Manual Guides:
+    - Architecture Overview: guides/architecture_overview.md
+  - API Reference:
+    - Core:
+      - Eventsregistry: rigging/core/eventsregistry.md
+      - Log: rigging/core/log.md
+    - Utils:
+      - Decorators: rigging/utils/decorators.md

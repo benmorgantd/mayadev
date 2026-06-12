@@ -1,14 +1,35 @@
-# Module: dagUtils
+# Reference Component: `bmaya.maya.util.dagUtils`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya\util\dagUtils.py`
-- **Full Hierarchy:** `bmaya.maya.util.dagUtils`
-- **Status:** Fast stub generation active.
+## Module Level Context
+Purpose:
+Utility functions for working with the DAG in maya. These are used by various components to perform common
+tasks on DAG nodes, such as getting children, parents, etc.
 
-### Scraped Symbols (AST Metadata Map)
+---
+## Object Taxonomy Reference
 
-#### Global Functions
-- `def get_children(...)` (Line 10)
-- `def get_all_children(...)` (Line 19)
-- `def get_parent(...)` (Line 23)
-- `def get_dag_path(...)` (Line 30)
+### 🛠️ `get_all_children(dag_node, of_type=None)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `get_children(dagNode, ofType=None, all_descendents=False)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+### 🛠️ `get_dag_path(node)`
+
+```text
+Get the MDagPath for a given node.
+
+:return MDagPath: The MDagPath for the given node.
+```
+
+### 🛠️ `get_parent(dag_node, ofType=None)`
+
+```text
+No functional arguments or usage blocks specified.
+```

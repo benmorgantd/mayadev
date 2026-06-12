@@ -1,11 +1,13 @@
-# Module: bm_findUnderInfluencedVerts
+# Reference Component: `bmaya.maya.rigging.weights.skin.bm_findUnderInfluencedVerts`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya\rigging\weights\skin\bm_findUnderInfluencedVerts.py`
-- **Full Hierarchy:** `bmaya.maya.rigging.weights.skin.bm_findUnderInfluencedVerts`
-- **Status:** Fast stub generation active.
+## Module Level Context
+No module documentation provided.
 
-### Scraped Symbols (AST Metadata Map)
+---
+## Object Taxonomy Reference
 
-#### Global Functions
-- `def find_under_influenced_verts(...)` (Line 5)
+### 🛠️ `find_under_influenced_verts(max_influences=4)`
+
+```text
+No functional arguments or usage blocks specified.
+```

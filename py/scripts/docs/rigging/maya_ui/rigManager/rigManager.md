@@ -1,34 +1,178 @@
-# Module: rigManager
+# Reference Component: `bmaya.maya_ui.rigManager.rigManager`
 
-### 🔬 DEBUG MODE MOCK DOCS
-- **Source Path:** `C:\Users\morga\Documents\mayadev\py\scripts\bmaya\maya_ui\rigManager\rigManager.py`
-- **Full Hierarchy:** `bmaya.maya_ui.rigManager.rigManager`
-- **Status:** Fast stub generation active.
+## Module Level Context
+No module documentation provided.
 
-### Scraped Symbols (AST Metadata Map)
-#### Classes
-- **`class RigManager`** (Line 20)
-    - `def __init__(self, ...)` (Line 21)
-    - `def setupUI(self, ...)` (Line 38)
-    - `def setupFileMenu(self, ...)` (Line 56)
-    - `def setupAssetMenu(self, ...)` (Line 89)
-    - `def setupCVsMenu(self, ...)` (Line 98)
-    - `def openAssetInExplorer(self, ...)` (Line 107)
-    - `def launchAssetWidget(self, ...)` (Line 115)
-    - `def setupButtons(self, ...)` (Line 123)
-    - `def loadModules(self, ...)` (Line 129)
-    - `def saveComponent(self, ...)` (Line 139)
-    - `def loadComponent(self, ...)` (Line 158)
-    - `def referenceComponent(self, ...)` (Line 169)
-    - `def buildCharacter(self, ...)` (Line 178)
-    - `def exploreToBuildPath(self, ...)` (Line 185)
-    - `def loadBuild(self, ...)` (Line 196)
-    - `def saveBuild(self, ...)` (Line 223)
-    - `def resetBuildList(self, ...)` (Line 246)
-    - `def getConfigData(self, ...)` (Line 251)
-    - `def addRecentFile(self, ...)` (Line 256)
-    - `def mirrorCvData(self, ...)` (Line 269)
-    - `def removeSelectedCVData(self, ...)` (Line 273)
+---
+## Object Taxonomy Reference
 
-#### Global Functions
-- `def run(...)` (Line 280)
+### 🏷️ `CLASS` :: **RigManager**
+
+**Description Summary:**
+QWidget(self, parent: Optional[PySide6.QtWidgets.QWidget] = None, f: PySide6.QtCore.Qt.WindowType = Default(Qt.WindowFlags)) -> None
+
+#### Methods & Interceptors
+
+#### 🛠️ `__init__(self, parent=None, designerFile=None, title='Rig Manager')`
+
+```text
+__init__(self, parent: Optional[PySide6.QtWidgets.QWidget] = None, f: PySide6.QtCore.Qt.WindowType = Default(Qt.WindowFlags)) -> None
+
+Initialize self.  See help(type(self)) for accurate signature.
+```
+
+
+#### 🛠️ `addRecentFile(self, filepath)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `buildCharacter(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `dock(self, width=385, height=735)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `exploreToBuildPath(self, action='Open', fileMode=1)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `getConfigData(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `launchAssetWidget(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `loadBuild(self, filepath=None)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `loadComponent(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `loadModules(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `mirrorCvData(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `openAssetInExplorer(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `referenceComponent(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `removeSelectedCVData(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `resetBuildList(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `saveBuild(self, filepath=None)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `saveComponent(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `setupAssetMenu(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `setupButtons(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `setupCVsMenu(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `setupFileMenu(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+#### 🛠️ `setupUI(self)`
+
+```text
+No functional arguments or usage blocks specified.
+```
+
+
+
+---
+### 🛠️ `run()`
+
+```text
+No functional arguments or usage blocks specified.
+```
