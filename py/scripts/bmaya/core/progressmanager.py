@@ -1,3 +1,5 @@
+"""Singleton class for tracking the progress of different tasks, which a UI can watch to update itself."""
+
 import traceback
 from typing import Optional, Callable
 from . import log
@@ -35,7 +37,7 @@ class ProgressManager:
         self.current_value = min(value, self.max_value)
         if status is not None:
             self.status_text = status
-        log.debug(f'[ProgressManager] {value}% - {status}')
+        log.debug(f"[ProgressManager] {value}% - {status}")
         self._trigger_update()
 
     def increment(self, amount: int = 1, status: Optional[str] = None) -> None:

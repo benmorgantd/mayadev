@@ -1,3 +1,5 @@
+"""Base class for a user-facing tool which can be kept within a registry and shown in different views."""
+
 import os
 import json
 import uuid
@@ -8,7 +10,15 @@ from . import log
 class Tool(object):
     """Encapsulates the core data configuration and execution logic for a single tool."""
 
-    def __init__(self, name: str, script: str, short_name: str | None = None, icon: str | None = None, enabled: bool = True, guid: str | None = None) -> None:
+    def __init__(
+        self,
+        name: str,
+        script: str,
+        short_name: str | None = None,
+        icon: str | None = None,
+        enabled: bool = True,
+        guid: str | None = None,
+    ) -> None:
         self.guid = guid or str(uuid.uuid4())
         self.name = name
         self.short_name = short_name or name

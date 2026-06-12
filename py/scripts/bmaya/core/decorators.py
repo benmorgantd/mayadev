@@ -1,3 +1,5 @@
+"""General decorators for pure python and a function to create a decorator out of a function"""
+
 import time
 from functools import wraps
 
@@ -8,6 +10,10 @@ def decorator_maker(meta_decorator):
     """
     A base decorator that wraps a function, transforming it into
     a reusable decorator that preserves metadata cleanly.
+
+    Wrap a generic function in this to make it a decorator.
+    The fn must have the args (func, *args, **kwargs) and return the result. It can do things
+    then before and after executing the result.
     """
 
     @wraps(meta_decorator)

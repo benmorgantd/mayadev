@@ -1,3 +1,5 @@
+"""Utilities related to working with files and versioning them."""
+
 import os
 
 import shutil

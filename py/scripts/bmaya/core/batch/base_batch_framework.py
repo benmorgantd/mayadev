@@ -1,3 +1,5 @@
+"""Framework for launching batch scripts over a list of files, which also handles log output and organization."""
+
 import os
 import sys
 import json

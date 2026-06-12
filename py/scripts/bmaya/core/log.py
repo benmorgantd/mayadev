@@ -1,3 +1,5 @@
+"""Logging wrapper for Maya, including handles for if we are in batch mode or not."""
+
 import sys
 import logging
 import maya.api.OpenMaya as om
@@ -5,8 +7,10 @@ import bmaya.maya.constants
 
 _LOGGER = None
 
+
 class MayaLogHandler(logging.Handler):
     """Redirects standard Python logging records to native Maya GUI elements."""
+
     def emit(self, record: logging.LogRecord) -> None:
         try:
             msg = self.format(record)
@@ -19,13 +23,14 @@ class MayaLogHandler(logging.Handler):
         except Exception:
             self.handleError(record)
 
+
 def init_logger() -> logging.Logger:
     """Explicitly initializes and configures the master bmaya logger."""
     global _LOGGER
 
     logger_name = "bmaya"
     _LOGGER = logging.getLogger(logger_name)
-    
+
     # Keep the logger at DEBUG so it can capture all event types
     _LOGGER.setLevel(logging.DEBUG)
 
@@ -37,9 +42,11 @@ def init_logger() -> logging.Logger:
 
     # Branch logging behavior for headless batch execution
     if bmaya.maya.constants.IS_BATCH:
-        log_format = "[%(name)s][%(asctime)s.%(msecs)02d][%(filename)s:%(lineno)d] %(message)s"
+        log_format = (
+            "[%(name)s][%(asctime)s.%(msecs)02d][%(filename)s:%(lineno)d] %(message)s"
+        )
         formatter = logging.Formatter(log_format, datefmt="%H:%M:%S")
-        
+
         # Target sys.stdout so the framework's StreamTee can intercept it
         stdout_handler = logging.StreamHandler(sys.stdout)
         stdout_handler.setFormatter(formatter)
@@ -47,7 +54,9 @@ def init_logger() -> logging.Logger:
         _LOGGER.addHandler(stdout_handler)
     else:
         # Standard Interactive UI Configuration
-        log_format = "[%(name)s][%(asctime)s.%(msecs)02d][%(filename)s:%(lineno)d] %(message)s"
+        log_format = (
+            "[%(name)s][%(asctime)s.%(msecs)02d][%(filename)s:%(lineno)d] %(message)s"
+        )
         formatter = logging.Formatter(log_format, datefmt="%H:%M:%S")
         handler = MayaLogHandler()
         handler.setFormatter(formatter)
@@ -57,23 +66,28 @@ def init_logger() -> logging.Logger:
     _LOGGER.propagate = False
     return _LOGGER
 
+
 def get_logger() -> logging.Logger:
     global _LOGGER
     if _LOGGER is None:
         return init_logger()
     return _LOGGER
 
+
 def debug(msg, *args, **kwargs) -> None:
     kwargs.setdefault("stacklevel", 2)
     get_logger().debug(msg, *args, **kwargs)
+
 
 def info(msg, *args, **kwargs) -> None:
     kwargs.setdefault("stacklevel", 2)
     get_logger().info(msg, *args, **kwargs)
 
+
 def warning(msg, *args, **kwargs) -> None:
     kwargs.setdefault("stacklevel", 2)
     get_logger().warning(msg, *args, **kwargs)
+
 
 def error(msg, *args, **kwargs) -> None:
     if "exc_info" not in kwargs and sys.exc_info()[0] is not None:

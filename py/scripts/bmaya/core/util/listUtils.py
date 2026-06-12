@@ -1,4 +1,7 @@
+"""Utilities for working with lists in Python"""
+
 from typing import Any
+
 
 def firstOrDefault(iterable: list, default: Any = None) -> Any:
     try:
