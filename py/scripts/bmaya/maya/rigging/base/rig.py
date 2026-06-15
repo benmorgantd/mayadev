@@ -28,6 +28,7 @@ import bmaya.maya.constants
 from . import layout
 
 
+# TODO: the rig shouldn't be the topmost node, that should be more like an "asset" node
 class Rig(Asset):
     """Rig is the base class for all rigs
 
@@ -44,6 +45,8 @@ class Rig(Asset):
 
     def __init__(self, asset_id, has_face=True):
         super(Rig, self).__init__(asset_id)
+
+        # TODO: is there anything identifying this as a Rig node?
 
         self.has_face = has_face
         self.skin_clusters = []
@@ -110,18 +113,18 @@ class Rig(Asset):
         # load required plugins
         self.load_plugins()
 
-        pmanager.update(15, 'Making character node')
+        pmanager.update(15, "Making character node")
 
         self.make_node()
 
-        pmanager.update(20, 'Reading build file')
+        pmanager.update(20, "Reading build file")
 
         # open up the character's build file (json)
         self.build_data = buildio.load(self.build.full_path)
 
         build_list = []
 
-        pmanager.update(25, 'Building layout rig')
+        pmanager.update(25, "Building layout rig")
 
         layout_dict, layout_components = self.build_layout()
         self.modules.append(layout_dict)
@@ -137,7 +140,7 @@ class Rig(Asset):
             for child in mod["children"]:
                 add_children(child)
 
-        pmanager.update(30, 'Flattening build tree')
+        pmanager.update(30, "Flattening build tree")
 
         for mod in self.build_data:
             if mod["children"]:
@@ -147,7 +150,7 @@ class Rig(Asset):
                 self.add_module(mod)
                 build_list.append(mod)
 
-        pmanager.update(35, 'Building limbs')
+        pmanager.update(35, "Building limbs")
 
         if not build_list:
             raise RuntimeError
@@ -183,19 +186,19 @@ class Rig(Asset):
 
         self.modules += mirror_modules
 
-        pmanager.update(40, 'Making sets')
+        pmanager.update(40, "Making sets")
 
         self.ctrl_set = cmds.sets(self.all_controls, name="CTRL_set")
         if self.has_face:
             self.faceCtrlSet = cmds.sets(name="FACE_CTRL_set")
             cmds.sets(self.faceCtrlSet, edit=True, forceElement=self.ctrl_set)
 
-        pmanager.update(45, 'Adding skinning')
+        pmanager.update(45, "Adding skinning")
         # skinning after the components have been built allows us to create
         # bind joints
         self.skin()
 
-        pmanager.update(50, 'Writing character node attributes')
+        pmanager.update(50, "Writing character node attributes")
         self.add_node_attrs()
 
         for mod in self.modules:
@@ -207,7 +210,7 @@ class Rig(Asset):
                     ),
                 )
 
-        pmanager.update(55, 'Loading control shapes')
+        pmanager.update(55, "Loading control shapes")
         shapeio.load(self.component_path_from_type("cvs"))
 
         # progressWindow.setStatus('Loading weights')
@@ -221,22 +224,22 @@ class Rig(Asset):
         # create influences set
         self.bind_set = self.make_bind_set()
 
-        pmanager.update(60, 'Coloring controls')
+        pmanager.update(60, "Coloring controls")
         self.color_controls()
 
         cmds.refresh(currentView=True)
 
-        pmanager.update(85, 'Cleaning up')
+        pmanager.update(85, "Cleaning up")
         # scene cleanup:
         self.setup_mesh_referencing()
         self.lock_down_constraints()
 
         cmds.hide(cmds.ls(type="ikHandle"))
 
-        pmanager.update(95, 'Running post operations')
+        pmanager.update(95, "Running post operations")
         self.run_post_ops()
 
-        pmanager.update(100, 'Finished building rig')
+        pmanager.update(100, "Finished building rig")
         pmanager.end()
 
         cmds.file(rename=self.animRig.full_path)

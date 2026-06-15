@@ -5,22 +5,26 @@ from functools import wraps
 
 class EventType(object):
     """Enum-like class defining supported callback categories for pipeline organization.
-    
-    Using class attributes provides autocomplete support and centralized tracking 
+
+    Using class attributes provides autocomplete support and centralized tracking
     for the EventRegistry and its associated decorators.
     """
+
     MAYA_CLOSING = "maya_closing"
     NODE_ADDED = "node_added"
     SELECTION_CHANGED = "selection_changed"
+    SCENE_NEW = "scene_new"
+    SCENE_OPEN = "scene_open"
 
 
 class EventsRegistry(object):
     """Singleton registry responsible for managing OpenMaya API 2.0 callbacks.
-    
+
     Tracks, groups, pauses, and safely unregisters callbacks within a Maya session
-    to prevent memory leaks, execution loops, and scene corruption. Automatically 
+    to prevent memory leaks, execution loops, and scene corruption. Automatically
     cleans up all managed callbacks when Maya exits.
     """
+
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -32,15 +36,14 @@ class EventsRegistry(object):
     def __init__(self):
         if self._initialized:
             return
-        
+
         # Internal storage: { key_string: { id, type, api_reg_func, user_func, args, kwargs, paused } }
         self._callbacks = {}
         self._initialized = True
-        
+
         # Register automatic teardown on Maya shutdown
         self._shutdown_id = om.MSceneMessage.addCallback(
-            om.MSceneMessage.kMayaExiting, 
-            self._on_maya_shutdown
+            om.MSceneMessage.kMayaExiting, self._on_maya_shutdown
         )
 
     def _on_maya_shutdown(self, *args, **kwargs):
@@ -67,7 +70,9 @@ class EventsRegistry(object):
             int: The callback ID assigned by OpenMaya.
         """
         if key in self._callbacks:
-            log.warning(f"Callback key '{key}' already exists. Overwriting current callback.")
+            log.warning(
+                f"Callback key '{key}' already exists. Overwriting current callback."
+            )
             self.unregister(key)
 
         try:
@@ -83,49 +88,79 @@ class EventsRegistry(object):
             "user_func": user_func,
             "args": args,
             "kwargs": kwargs,
-            "paused": False
+            "paused": False,
         }
 
-        log.info(f'Registered callback {key} of type {cb_type}')
-        
+        log.info(f"Registered callback {key} of type {cb_type}")
+
         return cb_id
 
     # --- Specific Public API Wrappers ---
 
+    ### Scene Message ###
+
     def add_maya_closing_callback(self, key, callback_func):
         """MSceneMessage: Track when Maya is about to close / exit."""
         return self._register_core(
-            key, 
-            EventType.MAYA_CLOSING, 
-            om.MSceneMessage.addCallback, 
-            callback_func, 
-            om.MSceneMessage.kMayaExiting, 
-            callback_func, 
-            None
+            key,
+            EventType.MAYA_CLOSING,
+            om.MSceneMessage.addCallback,
+            callback_func,
+            om.MSceneMessage.kMayaExiting,
+            callback_func,
+            None,
         )
+
+    def add_maya_new_scene_callback(self, key, callback_func):
+        """MSceneMessage: Track when a new scene is created."""
+        return self._register_core(
+            key,
+            EventType.SCENE_NEW,
+            om.MSceneMessage.addCallback,
+            callback_func,
+            om.MSceneMessage.kAfterNew,
+            callback_func,
+            None,
+        )
+
+    def add_maya_open_scene_callback(self, key, callback_func):
+        """MSceneMessage: Fires after a scene is opened."""
+        return self._register_core(
+            key,
+            EventType.SCENE_OPEN,
+            om.MSceneMessage.addCallback,
+            callback_func,
+            om.MSceneMessage.kAfterOpen,
+            callback_func,
+            None,
+        )
+
+    ### Event Message ###
 
     def add_selection_changed_callback(self, key, callback_func):
         """MEventMessage: Track interactive object/component selection shifts in Maya."""
         return self._register_core(
-            key, 
-            EventType.SELECTION_CHANGED, 
-            om.MEventMessage.addEventCallback, 
-            callback_func, 
-            "SelectionChanged", 
-            callback_func, 
-            None
+            key,
+            EventType.SELECTION_CHANGED,
+            om.MEventMessage.addEventCallback,
+            callback_func,
+            "SelectionChanged",
+            callback_func,
+            None,
         )
+
+    ### DG Message ###
 
     def add_node_added_callback(self, key, callback_func, node_type="dependNode"):
         """MDGMessage: Track when a specific type of node is added to the dependency graph."""
         return self._register_core(
-            key, 
-            EventType.NODE_ADDED, 
-            om.MDGMessage.addNodeAddedCallback, 
-            callback_func, 
-            callback_func, 
-            node_type, 
-            None
+            key,
+            EventType.NODE_ADDED,
+            om.MDGMessage.addNodeAddedCallback,
+            callback_func,
+            callback_func,
+            node_type,
+            None,
         )
 
     # --- State Control Operations ---
@@ -141,16 +176,16 @@ class EventsRegistry(object):
         """
         if key not in self._callbacks:
             return False
-            
+
         cb_data = self._callbacks[key]
         if cb_data["id"] is not None:
             try:
                 om.MMessage.removeCallback(cb_data["id"])
-                log.info(f'Unregistered callback {key}')
+                log.info(f"Unregistered callback {key}")
             except RuntimeError:
                 # Handle cases where the node/context was already torn down by Maya
                 pass
-        
+
         del self._callbacks[key]
         return True
 
@@ -165,16 +200,16 @@ class EventsRegistry(object):
         """
         if key not in self._callbacks:
             return False
-            
+
         cb_data = self._callbacks[key]
         if cb_data["paused"] or cb_data["id"] is None:
             return False
-            
+
         try:
             om.MMessage.removeCallback(cb_data["id"])
         except RuntimeError:
             pass
-            
+
         cb_data["id"] = None
         cb_data["paused"] = True
         return True
@@ -190,15 +225,15 @@ class EventsRegistry(object):
         """
         if key not in self._callbacks:
             return False
-            
+
         cb_data = self._callbacks[key]
         if not cb_data["paused"]:
             return False
-            
+
         api_func = cb_data["api_reg_func"]
         args = cb_data["args"]
         kwargs = cb_data["kwargs"]
-        
+
         # Re-register using preserved tracking data
         cb_data["id"] = api_func(*args, **kwargs)
         cb_data["paused"] = False
@@ -222,16 +257,18 @@ class EventsRegistry(object):
 
 # --- Decorator Implementation ---
 
+
 def pause_callbacks(callback_types):
     """Decorator to temporarily pause execution of specific callback categories.
 
-    Uses a try-finally architecture to ensure that even if the decorated function 
-    encounters a critical error during execution, the target callbacks are guaranteed 
+    Uses a try-finally architecture to ensure that even if the decorated function
+    encounters a critical error during execution, the target callbacks are guaranteed
     to resume functionality.
 
     Args:
         callback_types (list): A list of EventType string variables to pause (e.g., [EventType.NODE_ADDED])
     """
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -250,6 +287,7 @@ def pause_callbacks(callback_types):
                 # Guaranteed cleanup/resume operations
                 for key in paused_keys:
                     registry.resume(key)
-                    
+
         return wrapper
+
     return decorator

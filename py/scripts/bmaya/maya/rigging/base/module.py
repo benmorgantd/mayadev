@@ -17,6 +17,7 @@ from bmaya.maya.util import nameUtils, mathUtils
 from bmaya.maya.rigging.shapes import shapelib
 
 
+# TODO: modules need to tag that they are a module/limb
 class Module(object):
     mirrorPairs = {"L": "R", "R": "L", "M": None}
 
