@@ -14,7 +14,17 @@ import time
 import maya.cmds as cmds
 
 from bmaya.maya.asset.asset import Asset
-from bmaya.maya.asset.components import *
+from bmaya.maya.asset.components import (
+    animRig,
+    build,
+    cvs,
+    weights,
+    build,
+    mesh,
+    skeleton,
+    postops,
+    facePoses,
+)
 from bmaya.core import log, decorators, progressmanager
 import bmaya.core.constants
 from bmaya.core.util import fileUtils
@@ -263,7 +273,13 @@ class Rig(Asset):
         if not self.node:
             raise RuntimeError("Character node does not exist yet for " + self.name)
 
+        added_attributes = []
+
         for attr in self.__dict__:
+            # TODO: we may want to avoid so much json stamping and do more wiring
+            # TODO: it appears like we might be double-stamping attributes
+            log.info(f"Adding module attribute {attr}")
+
             attrVal = self.__dict__[attr]
             attrType = type(attrVal)
 

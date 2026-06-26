@@ -4,6 +4,7 @@ such as getting the selected joints, etc.
 """
 
 import maya.cmds as cmds
+from bmaya.core.util import listUtils
 
 
 def get_selection(ofType=None):
@@ -14,5 +15,5 @@ def get_selection(ofType=None):
     )
 
 
-sl1 = lambda: get_selection()[0]
+sl1 = lambda: listUtils.firstOrDefault(get_selection())
 selected = lambda: get_selection()

@@ -13,8 +13,11 @@ import maya.cmds as cmds
 import maya.api.OpenMaya as om
 
 from bmaya.core import constants, log
-from bmaya.maya.util import nameUtils, mathUtils
+from bmaya.maya.util import nameUtils, mathUtils, dgUtils
 from bmaya.maya.rigging.shapes import shapelib
+
+MODULE_IDENTIFIER_STR = "isModule"
+MODULE_TYPE_STR = "modType"
 
 
 # TODO: modules need to tag that they are a module/limb
@@ -81,8 +84,15 @@ class Module(object):
             cmds.hide(self.driver_grp)
             cmds.parent(self.driver_grp, self.components_grp)
 
-            # print 'Created {0} node {1} <<'.format(self.mod_type,
-            # self.node)
+            # Tag node with identifying features for traversal
+            cmds.addAttr(
+                self.node,
+                attributeType="bool",
+                longName=MODULE_IDENTIFIER_STR,
+                defaultValue=True,
+            )
+
+            log.info(f"Created module node {self.name}")
         else:
             raise RuntimeError(
                 "Module of name {0} already exists.".format(
@@ -753,3 +763,21 @@ class Module(object):
             self.setup_align_world(components[0], default_value=self.align_world)
 
         return components
+
+
+def is_module_node(node):
+    return dgUtils.has_attribute(node, MODULE_IDENTIFIER_STR)
+
+
+def get_modules_in_scene(of_type=None):
+    all_modules = dgUtils.get_nodes_with_attribute(MODULE_IDENTIFIER_STR)
+
+    if of_type:
+        matching_modules = []
+
+        for mod in all_modules:
+            if dgUtils.get_string_attribute(mod, MODULE_TYPE_STR) == of_type:
+                matching_modules.append(mod)
+        return matching_modules
+    else:
+        return all_modules

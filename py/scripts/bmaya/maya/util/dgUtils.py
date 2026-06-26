@@ -11,7 +11,11 @@ def get_nodes_in_scene(ofType=None):
     return cmds.ls(type=ofType) if ofType is not None else cmds.ls()
 
 
-# TODO: attribute connections
+def get_nodes_with_attribute(attribute_name, of_type=None):
+    if of_type:
+        return cmds.ls(f"*.{attribute_name}", type=of_type, objectsOnly=True)
+    else:
+        return cmds.ls(f"*.{attribute_name}", objectsOnly=True)
 
 
 def get_mobject(node):
@@ -19,6 +23,35 @@ def get_mobject(node):
 
     :return MOBject: The MOBject for the given node.
     """
+    if isinstance(node, om.MObject):
+        return node
+
     sel = om.MSelectionList()
     sel.add(node)
     return sel.getDependNode(0)
+
+
+def has_attribute(node, attribute_name):
+    mobject = get_mobject(node)
+    mfn = om.MFnDependencyNode(mobject)
+    return mfn.hasAttribute(attribute_name)
+
+
+def get_attribute_plug(node, attribute_name):
+    mobject = get_mobject(node)
+
+    mfn = om.MFnDependencyNode(mobject)
+
+    if not mfn.hasAttribute(attribute_name):
+        raise AttributeError(f"{node} does not have attribute {attribute_name}")
+
+    plug = mfn.findPlug(attribute_name)
+    return plug
+
+
+def get_string_attribute(node, attribute_name):
+    plug = get_attribute_plug(node, attribute_name)
+    return plug.asString()
+
+
+# TODO: attribute connections
