@@ -11,6 +11,8 @@ from .decorators import wrapBuild
 from bmaya.maya.rigging.shapes import shapelib
 from bmaya.core import constants, log
 
+CHARACTER_IDENTIFIER_STR = "isCharacter"
+
 
 class Layout(module.Module):
     """Every rig must have a Layout module"""

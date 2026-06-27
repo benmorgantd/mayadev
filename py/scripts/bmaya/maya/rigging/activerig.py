@@ -5,48 +5,22 @@ Keeps track of the last selected rig in the scene, defaulting to the first.
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
-from bmaya.maya.eventsregistry import EventsRegistry, EventType
+from bmaya.maya.eventsregistry import EventsRegistry
+from bmaya.maya.rigging.base import module, rig
+from bmaya.maya.util import dgUtils
 
 
 def get_all_rig_roots():
-    """Finds all Rig nodes in the scene by searching for network nodes
-    containing a string attribute named 'node' that ends with '_CHAR'.
-    """
-    rig_roots = []
-    it = om.MItDependencyNodes(om.MFn.kAffect)
-
-    while not it.isDone():
-        mobj = it.thisNode()
-        fn_node = om.MFnDependencyNode(mobj)
-
-        if fn_node.hasAttribute("node"):
-            # TODO: we need a stronger identifier string than this
-            plug = fn_node.findPlug("node", False)
-            try:
-                attr_val = plug.asString()
-                if attr_val.endswith("_CHAR"):
-                    rig_roots.append(fn_node.name())
-            except RuntimeError:
-                pass
-        it.next()
-
-    return rig_roots
+    """Finds all Rig nodes in the scene"""
+    return dgUtils.get_nodes_with_attribute(rig.RIG_ROOT_IDENTIFIER)
 
 
 def get_rig_root(target):
     """Traverses upward from a given node (string name or MObject) via
     'character' or 'module' plug connections to locate the rig root node.
     """
-    if isinstance(target, str):
-        if not cmds.objExists(target):
-            return None
-        sel_list = om.MSelectionList()
-        sel_list.add(target)
-        current_mobj = sel_list.getDependNode(0)
-    elif isinstance(target, om.MObject):
-        current_mobj = target
-    else:
-        return None
+
+    current_mobj = dgUtils.get_mobject(target)
 
     # Resolve DG walk entry point if starting from a physical transform or joint
     if current_mobj.apiType() != om.MFn.kAffect:
@@ -71,13 +45,8 @@ def get_rig_root(target):
             break
         visited.add(node_name)
 
-        if fn_dep.hasAttribute("node"):
-            plug = fn_dep.findPlug("node", False)
-            try:
-                if plug.asString().endswith("_CHAR"):
-                    return node_name
-            except RuntimeError:
-                pass
+        if rig.is_rig_root(current_mobj):
+            return node_name
 
         next_mobj = None
         for attr_name in ["character", "module"]:

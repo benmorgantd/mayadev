@@ -149,10 +149,17 @@ class Module(object):
         return mayaAttrType, mayaAttrVal
 
     def add_node_attrs(self):
+        log.info("Adding node attributes")
         if not self.node:
             raise RuntimeError("Module node does not exist yet for " + self.name)
 
+        added_attributes = []
         for attrName, attrVal in self.__dict__.items():
+            if dgUtils.has_attribute(self.node, attrName):
+                log.warning(f"{attrName} already added to node {self.node}")
+                continue
+
+            log.info(f"Adding attribute {attrName} to module node {self.node}")
             attrType = type(attrVal)
 
             mayaAttrType, mayaAttrVal = self.parse_for_maya_attr(attrVal)
@@ -160,19 +167,31 @@ class Module(object):
             # add the attribute
 
             if mayaAttrType == "string":
-                cmds.addAttr(self.node, ln=attrName, dt="string", keyable=False)
+                dgUtils.safe_add_attr(
+                    self.node, longName=attrName, dt="string", keyable=False
+                )
                 cmds.setAttr(self.node + "." + attrName, mayaAttrVal, type="string")
+                dgUtils.set_attr_locked(self.node, attrName, True)
             elif mayaAttrType == "bool":
-                cmds.addAttr(
-                    self.node, ln=attrName, at="bool", dv=mayaAttrVal, keyable=False
+                dgUtils.safe_add_and_lock_attr(
+                    self.node,
+                    longName=attrName,
+                    at="bool",
+                    dv=mayaAttrVal,
+                    keyable=False,
                 )
             elif mayaAttrType == "message":
-                cmds.addAttr(self.node, ln=attrName, at=mayaAttrType, keyable=False)
+                dgUtils.safe_add_and_lock_attr(
+                    self.node,
+                    longName=attrName,
+                    at=mayaAttrType,
+                    keyable=False,
+                )
             else:
                 try:
-                    cmds.addAttr(
+                    dgUtils.safe_add_and_lock_attr(
                         self.node,
-                        ln=attrName,
+                        longName=attrName,
                         at=mayaAttrType,
                         dv=mayaAttrVal,
                         keyable=False,
@@ -297,6 +316,7 @@ class Module(object):
 
         # we might give it a specific joint parent
         if self.parent:
+            log.info(f"Parenting {self.node} to {self.parent}")
             # For Matrix Constraints we can't parentConstrain to the whole module group. We need to do to just the module's components
             # TODO: we'd have to do this for all groups under self.componentsGrp
             # TODO: we'd want to move the drivers group out
@@ -312,6 +332,7 @@ class Module(object):
             else:
                 parent_transform = constants.BOTTOM_LAYOUT_CONTROL
 
+            log.info(f"Parenting {self.node} to {parent_transform}")
             # Todo: this is where you could add a followSwitch option
             # ONLY constrain the components of the module, not the driver
             # joints, or else we'll get double transforms
@@ -399,6 +420,8 @@ class Module(object):
     def connect_components(self):
         """Connects the module's compenents to the module"""
 
+        log.info(f"Connecting components to {self.node}")
+
         for ctrl in self.components:
             if not cmds.objExists(ctrl.ctrl + ".module"):
                 cmds.addAttr(ctrl.ctrl, longName="module", attributeType="message")
@@ -409,6 +432,8 @@ class Module(object):
 
     def connect_bind_joints(self):
         """Connects the module's bind joints to their control"""
+
+        log.info(f"Connecting bind joints to {self.node}")
 
         for jnt in self.bind_joints:
             if not cmds.objExists(jnt + ".module"):

@@ -34,8 +34,11 @@ from bmaya.maya.rigging.weights import weightio
 from bmaya.maya.rigging import buildio
 from bmaya.maya.rigging import modules
 import bmaya.maya.constants
+from bmaya.maya.util import dgUtils
 
 from . import layout
+
+RIG_ROOT_IDENTIFIER = "is_rig_root"
 
 
 # TODO: the rig shouldn't be the topmost node, that should be more like an "asset" node
@@ -188,7 +191,7 @@ class Rig(Asset):
             mirror_instance = mod_instance.do_mirror()
 
             # optional, adds time.
-            cmds.refresh(currentView=True)
+            # cmds.refresh(currentView=True)
 
             if mirror_instance:
                 mirror_modules.append(mirror_instance.dict)
@@ -211,13 +214,23 @@ class Rig(Asset):
         pmanager.update(50, "Writing character node attributes")
         self.add_node_attrs()
 
+        # connect modules to rig
         for mod in self.modules:
-            if cmds.objExists(mod["name"] + "_" + bmaya.core.constants.MODULE_SUFFIX):
+            mod_node_name = f'{mod["name"]}_{bmaya.core.constants.MODULE_SUFFIX}'
+            if cmds.objExists(mod_node_name):
+                dgUtils.set_attr_locked(
+                    mod_node_name,
+                    "character",
+                    False,
+                )
                 cmds.connectAttr(
                     self.node + ".modules",
-                    "{0}_{1}.character".format(
-                        mod["name"], bmaya.core.constants.MODULE_SUFFIX
-                    ),
+                    f"{mod_node_name}.character",
+                )
+                dgUtils.set_attr_locked(
+                    mod_node_name,
+                    "character",
+                    True,
                 )
 
         pmanager.update(55, "Loading control shapes")
@@ -260,8 +273,8 @@ class Rig(Asset):
             cmds.viewFit(allObjects=True, fitFactor=1)
 
     def make_node(self):
-        if not cmds.objExists(self.name + "_CHAR"):
-            self.node = cmds.createNode("network", name=self.name + "_CHAR")
+        if not cmds.objExists(self.name + "_RIG"):
+            self.node = cmds.createNode("network", name=self.name + "_RIG")
 
             # create an attribute to glue other parts to the rig to
             cmds.addAttr(self.node, longName="connector", attributeType="message")
@@ -273,12 +286,20 @@ class Rig(Asset):
         if not self.node:
             raise RuntimeError("Character node does not exist yet for " + self.name)
 
+        # Add identifying attributes for the rig node
+        dgUtils.safe_add_and_lock_attr(
+            self.node,
+            longName=RIG_ROOT_IDENTIFIER,
+            attributeType="bool",
+            defaultValue=True,
+        )
+
         added_attributes = []
 
         for attr in self.__dict__:
             # TODO: we may want to avoid so much json stamping and do more wiring
             # TODO: it appears like we might be double-stamping attributes
-            log.info(f"Adding module attribute {attr}")
+            log.info(f"Adding module attribute {attr} to node {self.node}")
 
             attrVal = self.__dict__[attr]
             attrType = type(attrVal)
@@ -345,13 +366,22 @@ class Rig(Asset):
                 except AttributeError:
                     continue
 
-            if attrType == "string":
-                cmds.addAttr(self.node, ln=attr, dt="string", keyable=False)
-                cmds.setAttr(self.node + "." + attr, str(attrVal), type="string")
-            else:
-                cmds.addAttr(self.node, ln=attr, at=attrType, dv=attrVal, keyable=False)
+            if not dgUtils.has_attribute(self.node, attr):
+                if attrType == "string":
+                    dgUtils.safe_add_attr(self.node, attr, dt="string", keyable=False)
+                    cmds.setAttr(self.node + "." + attr, str(attrVal), type="string")
+                    cmds.setAttr(f"{self.node}.{attr}", lock=True)
 
-            cmds.setAttr(self.node + "." + attr, lock=True)
+                else:
+                    dgUtils.safe_add_and_lock_attr(
+                        self.node,
+                        longName=attr,
+                        at=attrType,
+                        dv=attrVal,
+                        keyable=False,
+                    )
+
+                added_attributes.append(attr)
 
     def skin(self):
         # check for existing weights files. If not then skin to skeleton set
@@ -596,3 +626,7 @@ class Rig(Asset):
         with open(self.postops.full_path, "r") as f:
             code = f.read()
             exec(code)
+
+
+def is_rig_root(node):
+    return dgUtils.has_attribute(node, RIG_ROOT_IDENTIFIER)

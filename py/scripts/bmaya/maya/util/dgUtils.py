@@ -55,3 +55,17 @@ def get_string_attribute(node, attribute_name):
 
 
 # TODO: attribute connections
+
+
+def set_attr_locked(node, attrName, locked):
+    cmds.setAttr(f"{node}.{attrName}", lock=locked)
+
+
+def safe_add_attr(node, longName, **kwargs):
+    if not has_attribute(node, longName):
+        cmds.addAttr(node, longName=longName, **kwargs)
+
+
+def safe_add_and_lock_attr(node, longName, **kwargs):
+    safe_add_attr(node, longName, **kwargs)
+    set_attr_locked(node, longName, True)
