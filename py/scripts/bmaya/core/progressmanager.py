@@ -1,6 +1,6 @@
 """Singleton class for tracking the progress of different tasks, which a UI can watch to update itself."""
 
-import traceback
+import weakref
 from typing import Optional, Callable
 from . import log
 
@@ -20,7 +20,7 @@ class ProgressManager:
         self.status_text: str = "Ready"
         self.current_value: int = 0
         self.max_value: int = 100
-        self._on_update_callback: Optional[Callable[[], None]] = None
+        self._on_update_callback: Optional[weakref.WeakMethod] = None
 
     def start(self, status: str, max_value: int = 100) -> None:
         """Explicitly kick off a progress tracking session."""
@@ -51,12 +51,22 @@ class ProgressManager:
         self._trigger_update()
 
     def register_callback(self, callback: Callable[[], None]) -> None:
-        """Hook for the UI to listen for updates."""
-        self._on_update_callback = callback
+        """Hook for the UI to listen for updates using weak methods safely."""
+        if hasattr(callback, "__self__"):
+            # Hold a STRONG reference to the instance (the window) to stop GC
+            self._ui_window = callback.__self__
+            self._on_update_callback = weakref.WeakMethod(callback)
+        else:
+            self._on_update_callback = weakref.ref(callback)
 
     def _trigger_update(self) -> None:
         if self._on_update_callback:
-            self._on_update_callback()
+            callback = self._on_update_callback()
+            if callback is not None:
+                callback()
+            else:
+                # Clean up if the reference dead-ended
+                self._on_update_callback = None
 
     # --- Context Manager Support for Exception Handling ---
     def __enter__(self) -> "ProgressManager":
@@ -65,7 +75,6 @@ class ProgressManager:
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         """Ensures that progress resets/ends cleanly even if an exception occurs."""
         if exc_type is not None:
-            # Optional: Log the failure details locally before closing down
             log.error(f"[ProgressManager] Execution failed {exc_val}")
 
         self.end()

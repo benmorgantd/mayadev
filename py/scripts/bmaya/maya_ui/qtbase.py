@@ -91,7 +91,7 @@ class Table(QtWidgets.QTableWidget):
         self.setAlternatingRowColors(True)
         self.horizontalHeader().hide()
         self.verticalHeader().hide()
-        
+
         # PySide6 Scoped Enums
         self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
 
@@ -173,7 +173,7 @@ class TreeItem(QtWidgets.QTreeWidgetItem):
         item = self
         while item.parent():
             _parents.append(item.parent())
-            item = item.parent() 
+            item = item.parent()
         return _parents
 
     @property
@@ -210,10 +210,10 @@ class DockableWidget(SimpleWidget):
 
         dockPtr = omui.MQtUtil.findControl(dockControl)
         dockWidget = shiboken6.wrapInstance(int(dockPtr), QtWidgets.QWidget)
-        
+
         dockWidget.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
 
-        target_widget = self.widget if hasattr(self, 'widget') else self
+        target_widget = self.widget if hasattr(self, "widget") else self
 
         if dockWidget.layout():
             dockWidget.layout().addWidget(target_widget)
@@ -232,7 +232,9 @@ class Dialog(QtWidgets.QDialog):
         parent = parent or get_maya_main_window()
         super(Dialog, self).__init__(parent)
 
-        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint)
+        self.setWindowFlags(
+            self.windowFlags() & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint
+        )
         self.mainLayout = QtWidgets.QVBoxLayout()
         self.setLayout(self.mainLayout)
         self.setWindowTitle(windowTitle)
@@ -240,11 +242,12 @@ class Dialog(QtWidgets.QDialog):
 
 class ConfirmDialog(Dialog):
     """Modal confirm dialog that pauses execution and returns a boolean result."""
+
     def __init__(self, message, parent=None, windowTitle="Confirm Dialog"):
         super(ConfirmDialog, self).__init__(parent=parent, windowTitle=windowTitle)
 
         self.messageLabel = QtWidgets.QLabel(message)
-        self.messageLabel.setWordWrap(True) 
+        self.messageLabel.setWordWrap(True)
         self.messageLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.mainLayout.addWidget(self.messageLabel)
 
@@ -302,6 +305,11 @@ class ProgressWindow(SimpleWindow):
 
     def refresh_ui(self) -> None:
         """Syncs the Qt widgets to the current state of the pure python singleton."""
+
+        # Safety gate for if Maya has already killed the C++ object
+        if not shiboken6.isValid(self):
+            return
+
         if not self.manager.active:
             if self.isVisible():
                 self.hide()  # Or self.hide() depending on reuse preference
@@ -313,7 +321,7 @@ class ProgressWindow(SimpleWindow):
         # Update Progress Bar Range and Value
         if self.progressBarWidget.maximum() != self.manager.max_value:
             self.progressBarWidget.setMaximum(self.manager.max_value)
-        
+
         self.progressBarWidget.setValue(self.manager.current_value)
 
         # Update Status Text
@@ -321,9 +329,19 @@ class ProgressWindow(SimpleWindow):
         if self.statusTextWidget.text() != clean_text:
             self.statusTextWidget.setText(clean_text)
             log.info(self.manager.status_text)
-            
+
         # Force Maya UI to draw updates during tight execution loops
         QtWidgets.QApplication.processEvents()
+
+    def closeEvent(self, event):
+        if hasattr(self, "poll_timer") and self.poll_timer.isActive():
+            self.poll_timer.stop()
+
+        # Clear out the strong reference in the manager so it can be GC'd
+        if hasattr(self, "manager") and hasattr(self.manager, "_ui_window"):
+            self.manager._ui_window = None
+
+        super(ProgressWindow, self).closeEvent(event)
 
 
 class PythonSyntaxHighlighter(QtGui.QSyntaxHighlighter):
@@ -338,11 +356,41 @@ class PythonSyntaxHighlighter(QtGui.QSyntaxHighlighter):
         keyword_format.setForeground(QtGui.QColor("#CC7832"))
         keyword_format.setFontWeight(QtGui.QFont.Weight.Bold)
         keywords = [
-            "and", "as", "assert", "async", "await", "break", "class", "continue",
-            "def", "del", "elif", "else", "except", "False", "finally", "for",
-            "from", "global", "if", "import", "in", "is", "lambda", "None",
-            "nonlocal", "not", "or", "pass", "raise", "return", "True", "try",
-            "while", "with", "yield"
+            "and",
+            "as",
+            "assert",
+            "async",
+            "await",
+            "break",
+            "class",
+            "continue",
+            "def",
+            "del",
+            "elif",
+            "else",
+            "except",
+            "False",
+            "finally",
+            "for",
+            "from",
+            "global",
+            "if",
+            "import",
+            "in",
+            "is",
+            "lambda",
+            "None",
+            "nonlocal",
+            "not",
+            "or",
+            "pass",
+            "raise",
+            "return",
+            "True",
+            "try",
+            "while",
+            "with",
+            "yield",
         ]
         for word in keywords:
             pattern = QtCore.QRegularExpression(rf"\b{word}\b")
@@ -351,7 +399,9 @@ class PythonSyntaxHighlighter(QtGui.QSyntaxHighlighter):
         # Builtins / Functions styling
         builtin_format = QtGui.QTextCharFormat()
         builtin_format.setForeground(QtGui.QColor("#8888C6"))
-        pattern = QtCore.QRegularExpression(r"\b(print|exec|eval|len|range|str|int|dict|list|set|tuple)\b")
+        pattern = QtCore.QRegularExpression(
+            r"\b(print|exec|eval|len|range|str|int|dict|list|set|tuple)\b"
+        )
         self.rules.append((pattern, builtin_format))
 
         # String styling
@@ -373,4 +423,6 @@ class PythonSyntaxHighlighter(QtGui.QSyntaxHighlighter):
             iterator = expression.globalMatch(text)
             while iterator.hasNext():
                 match = iterator.next()
-                self.setFormat(match.capturedStart(), match.capturedLength(), text_format)
+                self.setFormat(
+                    match.capturedStart(), match.capturedLength(), text_format
+                )

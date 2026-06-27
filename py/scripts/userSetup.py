@@ -6,7 +6,7 @@ from bmaya.core import progressmanager
 
 _IS_BATCH = cmds.about(batch=True)
 # only needed here for visual consistency in print statements before the logger has been set up.
-_print_prefix = '' if _IS_BATCH else '# '
+_print_prefix = "" if _IS_BATCH else "# "
 
 if _IS_BATCH:
     # NOTE: for mayabatch processes we won't be able to get log streaming in this way. There is an arg.
@@ -20,18 +20,17 @@ if not _IS_BATCH:
 def _run_deferred_setup():
     print(f"{_print_prefix}[bmaya][startup] Starting custom startup")
 
-    
     # Setup logger
     log.init_logger()
 
     # Start progress window
     pmanager.start("Running Deferred Startup")
-    
+
     if not _IS_BATCH:
         ProgressWindow().show()
 
     pmanager.update(10, "Set up log streaming")
-    
+
     # Setup local helper functions
 
     # Setup tools menus
@@ -42,7 +41,7 @@ def _run_deferred_setup():
         _setup_tool_views(tools_registry)
 
     # Load required plugins
-    
+
     log.info("Custom startup scripts complete!")
 
     pmanager.end()
@@ -92,7 +91,7 @@ def _setup_tool_views(registry):
     pmanager.update(50, "Building tool views")
 
     main_menu = ToolMenu("test")
-    main_menu.load_layout(os.path.join(constants.TOOLS_PATH, 'bmaya_menu.json'))
+    main_menu.load_layout(os.path.join(constants.TOOLS_PATH, "bmaya_menu.json"))
     main_menu.build_ui(registry)
 
 
@@ -103,8 +102,12 @@ def user_setup():
     # Run all deferred setup
     cmds.evalDeferred(_run_deferred_setup, lowestPriority=True)
 
+
 # Convenience imports
 from importlib import reload
+
 pmanager = progressmanager.ProgressManager()
-# The start of userSetup has to be deferred but now to lowest priority
-cmds.evalDeferred(user_setup)
+
+with pmanager:
+    # The start of userSetup has to be deferred but now to lowest priority
+    cmds.evalDeferred(user_setup)

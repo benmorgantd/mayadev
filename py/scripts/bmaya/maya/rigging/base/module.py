@@ -150,6 +150,7 @@ class Module(object):
 
     def add_node_attrs(self):
         log.info("Adding node attributes")
+
         if not self.node:
             raise RuntimeError("Module node does not exist yet for " + self.name)
 

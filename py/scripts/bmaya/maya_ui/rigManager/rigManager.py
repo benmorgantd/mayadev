@@ -10,6 +10,7 @@ from PySide6 import QtWidgets, QtCore
 from bmaya.core import log
 import bmaya.maya.constants
 from bmaya.maya_ui import qtbase
+from bmaya.core.progressmanager import ProgressManager
 from bmaya.core.util import fileUtils
 from bmaya.maya.asset import asset
 from . import customWidgets
@@ -145,13 +146,15 @@ class RigManager(qtbase.DockableWidget):
         # Updated to use your new custom Modal Confirm Dialog
         dialog = qtbase.ConfirmDialog(
             f"Are you sure you would like to save {componentType}?",
-            windowTitle="Save Component"
+            windowTitle="Save Component",
         )
 
         if not dialog.exec():
             return
 
-        if componentType not in [component.type for component in self.rigInstance.components]:
+        if componentType not in [
+            component.type for component in self.rigInstance.components
+        ]:
             log.error(f"Invalid component type {componentType}")
             return
 
@@ -162,7 +165,9 @@ class RigManager(qtbase.DockableWidget):
         componentType = self.widget.componentType.currentText()
         log.info("loading component")
 
-        if componentType not in [component.type for component in self.rigInstance.components]:
+        if componentType not in [
+            component.type for component in self.rigInstance.components
+        ]:
             log.error(f"Invalid component type {componentType}")
             return
 
@@ -180,12 +185,15 @@ class RigManager(qtbase.DockableWidget):
 
     def buildCharacter(self):
         if self.rigInstance:
-            progress_window = ProgressWindow()
-            progress_window.show()
-            buildPath = self.rigInstance.build.full_path
-            fileUtils.version_file(buildPath)
-            self.saveBuild(buildPath)
-            self.rigInstance.build_rig()
+            manager = ProgressManager()
+
+            with manager:
+                progress_window = ProgressWindow()
+                progress_window.show()
+                buildPath = self.rigInstance.build.full_path
+                fileUtils.version_file(buildPath)
+                self.saveBuild(buildPath)
+                self.rigInstance.build_rig()
 
     def exploreToBuildPath(self, action="Open", fileMode=1):
         buildpath = bmaya.maya.constants.RIGGING_PROJECT_DIR
@@ -273,10 +281,12 @@ class RigManager(qtbase.DockableWidget):
 
     def mirrorCvData(self):
         from bmaya.maya.rigging.shapes import shapeio
+
         shapeio.mirror(self.rigInstance.component_path_from_type("cvs"))
 
     def removeSelectedCVData(self):
         from bmaya.maya.rigging.shapes import shapeio
+
         shapeio.remove_shape_data(
             self.rigInstance.component_path_from_type("cvs"), cmds.ls(selection=True)
         )
@@ -285,7 +295,7 @@ class RigManager(qtbase.DockableWidget):
 def run():
     ui = RigManager(
         parent=qtbase.get_maya_main_window(),
-        designerFile=os.path.join(os.path.dirname(__file__), "rigManager.ui")
+        designerFile=os.path.join(os.path.dirname(__file__), "rigManager.ui"),
     )
     ui.dock()
     return ui
