@@ -17,7 +17,7 @@ from bmaya.core import log
 
 from bmaya.core import constants
 
-from bmaya.maya.util import mathUtils
+from bmaya.maya.util import mathUtils, joint
 
 
 def toggle_skin_mode():
@@ -33,61 +33,7 @@ def toggle_skin_mode():
 
         cmds.setAttr("SKELETON.visibility", currentValue)
 
-    size_joints()
-
-
-def size_joints():
-
-    skeletonJoints = cmds.listRelatives(
-        "SKELETON", type="joint", allDescendents=True, full_path=True
-    )
-
-    bindJoints = cmds.sets("BIND_set", query=True)
-
-    for jnt in skeletonJoints:
-
-        if jnt in bindJoints:
-
-            if "hand" in jnt:
-
-                cmds.setAttr(jnt + ".radius", 1)
-
-            else:
-
-                cmds.setAttr(jnt + ".radius", 3)
-
-        else:
-
-            cmds.setAttr(jnt + ".drawStyle", 0)
-
-
-def label_joints():
-
-    for jnt in cmds.ls(type="joint"):
-
-        jntSplit = jnt.split("_")
-
-        if "_M_" in jnt:
-
-            cmds.setAttr(jnt + ".side", 0)
-
-        if "_L_" in jnt:
-
-            cmds.setAttr(jnt + ".side", 1)
-
-        if "_R_" in jnt:
-
-            cmds.setAttr(jnt + ".side", 2)
-
-        cmds.setAttr(jnt + ".type", 18)
-
-        try:
-
-            cmds.setAttr(jnt + ".otherType", jntSplit[0] + jntSplit[1], type="string")
-
-        except IndexError:
-
-            log.info(jnt + " may be named incorrectly.")
+    joint.size_joints()
 
 
 def get_module_node(ctrl):

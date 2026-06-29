@@ -95,6 +95,7 @@ class RigManager(qtbase.DockableWidget):
 
         newAssetAction = assetMenu.addAction("New Asset")
         newAssetAction.triggered.connect(lambda: self.launchAssetWidget())
+        # TODO: when a new asset is created, open its build file by default. We will need a callback.
 
         versionAssetAction = assetMenu.addAction("Version Asset")
         versionAssetAction.triggered.connect(lambda: self.rigInstance.version_asset())
@@ -117,10 +118,7 @@ class RigManager(qtbase.DockableWidget):
             log.warning("An asset instance has not been established")
 
     def launchAssetWidget(self):
-        assetCreatorUI = assetCreator.AssetCreator(
-            parent=qtbase.get_maya_main_window(),
-            designerFile=os.path.join(os.path.dirname(__file__), "assetCreator.ui"),
-        )
+        assetCreatorUI = assetCreator.AssetCreator(parent=qtbase.get_maya_main_window())
         assetCreatorUI.show()
         assetCreatorUI.activateWindow()
 

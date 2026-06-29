@@ -3,13 +3,13 @@ The PostOps component is a python file that allows the user to run custom logic 
 """
 
 import os
-from .component import Component
+from .component import Component, ComponentType
 
 
 class PostOps(Component):
 
-    def __init__(self, asset, component_type):
-        super(PostOps, self).__init__(asset, component_type)
+    def __init__(self, asset):
+        super(PostOps, self).__init__(asset, ComponentType.PostOps)
 
     @property
     def relative_path(self):

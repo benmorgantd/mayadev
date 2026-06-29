@@ -1,41 +1,67 @@
 """Asset creator for initiating new assets"""
 
-import os
-
 from PySide6 import QtWidgets
 
 from bmaya.core import log
 from bmaya.maya.rigging.base import rig
 from bmaya.maya.asset import asset
-from bmaya.maya_ui import qtbase
 
 
 class AssetCreator(QtWidgets.QMainWindow):
-    def __init__(self, parent=None, designerFile=None, title="Asset Creator"):
-        super(AssetCreator, self).__init__(parent)
-
-        if designerFile and isinstance(designerFile, str):
-            designPath = os.path.join(os.path.dirname(__file__), designerFile)
-            if os.path.exists(designPath):
-                self.widget = qtbase.loadUiFile(designPath)
-                self.setCentralWidget(self.widget)
-            else:
-                raise RuntimeError("Given Qt Designer file not in folder.")
+    def __init__(self, parent=None, title="AssetCreator"):
+        super().__init__(parent)
 
         self.setWindowTitle(title)
+        self.resize(480, 159)
 
-        self.widget.createAsset.clicked.connect(lambda: self.createAsset())
+        # Main Central Widget and Layout
+        self.centralwidget = QtWidgets.QWidget(self)
+        self.setCentralWidget(self.centralwidget)
+        self.main_layout = QtWidgets.QVBoxLayout(self.centralwidget)
 
-        self.resize(400, 150)
+        # Asset Attributes Group
+        self.attr_group = QtWidgets.QGroupBox("Asset Attributes")
+        self.attr_layout = QtWidgets.QHBoxLayout(self.attr_group)
+
+        # Project Group & LineEdit
+        self.project_group = QtWidgets.QGroupBox("Project")
+        self.project_layout = QtWidgets.QHBoxLayout(self.project_group)
+        self.projectName = QtWidgets.QLineEdit()
+        self.project_layout.addWidget(self.projectName)
+        self.attr_layout.addWidget(self.project_group)
+
+        # Type Group & LineEdit
+        self.type_group = QtWidgets.QGroupBox("Type")
+        self.type_layout = QtWidgets.QHBoxLayout(self.type_group)
+        self.assetType = QtWidgets.QLineEdit()
+        self.type_layout.addWidget(self.assetType)
+        self.attr_layout.addWidget(self.type_group)
+
+        # Name Group & LineEdit
+        self.name_group = QtWidgets.QGroupBox("Name")
+        self.name_layout = QtWidgets.QHBoxLayout(self.name_group)
+        self.assetName = QtWidgets.QLineEdit()
+        self.name_layout.addWidget(self.assetName)
+        self.attr_layout.addWidget(self.name_group)
+
+        # Add the main attribute group to the vertical layout
+        self.main_layout.addWidget(self.attr_group)
+
+        # Create Asset Button
+        self.createAssetBtn = QtWidgets.QPushButton("Create Asset")
+        self.main_layout.addWidget(self.createAssetBtn)
+
+        # Connections
+        self.createAssetBtn.clicked.connect(self.createAsset)
 
     def createAsset(self):
-        project = self.widget.projectnameUtils.text().strip()
-        assetType = self.widget.assetType.text().strip()
-        name = self.widget.assetnameUtils.text().strip()
+        project = self.projectName.text().strip()
+        asset_type = self.assetType.text().strip()
+        name = self.assetName.text().strip()
 
-        asset_id = "|".join([project, assetType, name])
+        asset_id = "|".join([project, asset_type, name])
 
-        assetPath = asset.Asset.exists(project, name, assetType)
+        assetPath = asset.Asset.exists(project, name, asset_type)
 
         if assetPath:
             log.info("An asset of this description already exists")
@@ -44,7 +70,8 @@ class AssetCreator(QtWidgets.QMainWindow):
             rig.Rig(asset_id)
             self.close()
 
+
 def show_asset_creator():
-    window = AssetCreator(parent=None, designerFile="assetCreator.ui")
+    window = AssetCreator(parent=None)
     window.show()
     return window

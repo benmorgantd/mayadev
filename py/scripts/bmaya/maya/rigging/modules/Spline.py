@@ -48,7 +48,7 @@ class Spline(module.Module):
 
     @wrapBuild
     def build(self):
-        self.bindJoints = self.find_hierarchy_joints(
+        self.bind_joints = self.find_hierarchy_joints(
             start_joint=self.start_joint,
             end_joint=self.end_joint,
             shortest_distance=True,
@@ -181,7 +181,7 @@ class Spline(module.Module):
         splineIkHandle = cmds.ikHandle(
             name=self.name + "_splineIkHandle",
             solver="ikSplineSolver",
-            start_joint=self.ikDriveJoints[0],
+            startJoint=self.ikDriveJoints[0],
             endEffector=self.ikDriveJoints[-1],
             curve=splineCurve,
             createCurve=False,
@@ -258,7 +258,7 @@ class Spline(module.Module):
 
             jnt = cmds.joint(
                 name=nameUtils.find_joint_name(
-                    self.bindJoints[0], count=i, suffix="CURVEDRIVER"
+                    self.bind_joints[0], count=i, suffix="CURVEDRIVER"
                 )
             )
 
@@ -325,9 +325,10 @@ class Spline(module.Module):
         )
 
         for i in range(len(self.ikComponents) - 1):
-            const = self.parent_constrain(
-                self.ikComponents[i].ctrl, self.ikComponents[i + 1].offset_grp
-            )
+            # TODO: blending for matrix constraint method
+            const = cmds.parentConstraint(
+                self.ikComponents[i].ctrl, self.ikComponents[i + 1].offset_grp, maintainOffset=False
+            )[0]
 
             cmds.connectAttr(
                 self.node + ".hybridIk",

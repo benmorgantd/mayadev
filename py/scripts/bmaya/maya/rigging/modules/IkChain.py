@@ -45,7 +45,7 @@ class IkChain(module.Module):
     def build(self):
         # build a simple single chain ik system
 
-        self.bindJoints = self.find_hierarchy_joints(
+        self.bind_joints = self.find_hierarchy_joints(
             shortest_distance=True, exclude=self.exclude
         )
 

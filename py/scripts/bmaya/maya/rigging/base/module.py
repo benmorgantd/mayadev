@@ -13,7 +13,7 @@ import maya.cmds as cmds
 import maya.api.OpenMaya as om
 
 from bmaya.core import constants, log
-from bmaya.maya.util import nameUtils, mathUtils, dgUtils
+from bmaya.maya.util import nameUtils, mathUtils, dgUtils, matrixConstraint
 from bmaya.maya.rigging.shapes import shapelib
 
 MODULE_IDENTIFIER_STR = "isModule"
@@ -350,26 +350,13 @@ class Module(object):
         if isinstance(child, shapelib.ControlCurve):
             child = child.ctrl
 
-        # create a matrix-style constraint
-        mult_matrix = cmds.createNode("multMatrix", name=child + "_parentConstraint_mm")
-        cmds.connectAttr(parent + ".worldMatrix[0]", mult_matrix + ".matrixIn[0]")
-        # TODO: offset calculation
-        # NOTE: offsetParentMatrix is the offset from the _child's_ parent. So the existing offset has to be taken
-        # into account as well as the offset from the parent to the child
-        cmds.connectAttr(f"{mult_matrix}.matrixSum", f"{child}.offsetParentMatrix")
+        # return matrixConstraint.parent_constrain(parent, child, maintain_offset=maintain_offset)
 
-        # const = cmds.parentConstraint(parent, child, mo=maintainOffset)[0]
+        const = cmds.parentConstraint(parent, child, mo=maintain_offset)[0]
 
         pivotCtrl = cmds.listConnections(
             parent + ".rotatePivot", type="transform", exactType=True
         )
-
-        if pivotCtrl:
-            raise NotImplementedError(
-                "This method of parenting does not work with controls that have a custom pivot"
-            )
-
-        return mult_matrix
 
         if pivotCtrl and not cmds.objExists(const + "_offsetVector"):
             pivotCtrl = pivotCtrl[0]
@@ -461,8 +448,7 @@ class Module(object):
             raise RuntimeError("Need a start joint.")
 
         sel.add(start_joint)
-        dag = om.MDagPath()
-        sel.getDagPath(0, dag)
+        dag = sel.getDagPath(0)
 
         it_dag = om.MItDag(om.MItDag.kDepthFirst, om.MFn.kJoint)
         it_dag.reset(dag, om.MItDag.kDepthFirst, om.MFn.kJoint)

@@ -204,10 +204,7 @@ def match_transforms(source, targets, translate=True, rotate=True, scale=True):
 
 
 def get_mmatrix_from_list(matrixList):
-    matrix = om.MMatrix()
-    om.MScriptUtil.createMatrixFromList(matrixList, matrix)
-
-    return matrix
+    return om.MMatrix(matrixList)
 
 
 def reorder_matrix(matrix, downAxis=0, upAxis=0):
@@ -216,62 +213,50 @@ def reorder_matrix(matrix, downAxis=0, upAxis=0):
     # for negative down axis, rotate 180y before reordering rows
     if downAxis in [3, 4, 5]:
         downAxis -= 3
-        r180y = [-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1]
-
-        r180yMatrix = om.MMatrix()
-        om.MScriptUtil.createMatrixFromList(r180y, r180yMatrix)
-        baseMatrix = r180yMatrix * baseMatrix
+        r180y = [-1.0, 0.0, 0.0, 0.0, 
+                  0.0, 1.0, 0.0, 0.0, 
+                  0.0, 0.0, -1.0, 0.0, 
+                  0.0, 0.0, 0.0, 1.0]
+        baseMatrix = om.MMatrix(r180y) * baseMatrix
 
     # for negative up axis, rotate 180x before reordering rows
     if upAxis in [3, 4, 5]:
         upAxis -= 3
-        r180x = [1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1]
-
-        r180xMatrix = om.MMatrix()
-        om.MScriptUtil.createMatrixFromList(r180x, r180xMatrix)
-        baseMatrix = r180xMatrix * baseMatrix
+        r180x = [1.0, 0.0, 0.0, 0.0, 
+                 0.0, -1.0, 0.0, 0.0, 
+                 0.0, 0.0, -1.0, 0.0, 
+                 0.0, 0.0, 0.0, 1.0]
+        baseMatrix = om.MMatrix(r180x) * baseMatrix
 
     # make a matrix R so that R*M is a reordering of the rows of M
     if downAxis == 0 and upAxis == 1:
         # x down y up
-        R = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+        R = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
     elif downAxis == 0 and upAxis == 2:
         # x down z up
-        R = [1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1]
+        R = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
     elif downAxis == 1 and upAxis == 0:
         # y down x up
-        R = [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1]
+        R = [0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
     elif downAxis == 1 and upAxis == 2:
         # y down z up
-        R = [0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1]
+        R = [0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
     elif downAxis == 2 and upAxis == 0:
         # z down x up
-        R = [0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1]
+        R = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
     elif downAxis == 2 and upAxis == 1:
         # z down y up
-        R = [0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]
+        R = [0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
     else:
         # for when axis get set to the same value
-        R = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+        R = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
 
-    reorderMatrix = om.MMatrix()
-    om.MScriptUtil.createMatrixFromList(R, reorderMatrix)
     # reorder the initial matrix to use the desired down and up axis
-    reorderedMatrix = reorderMatrix * baseMatrix
-
-    return reorderedMatrix
+    return om.MMatrix(R) * baseMatrix
 
 
 def list_from_matrix(matrix):
-    util = om.MScriptUtil()
-
-    matrixList = []
-
-    for row in range(4):
-        for column in range(4):
-            matrixList.append(util.getDoubleArrayItem(matrix[row], column))
-
-    return matrixList
+    return list(matrix)
 
 
 def get_matrix(transform, worldSpace=True):

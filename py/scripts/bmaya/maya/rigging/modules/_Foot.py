@@ -141,14 +141,14 @@ class Foot(object):
         # create two single chain iks
 
         self.ankleToBallIk = cmds.ikHandle(
-            start_joint=self.footIkDriveJoints[0],
+            startJoint=self.footIkDriveJoints[0],
             endEffector=self.footIkDriveJoints[1],
             name=self.name + "_ankleSCik",
             solver="ikSCsolver",
         )[0]
 
         self.ballToToeIk = cmds.ikHandle(
-            start_joint=self.footIkDriveJoints[1],
+            startJoint=self.footIkDriveJoints[1],
             endEffector=self.footIkDriveJoints[2],
             name=self.name + "_ballSCik",
             solver="ikSCsolver",

@@ -48,14 +48,14 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         upAxis="Y",
         followWorld=True,
     ):
-        self.bindJoints = self.find_hierarchy_joints(
+        self.bind_joints = self.find_hierarchy_joints(
             shortest_distance=True, start_joint=start_joint, end_joint=end_joint
         )
 
         # # force the bind joint start and ends to zyx rotate order
-        # cmds.setAttr(self.bindJoints[0] + '.rotateOrder', 5)
-        # cmds.setAttr(self.bindJoints[1] + '.rotateOrder', 0)
-        # cmds.setAttr(self.bindJoints[2] + '.rotateOrder', 5)
+        # cmds.setAttr(self.bind_joints[0] + '.rotateOrder', 5)
+        # cmds.setAttr(self.bind_joints[1] + '.rotateOrder', 0)
+        # cmds.setAttr(self.bind_joints[2] + '.rotateOrder', 5)
 
         self.driveJoints = self.create_drive_joints(label="DRIVER", constrain=True)
 
@@ -77,8 +77,8 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         cmds.orientConstraint(self.ikComponents[1].ctrl, self.ikDriveJoints[2], mo=1)
 
     def setupUpperTwist(self):
-        self.upperTwistJoints = self.find_twist_joints(self.bindJoints[0])
-        self.bindJoints += self.upperTwistJoints
+        self.upperTwistJoints = self.find_twist_joints(self.bind_joints[0])
+        self.bind_joints += self.upperTwistJoints
         self.upperTwistControls = []
 
         upperTwistGrp = cmds.group(empty=True, name=self.name + "upperTwistGrp")
@@ -140,8 +140,8 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
         self.components += self.upperTwistControls
 
     def setupLowerTwist(self):
-        self.lowerTwistJoints = self.find_twist_joints(self.bindJoints[1])
-        self.bindJoints += self.lowerTwistJoints
+        self.lowerTwistJoints = self.find_twist_joints(self.bind_joints[1])
+        self.bind_joints += self.lowerTwistJoints
         self.lowerTwistControls = []
         lowerTwistGrp = cmds.group(empty=True, name=self.name + "lowerTwistGrp")
         cmds.parent(lowerTwistGrp, self.components_grp)

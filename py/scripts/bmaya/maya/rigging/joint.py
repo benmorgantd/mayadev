@@ -5,39 +5,32 @@ Utility functions for working with joints in maya.
 import math
 import maya.cmds as cmds
 import maya.api.OpenMaya as om
-from bmaya.core.util import constants
+from bmaya.core import constants
 from bmaya.maya.util import nameUtils
 
 
-def get_selection_center():
+def create_joint_at_selection_center():
+    # Create joint at center
     cmds.select(cmds.polyListComponentConversion(toVertex=True))
+    sel = cmds.ls(sl=1, flatten=1)
+    sum_x = 0
+    sum_y = 0
+    sum_z = 0
 
-    sel = om.MGlobal.getActiveSelectionList()
+    for vtx in sel:
+        pos = cmds.xform(vtx, t=1, q=1, ws=1)
+        sum_x += pos[0]
+        sum_y += pos[1]
+        sum_z += pos[2]
 
-    dag = om.MDagPath()
-    components = om.MObject()
+    center_x = sum_x / float(len(sel))
+    center_y = sum_y / float(len(sel))
+    center_z = sum_z / float(len(sel))
+    jnt = cmds.joint()
+    cmds.xform(jnt, t=[center_x, center_y, center_z], worldSpace=True)
+    cmds.select(jnt)
 
-    sel.getDagPath(0, dag, components)
-
-    it_verts = om.MItMeshVertex(dag, components)
-
-    vectors = om.MVectorArray()
-    vector_sum = om.MVector(0.0, 0.0, 0.0)
-
-    while not it_verts.isDone():
-        # get world space position of each selected vertex
-        current_point = it_verts.position(om.MSpace.kWorld)
-
-        current_vector = om.MVector(current_point.x, current_point.y, current_point.z)
-        vector_sum += current_vector
-        vectors.append(current_vector)
-
-        it_verts.next()
-
-    centroid = vector_sum / float(vectors.length())
-
-    return centroid
-
+    return jnt
 
 """
 def best_fit_plane():
@@ -261,3 +254,57 @@ def mirror_face_joints(joints):
                 cmds.makeIdentity(mirror_jnt, apply=True, rotate=True)
                 if mirror_children:
                     cmds.parent(mirror_children, mirror_jnt)
+
+
+def size_joints():
+
+    skeletonJoints = cmds.listRelatives(
+        "SKELETON", type="joint", allDescendents=True, full_path=True
+    )
+
+    bindJoints = cmds.sets("BIND_set", query=True)
+
+    for jnt in skeletonJoints:
+
+        if jnt in bindJoints:
+
+            if "hand" in jnt:
+
+                cmds.setAttr(jnt + ".radius", 1)
+
+            else:
+
+                cmds.setAttr(jnt + ".radius", 3)
+
+        else:
+
+            cmds.setAttr(jnt + ".drawStyle", 0)
+
+
+def label_joints():
+
+    for jnt in cmds.ls(type="joint"):
+
+        jntSplit = jnt.split("_")
+
+        if "_M_" in jnt:
+
+            cmds.setAttr(jnt + ".side", 0)
+
+        if "_L_" in jnt:
+
+            cmds.setAttr(jnt + ".side", 1)
+
+        if "_R_" in jnt:
+
+            cmds.setAttr(jnt + ".side", 2)
+
+        cmds.setAttr(jnt + ".type", 18)
+
+        try:
+
+            cmds.setAttr(jnt + ".otherType", jntSplit[0] + jntSplit[1], type="string")
+
+        except IndexError:
+
+            log.info(jnt + " may be named incorrectly.")

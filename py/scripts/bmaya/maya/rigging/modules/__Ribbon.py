@@ -40,12 +40,12 @@ class Ribbon(module.Module):
     @wrapBuild
     def build(self):
 
-        self.bindJoints = self.find_hierarchy_joints(
+        self.bind_joints = self.find_hierarchy_joints(
             start_joint=self.start_joint,
             end_joint=self.end_joint,
             shortest_distance=True,
         )
-        self.jointAmount = len(self.bindJoints)
+        self.jointAmount = len(self.bind_joints)
 
         self.skinnedPlane = self.buildSkinnedPlane(self.start_joint, self.end_joint)
         if self.addDeformers:
@@ -55,7 +55,7 @@ class Ribbon(module.Module):
         self.followJoints = self.makeFollowJoints(self.skinnedPlane, self.start_joint)
         self.driveJoints = self.makeDriveJoints(self.skinnedPlane, self.start_joint)
         self.followControls = self.makeFollowJointControls(
-            self.bindJoints, self.followJoints
+            self.bind_joints, self.followJoints
         )
         self.skinDriverJointsToPlane(self.driveJoints, self.skinnedPlane)
         self.driveControls = self.makeDriverControls(self.start_joint, self.driveJoints)

@@ -49,19 +49,19 @@ class FkTwist(FkChain.FkChain):
 
     def buildFkTwist(self):
         # finds the joints that should belong in the chain
-        self.bindJoints = self.find_hierarchy_joints(
+        self.bind_joints = self.find_hierarchy_joints(
             shortest_distance=True, exclude=self.exclude
         )
         # create base and twist drive joints separately so the controls can be
         # too
-        self.twistJoints = self.find_twist_joints(self.bindJoints[0])
+        self.twistJoints = self.find_twist_joints(self.bind_joints[0])
 
         if not self.twistJoints:
             raise ValueError(
                 "You must give at least one twist joint to an FkTwist module"
             )
 
-        self.bindJoints += self.twistJoints
+        self.bind_joints += self.twistJoints
 
         self.driveJoints = self.create_drive_joints()
 

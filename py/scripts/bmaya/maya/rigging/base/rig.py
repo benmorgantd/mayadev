@@ -25,6 +25,7 @@ from bmaya.maya.asset.components import (
     postops,
     facePoses,
 )
+from bmaya.maya.asset.components.component import ComponentType
 from bmaya.core import log, decorators, progressmanager
 import bmaya.core.constants
 from bmaya.core.util import fileUtils
@@ -34,7 +35,7 @@ from bmaya.maya.rigging.weights import weightio
 from bmaya.maya.rigging import buildio
 from bmaya.maya.rigging import modules
 import bmaya.maya.constants
-from bmaya.maya.util import dgUtils
+from bmaya.maya.util import dgUtils, dagUtils
 
 from . import layout
 
@@ -387,13 +388,18 @@ class Rig(Asset):
         # check for existing weights files. If not then skin to skeleton set
         # skin the root joint to all the meshes in the scene
 
-        for mesh in self.meshShapes:
+        for mesh_shape in self.meshShapes:
+            # get mesh parent transform, which is the filename
+            mesh = dagUtils.get_parent(mesh_shape)
+
             weightsPath = os.path.join(
-                self.weights.full_path, mesh + "." + self.weights.extension
+                self.weights.full_path, mesh + self.weights.extension
             )
+            print(weightsPath)
             if os.path.exists(weightsPath):
                 weightio.load(weightsPath)
             elif "noSkin" not in cmds.listAttr(mesh):
+                log.info(f'Auto-skinning {mesh} to {bmaya.core.constants.ROOT_JOINT}')
                 # skin meshes not marked noSkin to the root joint
                 self.skin_clusters.append(
                     cmds.skinCluster(
@@ -523,16 +529,16 @@ class Rig(Asset):
 
     def init_components(self):
         # initialize the component objects for the asset
-        self.mesh = mesh.Mesh(self, "mesh")
-        self.skeleton = skeleton.Skeleton(self, "skeleton")
-        self.weights = weights.Weights(self, "weights")
-        self.cvs = cvs.Cvs(self, "cvs")
-        self.build = build.Build(self, "build")
-        self.animRig = animRig.AnimRig(self, "animRig")
-        self.postops = postops.PostOps(self, "postops")
+        self.mesh = mesh.Mesh(self)
+        self.skeleton = skeleton.Skeleton(self)
+        self.weights = weights.Weights(self)
+        self.cvs = cvs.Cvs(self)
+        self.build = build.Build(self)
+        self.animRig = animRig.AnimRig(self)
+        self.postops = postops.PostOps(self)
 
         if self.has_face:
-            self.facePoses = facePoses.FacePoses(self, "facePoses")
+            self.facePoses = facePoses.FacePoses(self)
 
         self.components += [
             self.mesh,

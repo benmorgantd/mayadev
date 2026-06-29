@@ -3,13 +3,13 @@ Class for the Build component, which is a json file that contains the rig struct
 """
 
 import os
-from .component import Component
+from .component import Component, ComponentType
 
 
 class Build(Component):
 
-    def __init__(self, asset, componentType):
-        super(Build, self).__init__(asset, componentType)
+    def __init__(self, asset):
+        super(Build, self).__init__(asset, ComponentType.Build)
 
     @property
     def relative_path(self):

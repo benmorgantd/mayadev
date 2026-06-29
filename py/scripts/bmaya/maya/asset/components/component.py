@@ -6,17 +6,30 @@ Also handles the unimplemented logic for loading and saving and referencing, whi
 """
 
 import os
+from enum import Enum
+
+# TODO: these are all mainly maya-specific component types and should be under MayaComponent
+class ComponentType(Enum):
+    Mesh = 'mesh'
+    Skeleton = 'skeleton'
+    Cvs = 'cvs'
+    AnimRig = 'animRig'
+    Weights = 'weights'
+    Build = 'build'
+    Components = 'components'
+    PostOps = 'postops'
+    FacePoses = 'facePoses'
 
 TYPE_EXTENSIONS = {
-    "mesh": ".ma",
-    "skeleton": ".ma",
-    "cvs": ".json",
-    "animRig": ".ma",
-    "weights": ".json",
-    "build": ".json",
-    "components": "",
-    "postops": ".py",
-    "facePoses": ".json",
+    ComponentType.Mesh: ".ma",
+    ComponentType.Skeleton: ".ma",
+    ComponentType.Cvs: ".json",
+    ComponentType.AnimRig: ".ma",
+    ComponentType.Weights: ".json",
+    ComponentType.Build: ".json",
+    ComponentType.Components: "",
+    ComponentType.PostOps: ".py",
+    ComponentType.FacePoses: ".json",
 }
 
 
@@ -35,11 +48,11 @@ class Component(object):
 
     @property
     def type(self):
-        return self._component_type
+        return self._component_type.value
 
     @property
     def extension(self):
-        return TYPE_EXTENSIONS[self.type]
+        return TYPE_EXTENSIONS[self._component_type]
 
     @property
     def relative_path(self):

@@ -4,14 +4,14 @@ It contains the logic for loading and saving cvs using the shapeio module, which
 """
 
 import os
-from .component import Component
+from .component import Component, ComponentType
 from bmaya.maya.rigging.shapes import shapeio
 
 
 class Cvs(Component):
 
-    def __init__(self, asset, component_type):
-        super(Cvs, self).__init__(asset, component_type)
+    def __init__(self, asset):
+        super(Cvs, self).__init__(asset, ComponentType.Cvs)
 
     @property
     def relative_path(self):

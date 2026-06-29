@@ -45,7 +45,7 @@ class FkChain(module.Module):
     @wrapBuild
     def build(self):
         # finds the joints that should belong in the chain
-        self.bindJoints = self.find_hierarchy_joints(exclude=self.exclude)
+        self.bind_joints = self.find_hierarchy_joints(exclude=self.exclude)
         self.driveJoints = self.create_drive_joints()
 
         self.components = self.build_fk_controls(

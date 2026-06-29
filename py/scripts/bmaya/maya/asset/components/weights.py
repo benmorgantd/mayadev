@@ -5,14 +5,14 @@ which handles the actual logic for saving and loading weight data.
 """
 
 import os
-from .component import Component
+from .component import Component, ComponentType
 from bmaya.maya.rigging.weights import weightio
 
 
 class Weights(Component):
 
-    def __init__(self, asset, componentType):
-        super(Weights, self).__init__(asset, componentType)
+    def __init__(self, asset):
+        super(Weights, self).__init__(asset, ComponentType.Weights)
 
     @property
     def relative_path(self):

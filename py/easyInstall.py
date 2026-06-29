@@ -1,3 +1,7 @@
+import sys
+
+sys.dont_write_bytecode = True
+
 import maya.cmds as cmds
 import os
 
@@ -17,9 +21,9 @@ def easyInstall():
     mayaAppDir = cmds.internalVar(userAppDir=1)
     try:
         # have the user browse for the package directory on their system
-        packageDir = cmds.fileDialog2(okCaption="Set Path",
-                                       fileMode=3,
-                                       caption="Browse to Scripts Folder")[0]
+        packageDir = cmds.fileDialog2(
+            okCaption="Set Path", fileMode=3, caption="Browse to Scripts Folder"
+        )[0]
     except TypeError:
         # will happen if the user exits the file dialog
         failMessage = "Install of the bm module failed.\n\nPlease drag the file back into Maya to install."

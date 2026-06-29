@@ -4,7 +4,7 @@ It contains the file handling logic for components that are Maya files.
 """
 
 import os
-from .component import Component
+from .component import Component, ComponentType
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as om

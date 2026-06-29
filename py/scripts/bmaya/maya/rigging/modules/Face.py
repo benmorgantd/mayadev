@@ -163,7 +163,7 @@ class Face(module.Module):
             start_joint=start_joint, exclude=exclude, shortest_distance=False
         )
 
-        self.bindJoints += bindJoints
+        self.bind_joints += bindJoints
 
         driveJoints = []
 

@@ -6,13 +6,14 @@ It contains the logic for serializing and deserializing a joint hierarchy, which
 import os
 import maya.cmds as cmds
 
+from .component import ComponentType
 from .mayaComponent import MayaComponent
 
 
 class Skeleton(MayaComponent):
 
-    def __init__(self, asset, component_type):
-        super(Skeleton, self).__init__(asset, component_type)
+    def __init__(self, asset):
+        super(Skeleton, self).__init__(asset,  ComponentType.Skeleton)
 
     @property
     def relative_path(self):
