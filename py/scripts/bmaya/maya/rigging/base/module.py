@@ -50,6 +50,8 @@ class Module(object):
         self.bind_joints = []
         self.drive_joints = []
 
+        self.bind_joint_guides = dict()
+
         self.node = None
         self.driver_grp = None
         self.mod_grp = None
@@ -418,12 +420,10 @@ class Module(object):
                 self.node + ".components", ctrl.ctrl + ".module", force=True
             )
     
-    @staticmethod
-    def build_guides():
+    def build_guides(self):
         raise NotImplementedError()
     
-    @staticmethod
-    def build_build_joints():
+    def build_bind_joints(self):
         raise NotImplementedError()
     
     def connect_bind_joints(self):

@@ -110,9 +110,11 @@ class Rig(Asset):
         build_data = buildio.load(self.build.full_path)
         build_list = self._flatten_build_tree(build_data)
 
-        for mod in build_list:
+        guides_group = cmds.group(empty=True, name='GUIDES')
+
+        for mod_dict in build_list:
             # access the modType attribute from the module's dictionary
-            mod_type = mod["modType"]
+            mod_type = mod_dict["modType"]
 
             # create a new instance of that class
             mod_instance = modules.MODULE_CLASSES[mod_type].__new__(
@@ -120,12 +122,15 @@ class Rig(Asset):
             )
             mod_instance.__init__(character=self)
 
-            for key, value in mod.items():
+            for key, value in mod_dict.items():
                 # transfer the values from the read file to the instance
                 setattr(mod_instance, key, value)
 
-        raise NotImplementedError()
-    
+            log.info(f"Building guides for {mod_instance.name}")
+            mod_guides_grp = mod_instance.build_guides()
+
+            cmds.parent(mod_guides_grp, guides_group, absolute=True)
+
     def _initialize_module_from_dict(self, mod_dict):
         """Initializes a module instance from the given dictionary"""
 

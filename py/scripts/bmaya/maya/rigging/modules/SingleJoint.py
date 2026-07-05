@@ -3,7 +3,7 @@ import maya.cmds as cmds
 from bmaya.maya.rigging.base import module
 from bmaya.maya.rigging.base.decorators import wrapBuild
 from bmaya.maya.rigging.shapes import shapelib
-from bmaya.maya.util import nameUtils
+from bmaya.maya.util import nameUtils, mathUtils
 
 
 class SingleJoint(module.Module):
@@ -79,14 +79,14 @@ class SingleJoint(module.Module):
 
         self.setup_align_world(ctrl, default_value=self.align_world)
     
-    @staticmethod
-    def build_guides(name, side, parent):
+    def build_guides(self):
         """Create a joint creation rig for this module"""
-        # TODO: instead of creating a locator, create an axis or joint vis control
-        ctrl = cmds.spaceLocator(name=f"{name}_00_{side}_LOC")[0]
-        cmds.parentConstraint(ctrl, loc, mo=1)
-        grp = cmds.group(jnt, ctrl, name=f"{name}_skeletonBuilder_GRP")
+        start_joint_guide = mathUtils.create_axis_visualizer(name=f'{self.name}_start_joint_GUIDE')
+        grp = cmds.group(start_joint_guide, name=f"{self.name}_guides_GRP")
 
-        cmds.parentConstraint(parent, grp, mo=1)
+        self.bind_joint_guides['start_joint'] = start_joint_guide
 
         return grp
+
+    def build_build_joints(self):
+        pass
