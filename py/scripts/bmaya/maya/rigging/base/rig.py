@@ -103,6 +103,67 @@ class Rig(Asset):
         assert isinstance(module_dict, dict)
 
         self.modules.append(module_dict)
+    
+    def build_guides(self):
+        """Builds a guide rig for all the modules so the rigger can create joints"""
+
+        build_data = buildio.load(self.build.full_path)
+        build_list = self._flatten_build_tree(build_data)
+
+        for mod in build_list:
+            # access the modType attribute from the module's dictionary
+            mod_type = mod["modType"]
+
+            # create a new instance of that class
+            mod_instance = modules.MODULE_CLASSES[mod_type].__new__(
+                modules.MODULE_CLASSES[mod_type]
+            )
+            mod_instance.__init__(character=self)
+
+            for key, value in mod.items():
+                # transfer the values from the read file to the instance
+                setattr(mod_instance, key, value)
+
+        raise NotImplementedError()
+    
+    def _initialize_module_from_dict(self, mod_dict):
+        """Initializes a module instance from the given dictionary"""
+
+        # access the modType attribute from the module's dictionary
+        mod_type = mod_dict["modType"]
+
+        # create a new instance of that class
+        mod_instance = modules.MODULE_CLASSES[mod_type].__new__(
+            modules.MODULE_CLASSES[mod_type]
+        )
+        mod_instance.__init__(character=self)
+
+        for key, value in mod_dict.items():
+            # transfer the values from the read file to the instance
+            setattr(mod_instance, key, value)
+        
+        return mod_instance
+    
+    def _flatten_build_tree(self, build_data):
+        """Creates an ordered build list, flattening the tree hierarchy."""
+        build_list = []
+        def add_children(mod):
+            mod["character"] = self
+            self.add_module(mod)
+            build_list.append(mod)
+
+            for child in mod["children"]:
+                add_children(child)
+
+        for mod in build_data:
+            if mod["children"]:
+                add_children(mod)
+            else:
+                mod["character"] = self
+                self.add_module(mod)
+                build_list.append(mod)
+        
+        return build_list
 
     def build_layout(self):
         layout_mod = layout.Layout(character=self)
@@ -136,52 +197,22 @@ class Rig(Asset):
         # open up the character's build file (json)
         self.build_data = buildio.load(self.build.full_path)
 
-        build_list = []
-
         pmanager.update(25, "Building layout rig")
 
         layout_dict, layout_components = self.build_layout()
         self.modules.append(layout_dict)
         self.all_controls += [comp.ctrl for comp in layout_components]
 
-        # unflatten tree
-
-        def add_children(mod):
-            mod["character"] = self
-            self.add_module(mod)
-            build_list.append(mod)
-
-            for child in mod["children"]:
-                add_children(child)
-
-        pmanager.update(30, "Flattening build tree")
-
-        for mod in self.build_data:
-            if mod["children"]:
-                add_children(mod)
-            else:
-                mod["character"] = self
-                self.add_module(mod)
-                build_list.append(mod)
+        pmanager.update(30, "Initializing module dictionaries")
+        build_list = self._flatten_build_tree(self.build_data)
 
         pmanager.update(35, "Building limbs")
 
         if not build_list:
             raise RuntimeError
 
-        for mod in build_list:
-            # access the modType attribute from the module's dictionary
-            mod_type = mod["modType"]
-
-            # create a new instance of that class
-            mod_instance = modules.MODULE_CLASSES[mod_type].__new__(
-                modules.MODULE_CLASSES[mod_type]
-            )
-            mod_instance.__init__(character=self)
-
-            for key, value in mod.items():
-                # transfer the values from the read file to the instance
-                setattr(mod_instance, key, value)
+        for mod_dict in build_list:
+            mod_instance = self._initialize_module_from_dict(mod_dict)
 
             # build it!
             mod_instance.build()

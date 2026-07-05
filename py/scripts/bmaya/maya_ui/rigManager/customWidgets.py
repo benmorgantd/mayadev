@@ -30,7 +30,7 @@ class ModuleList(qtbase.List):
             except AttributeError:
                 return
 
-            newMod = BuildListItem(
+            newMod = BuildTreeItem(
                 modType=selectedModType, attributeContainer=self.attributeContainer
             )
 
@@ -95,8 +95,9 @@ class BuildList(qtbase.Tree):
             modData.pop("modType", None)
             modData.pop("name", None)
             modData.pop("children", None)
+            print(modData)
 
-            listItem = BuildListItem(
+            listItem = BuildTreeItem(
                 modType=modType,
                 attributeContainer=attributeLayoutContainer,
                 customAttrs=modData,
@@ -177,7 +178,7 @@ class BuildList(qtbase.Tree):
         customAttrs.pop("modType", None)
         customAttrs.pop("name", None)
 
-        listItem = BuildListItem(
+        listItem = BuildTreeItem(
             modType=currentObject.modType,
             attributeContainer=currentObject.attributeContainer,
             customAttrs=customAttrs,
@@ -190,9 +191,9 @@ class BuildList(qtbase.Tree):
             self.addTopLevelItem(listItem)
 
 
-class BuildListItem(qtbase.TreeItem):
+class BuildTreeItem(qtbase.TreeItem):
     def __init__(self, modType, customAttrs=None, attributeContainer=None, name=None):
-        super(BuildListItem, self).__init__()
+        super(BuildTreeItem, self).__init__()
 
         self.attributeContainer = attributeContainer
         self.modType = modType
@@ -300,9 +301,14 @@ class AttributeLayoutValue(object):
         if self.attribute == "side":
             widget = QtWidgets.QComboBox()
             widget.addItems(["L", "M", "R"])
+            widget.setCurrentText(self.defaultValue)
         elif self.attribute == "alignWorld":
             widget = QtWidgets.QComboBox()
             widget.addItems(["None", "True", "False"])
+            if isinstance(self.defaultValue, bool):
+                widget.setCurrentText("True" if self.defaultValue else "False")
+            else:
+                widget.setCurrentText("None")
         elif self.valueType in [str]:
             if self.attribute in ["shapeType", "offsetShapeType"]:
                 widget = QtWidgets.QComboBox()

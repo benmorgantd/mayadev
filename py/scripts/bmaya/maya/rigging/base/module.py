@@ -417,7 +417,15 @@ class Module(object):
             cmds.connectAttr(
                 self.node + ".components", ctrl.ctrl + ".module", force=True
             )
-
+    
+    @staticmethod
+    def build_guides():
+        raise NotImplementedError()
+    
+    @staticmethod
+    def build_build_joints():
+        raise NotImplementedError()
+    
     def connect_bind_joints(self):
         """Connects the module's bind joints to their control"""
 
@@ -779,7 +787,6 @@ class Module(object):
 
 def is_module_node(node):
     return dgUtils.has_attribute(node, MODULE_IDENTIFIER_STR)
-
 
 def get_modules_in_scene(of_type=None):
     all_modules = dgUtils.get_nodes_with_attribute(MODULE_IDENTIFIER_STR)

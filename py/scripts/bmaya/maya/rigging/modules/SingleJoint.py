@@ -78,3 +78,15 @@ class SingleJoint(module.Module):
         cmds.parent(ctrl.offset_grp, self.components_grp)
 
         self.setup_align_world(ctrl, default_value=self.align_world)
+    
+    @staticmethod
+    def build_guides(name, side, parent):
+        """Create a joint creation rig for this module"""
+        # TODO: instead of creating a locator, create an axis or joint vis control
+        ctrl = cmds.spaceLocator(name=f"{name}_00_{side}_LOC")[0]
+        cmds.parentConstraint(ctrl, loc, mo=1)
+        grp = cmds.group(jnt, ctrl, name=f"{name}_skeletonBuilder_GRP")
+
+        cmds.parentConstraint(parent, grp, mo=1)
+
+        return grp

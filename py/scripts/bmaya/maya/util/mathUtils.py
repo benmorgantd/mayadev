@@ -272,3 +272,76 @@ def get_world_matrix(transform):
 
 def get_local_matrix(transform):
     return get_matrix(transform, worldSpace=False)
+
+
+def create_axis_visualizer(name="axisVisualizer"):
+    """Generates a single-mesh RGB XYZ axis with tapered ends."""
+    
+    # Component dimensions
+    cyl_radius = 0.1
+    cyl_height = 5.0
+    cone_radius = 0.3
+    cone_height = 1.0
+    sphere_radius = 0.5
+
+    # Define colors and generate surface shaders inline
+    color_data = {
+        'X': ('red', (1.0, 0.0, 0.0)),
+        'Y': ('green', (0.0, 1.0, 0.0)),
+        'Z': ('blue', (0.0, 0.0, 1.0)),
+        'Center': ('gray', (0.5, 0.5, 0.5))
+    }
+    
+    shading_groups = {}
+    
+    for key, (color_name, rgb) in color_data.items():
+        shader = cmds.shadingNode('surfaceShader', asShader=True, name=f"axis_{color_name}_SHD")
+        cmds.setAttr(f"{shader}.outColor", rgb[0], rgb[1], rgb[2], type='double3')
+        
+        sg = cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=f"axis_{color_name}_SG")
+        cmds.connectAttr(f"{shader}.outColor", f"{sg}.surfaceShader", force=True)
+        shading_groups[key] = sg
+
+    # List to collect all geometry nodes for combining
+    geo_components = []
+
+    # Build Center Sphere
+    center_sphere = cmds.polySphere(r=sphere_radius, name='axis_center_GEO')[0]
+    cmds.sets(center_sphere, edit=True, forceElement=shading_groups['Center'])
+    geo_components.append(center_sphere)
+
+    # Axis vectors mapped to their corresponding string keys
+    axis_vectors = {
+        'X': (1, 0, 0),
+        'Y': (0, 1, 0),
+        'Z': (0, 0, 1)
+    }
+
+    # Build cylinders and cones for each axis
+    for axis_name, axis_vec in axis_vectors.items():
+        
+        # Build Cylinder
+        cyl = cmds.polyCylinder(r=cyl_radius, h=cyl_height, ax=axis_vec, name=f'{axis_name}_axis_GEO')[0]
+        cmds.sets(cyl, edit=True, forceElement=shading_groups[axis_name])
+        
+        # Offset cylinder
+        cyl_offset = [cyl_height / 2.0 * v for v in axis_vec]
+        cmds.move(cyl_offset[0], cyl_offset[1], cyl_offset[2], cyl)
+        
+        # Build Tapered End (Cone)
+        cone = cmds.polyCone(r=cone_radius, h=cone_height, ax=axis_vec, name=f'{axis_name}_arrow_GEO')[0]
+        cmds.sets(cone, edit=True, forceElement=shading_groups[axis_name])
+        
+        # Offset cone
+        cone_offset = [(cyl_height + (cone_height / 2.0)) * v for v in axis_vec]
+        cmds.move(cone_offset[0], cone_offset[1], cone_offset[2], cone)
+        
+        # Add both to our list of components to unite
+        geo_components.extend([cyl, cone])
+
+    # Combine all collected geometry into a single mesh and bake it down (delete history)
+    combined_mesh = cmds.polyUnite(geo_components, ch=False, name=f'{name}_GEO')[0]
+
+    # Clear selection to leave the scene clean
+    cmds.select(clear=True)
+    return combined_mesh
