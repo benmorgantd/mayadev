@@ -53,7 +53,7 @@ class RigManager(qtbase.DockableWidget):
 
         self.setupFileMenu()
         self.setupAssetMenu()
-        self.setupCVsMenu()
+        self.setupToolsMenu()
 
         self.widget.menuLayout.addWidget(self.menu)
 
@@ -100,14 +100,26 @@ class RigManager(qtbase.DockableWidget):
         versionAssetAction = assetMenu.addAction("Version Asset")
         versionAssetAction.triggered.connect(lambda: self.rigInstance.version_asset())
 
-    def setupCVsMenu(self):
-        cvsMenu = self.menu.addMenu("CV Tools")
+    def setupToolsMenu(self):
+        toolsMenu = self.menu.addMenu("Tools")
 
-        actionMirror = cvsMenu.addAction("Mirror")
-        actionRemoveData = cvsMenu.addAction("Remove Data (Selection)")
+        # CVs
+        cvsMenu = toolsMenu.addMenu("CVs")
+
+        actionMirror = cvsMenu.addAction("Mirror CVs")
+        actionRemoveData = cvsMenu.addAction("Remove CV Data (Selection)")
 
         actionMirror.triggered.connect(lambda: self.mirrorCvData())
         actionRemoveData.triggered.connect(lambda: self.removeSelectedCVData())
+
+        # Guides
+        guidesMenu = toolsMenu.addMenu("Guides")
+
+        actionBuildGuides = guidesMenu.addAction("Build Guides")
+        actionBuildGuides.triggered.connect(self.build_guides)
+
+        actionBuildBindJoints = guidesMenu.addAction("Build Bind Joints From Guides")
+        actionBuildBindJoints.triggered.connect(self.build_bind_joints)
 
     def openAssetInExplorer(self):
         try:
@@ -288,6 +300,12 @@ class RigManager(qtbase.DockableWidget):
         shapeio.remove_shape_data(
             self.rigInstance.component_path_from_type("cvs"), cmds.ls(selection=True)
         )
+
+    def build_guides(self):
+        self.rigInstance.build_guides()
+    
+    def build_bind_joints(self):
+        self.rigInstance.build_bind_joints()
 
 
 def run():

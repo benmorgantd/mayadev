@@ -8,6 +8,7 @@ import maya.cmds as cmds
 import maya.api.OpenMaya as om
 
 METADATA_ATTR_NAME = 'BMETADATA'
+ALLOWED_METADATA_TYPES = (str, int, float)
 
 def get_nodes_in_scene(ofType=None):
     return cmds.ls(type=ofType) if ofType is not None else cmds.ls()
@@ -82,18 +83,20 @@ def get_metadata(node):
         return dict()
 
 
-def get_metadata_key(node, key):
+def get_metadata_value(node, key):
     """Return the specific key from a node's json metadata"""
-    assert isinstance(key, str)
     metadata = get_metadata(node)
     # Intentionally allow ourselves to raise a KeyError
     return metadata[key]
-    
 
-def set_metadata_key(node, key, value):
+def has_metadata_key(node, key):
+    metadata = get_metadata(node)
+    return key in metadata
+
+def set_metadata_value(node, key, value):
     """Set the value of a particular key in the node's json metadata"""
-    # TODO: verify "value" is a basic type (no dictionaries, complex data types)
     assert isinstance(key, str)
+    assert isinstance(value, ALLOWED_METADATA_TYPES)
 
     if not has_attribute(node, METADATA_ATTR_NAME):
         cmds.addAttr(node, longName=METADATA_ATTR_NAME, dataType='string')
@@ -110,3 +113,30 @@ def set_metadata_key(node, key, value):
     cmds.setAttr(f'{node}.{METADATA_ATTR_NAME}', json.dumps(metadata), type='string')
     set_attr_locked(node, METADATA_ATTR_NAME, True)
 
+def get_nodes_with_metadata():
+    return get_nodes_with_attribute(METADATA_ATTR_NAME)
+
+def get_nodes_with_metadata_key(key):
+    nodes = []
+
+    for node in get_nodes_with_metadata():
+        if has_metadata_key(node, key):
+            nodes.append(node)
+
+    return nodes
+
+def get_nodes_with_metadata_value(key, value):
+    """Returns the node in the scene with """
+
+    nodes = []
+    for node in get_nodes_with_metadata():
+        # We don't ask for nodes with this key because that would require us to read the attribute twice.
+        # Just querying for the attribute's existence is fast, and trying the value query and catching the KeyError is fast.
+        try:
+            result = get_metadata_value(node, key)
+            if result == value:
+                nodes.append(node)
+        except KeyError:
+            pass
+
+    return nodes

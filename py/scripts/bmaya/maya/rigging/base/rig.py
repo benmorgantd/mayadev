@@ -110,26 +110,38 @@ class Rig(Asset):
         build_data = buildio.load(self.build.full_path)
         build_list = self._flatten_build_tree(build_data)
 
+        if dgUtils.get_nodes_with_metadata_key("guides_group"):
+            raise RuntimeError("Guides group already exist.")
+
         guides_group = cmds.group(empty=True, name='GUIDES')
+        dgUtils.set_metadata_value(guides_group, "guides_group", 'main')  # "main" is the top level guides group
 
         for mod_dict in build_list:
-            # access the modType attribute from the module's dictionary
-            mod_type = mod_dict["modType"]
-
-            # create a new instance of that class
-            mod_instance = modules.MODULE_CLASSES[mod_type].__new__(
-                modules.MODULE_CLASSES[mod_type]
-            )
-            mod_instance.__init__(character=self)
-
-            for key, value in mod_dict.items():
-                # transfer the values from the read file to the instance
-                setattr(mod_instance, key, value)
+            mod_instance = self._initialize_module_from_dict(mod_dict)
 
             log.info(f"Building guides for {mod_instance.name}")
             mod_guides_grp = mod_instance.build_guides()
 
             cmds.parent(mod_guides_grp, guides_group, absolute=True)
+    
+    def build_bind_joints(self):
+        '''Build bind joints from guides'''
+        # here we would have to gather guides from the scene via metadata markup and create bind joints using static module methods.
+
+        build_data = buildio.load(self.build.full_path)
+        build_list = self._flatten_build_tree(build_data)
+
+        if not dgUtils.get_nodes_with_metadata_key("guides_group"):
+            raise RuntimeError("Guides do not exist.")
+        
+        cmds.select(clear=True)
+        
+        for mod_dict in build_list:
+            # creating another mod instance. These don't live beyond these functions
+            mod_instance = self._initialize_module_from_dict(mod_dict)
+
+            log.info(f'Building bind joints for {mod_instance.name}')
+            mod_instance.build_bind_joints()
 
     def _initialize_module_from_dict(self, mod_dict):
         """Initializes a module instance from the given dictionary"""

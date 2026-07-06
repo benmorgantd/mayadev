@@ -3,7 +3,7 @@ import maya.cmds as cmds
 from bmaya.maya.rigging.base import module
 from bmaya.maya.rigging.base.decorators import wrapBuild
 from bmaya.maya.rigging.shapes import shapelib
-from bmaya.maya.util import nameUtils, mathUtils
+from bmaya.maya.util import nameUtils, mathUtils, dgUtils, dagUtils
 
 
 class SingleJoint(module.Module):
@@ -82,11 +82,28 @@ class SingleJoint(module.Module):
     def build_guides(self):
         """Create a joint creation rig for this module"""
         start_joint_guide = mathUtils.create_axis_visualizer(name=f'{self.name}_start_joint_GUIDE')
-        grp = cmds.group(start_joint_guide, name=f"{self.name}_guides_GRP")
+        dgUtils.set_metadata_value(start_joint_guide, 'guide', True)
+        dgUtils.set_metadata_value(start_joint_guide, 'guide_module', self.name)
+        dgUtils.set_metadata_value(start_joint_guide, 'guide_socket', 'start_joint')
+
+        grp = cmds.group(start_joint_guide, name=f"{self.name}_GUIDES")
+        dgUtils.set_metadata_value(grp, 'guides_group', self.name)
 
         self.bind_joint_guides['start_joint'] = start_joint_guide
 
         return grp
 
-    def build_build_joints(self):
-        pass
+    def build_bind_joints(self):
+        # TODO: this would be a lot more convenient if we weren't reliant on tagging
+        start_joint_guide = dgUtils.get_nodes_with_metadata_value('guide_module', self.name)[0]
+
+        # TODO: how to name a joint?
+        # TODO: standard utility for naming a bind joint
+        start_joint = cmds.joint(name=f'{self.name}_00_{self.side}_JNT')
+
+        # Match tranforms
+        dagUtils.match_transforms(start_joint, start_joint_guide)
+
+        # TODO: manage parenting. For now, all module bind joints will get created floating, and parenting will have to be done manually.
+
+        cmds.select(clear=True)

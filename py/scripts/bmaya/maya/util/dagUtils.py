@@ -36,3 +36,6 @@ def get_dag_path(node):
     sel.add(node)
     # NOTE: this will raise a TypeError if the node is not a DAG node and a RuntimeError if the node doesn't exist
     return sel.getDagPath(0)
+
+def match_transforms(node, target_node):
+    cmds.xform(node, matrix=cmds.xform(target_node, q=1, matrix=1, ws=1), ws=1)

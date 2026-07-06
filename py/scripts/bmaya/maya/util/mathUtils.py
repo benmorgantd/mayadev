@@ -340,7 +340,7 @@ def create_axis_visualizer(name="axisVisualizer"):
         geo_components.extend([cyl, cone])
 
     # Combine all collected geometry into a single mesh and bake it down (delete history)
-    combined_mesh = cmds.polyUnite(geo_components, ch=False, name=f'{name}_GEO')[0]
+    combined_mesh = cmds.polyUnite(geo_components, ch=False, name=name)[0]
 
     # Clear selection to leave the scene clean
     cmds.select(clear=True)
