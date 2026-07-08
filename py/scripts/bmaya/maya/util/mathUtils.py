@@ -16,17 +16,16 @@ def find_pole_vector(joints, scaleFactor=1):
 
     for i in range(len(joints)):
         obj.add(joints[i])
-        jointDag = om.MDagPath()
-        obj.getDagPath(i, jointDag)
+        jointDag = obj.getDagPath(i)
         jointDags.append(jointDag)
 
     start_jointFnTrans = om.MFnTransform(jointDags[0])
     secondJointFnTrans = om.MFnTransform(jointDags[1])
     endJointFnTrans = om.MFnTransform(jointDags[2])
 
-    start_jointVec = start_jointFnTrans.getTranslation(om.MSpace.kWorld)
-    secondJointVec = secondJointFnTrans.getTranslation(om.MSpace.kWorld)
-    endJointVec = endJointFnTrans.getTranslation(om.MSpace.kWorld)
+    start_jointVec = start_jointFnTrans.translation(om.MSpace.kWorld)
+    secondJointVec = secondJointFnTrans.translation(om.MSpace.kWorld)
+    endJointVec = endJointFnTrans.translation(om.MSpace.kWorld)
 
     # A - B gives us the vector from B to A
     startEndVec = endJointVec - start_jointVec
@@ -278,11 +277,11 @@ def create_axis_visualizer(name="axisVisualizer"):
     """Generates a single-mesh RGB XYZ axis with tapered ends."""
     
     # Component dimensions
-    cyl_radius = 0.1
-    cyl_height = 5.0
-    cone_radius = 0.3
-    cone_height = 1.0
-    sphere_radius = 0.5
+    cyl_radius = 0.04
+    cyl_height = 1
+    cone_radius = 0.1
+    cone_height = 0.2
+    sphere_radius = 0.1
 
     # Define colors and generate surface shaders inline
     color_data = {
@@ -295,11 +294,15 @@ def create_axis_visualizer(name="axisVisualizer"):
     shading_groups = {}
     
     for key, (color_name, rgb) in color_data.items():
-        shader = cmds.shadingNode('surfaceShader', asShader=True, name=f"axis_{color_name}_SHD")
-        cmds.setAttr(f"{shader}.outColor", rgb[0], rgb[1], rgb[2], type='double3')
+        if not cmds.objExists(f'axis_{color_name}_SHD'):
+            shader = cmds.shadingNode('surfaceShader', asShader=True, name=f"axis_{color_name}_SHD")
+            cmds.setAttr(f"{shader}.outColor", rgb[0], rgb[1], rgb[2], type='double3')
         
-        sg = cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=f"axis_{color_name}_SG")
-        cmds.connectAttr(f"{shader}.outColor", f"{sg}.surfaceShader", force=True)
+        sg = f"axis_{color_name}_SG"
+        if not cmds.objExists(sg):
+            sg = cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=f"axis_{color_name}_SG")
+            cmds.connectAttr(f"{shader}.outColor", f"{sg}.surfaceShader", force=True)
+
         shading_groups[key] = sg
 
     # List to collect all geometry nodes for combining

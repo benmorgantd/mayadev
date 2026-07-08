@@ -174,3 +174,10 @@ class Leg(_ThreeJointIkFkTwist.ThreeJointIkFkTwist, _Foot.Foot):
         cmds.parent(self.toeBendCtrl.offset_grp, self.toeTipCtrl.ctrl)
         self.parent_constrain(self.toeBendCtrl, ballIkGrp)
         self.components.append(self.toeBendCtrl)
+    
+    def build_guides(self):
+        # TODO: feet guides
+        return self._build_guide_chain()
+
+    def build_bind_joints(self):
+        return self._build_bind_joint_chain_from_guides()

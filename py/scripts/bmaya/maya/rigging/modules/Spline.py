@@ -35,6 +35,7 @@ class Spline(module.Module):
             mirror=mirror,
             side=side,
             shape_type=shapeType,
+            parent=parent
         )
 
         self.start_joint = start_joint
@@ -360,3 +361,9 @@ class Spline(module.Module):
                         )[0],
                     ),
                 )
+
+    def build_guides(self):
+        return self._build_guide_chain(down_axis='y')
+
+    def build_bind_joints(self):
+        return self._build_bind_joint_chain_from_guides()

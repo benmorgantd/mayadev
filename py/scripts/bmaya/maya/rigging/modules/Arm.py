@@ -70,3 +70,9 @@ class Arm(_ThreeJointIkFkTwist.ThreeJointIkFkTwist):
         cmds.connectAttr(self.blendReverse, self.fkShoulderGimbal.offset_grp + ".v")
 
         self.components.append(self.fkShoulderGimbal)
+
+    def build_guides(self):
+        return self._build_guide_chain()
+
+    def build_bind_joints(self):
+        return self._build_bind_joint_chain_from_guides()

@@ -2,10 +2,10 @@ import maya.cmds as cmds
 
 from bmaya.maya.rigging.modules import FkChain
 from bmaya.maya.rigging.base.decorators import wrapBuild
-from bmaya.maya.util import nameUtils, mathUtils
+from bmaya.maya.util import mathUtils
 from bmaya.core import constants
 
-
+# TODO: is FkTwist even a module that can be created on its own?
 class FkTwist(FkChain.FkChain):
 
     def __init__(
@@ -35,6 +35,7 @@ class FkTwist(FkChain.FkChain):
             start_joint=start_joint,
             end_joint=end_joint,
             exclude=exclude,
+            parent=parent
         )
 
         self.twistAxis = twistAxis

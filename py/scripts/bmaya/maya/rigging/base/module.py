@@ -13,7 +13,7 @@ import maya.cmds as cmds
 import maya.api.OpenMaya as om
 
 from bmaya.core import constants, log
-from bmaya.maya.util import nameUtils, mathUtils, dgUtils, matrixConstraint
+from bmaya.maya.util import nameUtils, mathUtils, dgUtils, dagUtils
 from bmaya.maya.rigging.shapes import shapelib
 
 MODULE_IDENTIFIER_STR = "isModule"
@@ -425,13 +425,73 @@ class Module(object):
     
     def get_start_joint_guide(self):
         return dgUtils.get_nodes_with_metadata_values(
-            {'guide': True, 'guide_module':self.name, 'guide_socket': 'start_joint'}
+            {'guide': True, 'guide_module':self.name, 'guide_socket': 'start_joint', 'side' : self.side}
             )[0]
     
     def get_all_joint_guides(self):
         return dgUtils.get_nodes_with_metadata_values(
-            {'guide': True, 'guide_module': self.name}
+            {'guide': True, 'guide_module': self.name, 'side' : self.side}
         )
+    
+    def _build_guide_chain(self, down_axis='x'):
+        start_joint_guide = mathUtils.create_axis_visualizer(name=f'{self.name}_start_joint_{self.side}_GUIDE')
+        dgUtils.set_metadata_value(start_joint_guide, 'guide', True)
+        dgUtils.set_metadata_value(start_joint_guide, 'guide_module', self.name)
+        dgUtils.set_metadata_value(start_joint_guide, 'guide_socket', 'start_joint')
+        dgUtils.set_metadata_value(start_joint_guide, 'side', self.side)
+
+        previous_guide = start_joint_guide
+
+        for i in range(1, 3):
+            guide = mathUtils.create_axis_visualizer(name=f'{self.name}_{i:02d}_{self.side}_GUIDE')
+            dgUtils.set_metadata_value(guide, 'guide', True)
+            dgUtils.set_metadata_value(guide, 'guide_module', self.name)
+            dgUtils.set_metadata_value(guide, 'guide_socket', 'tree') # There's no good socket for FkChain
+            dgUtils.set_metadata_value(guide, 'side', self.side)
+            cmds.parent(guide, previous_guide)
+            cmds.setAttr(f'{guide}.translate{down_axis.upper()}', 2)
+            previous_guide = guide
+
+        grp = cmds.group(start_joint_guide, name=f"{self.name}_GUIDES")
+        dgUtils.set_metadata_value(grp, 'guides_group', self.name)
+
+        self.bind_joint_guides['start_joint'] = start_joint_guide
+
+        return grp
+
+    def _build_bind_joint_chain_from_guides(self):
+        start_joint_guide = self.get_start_joint_guide()
+        all_guides = self.get_all_joint_guides()
+
+        # Map guide DAG paths to the newly created joints
+        guide_to_joint = {}
+
+        # 1. Create all joints at the correct locations, unparented
+        for guide in all_guides:
+            cmds.select(clear=True)
+            joint_name = guide.replace("_GUIDE", "_JNT")
+            if guide == start_joint_guide:
+                joint_name = joint_name.replace('_start_joint_', '_00_')
+
+            joint = cmds.joint(name=joint_name)
+
+            dagUtils.match_transforms(joint, guide)
+            guide_to_joint[guide] = joint
+
+        # 2. Reconstruct the hierarchy based on the Maya DAG
+        for guide in all_guides:
+            parent_node = cmds.listRelatives(guide, parent=True)
+            
+            if parent_node:
+                # If the guide's parent is also a guide, parent the corresponding joint
+                parent_guide = parent_node[0]
+                if parent_guide in guide_to_joint:
+                    child_joint = guide_to_joint[guide]
+                    parent_joint = guide_to_joint[parent_guide]
+                    cmds.parent(child_joint, parent_joint)
+
+        # TODO: freeze transformations, orient joint
+        cmds.select(clear=True)
     
     def build_bind_joints(self):
         raise NotImplementedError()
@@ -673,6 +733,7 @@ class Module(object):
         twist_joints = []
 
         for c in children:
+            # TODO: use joint markup instead of naming for marking twist joints
             if "Twist" in c:
                 twist_joints.append(c)
 

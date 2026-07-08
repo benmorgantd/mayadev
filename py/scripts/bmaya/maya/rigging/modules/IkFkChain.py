@@ -111,3 +111,11 @@ class IkFkChain(FkChain.FkChain, IkChain.IkChain):
         cmds.connectAttr(
             self.node + ".FKIK", "{0}.v".format(self.ikComponents[-1].offset_grp)
         )
+
+        # TODO: there's no control driving the blend
+
+    def build_guides(self):
+        return self._build_guide_chain()
+
+    def build_bind_joints(self):
+        return self._build_bind_joint_chain_from_guides()

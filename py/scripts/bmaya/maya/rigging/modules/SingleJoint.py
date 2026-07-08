@@ -81,10 +81,11 @@ class SingleJoint(module.Module):
     
     def build_guides(self):
         """Create a joint creation rig for this module"""
-        start_joint_guide = mathUtils.create_axis_visualizer(name=f'{self.name}_start_joint_GUIDE')
+        start_joint_guide = mathUtils.create_axis_visualizer(name=f'{self.name}_start_joint_{self.side}_GUIDE')
         dgUtils.set_metadata_value(start_joint_guide, 'guide', True)
         dgUtils.set_metadata_value(start_joint_guide, 'guide_module', self.name)
         dgUtils.set_metadata_value(start_joint_guide, 'guide_socket', 'start_joint')
+        dgUtils.set_metadata_value(start_joint_guide, 'side', self.side)
 
         grp = cmds.group(start_joint_guide, name=f"{self.name}_GUIDES")
         dgUtils.set_metadata_value(grp, 'guides_group', self.name)

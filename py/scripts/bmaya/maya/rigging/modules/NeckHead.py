@@ -37,6 +37,7 @@ class NeckHead(FkTwist.FkTwist):
             exclude=exclude,
             exponent=exponent,
             twistAxis=twistAxis,
+            parent=parent
         )
 
         self.modType = "NeckHead"
@@ -103,3 +104,9 @@ class NeckHead(FkTwist.FkTwist):
                 worldUpVector=constants.UNIT_VECTORS[constants.UP_AXIS],
                 maintainOffset=True,
             )
+
+    def build_guides(self):
+        return self._build_guide_chain()
+
+    def build_bind_joints(self):
+        return self._build_bind_joint_chain_from_guides()

@@ -2,7 +2,7 @@ import maya.cmds as cmds
 import maya.api.OpenMaya as om
 
 from bmaya.core import constants
-from bmaya.maya.util import nameUtils, mathUtils
+from bmaya.maya.util import nameUtils, mathUtils, dgUtils, dagUtils
 from bmaya.maya.rigging.base import module
 from bmaya.maya.rigging.base.decorators import wrapBuild
 from bmaya.maya.rigging.shapes import shapelib
@@ -270,3 +270,9 @@ class IkChain(module.Module):
                 rev + ".outputX",
                 "{0}.{1}".format(poleVectorPointConstraint[0], weights[0]),
             )
+    
+    def build_guides(self):
+        return self._build_guide_chain()
+
+    def build_bind_joints(self):
+        return self._build_bind_joint_chain_from_guides()

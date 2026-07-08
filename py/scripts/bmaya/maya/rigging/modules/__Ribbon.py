@@ -586,3 +586,9 @@ class Ribbon(module.Module):
             fkDriveControls.append(fkCtrl)
 
         return fkDriveControls
+
+    def build_guides(self):
+        return self._build_guide_chain()
+
+    def build_bind_joints(self):
+        return self._build_bind_joint_chain_from_guides()
