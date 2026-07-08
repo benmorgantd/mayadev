@@ -95,15 +95,12 @@ class SingleJoint(module.Module):
 
     def build_bind_joints(self):
         # TODO: this would be a lot more convenient if we weren't reliant on tagging
-        start_joint_guide = dgUtils.get_nodes_with_metadata_value('guide_module', self.name)[0]
-
-        # TODO: how to name a joint?
-        # TODO: standard utility for naming a bind joint
         start_joint = cmds.joint(name=f'{self.name}_00_{self.side}_JNT')
 
         # Match tranforms
-        dagUtils.match_transforms(start_joint, start_joint_guide)
+        dagUtils.match_transforms(start_joint, self.get_start_joint_guide())
 
-        # TODO: manage parenting. For now, all module bind joints will get created floating, and parenting will have to be done manually.
+        # TODO: manage parenting. 
+        # For now, all module bind joints will get created floating, and parenting will have to be done manually.
 
         cmds.select(clear=True)

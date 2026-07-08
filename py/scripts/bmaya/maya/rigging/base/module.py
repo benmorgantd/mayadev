@@ -423,6 +423,16 @@ class Module(object):
     def build_guides(self):
         raise NotImplementedError()
     
+    def get_start_joint_guide(self):
+        return dgUtils.get_nodes_with_metadata_values(
+            {'guide': True, 'guide_module':self.name, 'guide_socket': 'start_joint'}
+            )[0]
+    
+    def get_all_joint_guides(self):
+        return dgUtils.get_nodes_with_metadata_values(
+            {'guide': True, 'guide_module': self.name}
+        )
+    
     def build_bind_joints(self):
         raise NotImplementedError()
     
@@ -486,6 +496,7 @@ class Module(object):
             it_dag.next()
 
         return bind_joints
+    
 
     def create_drive_joint(self, jnt, label="Driver", constrain=True):
         driver = cmds.duplicate(

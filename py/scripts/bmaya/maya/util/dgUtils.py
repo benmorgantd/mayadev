@@ -140,3 +140,22 @@ def get_nodes_with_metadata_value(key, value):
             pass
 
     return nodes
+
+def get_nodes_with_metadata_values(keyvalue_dict):
+    """Returns nodes that contain all the provided key-value pairs."""
+    nodes = []
+
+    for node in get_nodes_with_metadata():
+        for key, value in keyvalue_dict.items():
+            try:
+                # Query the value directly on the current node
+                if get_metadata_value(node, key) != value:
+                    break  # Value mismatch, skip to the next node
+            except KeyError:
+                break  # Key missing entirely, skip to the next node
+        else:
+            # The 'else' block only executes if the inner loop finishes without breaking.
+            # This means all keys were present and all values matched.
+            nodes.append(node)
+            
+    return nodes
