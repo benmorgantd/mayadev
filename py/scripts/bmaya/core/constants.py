@@ -10,6 +10,8 @@ SIDE_NAMES = {"left": "L", "right": "R", "middle": "M"}
 
 JOINT_SUFFIX = "JNT"
 
+GUIDE_SUFFIX = 'GUIDE'
+
 DOWN_AXIS = "X"
 
 SPINE_UP_AXIS = "Y"

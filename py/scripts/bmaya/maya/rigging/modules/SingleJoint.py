@@ -81,14 +81,18 @@ class SingleJoint(module.Module):
     
     def build_guides(self):
         """Create a joint creation rig for this module"""
-        start_joint_guide = mathUtils.create_axis_visualizer(name=f'{self.name}_start_joint_{self.side}_GUIDE')
+        start_joint_guide = mathUtils.create_axis_visualizer(name=nameUtils.name_new_guide(self.name, 0, self.side))
+
         dgUtils.set_metadata_value(start_joint_guide, 'guide', True)
         dgUtils.set_metadata_value(start_joint_guide, 'guide_module', self.name)
         dgUtils.set_metadata_value(start_joint_guide, 'guide_socket', 'start_joint')
         dgUtils.set_metadata_value(start_joint_guide, 'side', self.side)
 
-        grp = cmds.group(start_joint_guide, name=f"{self.name}_GUIDES")
+        grp = cmds.group(empty=True, name=f"{self.name}_GUIDES")
+        cmds.parent(start_joint_guide, grp)
+
         dgUtils.set_metadata_value(grp, 'guides_group', self.name)
+        dgUtils.set_metadata_value(grp, 'side', self.side)
 
         self.bind_joint_guides['start_joint'] = start_joint_guide
 
@@ -96,7 +100,7 @@ class SingleJoint(module.Module):
 
     def build_bind_joints(self):
         # TODO: this would be a lot more convenient if we weren't reliant on tagging
-        start_joint = cmds.joint(name=f'{self.name}_00_{self.side}_JNT')
+        start_joint = cmds.joint(name=nameUtils.name_new_bind_joint(self.name, 0, self.side))
 
         # Match tranforms
         dagUtils.match_transforms(start_joint, self.get_start_joint_guide())

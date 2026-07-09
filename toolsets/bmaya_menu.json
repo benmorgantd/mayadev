@@ -21,15 +21,55 @@
                     "enabled": true
                 },
                 {
-                    "type": "submenu",
-                    "label": "Utilities",
-                    "items": [
-                        {
-                            "type": "tool",
-                            "guid": "8fa176df-2041-4c74-88db-410a7114d567",
-                            "enabled": true
-                        }
-                    ]
+                    "type": "tool",
+                    "guid": "934753d7-1af5-42bd-b7ba-01a3dc529ad9",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "cbb9f0b3-0a01-4994-82be-06c84a9ce2a3",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "c90569ad-b3e3-4889-b88f-42e5de93dc63",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "ca1b0814-1182-4f17-b65f-06d498951cef",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "43ed01ff-81db-4c0b-af7f-dfdb55ccd988",
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "type": "submenu",
+            "label": "Joints",
+            "items": [
+                {
+                    "type": "tool",
+                    "guid": "7322e7c4-c219-49ad-9096-0997c241b42d",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "8fa176df-2041-4c74-88db-410a7114d567",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "4a277861-5be0-43fc-a817-b74e71c109c1",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "2f565b37-5095-4c6a-bce8-26a44d3b8db9",
+                    "enabled": true
                 }
             ]
         }

@@ -32,8 +32,7 @@ from bmaya.core.util import fileUtils
 
 from bmaya.maya.rigging.shapes import shapelib, shapeio
 from bmaya.maya.rigging.weights import weightio
-from bmaya.maya.rigging import buildio
-from bmaya.maya.rigging import modules
+from bmaya.maya.rigging import modules, buildio, joint
 import bmaya.maya.constants
 from bmaya.maya.util import dgUtils, dagUtils
 
@@ -57,7 +56,7 @@ class Rig(Asset):
     myAsset.openFile(myAsset.componentPathFromType('animRig'))
     """
 
-    def __init__(self, asset_id, has_face=True):
+    def __init__(self, asset_id, has_face=False):
         super(Rig, self).__init__(asset_id)
 
         # TODO: is there anything identifying this as a Rig node?
@@ -142,6 +141,9 @@ class Rig(Asset):
 
             log.info(f'Building bind joints for {mod_instance.name}')
             mod_instance.build_bind_joints()
+        
+        joint.label_joints()
+        
 
     def _initialize_module_from_dict(self, mod_dict):
         """Initializes a module instance from the given dictionary"""

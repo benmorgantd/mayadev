@@ -434,7 +434,7 @@ class Module(object):
         )
     
     def _build_guide_chain(self, down_axis='x'):
-        start_joint_guide = mathUtils.create_axis_visualizer(name=f'{self.name}_start_joint_{self.side}_GUIDE')
+        start_joint_guide = mathUtils.create_axis_visualizer(name=nameUtils.name_new_guide(self.name, 0, self.side))
         dgUtils.set_metadata_value(start_joint_guide, 'guide', True)
         dgUtils.set_metadata_value(start_joint_guide, 'guide_module', self.name)
         dgUtils.set_metadata_value(start_joint_guide, 'guide_socket', 'start_joint')
@@ -443,7 +443,7 @@ class Module(object):
         previous_guide = start_joint_guide
 
         for i in range(1, 3):
-            guide = mathUtils.create_axis_visualizer(name=f'{self.name}_{i:02d}_{self.side}_GUIDE')
+            guide = mathUtils.create_axis_visualizer(name=nameUtils.name_new_guide(self.name, i, self.side))
             dgUtils.set_metadata_value(guide, 'guide', True)
             dgUtils.set_metadata_value(guide, 'guide_module', self.name)
             dgUtils.set_metadata_value(guide, 'guide_socket', 'tree') # There's no good socket for FkChain
@@ -452,8 +452,9 @@ class Module(object):
             cmds.setAttr(f'{guide}.translate{down_axis.upper()}', 2)
             previous_guide = guide
 
-        grp = cmds.group(start_joint_guide, name=f"{self.name}_GUIDES")
+        grp = cmds.group(start_joint_guide, name=f"{self.name}_{self.side}_GUIDES")
         dgUtils.set_metadata_value(grp, 'guides_group', self.name)
+        dgUtils.set_metadata_value(grp, 'side', self.side)
 
         self.bind_joint_guides['start_joint'] = start_joint_guide
 
@@ -470,8 +471,8 @@ class Module(object):
         for guide in all_guides:
             cmds.select(clear=True)
             joint_name = guide.replace("_GUIDE", "_JNT")
-            if guide == start_joint_guide:
-                joint_name = joint_name.replace('_start_joint_', '_00_')
+            # if guide == start_joint_guide:
+                # joint_name = joint_name.replace('_start_joint_', '_00_')
 
             joint = cmds.joint(name=joint_name)
 

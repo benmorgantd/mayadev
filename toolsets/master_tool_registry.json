@@ -39,6 +39,70 @@
             "script": "import bmaya.maya_ui.tool_views.tool_menu\nbmaya.maya_ui.tool_views.tool_menu.show_menu_editor_ui()",
             "icon": null,
             "enabled": true
+        },
+        {
+            "guid": "7322e7c4-c219-49ad-9096-0997c241b42d",
+            "name": "Create Joint at Center",
+            "short_name": "Jnt Ctr",
+            "script": "import bmaya.maya.rigging.joint as jointUtils\njointUtils.create_joint_at_selection_center()",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "4a277861-5be0-43fc-a817-b74e71c109c1",
+            "name": "Orient to World",
+            "short_name": "oWorld",
+            "script": "import bmaya.maya.rigging.joints as jointUtils\njointUtils.orient_to_world(cmds.ls(sl=1, type='joint'))",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "2f565b37-5095-4c6a-bce8-26a44d3b8db9",
+            "name": "Orient to Mesh",
+            "short_name": "Orient to Mesh",
+            "script": "import bmaya.maya.rigging.joints as jointUtils\nsel = cmds.ls(sl=1)\njointUtils.orient_to_mesh(sel[0:-1], sel[-1])",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "934753d7-1af5-42bd-b7ba-01a3dc529ad9",
+            "name": "Reset Module",
+            "short_name": "rMod",
+            "script": "from bmaya.maya.rigging import rigTools\nrigTools.reset_module(cmds.ls(sl=1)[0])",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "cbb9f0b3-0a01-4994-82be-06c84a9ce2a3",
+            "name": "Reset Character",
+            "short_name": "rChar",
+            "script": "from bmaya.maya.rigging import rigTools\nrigTools.reset_character(cmds.ls(sl=1)[0])",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "c90569ad-b3e3-4889-b88f-42e5de93dc63",
+            "name": "Key All",
+            "short_name": "kAll",
+            "script": "from bmaya.maya.rigging import rigTools\nrigTools.key_all(cmds.ls(sl=1)[0])",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "ca1b0814-1182-4f17-b65f-06d498951cef",
+            "name": "Match Ik to FK",
+            "short_name": "ik>fk",
+            "script": "from bmaya.maya.rigging import rigTools\nrigTools.match_ik_to_fk(cmds.ls(sl=1)[0])",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "43ed01ff-81db-4c0b-af7f-dfdb55ccd988",
+            "name": "Match FK to IK",
+            "short_name": "fk>ik",
+            "script": "from bmaya.maya.rigging import rigTools\nrigTools.match_fk_to_ik(cmds.ls(sl=1)[0])",
+            "icon": null,
+            "enabled": true
         }
     ]
 }

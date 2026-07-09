@@ -10,15 +10,54 @@ import maya.api.OpenMaya as om
 METADATA_ATTR_NAME = 'BMETADATA'
 ALLOWED_METADATA_TYPES = (str, int, float)
 
+
 def get_nodes_in_scene(ofType=None):
-    return cmds.ls(type=ofType) if ofType is not None else cmds.ls()
+    """Returns full paths/names of all nodes matching the given MFn type."""
+    # Default to kDependencyNode if no type is specified (matches all nodes)
+    filter_type = getattr(om.MFn, ofType) if ofType else om.MFn.kDependencyNode
+    
+    nodes = []
+    # Initialize the iterator with the specific MFn type filter
+    it = om.MItDependencyNodes(filter_type)
+    
+    while not it.isDone():
+        mobj = it.thisNode()
+        
+        # Check if it's a DAG node to get the full path, otherwise get the DG name
+        if mobj.hasFn(om.MFn.kDagNode):
+            dag_fn = om.MDagPath.getAPathTo(mobj)
+            nodes.append(dag_fn.fullPathName())
+        else:
+            dg_fn = om.MFnDependencyNode(mobj)
+            nodes.append(dg_fn.name())
+            
+        it.next()
+        
+    return nodes
 
 
 def get_nodes_with_attribute(attribute_name, of_type=None):
-    if of_type:
-        return cmds.ls(f"*.{attribute_name}", type=of_type, objectsOnly=True)
-    else:
-        return cmds.ls(f"*.{attribute_name}", objectsOnly=True)
+    """Returns full paths/names of nodes that possess the specified attribute."""
+    filter_type = getattr(om.MFn, of_type) if of_type else om.MFn.kDependencyNode
+    
+    nodes = []
+    it = om.MItDependencyNodes(filter_type)
+    
+    while not it.isDone():
+        mobj = it.thisNode()
+        dg_fn = om.MFnDependencyNode(mobj)
+        
+        # OpenMaya attribute lookup is significantly faster than string checks
+        if dg_fn.hasAttribute(attribute_name):
+            if mobj.hasFn(om.MFn.kDagNode):
+                dag_fn = om.MDagPath.getAPathTo(mobj)
+                nodes.append(dag_fn.fullPathName())
+            else:
+                nodes.append(dg_fn.name())
+                
+        it.next()
+        
+    return nodes
 
 
 def get_mobject(node):

@@ -5,7 +5,7 @@ Utility functions for working with joints in maya.
 import math
 import maya.cmds as cmds
 import maya.api.OpenMaya as om
-from bmaya.core import constants
+from bmaya.core import constants, log
 from bmaya.maya.util import nameUtils
 
 
@@ -151,7 +151,7 @@ def best_fit_plane():
     cmds.delete(aimLoc)
 """
 
-
+# TODO: I don't know if this is a working util given the hardcoded
 def add_twist_joints(start_joint, end_joint, joint_count=3):
     """Add twist joints as a child of the given joint.
     The child of the given joint will be used as the end joint to determine length.
@@ -213,7 +213,6 @@ def orient_to_world(joints):
             cmds.parent(children, world=True)
 
         cmds.delete(cmds.orientConstraint(worldLoc, jnt, maintainOffset=False))
-
         cmds.makeIdentity(jnt, apply=True, rotate=True)
 
         if children:
@@ -257,7 +256,6 @@ def mirror_face_joints(joints):
 
 
 def size_joints():
-
     skeletonJoints = cmds.listRelatives(
         "SKELETON", type="joint", allDescendents=True, full_path=True
     )
@@ -265,46 +263,28 @@ def size_joints():
     bindJoints = cmds.sets("BIND_set", query=True)
 
     for jnt in skeletonJoints:
-
         if jnt in bindJoints:
-
             if "hand" in jnt:
-
                 cmds.setAttr(jnt + ".radius", 1)
-
             else:
-
                 cmds.setAttr(jnt + ".radius", 3)
-
         else:
-
             cmds.setAttr(jnt + ".drawStyle", 0)
 
-
 def label_joints():
-
     for jnt in cmds.ls(type="joint"):
-
         jntSplit = jnt.split("_")
 
         if "_M_" in jnt:
-
             cmds.setAttr(jnt + ".side", 0)
-
         if "_L_" in jnt:
-
             cmds.setAttr(jnt + ".side", 1)
-
         if "_R_" in jnt:
-
             cmds.setAttr(jnt + ".side", 2)
 
         cmds.setAttr(jnt + ".type", 18)
 
         try:
-
-            cmds.setAttr(jnt + ".otherType", jntSplit[0] + jntSplit[1], type="string")
-
+            cmds.setAttr(jnt + ".otherType", f'{jntSplit[0]}_{jntSplit[1]}', type="string")
         except IndexError:
-
             log.info(jnt + " may be named incorrectly.")
