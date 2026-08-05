@@ -282,12 +282,19 @@ class RigManager(qtbase.DockableWidget):
             configData = json.load(f)
 
         recentFiles = configData["recentFiles"]
-        if filepath not in recentFiles:
-            recentFiles.append(filepath)
+        updatedRecentFiles = []
 
-        configData["recentFiles"] = recentFiles
+        for f in recentFiles:
+            if f != filepath:
+                updatedRecentFiles.append(f)
+        # Always put our new file at the top
+        updatedRecentFiles.append(filepath)
+
+        configData["recentFiles"] = updatedRecentFiles
         with open(configFile, "w") as f:
             json.dump(configData, f, indent=4)
+
+        # TODO: now re-build the file menu
 
     def mirrorCvData(self):
         from bmaya.maya.rigging.shapes import shapeio

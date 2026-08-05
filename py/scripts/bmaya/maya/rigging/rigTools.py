@@ -17,7 +17,8 @@ from bmaya.core import log
 
 from bmaya.core import constants
 
-from bmaya.maya.util import mathUtils, joint
+from bmaya.maya.util import mathUtils
+from . import joint
 
 
 def toggle_skin_mode():

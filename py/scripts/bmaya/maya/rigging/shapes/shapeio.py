@@ -128,9 +128,7 @@ def mirror(cvsPath):
         if mirror_name in scene:
 
             sel.add(mirror_name)
-            mirror_dag = om.MDagPath()
-
-            sel.getDagPath(0, mirror_dag)
+            mirror_dag = sel.getDagPath(0)
 
             fn_nurbs = om.MFnNurbsCurve(mirror_dag)
 
@@ -142,9 +140,9 @@ def mirror(cvsPath):
 
                 flipped_x = -1 * point[0]
 
-                final_point_array.append(flipped_x, point[1], point[2])
+                final_point_array.append(om.MPoint(flipped_x, point[1], point[2]))
 
-            fn_nurbs.setCVs(final_point_array, om.MSpace.kWorld)
+            fn_nurbs.setCVPositions(final_point_array, om.MSpace.kWorld)
 
             fn_nurbs.updateCurve()
 

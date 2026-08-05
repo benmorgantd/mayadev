@@ -125,7 +125,7 @@ class Foot(object):
             cmds.setAttr(revJnt + ".rotateOrder", 2)
 
             if i == 4:
-                self.parentConstrain(revJnt, self.footHierarchy[i])
+                self.parent_constrain(revJnt, self.footHierarchy[i])
 
             reverseHierarchy.append(revJnt)
 
@@ -133,7 +133,7 @@ class Foot(object):
 
         cmds.select(clear=True)
 
-        cmds.parent(reverseHierarchy[-3], self.driverGrp)
+        cmds.parent(reverseHierarchy[-3], self.driver_grp)
 
         return reverseHierarchy
 
@@ -196,8 +196,8 @@ class Foot(object):
         cmds.parent(self.bankOutCtrl.offset_grp, self.heelCtrl.ctrl)
         cmds.parent(self.heelCtrl.offset_grp, self.ballSwivelCtrl.ctrl)
 
-        self.parentConstrain(self.toeTipCtrl.ctrl, self.reverseHierarchy[-3])
-        self.parentConstrain(self.ballRollCtrl.ctrl, self.reverseHierarchy[-2])
+        self.parent_constrain(self.toeTipCtrl.ctrl, self.reverseHierarchy[-3])
+        self.parent_constrain(self.ballRollCtrl.ctrl, self.reverseHierarchy[-2])
 
         return [
             self.ballSwivelCtrl,
@@ -216,6 +216,6 @@ class Foot(object):
             jnt=jnt,
             shapeType="cube",
         )
-        self.parentConstrain(ctrl.ctrl, jnt, maintainOffset=False)
+        self.parent_constrain(ctrl.ctrl, jnt, maintain_offset=False)
 
         return [ctrl]

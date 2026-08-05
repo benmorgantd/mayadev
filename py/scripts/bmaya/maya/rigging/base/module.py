@@ -242,9 +242,7 @@ class Module(object):
 
             mirrored_init_args = {}
 
-            raise NotImplementedError("Mirroring is not implemented yet for py3")
-
-            # TODO: py3
+            # Mirror the instance attributes. There could be a more data-oriented way to do this (classes for attrs, get_mirror())
             for attr in inspect.getfullargspec(self.__init__).args:
                 try:
                     value = getattr(self, attr)
@@ -277,9 +275,7 @@ class Module(object):
 
             # set attribute manually for parent so that we know it has the
             # start_joint variable set
-            setattr(
-                mirrorSelf, "parent", mirrorSelf.determine_parent(mirrorSelf.parent)
-            )
+            setattr(mirrorSelf, "parent", mirrorSelf.determine_parent(mirrorSelf.parent))
 
             mirrorSelf.build()
 
@@ -524,7 +520,7 @@ class Module(object):
         bind_joints = []
 
         if not start_joint:
-            raise RuntimeError("Need a start joint.")
+            raise RuntimeError(f"{self.name} is missing its start joint: {self.start_joint}. Does it exist?")
 
         sel.add(start_joint)
         dag = sel.getDagPath(0)

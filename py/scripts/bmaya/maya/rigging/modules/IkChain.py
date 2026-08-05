@@ -120,9 +120,9 @@ class IkChain(module.Module):
                 1,
             ]
 
-            mMatrix = om.MMatrix()
+            mMatrix = om.MMatrix(pythonMatrixList)
 
-            om.MScriptUtil.createMatrixFromList(pythonMatrixList, mMatrix)
+            # om.MScriptUtil.createMatrixFromList(pythonMatrixList, mMatrix)
 
             if not downAxis:
                 downAxis = constants.DOWN_AXIS
@@ -155,17 +155,10 @@ class IkChain(module.Module):
                 # for when axis get set to the same value
                 R = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
 
-            reorderMatrix = om.MMatrix()
-            om.MScriptUtil.createMatrixFromList(R, reorderMatrix)
+            reorderMatrix = om.MMatrix(R)
             # reorder the initial matrix to use the desired down and up axis
             reorderedMatrix = reorderMatrix * mMatrix
-
-            pythonMatrixList = list(
-                om.MScriptUtil.getDoubleArrayItem(reorderedMatrix[i], j)
-                for i in range(4)
-                for j in range(4)
-            )
-
+            pythonMatrixList = list(reorderedMatrix)
             cmds.xform(endCtrl.offset_grp, matrix=pythonMatrixList)
 
         else:

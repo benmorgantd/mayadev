@@ -205,7 +205,7 @@ class BuildTreeItem(qtbase.TreeItem):
 
         attrs_to_use = self.customAttrs if self.customAttrs else self.defaultAttrs
         self.attributeLayout = AttributeLayout(
-            parent=self.attributeContainer, attributes=attrs_to_use
+            parent=self.attributeContainer, attributes=attrs_to_use, modType=modType
         )
         self.attributeLayout.build()
 
@@ -341,19 +341,24 @@ class AttributeLayoutValue(object):
 
 
 class AttributeLayout(QtWidgets.QWidget):
-    def __init__(self, parent=None, attributes=None):
+    def __init__(self, parent=None, attributes=None, modType=None):
         super(AttributeLayout, self).__init__()
         self.attributes = attributes
         self.rows = []
         self.layout = QtWidgets.QGridLayout()
         self.layout.setVerticalSpacing(5)
         self.setLayout(self.layout)
+        self.modType = modType
 
         if parent:
             parent.addWidget(self)
 
     def build(self):
         row = 0
+
+        typeLabel = QtWidgets.QLabel(f'Type: {self.modType}')
+        self.layout.addWidget(typeLabel)
+        row = 1
 
         def addAttr(attribute, value, row_idx):
             attrWidget = QtWidgets.QLabel(attribute)
