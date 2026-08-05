@@ -2,12 +2,16 @@
 
 import sys
 import logging
+# TODO: this is in core but we have maya imports here.
 import maya.api.OpenMaya as om
 import bmaya.maya.constants
 
 _LOGGER = None
 
+# LOG_FORMAT = "[%(levelname)s] %(asctime)s.%(msecs)02d %(filename)s:%(lineno)d >> %(message)s"
+LOG_FORMAT = "[%(levelname)s] %(filename)s:%(lineno)d >> %(message)s"
 
+# TODO: move this to a maya level module
 class MayaLogHandler(logging.Handler):
     """Redirects standard Python logging records to native Maya GUI elements."""
 
@@ -24,7 +28,7 @@ class MayaLogHandler(logging.Handler):
             self.handleError(record)
 
 
-def init_logger() -> logging.Logger:
+def init_logger(is_batch=False) -> logging.Logger:
     """Explicitly initializes and configures the master bmaya logger."""
     global _LOGGER
 
@@ -41,11 +45,8 @@ def init_logger() -> logging.Logger:
     default_handler_level = logging.INFO
 
     # Branch logging behavior for headless batch execution
-    if bmaya.maya.constants.IS_BATCH:
-        log_format = (
-            "[%(name)s][%(asctime)s.%(msecs)02d][%(filename)s:%(lineno)d] %(message)s"
-        )
-        formatter = logging.Formatter(log_format, datefmt="%H:%M:%S")
+    if is_batch:
+        formatter = logging.Formatter(LOG_FORMAT, datefmt="%H:%M:%S")
 
         # Target sys.stdout so the framework's StreamTee can intercept it
         stdout_handler = logging.StreamHandler(sys.stdout)
@@ -54,10 +55,7 @@ def init_logger() -> logging.Logger:
         _LOGGER.addHandler(stdout_handler)
     else:
         # Standard Interactive UI Configuration
-        log_format = (
-            "[%(name)s][%(asctime)s.%(msecs)02d][%(filename)s:%(lineno)d] %(message)s"
-        )
-        formatter = logging.Formatter(log_format, datefmt="%H:%M:%S")
+        formatter = logging.Formatter(LOG_FORMAT, datefmt="%H:%M:%S")
         handler = MayaLogHandler()
         handler.setFormatter(formatter)
         handler.setLevel(default_handler_level)

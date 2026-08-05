@@ -107,23 +107,20 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
             name=self.name + "upperTwist_" + self.side,
         )
 
-        numTwistJoints = float(len(self.upperTwistJoints))
+        numTwistJoints = len(self.upperTwistJoints)
 
-        j = int(numTwistJoints - 1)
-
-        for i in range(int(numTwistJoints) - 1):
+        for i in range(numTwistJoints):
             md = cmds.shadingNode(
                 "multDL", asUtility=True, name=self.upperTwistControls[i].ctrl + "_md"
             )
             cmds.connectAttr(startTwistJoint + ".rotateX", md + ".input1")
-            cmds.setAttr(md + ".input2", j / (numTwistJoints - 1))
+            weight = (numTwistJoints - i) / float(numTwistJoints)
+            cmds.setAttr(md + ".input2", weight) # we are easing it out
             cmds.connectAttr(
                 md + ".output",
                 self.upperTwistControls[i].space_grp + ".rotateX",
                 force=True,
             )
-
-            j -= 1
 
         cmds.parent(ikGrp, self.driver_grp)
 
@@ -166,14 +163,16 @@ class ThreeJointIkFkTwist(IkFkChain.IkFkChain):
 
         endQuat = mathUtils.setup_quat_twist(self.driveJoints[2], twistAxis="X")
 
-        numTwistJoints = float(len(self.lowerTwistJoints))
+        numTwistJoints = len(self.lowerTwistJoints)
 
-        for i in range(1, int(numTwistJoints)):
+        for i in range(numTwistJoints):
             md = cmds.shadingNode(
                 "multDL", asUtility=True, name=self.lowerTwistControls[i].ctrl + "_md"
             )
             cmds.connectAttr(endQuat + ".outputRotateX", md + ".input1")
-            cmds.setAttr(md + ".input2", i / (numTwistJoints - 1))
+            # Assumes that the last twist joint (2, 3 etc) gets 100% of the weight
+            weight = (i + 1) / float(numTwistJoints)
+            cmds.setAttr(md + ".input2", weight)
             cmds.connectAttr(
                 md + ".output",
                 self.lowerTwistControls[i].space_grp + ".rotateX",
