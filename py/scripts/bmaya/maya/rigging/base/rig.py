@@ -449,7 +449,7 @@ class Rig(Asset):
             if os.path.exists(weightsPath):
                 weightio.load(weightsPath)
             elif "noSkin" not in cmds.listAttr(mesh):
-                log.info(f'Auto-skinning {mesh} to {bmaya.core.constants.ROOT_JOINT}')
+                log.debug(f'Auto-skinning {mesh} to {bmaya.core.constants.ROOT_JOINT}')
                 # skin meshes not marked noSkin to the root joint
                 self.skin_clusters.append(
                     cmds.skinCluster(

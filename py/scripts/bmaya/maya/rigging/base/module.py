@@ -162,8 +162,8 @@ class Module(object):
                 log.warning(f"{attrName} already added to node {self.node}")
                 continue
 
-            log.info(f"Adding attribute {attrName} to module node {self.node}")
-            attrType = type(attrVal)
+            log.debug(f"Adding attribute {attrName} to module node {self.node}")
+            # attrType = type(attrVal)
 
             mayaAttrType, mayaAttrVal = self.parse_for_maya_attr(attrVal)
 

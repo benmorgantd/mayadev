@@ -10,6 +10,7 @@ from bmaya.maya.util import nameUtils, mathUtils
 from bmaya.maya.rigging.base.decorators import wrapBuild
 from bmaya.maya.rigging.shapes import shapelib
 from bmaya.maya.rigging.base import module
+from bmaya.core import log
 
 
 class Spline(module.Module):
@@ -55,6 +56,8 @@ class Spline(module.Module):
             shortest_distance=True,
         )
 
+        log.info(f'Bind joints for {self.name}: {self.bind_joints}')
+
         self.fkDriveJoints = self.create_drive_joints(label="FKDRIVER", constrain=False)
         self.ikDriveJoints = self.create_drive_joints(label="IKDRIVER", constrain=False)
         self.driveJoints = self.create_drive_joints(label="DRIVER", constrain=True)
@@ -66,7 +69,8 @@ class Spline(module.Module):
             self.setupAdvancedTwist()
 
         self.setupIkEndJoint()
-        self.setupIkHierarchy()
+        # TODO: there is a bug here that causes the ik spline to shorten
+        # self.setupIkHierarchy()  # There must be an issue here
 
         # add an attribute for blending
         cmds.addAttr(
@@ -178,6 +182,8 @@ class Spline(module.Module):
         cmds.setAttr(splineCurve + ".inheritsTransform", False)
 
         # the end effector for the splineIKHandle is one joint too early?
+        log.info(f'jnt locs: {jntLocs}')
+        log.info(f'ik drive joints: {self.ikDriveJoints}')
 
         splineIkHandle = cmds.ikHandle(
             name=self.name + "_splineIkHandle",
@@ -196,6 +202,8 @@ class Spline(module.Module):
             cmds.setAttr(splineIkHandle + ".dWorldUpAxis", 3)
             cmds.setAttr(splineIkHandle + ".dWorldUpVector", 0, 0, 1)
             cmds.setAttr(splineIkHandle + ".dWorldUpVectorEnd", 0, 0, 1)
+        else:
+            raise NotImplementedError('Only supported Spline module up axis is Y')
 
         cmds.parent(splineCurve, splineIkHandle, self.components_grp)
 
@@ -338,6 +346,8 @@ class Spline(module.Module):
                     cmds.parentConstraint(const, query=True, weightAliasList=True)[0],
                 ),
             )
+
+        raise RuntimeError
 
         # switch off the base ik's constraint with this if there is one
         if self.startTwistParent:

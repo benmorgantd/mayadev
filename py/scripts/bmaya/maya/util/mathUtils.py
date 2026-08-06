@@ -199,7 +199,13 @@ def match_transforms(source, targets, translate=True, rotate=True, scale=True):
         targets = [targets]
 
     for target in targets:
-        cmds.delete(cmds.parentConstraint(source, target, maintainOffset=False))
+        # TODO: this could be more efficient
+        if translate:
+            cmds.delete(cmds.pointConstraint(source, target, mo=0))
+        if rotate:
+            cmds.delete(cmds.orientConstraint(source, target, mo=0))
+        if scale:
+            cmds.delete(cmds.scaleConstraint(source, target, mo=0))
 
 
 def get_mmatrix_from_list(matrixList):
