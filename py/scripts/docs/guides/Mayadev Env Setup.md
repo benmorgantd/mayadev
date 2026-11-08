@@ -2,7 +2,7 @@
 
 ## Environment Variable Setup in Maya.env
 You have to give the following paths in `documents\maya\2026\Maya.env`
-- `RIGGING_PROJECT_DIR` : This is where rigs will be made, and is the root for asset ids
+- `RIGGING_PROJECT_DIR` : The root of every game's projects, and the root asset ids are relative to (see [Asset Layout](Asset Layout.md))
 - `MAYADEV_ROOT` : This is where your mayadev repo is installed
 - `RIG_TEMPLATES_DIR` : This is the content folder where rig templates will be stored
 
