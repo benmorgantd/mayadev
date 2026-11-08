@@ -1,15 +1,17 @@
 """Assets: a folder below the projects root that holds an asset.json.
 
-asset.json is the source of truth for one asset. Its id is not stored: it is the folder's path, so a
-copied or moved folder can't carry a stale id. Reading paths never touches the disk. Folders are made
-only when something is written.
+asset.json holds only what a person decides about the asset: its type and the skeleton it uses. It
+changes rarely, so under Perforce it is rarely checked out. Everything else is found on disk:
+variants are the folders that hold a template, and publishes are folders that are only ever added.
+The id is not stored either: it is the folder's path, so a copied or moved folder can't carry a stale
+id. Reading paths never touches the disk. Folders are made only when something is written.
 """
 
 from __future__ import annotations
 
 import os
 
-from . import assetid
+from . import assetid, sourcecontrol
 from .project import Project, ProjectError, projects_root, read_json, write_json
 
 ASSET_FILE = "asset.json"
@@ -68,18 +70,23 @@ class Asset:
         return self.info["assetType"]
 
     @property
-    def rigs(self) -> list[str]:
-        return list(self.info.get("rigs", []))
-
-    @property
     def skeleton(self) -> str:
         """The id of the asset whose skeleton this asset uses: its own id unless asset.json names another.
         Assets with the same skeleton can share poses and animations."""
         return self.info.get("skeleton") or self.id
 
-    def latest_publish(self, variant: str) -> int:
-        """The latest publish of a variant, 0 when it was never published."""
-        return int(self.info.get("publishes", {}).get(variant, 0))
+    @property
+    def variants(self) -> list[str]:
+        """The rig variants: folders that hold a template file. Adding a variant adds files and edits nothing."""
+        template = self.project.file_type("template")
+        parent = os.path.join(self.folder, template.variant_parent())
+        if not os.path.isdir(parent):
+            return []
+        found = [
+            entry.name for entry in os.scandir(parent)
+            if entry.is_dir() and assetid.is_valid_token(entry.name) and self.file_exists("template", entry.name)
+        ]
+        return sorted(found, key=str.casefold)
 
     def path(self, file_type: str, variant: str | None = None) -> str:
         """Where a file type lives for this asset. Pure: never checks or creates anything."""
@@ -92,15 +99,8 @@ class Asset:
     # ---- writes ----------------------------------------------------------------------------
 
     @classmethod
-    def create(
-        cls,
-        asset_id: str,
-        asset_type: str,
-        skeleton: str | None = None,
-        rigs: tuple[str, ...] | list[str] = (),
-        root: str | None = None,
-    ) -> "Asset":
-        """Makes the asset folder and its asset.json, and adds it to the project registry."""
+    def create(cls, asset_id: str, asset_type: str, skeleton: str | None = None, root: str | None = None) -> "Asset":
+        """Makes the asset folder and its asset.json, and marks the file for add in source control."""
         asset = cls(asset_id, root)
         if asset.exists():
             raise AssetError(f"{asset.id} already exists at {asset.folder}.")
@@ -108,14 +108,13 @@ class Asset:
         project.check_asset_type(asset_type)
         _check_not_nested(asset, project)
 
-        data = {"formatVersion": FORMAT_VERSION, "assetType": asset_type, "rigs": []}
+        data = {"formatVersion": FORMAT_VERSION, "assetType": asset_type}
         if skeleton is not None:
             data["skeleton"] = assetid.check(skeleton)
-        for variant in rigs:
-            _add_variant(data, variant)
 
         os.makedirs(asset.folder, exist_ok=True)
-        asset._write_info(data)
+        write_json(asset.info_path, data)
+        sourcecontrol.current().add(asset.info_path)
         return asset
 
     @classmethod
@@ -131,38 +130,10 @@ class Asset:
                 raise AssetError(f"{path} is not inside an asset below {root}.")
             folder = parent
 
-    def add_rig(self, variant: str) -> None:
-        data = self.info
-        _add_variant(data, variant)
-        self._write_info(data)
-
-    def record_publish(self, variant: str, version: int) -> None:
-        """Records a variant's latest publish. Called by the publish step, which also stamps the rig root."""
-        if variant not in self.rigs:
-            raise AssetError(f"{self.id} has no rig variant {variant!r}. Known: {self.rigs}.")
-        if version <= self.latest_publish(variant):
-            raise AssetError(f"{self.id} {variant}: publish {version} is not newer than {self.latest_publish(variant)}.")
-        data = self.info
-        data.setdefault("publishes", {})[variant] = int(version)
-        self._write_info(data)
-
-    def _write_info(self, data: dict) -> None:
-        write_json(self.info_path, data)
-        from .registry import Registry  # registry imports Asset
-
-        Registry(self.project, self.root).update(self)
-
-
-def _add_variant(data: dict, variant: str) -> None:
-    if not assetid.is_valid_token(variant):
-        raise AssetError(f"Variant {variant!r} must be letters, digits and '_'.")
-    if variant in data["rigs"]:
-        raise AssetError(f"Variant {variant!r} already exists.")
-    data["rigs"].append(variant)
-
 
 def _check_not_nested(asset: Asset, project: Project) -> None:
-    """Assets never nest, so a folder is an asset or holds assets, never both."""
+    """Assets never nest, so a folder is an asset or holds assets, never both. Checked here, where assets
+    are made, so the registry scan can stop at each asset folder."""
     if os.path.normcase(asset.folder) == os.path.normcase(project.root):
         raise AssetError(f"{asset.id} can't be its own project folder {project.root}.")
     folder = os.path.dirname(asset.folder)

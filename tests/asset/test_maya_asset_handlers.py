@@ -53,10 +53,13 @@ class MayaHandlers(unittest.TestCase):
 
         self.cmds = cmds
         self.handlers = handlers
-        self.root = tempfile.mkdtemp(prefix="bmaya_maya_asset_")
-        self.addCleanup(shutil.rmtree, self.root, True)
+        temp = tempfile.mkdtemp(prefix="bmaya_maya_asset_")
+        self.addCleanup(shutil.rmtree, temp, True)
+        self.root = os.path.join(temp, "projects")
+        os.environ["BMAYA_VERSIONS_DIR"] = os.path.join(temp, "local_versions")
+        self.addCleanup(os.environ.pop, "BMAYA_VERSIONS_DIR", None)
         Project.create(os.path.join(self.root, "shooter", "main"))
-        self.hero = Asset.create(HERO, "Character", rigs=["game"], root=self.root)
+        self.hero = Asset.create(HERO, "Character", root=self.root)
 
         assethandlers.register()
         for file_type in assethandlers.MAYA_FILE_TYPES + ("shapes",):
@@ -101,7 +104,7 @@ class MayaHandlers(unittest.TestCase):
 
         self.handlers.save(self.hero, "shapes", variant="game", rig_root=rig_root)
         from bmaya.asset import versions
-        self.assertEqual(len(versions.list_versions(path)), 1, "the second save keeps the first as a version")
+        self.assertEqual(len(versions.list_versions(path, self.root)), 1, "the second save keeps the first as a version")
 
     def test_shapes_need_a_rig_root(self):
         self.build_rig()

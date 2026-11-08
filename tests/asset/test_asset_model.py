@@ -1,8 +1,10 @@
-"""bmaya.asset in plain Python: ids, projects, assets, the registry, local versions and handler dispatch.
+"""bmaya.asset in plain Python: ids, projects, assets, the registry, publishes, local versions, source
+control calls and handler dispatch.
 
 Run with tests/asset/run.bat, or: python -m unittest discover -s tests/asset -p "test_asset_*.py"
 """
 
+import datetime
 import json
 import os
 import shutil
@@ -13,22 +15,52 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "py", "scripts"))
 
-from bmaya.asset import Asset, AssetError, AssetIdError, Project, ProjectError, Registry, assetid, handlers, versions  # noqa: E402
+from bmaya.asset import Asset, AssetError, AssetIdError, Project, ProjectError, Registry  # noqa: E402
+from bmaya.asset import assetid, handlers, publishes, sourcecontrol, versions  # noqa: E402
 from bmaya.asset.project import DEFAULT_PROJECT, PROJECTS_ROOT_ENV, projects_root  # noqa: E402
 
 HERO = "shooter|main|characters|hero"
 
 
+class RecordingSourceControl(sourcecontrol.SourceControl):
+    def __init__(self):
+        self.calls = []
+
+    def checkout(self, path):
+        self.calls.append(("checkout", path))
+
+    def add(self, path):
+        self.calls.append(("add", path))
+
+
 class TempRoot(unittest.TestCase):
-    """A projects root with one project, shooter|main, using the default project.json."""
+    """A projects root with one project, shooter|main, using the default project.json. Local versions go
+    to a temporary folder, and source control calls are recorded."""
 
     def setUp(self):
-        self.root = tempfile.mkdtemp(prefix="bmaya_asset_")
-        self.addCleanup(shutil.rmtree, self.root, True)
+        temp = tempfile.mkdtemp(prefix="bmaya_asset_")
+        self.addCleanup(shutil.rmtree, temp, True)
+        self.root = os.path.join(temp, "projects")
+        self.versions_dir = os.path.join(temp, "local_versions")
+        patcher = mock.patch.dict(os.environ, {versions.VERSIONS_DIR_ENV: self.versions_dir})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.source_control = RecordingSourceControl()
+        sourcecontrol.set_current(self.source_control)
+        self.addCleanup(sourcecontrol.set_current, sourcecontrol.SourceControl())
         self.project = Project.create(os.path.join(self.root, "shooter", "main"))
 
-    def create(self, asset_id=HERO, asset_type="Character", **kwargs):
-        return Asset.create(asset_id, asset_type, root=self.root, **kwargs)
+    def create(self, asset_id=HERO, asset_type="Character", variants=(), **kwargs):
+        asset = Asset.create(asset_id, asset_type, root=self.root, **kwargs)
+        for variant in variants:
+            self.add_variant(asset, variant)
+        return asset
+
+    def add_variant(self, asset, variant):
+        self.write(asset.path("template", variant), "{}")
+
+    def registry(self):
+        return Registry(self.project, root=self.root)
 
     def write(self, path, text="x"):
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -70,9 +102,10 @@ class AssetIds(unittest.TestCase):
 
 class Projects(TempRoot):
 
-    def test_create_writes_the_default_project(self):
-        with open(os.path.join(self.project.root, "project.json"), encoding="utf-8") as handle:
-            self.assertEqual(json.load(handle), DEFAULT_PROJECT)
+    def test_create_writes_the_default_project_with_sorted_keys(self):
+        path = os.path.join(self.project.root, "project.json")
+        self.assertEqual(json.loads(self.read(path)), DEFAULT_PROJECT)
+        self.assertEqual(self.read(path), json.dumps(DEFAULT_PROJECT, indent=2, sort_keys=True) + "\n")
         self.assertIn("Character", self.project.asset_types)
         with self.assertRaises(ProjectError):
             Project.create(self.project.root)
@@ -99,6 +132,9 @@ class Projects(TempRoot):
         self.assertEqual(shapes.relative_path("hero", "game"), os.path.join("variants", "game", "shapes.json"))
         self.assertEqual(self.project.file_type("skeleton").relative_path("hero"),
                          os.path.join("skeleton", "hero_skeleton.ma"))
+        self.assertEqual(self.project.file_type("template").variant_parent(), "variants")
+        with self.assertRaises(ProjectError):
+            self.project.file_type("skeleton").variant_parent()
 
     def test_variant_rules(self):
         with self.assertRaises(ProjectError):
@@ -126,13 +162,13 @@ class Projects(TempRoot):
 
 class Assets(TempRoot):
 
-    def test_create_writes_asset_json_without_the_id(self):
-        hero = self.create(rigs=["game", "cine"])
+    def test_create_writes_only_identity(self):
+        hero = self.create(skeleton="shooter|main|skeletons|biped")
         self.assertTrue(hero.exists())
         self.assertEqual(json.loads(self.read(hero.info_path)),
-                         {"formatVersion": 1, "assetType": "Character", "rigs": ["game", "cine"]})
-        self.assertEqual(hero.rigs, ["game", "cine"])
+                         {"formatVersion": 1, "assetType": "Character", "skeleton": "shooter|main|skeletons|biped"})
         self.assertEqual(hero.project.root, self.project.root)
+        self.assertEqual(self.source_control.calls, [("add", hero.info_path)])
 
     def test_create_checks(self):
         self.create()
@@ -142,8 +178,6 @@ class Assets(TempRoot):
             self.create("shooter|main|props|crate", asset_type="Crate")      # not a project asset type
         with self.assertRaises(ProjectError):
             Asset.create("loose|crate", "Prop", root=self.root)              # no project.json above
-        with self.assertRaises(AssetError):
-            self.create("shooter|main|props|crate", rigs=["game", "game"])
         with self.assertRaises(AssetIdError):
             self.create("shooter|main|props|crate", skeleton="bad||id")
 
@@ -180,48 +214,86 @@ class Assets(TempRoot):
         villain = self.create("shooter|main|characters|villain", skeleton=HERO)
         self.assertEqual(villain.skeleton, HERO)
 
-    def test_add_rig(self):
-        hero = self.create(rigs=["game"])
-        hero.add_rig("cine")
-        self.assertEqual(hero.rigs, ["game", "cine"])
-        with self.assertRaises(AssetError):
-            hero.add_rig("game")
+    def test_variants_are_folders_with_a_template(self):
+        hero = self.create()
+        self.assertEqual(hero.variants, [])
+        self.add_variant(hero, "game")
+        self.add_variant(hero, "cine")
+        os.makedirs(os.path.join(hero.folder, "variants", "scratch"))     # no template: not a variant
+        self.assertEqual(hero.variants, ["cine", "game"])
+        self.assertNotIn("rigs", hero.info, "adding a variant edits nothing")
 
-    def test_record_publish(self):
-        hero = self.create(rigs=["game"])
-        self.assertEqual(hero.latest_publish("game"), 0)
-        hero.record_publish("game", 3)
-        self.assertEqual(hero.latest_publish("game"), 3)
+
+class Publishes(TempRoot):
+
+    def setUp(self):
+        super().setUp()
+        self.hero = self.create(variants=["game"])
+
+    def test_ids_sort_in_time_order(self):
+        early = publishes.make_id("bmorgan", datetime.datetime(2026, 11, 8, 9, 5, 1, tzinfo=datetime.timezone.utc))
+        late = publishes.make_id("alice", datetime.datetime(2026, 11, 8, 14, 0, 0, tzinfo=datetime.timezone.utc))
+        self.assertEqual(early, "20261108T090501Z_bmorgan")
+        self.assertLess(early, late)
+        self.assertEqual(publishes.make_id("Ben Morgan.2", datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)),
+                         "20260101T000000Z_Ben_Morgan_2")
+
+    def test_create_adds_a_folder_and_edits_nothing(self):
+        before = self.read(self.hero.info_path)
+        folder = publishes.create(self.hero, "game", {"pluginVersion": "0.1"}, user="bmorgan")
+        publish_id = os.path.basename(folder)
+        self.assertEqual(self.read(self.hero.info_path), before)
+        self.assertEqual(publishes.latest(self.hero, "game"), publish_id)
+        record = publishes.info(self.hero, "game", publish_id)
+        self.assertEqual(record, {"formatVersion": 1, "id": publish_id, "user": "bmorgan", "pluginVersion": "0.1"})
+        self.assertIn(("add", os.path.join(folder, "publish.json")), self.source_control.calls)
+
+    def test_latest_is_the_newest_id(self):
+        base = self.hero.path("publish", "game")
+        for publish_id in ("20261108T090000Z_bmorgan", "20261109T080000Z_alice", "20261108T120000Z_alice"):
+            self.write(os.path.join(base, publish_id, "publish.json"), "{}")
+        os.makedirs(os.path.join(base, "not_a_publish"))
+        os.makedirs(os.path.join(base, "20261110T000000Z_halfwritten"))   # no publish.json yet
+        self.assertEqual(publishes.list_ids(self.hero, "game"),
+                         ["20261108T090000Z_bmorgan", "20261108T120000Z_alice", "20261109T080000Z_alice"])
+        self.assertEqual(publishes.latest(self.hero, "game"), "20261109T080000Z_alice")
+
+    def test_create_checks(self):
+        self.assertIsNone(publishes.latest(self.hero, "game"))
         with self.assertRaises(AssetError):
-            hero.record_publish("game", 3)       # not newer
-        with self.assertRaises(AssetError):
-            hero.record_publish("cine", 1)       # no such variant
+            publishes.create(self.hero, "cine")        # not a variant
+        fixed = datetime.datetime(2026, 11, 8, tzinfo=datetime.timezone.utc)
+        with mock.patch.object(publishes, "make_id", return_value=publishes.make_id("bmorgan", fixed)):
+            publishes.create(self.hero, "game")
+            with self.assertRaises(AssetError):
+                publishes.create(self.hero, "game")    # same second, same user
 
 
 class Registries(TempRoot):
 
-    def registry(self):
-        return Registry(self.project, root=self.root)
+    def test_writes_nothing(self):
+        self.create(variants=["game"])
+        self.registry().refresh()
+        written = [name for _, _, files in os.walk(self.root) for name in files]
+        self.assertEqual(sorted(written), ["asset.json", "project.json", "template.json"])
 
-    def test_writes_keep_the_registry_current(self):
-        hero = self.create(rigs=["game"])
-        self.assertEqual(self.registry().get(HERO)["rigs"], ["game"])
-        hero.add_rig("cine")
-        hero.record_publish("game", 2)
-        entry = self.registry().get(HERO.upper())
-        self.assertEqual(entry["rigs"], ["game", "cine"])
-        self.assertEqual(self.registry().latest_publish(HERO, "game"), 2)
-        self.assertEqual(self.registry().latest_publish(HERO, "cine"), 0)
-
-    def test_rebuild_finds_assets_at_any_depth(self):
+    def test_scan_finds_assets_at_any_depth(self):
         self.create()
         self.create("shooter|main|props|crate", asset_type="Prop")
         self.create("shooter|main|env|forest|rocks|boulder", asset_type="Environment")
-        os.remove(os.path.join(self.project.root, "registry.json"))
-        registry = self.registry()   # rebuilds when registry.json is missing
+        registry = self.registry()
         self.assertEqual(registry.ids(), ["shooter|main|characters|hero", "shooter|main|env|forest|rocks|boulder",
                                           "shooter|main|props|crate"])
         self.assertEqual(registry.errors, [])
+
+    def test_entries(self):
+        hero = self.create(variants=["game", "cine"])
+        folder = publishes.create(hero, "game", user="bmorgan")
+        entry = self.registry().get(HERO.upper())
+        self.assertEqual(entry, {"assetType": "Character", "skeleton": HERO, "variants": ["cine", "game"],
+                                 "latestPublish": {"game": os.path.basename(folder)}})
+        self.assertEqual(self.registry().latest_publish(HERO, "game"), os.path.basename(folder))
+        self.assertIsNone(self.registry().latest_publish(HERO, "cine"))
 
     def test_find_by_type_and_skeleton(self):
         self.create("shooter|main|skeletons|biped", asset_type="Skeleton")
@@ -236,34 +308,27 @@ class Registries(TempRoot):
         self.assertEqual(registry.find(asset_type="Character", skeleton="shooter|main|characters|dog"),
                          ["shooter|main|characters|dog"])
 
-    def test_files_lists_what_exists(self):
-        hero = self.create(rigs=["game"])
-        self.write(hero.path("skeleton"))
-        self.write(hero.path("shapes", "game"))
-        os.makedirs(hero.path("weights", "game"))
-        self.assertEqual(self.registry().rebuild().get(HERO)["files"],
-                         ["skeleton/hero_skeleton.ma", "variants/game/shapes.json", "variants/game/weights"])
-
-    def test_rebuild_reports_nested_assets(self):
-        hero = self.create()
-        nested = os.path.join(hero.folder, "sword")
-        self.write(os.path.join(nested, "asset.json"), json.dumps({"formatVersion": 1, "assetType": "Weapon", "rigs": []}))
-        registry = self.registry().rebuild()
-        self.assertEqual(registry.ids(), [HERO])
-        self.assertEqual(len(registry.errors), 1)
-        self.assertIn("never nest", registry.errors[0])
-
-    def test_rebuild_skips_other_projects(self):
+    def test_refresh_sees_changes_on_disk(self):
+        registry = Registry.of(self.project, root=self.root)
+        self.assertIs(Registry.of(self.project, root=self.root), registry, "one index per project per session")
+        self.assertEqual(registry.ids(), [])
         self.create()
+        self.assertEqual(registry.ids(), [], "the index changes only on refresh")
+        self.assertEqual(registry.refresh().ids(), [HERO])
+
+    def test_scan_skips_other_projects_and_stops_at_assets(self):
+        hero = self.create()
         dlc = Project.create(os.path.join(self.project.root, "dlc"))
         Asset.create("shooter|main|dlc|props|crate", "Prop", root=self.root)
-        self.assertEqual(self.registry().rebuild().ids(), [HERO])
+        # An asset.json inside an asset (made by hand) is not walked into.
+        self.write(os.path.join(hero.folder, "sword", "asset.json"), json.dumps({"formatVersion": 1, "assetType": "Weapon"}))
+        self.assertEqual(self.registry().ids(), [HERO])
         self.assertEqual(Registry(dlc, root=self.root).ids(), ["shooter|main|dlc|props|crate"])
 
-    def test_rebuild_reports_unreadable_assets(self):
+    def test_scan_reports_unreadable_assets(self):
         self.create()
         self.write(os.path.join(self.project.root, "props", "broken", "asset.json"), "{not json")
-        registry = self.registry().rebuild()
+        registry = self.registry()
         self.assertEqual(registry.ids(), [HERO])
         self.assertEqual(len(registry.errors), 1)
 
@@ -275,34 +340,51 @@ class Registries(TempRoot):
 
 class Versions(TempRoot):
 
+    def path(self, name="shapes.json"):
+        return os.path.join(self.root, "shooter", "main", "characters", "hero", name)
+
     def test_nothing_to_version(self):
-        self.assertIsNone(versions.version(os.path.join(self.root, "missing.json")))
+        self.assertIsNone(versions.version(self.path("missing.json"), self.root))
+
+    def test_copies_go_outside_the_workspace(self):
+        self.write(self.path(), "one")
+        copy = versions.version(self.path(), self.root)
+        self.assertEqual(copy, os.path.join(self.versions_dir, "shooter", "main", "characters", "hero", "shapes.v001.json"))
+        self.assertEqual(os.listdir(os.path.dirname(self.path())), ["shapes.json"])
 
     def test_numbers_count_up_from_the_highest(self):
-        path = os.path.join(self.root, "shapes.json")
         for text in ("one", "two", "three"):
-            self.write(path, text)
-            versions.version(path)
-        found = versions.list_versions(path)
+            self.write(self.path(), text)
+            versions.version(self.path(), self.root)
+        found = versions.list_versions(self.path(), self.root)
         self.assertEqual([number for number, _ in found], [1, 2, 3])
-        self.assertEqual(os.path.basename(found[0][1]), "shapes.v001.json")
         self.assertEqual(self.read(found[1][1]), "two")
         os.remove(found[1][1])
-        self.assertTrue(versions.version(path).endswith("shapes.v004.json"), "a deleted number is never reused")
+        self.assertTrue(versions.version(self.path(), self.root).endswith("shapes.v004.json"),
+                        "a deleted number is never reused")
 
     def test_folders_are_copied_whole(self):
-        folder = os.path.join(self.root, "weights")
+        folder = self.path("weights")
         self.write(os.path.join(folder, "body.json"), "w")
-        copy = versions.version(folder)
+        copy = versions.version(folder, self.root)
         self.assertEqual(os.path.basename(copy), "weights.v001")
         self.assertEqual(self.read(os.path.join(copy, "body.json")), "w")
 
     def test_other_files_in_the_versions_folder_are_ignored(self):
-        path = os.path.join(self.root, "shapes.json")
-        self.write(path)
-        self.write(os.path.join(self.root, "versions", "shapes_old.json"))
-        self.write(os.path.join(self.root, "versions", "other.v009.json"))
-        self.assertTrue(versions.version(path).endswith("shapes.v001.json"))
+        self.write(self.path())
+        folder = versions.versions_folder(self.path(), self.root)
+        self.write(os.path.join(folder, "shapes_old.json"))
+        self.write(os.path.join(folder, "other.v009.json"))
+        self.assertTrue(versions.version(self.path(), self.root).endswith("shapes.v001.json"))
+
+    def test_default_root_is_local_app_data(self):
+        with mock.patch.dict(os.environ, {"LOCALAPPDATA": r"C:\local"}):
+            del os.environ[versions.VERSIONS_DIR_ENV]
+            self.assertEqual(versions.versions_root(), os.path.join(r"C:\local", "bmaya", "versions"))
+
+    def test_path_outside_the_root_fails(self):
+        with self.assertRaises(ValueError):
+            versions.versions_folder(os.path.join(os.path.dirname(self.root), "elsewhere", "x.json"), self.root)
 
 
 class RecordingHandler(handlers.FileHandler):
@@ -327,15 +409,19 @@ class Handlers(TempRoot):
         self.handler = RecordingHandler()
         handlers.register("shapes", self.handler)
         self.addCleanup(handlers.unregister, "shapes")
-        self.hero = self.create(rigs=["game"])
+        self.hero = self.create(variants=["game"])
+        self.source_control.calls.clear()
 
-    def test_save_makes_folders_and_versions_the_old_file(self):
+    def test_save_makes_folders_versions_and_tells_source_control(self):
         path = handlers.save(self.hero, "shapes", variant="game", text="first", rig_root="hero:rigRootModule1")
         self.assertEqual(path, self.hero.path("shapes", "game"))
-        self.assertEqual(versions.list_versions(path), [])
+        self.assertEqual(versions.list_versions(path, self.root), [])
+        self.assertEqual(self.source_control.calls, [("add", path)])
+
         handlers.save(self.hero, "shapes", variant="game", text="second")
         self.assertEqual(self.read(path), "second")
-        self.assertEqual(self.read(versions.list_versions(path)[0][1]), "first")
+        self.assertEqual(self.read(versions.list_versions(path, self.root)[0][1]), "first")
+        self.assertEqual(self.source_control.calls, [("add", path), ("checkout", path)])
         self.assertEqual(self.handler.calls[0][2], {"variant": "game", "text": "first", "rig_root": "hero:rigRootModule1"})
 
     def test_load_returns_the_handler_result(self):

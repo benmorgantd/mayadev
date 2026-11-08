@@ -4,15 +4,15 @@ A FileHandler knows one format. Handlers are registered per file type key from p
 whatever code owns the format (bmaya.maya.assethandlers registers the Maya ones). This module never
 imports a handler, so it stays usable without Maya.
 
-save() keeps a local version copy of the old file and makes the parent folders, so a handler only
-writes its format.
+save() keeps a local version copy of the old file, makes the parent folders, and tells source control,
+so a handler only writes its format.
 """
 
 from __future__ import annotations
 
 import os
 
-from . import versions
+from . import sourcecontrol, versions
 from .asset import Asset
 
 
@@ -45,13 +45,19 @@ def handler_for(file_type: str) -> FileHandler:
 
 
 def save(asset: Asset, file_type: str, variant: str | None = None, **context) -> str:
-    """Saves a file type through its handler and returns the path. The old file goes to versions/ first."""
+    """Saves a file type through its handler and returns the path. A local version copy of the old file is
+    kept first, and source control checks out an existing path or adds a new one."""
     handler = handler_for(file_type)
     path = asset.path(file_type, variant)
-    versions.version(path)
+    existed = os.path.exists(path)
+    if existed:
+        versions.version(path, asset.root)
+        sourcecontrol.current().checkout(path)
     folder = path if asset.project.file_type(file_type).folder else os.path.dirname(path)
     os.makedirs(folder, exist_ok=True)
     handler.save(asset, path, variant=variant, **context)
+    if not existed:
+        sourcecontrol.current().add(path)
     return path
 
 

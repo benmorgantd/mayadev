@@ -33,6 +33,7 @@ DEFAULT_PROJECT = {
         "weights": {"path": "variants/{variant}/weights", "folder": True},
         "postops": {"path": "variants/{variant}/postops.py"},
         "rig": {"path": "variants/{variant}/{name}_{variant}.ma"},
+        "publish": {"path": "variants/{variant}/publish", "folder": True},
         "poses": {"path": "poses", "folder": True},
         "anims": {"path": "anims", "folder": True},
     },
@@ -61,6 +62,14 @@ class FileType:
     @property
     def per_variant(self) -> bool:
         return "variant" in _FIELD.findall(self.pattern)
+
+    def variant_parent(self) -> str:
+        """The folder below the asset that holds one folder per variant: "variants" for
+        "variants/{variant}/template.json"."""
+        head, marker, _tail = self.pattern.partition("{variant}")
+        if not marker or not head.endswith("/") or "{" in head:
+            raise ProjectError(f"File type {self.key!r} needs a path of the form '<folder>/{{variant}}/...'.")
+        return os.path.normpath(head)
 
     def relative_path(self, name: str, variant: str | None = None) -> str:
         """The path below the asset folder."""
@@ -141,9 +150,10 @@ def read_json(path: str) -> dict:
 
 
 def write_json(path: str, data: dict) -> None:
-    """Writes through a temporary file, so a failed write never leaves half a file."""
+    """Writes through a temporary file, so a failed write never leaves half a file. Sorted keys and one
+    item per line keep diffs small and Perforce merges clean."""
     temp = path + ".tmp"
     with open(temp, "w", encoding="utf-8", newline="\n") as handle:
-        json.dump(data, handle, indent=2)
+        json.dump(data, handle, indent=2, sort_keys=True)
         handle.write("\n")
     os.replace(temp, path)
