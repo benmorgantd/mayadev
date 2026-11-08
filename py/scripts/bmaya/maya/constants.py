@@ -14,6 +14,12 @@ RIGGING_PROJECT_DIR = os.environ["RIGGING_PROJECT_DIR"]
 
 TOOLS_PATH = os.path.join(MAYADEV_ROOT, "toolsets")
 TOOL_REGISTRY_PATH = os.path.join(TOOLS_PATH, "master_tool_registry.json")
+# Built only when RigModules loads, because every tool in it calls a RigModules command.
+RIGMODULES_MENU_PATH = os.path.join(TOOLS_PATH, "rigmodules_menu.json")
+
+# A RigModules.mll path, or the plugin name once RigModules.mod puts it on MAYA_PLUG_IN_PATH.
+# Point it at a copy of the build: a loaded plugin locks the file, so the next build would fail.
+RIGMODULES_PLUGIN = os.environ.get("RIGMODULES_PLUGIN", "RigModules")
 
 # TODO: update references to these constants
 POSTOPS_TEMPLATE = "import maya.cmds as cmds\n\ndef postOps():\n    log.info('Finished with post operations')\npostOps()"

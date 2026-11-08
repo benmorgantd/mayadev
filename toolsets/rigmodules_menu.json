@@ -1,0 +1,51 @@
+{
+    "label": "RigModules",
+    "items": [
+        {
+            "type": "tool",
+            "guid": "b2c664f6-76da-405d-960e-9846fa1a70c1",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "e34dcbca-0f06-4406-93d1-afde0876f8dc",
+            "enabled": true
+        },
+        {
+            "type": "separator"
+        },
+        {
+            "type": "tool",
+            "guid": "de84cb3f-aae6-4494-a163-25c6778855ad",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "790149a8-eec2-46a7-ba8f-f52c58a4777e",
+            "enabled": true
+        },
+        {
+            "type": "separator"
+        },
+        {
+            "type": "tool",
+            "guid": "ad7cd44b-5f64-45ab-bbd1-b78392ac63f4",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "5807a01a-d836-4d13-84fb-e053df0a714e",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "ed0172ee-18a9-4d5c-bb6e-c84526717cf1",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "2e9d76c8-552a-4a48-ae96-b4c9a4d12627",
+            "enabled": true
+        }
+    ]
+}

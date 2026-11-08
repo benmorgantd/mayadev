@@ -103,6 +103,70 @@
             "script": "from bmaya.maya.rigging import rigTools\nrigTools.match_fk_to_ik(cmds.ls(sl=1)[0])",
             "icon": null,
             "enabled": true
+        },
+        {
+            "guid": "b2c664f6-76da-405d-960e-9846fa1a70c1",
+            "name": "Print Joint Markup",
+            "short_name": "Markup?",
+            "script": "import maya.cmds as cmds\njoints = cmds.ls(sl=True, type='joint')\nif not joints:\n    raise RuntimeError('Select joints.')\nfor joint, markup in zip(joints, cmds.rigJointMarkup(*joints, query=True)):\n    print(f'{joint}: {markup}')\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "e34dcbca-0f06-4406-93d1-afde0876f8dc",
+            "name": "Remove Joint Markup",
+            "short_name": "Markup X",
+            "script": "import maya.cmds as cmds\njoints = cmds.ls(sl=True, type='joint')\nif not joints:\n    raise RuntimeError('Select joints.')\ncmds.rigJointMarkup(*joints, remove=True)\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "de84cb3f-aae6-4494-a163-25c6778855ad",
+            "name": "Select All Controls",
+            "short_name": "Sel Ctrls",
+            "script": "import maya.cmds as cmds\nroots = cmds.ls(sl=True, type='rigRootModule')\nif len(roots) != 1:\n    raise RuntimeError('Select one rig root (rigRootModule).')\ncmds.select(cmds.getRigControls(roots[0]), replace=True)\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "790149a8-eec2-46a7-ba8f-f52c58a4777e",
+            "name": "Select Mirror Controls",
+            "short_name": "Sel Mirror",
+            "script": "import maya.cmds as cmds\ncontrols = cmds.ls(sl=True, type='rigControlNode')\nif not controls:\n    raise RuntimeError('Select rig controls.')\ncmds.select([cmds.getRigMirrorControl(c) for c in controls], replace=True)\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "ad7cd44b-5f64-45ab-bbd1-b78392ac63f4",
+            "name": "Mirror Shapes Left to Right",
+            "short_name": "Shapes L>R",
+            "script": "import maya.cmds as cmds\nroots = cmds.ls(sl=True, type='rigRootModule')\nif len(roots) != 1:\n    raise RuntimeError('Select one rig root (rigRootModule).')\ncmds.mirrorRigControlShapes(roots[0], leftToRight=True)\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "5807a01a-d836-4d13-84fb-e053df0a714e",
+            "name": "Mirror Shapes Right to Left",
+            "short_name": "Shapes R>L",
+            "script": "import maya.cmds as cmds\nroots = cmds.ls(sl=True, type='rigRootModule')\nif len(roots) != 1:\n    raise RuntimeError('Select one rig root (rigRootModule).')\ncmds.mirrorRigControlShapes(roots[0], leftToRight=False)\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "ed0172ee-18a9-4d5c-bb6e-c84526717cf1",
+            "name": "Save Control Shapes...",
+            "short_name": "Save Shapes",
+            "script": "import maya.cmds as cmds\nroots = cmds.ls(sl=True, type='rigRootModule')\nif len(roots) != 1:\n    raise RuntimeError('Select one rig root (rigRootModule).')\npath = cmds.fileDialog2(caption='Save Control Shapes', fileFilter='Shape files (*.json)', fileMode=0)\nif path:\n    cmds.saveRigControlShapes(roots[0], file=path[0])\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "2e9d76c8-552a-4a48-ae96-b4c9a4d12627",
+            "name": "Load Control Shapes...",
+            "short_name": "Load Shapes",
+            "script": "import maya.cmds as cmds\nroots = cmds.ls(sl=True, type='rigRootModule')\nif len(roots) != 1:\n    raise RuntimeError('Select one rig root (rigRootModule).')\npath = cmds.fileDialog2(caption='Load Control Shapes', fileFilter='Shape files (*.json)', fileMode=1)\nif path:\n    cmds.loadRigControlShapes(roots[0], file=path[0])\n",
+            "icon": null,
+            "enabled": true
         }
     ]
 }
