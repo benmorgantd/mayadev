@@ -13,42 +13,6 @@
         },
         {
             "type": "submenu",
-            "label": "Rigging",
-            "items": [
-                {
-                    "type": "tool",
-                    "guid": "62b3145e-b306-453e-9c9b-5776baa45198",
-                    "enabled": true
-                },
-                {
-                    "type": "tool",
-                    "guid": "934753d7-1af5-42bd-b7ba-01a3dc529ad9",
-                    "enabled": true
-                },
-                {
-                    "type": "tool",
-                    "guid": "cbb9f0b3-0a01-4994-82be-06c84a9ce2a3",
-                    "enabled": true
-                },
-                {
-                    "type": "tool",
-                    "guid": "c90569ad-b3e3-4889-b88f-42e5de93dc63",
-                    "enabled": true
-                },
-                {
-                    "type": "tool",
-                    "guid": "ca1b0814-1182-4f17-b65f-06d498951cef",
-                    "enabled": true
-                },
-                {
-                    "type": "tool",
-                    "guid": "43ed01ff-81db-4c0b-af7f-dfdb55ccd988",
-                    "enabled": true
-                }
-            ]
-        },
-        {
-            "type": "submenu",
             "label": "Joints",
             "items": [
                 {

@@ -1,4 +1,0 @@
-import os
-
-RIG_TEMPLATES_DIR = os.environ["RIG_TEMPLATES_DIR"]
-RIGGING_PROJECT_DIR = os.environ["RIGGING_PROJECT_DIR"]
