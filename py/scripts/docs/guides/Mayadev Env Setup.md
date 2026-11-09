@@ -1,22 +1,25 @@
 ### Mayadev Environment Setup
 
-## Environment Variable Setup in Maya.env
-You have to give the following paths in `documents\maya\2026\Maya.env`
+## Environment variables
+Set these as user environment variables, or in `documents\maya\2026\Maya.env`. Maya.env only fills in a variable the system doesn't already set, so set each one in one place.
 - `RIGGING_PROJECT_DIR` : The root of every game's projects, and the root asset ids are relative to (see [Asset Layout](Asset Layout.md))
 - `MAYADEV_ROOT` : This is where your mayadev repo is installed
-- `RIG_TEMPLATES_DIR` : This is the content folder where rig templates will be stored
 - `RIGMODULES_PLUGIN` (optional) : The `RigModules.mll` that startup loads. Defaults to the plugin name `RigModules`, which only works once the plugin is on `MAYA_PLUG_IN_PATH`. Point it at a copy of the build, not `cpp\x64\Release\RigModules.mll` itself: a loaded plugin locks the file, so the next build would fail.
 
 Example:
 ```
 RIGGING_PROJECT_DIR=C:\Users\morga\Documents\Art\Maya\rigs
 MAYADEV_ROOT=C:\Users\morga\Documents\mayadev
-RIG_TEMPLATES_DIR=C:\Users\morga\Documents\mayadev\py\scripts\bmaya3\maya\rigging\templates
 RIGMODULES_PLUGIN=C:\Users\morga\Documents\maya\plug-ins\RigModules.mll
 ```
 
+## Module files
+Maya reads `.mod` files from `documents\maya\modules`.
+- `mayadev.mod` puts `py\scripts` on the Python path, so `bmaya` and `userSetup.py` are found.
+- `RigModules.mod` puts RigModules' `python` folder on the Python path, so `rigmodules` is found. The asset tools need it. Copy it from the RigModules repo root and replace its `.` with the repo's full path (see RigModules' `docs/python.md`).
+
 ## RigModules menu
-When startup loads RigModules, it adds a **RigModules** menu built from `toolsets/rigmodules_menu.json`. If the plugin doesn't load, startup logs a warning and skips the menu. The tools have no windows of their own: they act on the selection and report errors in the Script Editor.
+When startup loads RigModules, it adds a **RigModules** menu built from `toolsets/rigmodules_menu.json`. If the plugin doesn't load, startup logs a warning and skips the menu. The tools act on the selection, ask with small dialogs, and report errors in the Script Editor.
 
 | Tool | Select | Does |
 |---|---|---|
@@ -25,6 +28,14 @@ When startup loads RigModules, it adds a **RigModules** menu built from `toolset
 | Select All Controls | one rig root (`rigRootModule`) | Selects every control in the rig |
 | Select Mirror Controls | controls | Selects the controls on the other side instead |
 | Mirror Shapes Left to Right / Right to Left | one rig root | Mirrors control shapes from one side to the other |
-| Save Control Shapes... / Load Control Shapes... | one rig root | Saves or loads a shape file chosen in a file dialog |
+| Save Control Shapes... / Load Control Shapes... | any control, module or rig root of the rig | Saves or loads the variant's `shapes.json` in the rig's asset. Before the asset folder exists, uses a file dialog |
+| New Project... | nothing | Writes a `project.json` into a folder you pick |
+| New Asset... | nothing, or a rig to use its asset id | Asks for an asset id and one of the project's asset types, then writes the asset's `asset.json` |
+| New Variant... | a rig, or nothing to type the asset id | Copies a template you pick into the asset as the variant named by its `rigName` |
+| Save Skeleton... | a rig, or nothing to type the asset id | Saves the open scene as the asset's skeleton file |
+| Build Rig from Asset... | a rig, or nothing to type the asset id | Imports the asset's skeleton into its namespace, builds a variant's template on it, and loads the variant's shapes |
+| Save Rig | any node of the rig | Saves the open scene as the variant's rig file. Before the asset folder exists, uses a file dialog |
 
-The scripts live in `toolsets/master_tool_registry.json` and call the RigModules commands directly. Their tests are in `tests/rigging/rigmodules_menu`.
+A rig can be built anywhere before its asset exists. Once the asset folder exists, the shape and rig tools always use the asset's paths. The asset tools are in `bmaya.maya.assettools`, and their functions take arguments, so scripts can call them without the dialogs.
+
+The scripts live in `toolsets/master_tool_registry.json`. Their tests are in `tests/rigging/rigmodules_menu` and `tests/asset/test_maya_asset_tools.py`.

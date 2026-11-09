@@ -46,6 +46,39 @@
             "type": "tool",
             "guid": "2e9d76c8-552a-4a48-ae96-b4c9a4d12627",
             "enabled": true
+        },
+        {
+            "type": "separator"
+        },
+        {
+            "type": "tool",
+            "guid": "99e72b04-4a77-4492-962a-1a96e91991e1",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "9cc7546f-79e0-4db4-a3c3-e49b64ef096c",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "9da8eca3-d819-485a-8b73-bceec1539620",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "ce86f44b-ba73-4234-b0cd-7c48d17a5ff3",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "e24e55e3-d81e-4cd1-9e8d-ceade1b2f67a",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "f0eb6807-08a0-46fb-9289-f3b37d1c5ddf",
+            "enabled": true
         }
     ]
 }

@@ -2,7 +2,7 @@
 
 How assets sit on disk and how tools find their files with `bmaya.asset`. The design and its reasons are in RigModules' `design/asset-model.md` (decision D29).
 
-`bmaya.asset` is plain Python, with no Maya import. It runs in Maya, mayapy, batch jobs and tools outside Maya. The legacy `bmaya.maya.asset` package belongs to the legacy rig builder, and `bmaya.asset` doesn't use it.
+`bmaya.asset` is plain Python, with no Maya import. It runs in Maya, mayapy, batch jobs and tools outside Maya. The Maya tools built on it are in `bmaya.maya.assettools` (see "Tools" below, and the menu in [Mayadev Env Setup](Mayadev Env Setup.md)).
 
 It is built for Perforce without shared files: a routine save never touches a file someone else needs. Files in the depot change only when someone deliberately changes that asset.
 
@@ -140,6 +140,7 @@ Where a file lives is kept apart from how it is read. `bmaya.asset.handlers` dis
 |---|---|
 | `skeleton`, `model`, `rig` | Save renames and saves the open scene. Load imports into the asset's namespace (or `namespace=`), merging into it if it exists. Never references |
 | `shapes` | RigModules `saveRigControlShapes` / `loadRigControlShapes`. Pass `rig_root=` |
+| `template` | Save copies the template file passed as `source=`, and fails unless its `rigName` is the variant. Load returns the template's path |
 
 ```python
 from bmaya.asset import Asset, handlers
@@ -153,6 +154,24 @@ handlers.save(hero, "shapes", variant="game", rig_root="hero:rigRootModule1")
 
 Weights, textures, shaders, postops, poses and anims have no handler yet.
 
+## Tools
+
+`bmaya.maya.assettools` does the common steps for a RigModules rig. It finds a built rig's asset id and variant through RigModules' `rigmodules.query`, never by reading node names.
+
+```python
+import bmaya.maya.assettools
+
+bmaya.maya.assettools.new_variant("shooter|main|characters|hero", r"C:\rigs\Human.json")   # variant "Human"
+bmaya.maya.assettools.save_skeleton("shooter|main|characters|hero")              # the open scene
+rig_root = bmaya.maya.assettools.build_rig("shooter|main|characters|hero", "Human")
+bmaya.maya.assettools.save_control_shapes(rig_root)                                # variants/Human/shapes.json
+bmaya.maya.assettools.save_rig(rig_root)                                           # variants/Human/hero_Human.ma
+```
+
+- A variant is added by copying its template in. The template's `rigName` names it.
+- `build_rig` imports the skeleton into the asset's namespace and builds there. A namespace that already holds a rig is refused, so build a second variant into a new scene or another namespace.
+- The shape and rig saves fall back to a file dialog only while the rig's asset folder doesn't exist.
+
 ## Tests
 
-`tests\asset\run.bat` runs the plain Python tests, then the Maya handler tests in mayapy. Set `RIGMODULES_PLUGIN` to a RigModules `.mll` for the Maya tests, or they skip. Copy the `.mll` first if a Maya session has it loaded.
+`tests\asset\run.bat` runs the plain Python tests, then the Maya handler and tool tests in mayapy. The tool tests also need RigModules' `rigmodules` package on the path (`RigModules.mod`). Set `RIGMODULES_PLUGIN` to a RigModules `.mll` for the Maya tests, or they skip. Copy the `.mll` first if a Maya session has it loaded.

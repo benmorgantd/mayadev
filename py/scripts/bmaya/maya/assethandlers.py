@@ -1,8 +1,8 @@
 """Maya save and load handlers for asset file types (bmaya.asset.handlers).
 
-Only formats that exist get a handler: Maya scenes and RigModules shape files. Other file types
-(weights, textures, shaders, postops, poses, anims) have none yet, so saving or loading them raises
-NotImplementedError until one is written.
+Only formats that exist get a handler: Maya scenes, RigModules templates and RigModules shape files.
+Other file types (weights, textures, shaders, postops, poses, anims) have none yet, so saving or loading
+them raises NotImplementedError until one is written.
 
 Call register() once per session before handlers.save / handlers.load.
 
@@ -17,7 +17,10 @@ Call register() once per session before handlers.save / handlers.load.
 
 from __future__ import annotations
 
+import shutil
+
 import maya.cmds as cmds
+import rigmodules.template
 
 from bmaya.asset import handlers
 from bmaya.asset.asset import Asset
@@ -57,6 +60,25 @@ class RigShapesHandler(handlers.FileHandler):
         return cmds.loadRigControlShapes(_require_rig_root(rig_root), file=path) or []
 
 
+class RigTemplateHandler(handlers.FileHandler):
+    """A RigModules rig template. Saving one is what makes a variant: the variant is the folder that holds it
+    (RigModules D29, D30)."""
+
+    def save(self, asset: Asset, path: str, variant: str | None = None, source: str | None = None, **context) -> None:
+        """Copies the template file at source. Its rigName must be the variant, because rigs built from it
+        are found by rigName."""
+        if not source:
+            raise ValueError("Pass source, the template file to copy into the asset.")
+        rig_name = rigmodules.template.get_rig_name(source)
+        if rig_name != variant:
+            raise ValueError(f"{source} has rigName {rig_name!r}, but the variant is {variant!r}.")
+        shutil.copyfile(source, path)
+
+    def load(self, asset: Asset, path: str, **context) -> str:
+        """The template's path, for cmds.createRigFromTemplate(template=...)."""
+        return path
+
+
 def _require_rig_root(rig_root: str | None) -> str:
     if not rig_root:
         raise ValueError("Shape files belong to one rig: pass rig_root, the rigRootModule node.")
@@ -68,3 +90,4 @@ def register() -> None:
     for file_type in MAYA_FILE_TYPES:
         handlers.register(file_type, scene)
     handlers.register("shapes", RigShapesHandler())
+    handlers.register("template", RigTemplateHandler())

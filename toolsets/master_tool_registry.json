@@ -108,7 +108,7 @@
             "guid": "ed0172ee-18a9-4d5c-bb6e-c84526717cf1",
             "name": "Save Control Shapes...",
             "short_name": "Save Shapes",
-            "script": "import maya.cmds as cmds\nroots = cmds.ls(sl=True, type='rigRootModule')\nif len(roots) != 1:\n    raise RuntimeError('Select one rig root (rigRootModule).')\npath = cmds.fileDialog2(caption='Save Control Shapes', fileFilter='Shape files (*.json)', fileMode=0)\nif path:\n    cmds.saveRigControlShapes(roots[0], file=path[0])\n",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.save_control_shapes_ui()\n",
             "icon": null,
             "enabled": true
         },
@@ -116,7 +116,55 @@
             "guid": "2e9d76c8-552a-4a48-ae96-b4c9a4d12627",
             "name": "Load Control Shapes...",
             "short_name": "Load Shapes",
-            "script": "import maya.cmds as cmds\nroots = cmds.ls(sl=True, type='rigRootModule')\nif len(roots) != 1:\n    raise RuntimeError('Select one rig root (rigRootModule).')\npath = cmds.fileDialog2(caption='Load Control Shapes', fileFilter='Shape files (*.json)', fileMode=1)\nif path:\n    cmds.loadRigControlShapes(roots[0], file=path[0])\n",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.load_control_shapes_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "99e72b04-4a77-4492-962a-1a96e91991e1",
+            "name": "New Project...",
+            "short_name": "New Project",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.new_project_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "9cc7546f-79e0-4db4-a3c3-e49b64ef096c",
+            "name": "New Asset...",
+            "short_name": "New Asset",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.new_asset_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "9da8eca3-d819-485a-8b73-bceec1539620",
+            "name": "New Variant...",
+            "short_name": "New Variant",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.new_variant_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "ce86f44b-ba73-4234-b0cd-7c48d17a5ff3",
+            "name": "Save Skeleton...",
+            "short_name": "Save Skeleton",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.save_skeleton_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "e24e55e3-d81e-4cd1-9e8d-ceade1b2f67a",
+            "name": "Build Rig from Asset...",
+            "short_name": "Build Rig",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.build_rig_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "f0eb6807-08a0-46fb-9289-f3b37d1c5ddf",
+            "name": "Save Rig",
+            "short_name": "Save Rig",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.save_rig_ui()\n",
             "icon": null,
             "enabled": true
         }
