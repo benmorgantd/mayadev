@@ -70,7 +70,7 @@ class Spline(module.Module):
 
         self.setupIkEndJoint()
         # TODO: there is a bug here that causes the ik spline to shorten
-        # self.setupIkHierarchy()  # There must be an issue here
+        #self.setupIkHierarchy()  # There must be an issue here
 
         # add an attribute for blending
         cmds.addAttr(
@@ -137,6 +137,7 @@ class Spline(module.Module):
 
     def buildIkControls(self):
         self.splineIkHandle, self.splineCurve = self.buildIkSpline()
+        # TODO: wire spline to module
 
         self.splineDriverJoints = self.buildSplineDriverJoints()
 
@@ -324,7 +325,7 @@ class Spline(module.Module):
 
     def setupIkHierarchy(self):
         """Make a simple switch to make the ik hierarchy behave like an fk one"""
-
+        # TODO: there is a bug here that is breaking the length
         cmds.addAttr(
             self.node,
             longName="hybridIk",
@@ -335,9 +336,12 @@ class Spline(module.Module):
 
         for i in range(len(self.ikComponents) - 1):
             # TODO: blending for matrix constraint method
+            log.info(f'{self.ikComponents[i].ctrl} - {self.ikComponents[i + 1].offset_grp}')
             const = cmds.parentConstraint(
                 self.ikComponents[i].ctrl, self.ikComponents[i + 1].offset_grp, maintainOffset=False
             )[0]
+
+            # TODO: the bug might be because we're blending between no contraint and a constraint?
 
             cmds.connectAttr(
                 self.node + ".hybridIk",
@@ -347,8 +351,7 @@ class Spline(module.Module):
                 ),
             )
 
-        raise RuntimeError
-
+        # TODO: the curve might be getting shortened here
         # switch off the base ik's constraint with this if there is one
         if self.startTwistParent:
             rev = cmds.createNode("reverse", name=self.name + "_ikHybridReverse")

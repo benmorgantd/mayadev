@@ -191,6 +191,7 @@ class Rig(Asset):
 
     @decorators.log_fn_duration
     def build_rig(self):
+        # TODO: rotate order pass
         pmanager = progressmanager.ProgressManager()
         pmanager.start("Building Rig")
 
