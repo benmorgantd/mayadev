@@ -252,14 +252,25 @@ class AssetTools(unittest.TestCase):
             self.tools.new_project_ui()
         self.assertTrue(os.path.isfile(os.path.join(folder, "project.json")))
 
-    def test_ui_takes_the_asset_from_the_selected_rig(self):
+    def test_asset_id_dialog_starts_with_the_active_rig_asset(self):
         self.build_outside_the_asset(HERO)
-        self.cmds.select("hero:spine1_ctrl_c", replace=True)
+        self.cmds.select(clear=True)
         with mock.patch.object(self.tools, "_ask_file", return_value=self.template), \
-                mock.patch.object(self.tools, "_ask_text") as ask_text:
+                mock.patch.object(self.tools, "_ask_text", return_value=HERO) as ask_text:
             self.tools.new_variant_ui()
-        ask_text.assert_not_called()
+        self.assertEqual(ask_text.call_args.args[2], HERO)
         self.assertEqual(self.hero.variants, ["game"])
+
+    def test_asset_id_dialog_starts_empty_without_a_rig(self):
+        with mock.patch.object(self.tools, "_ask_text", return_value=None) as ask_text:
+            self.tools.save_skeleton_ui()
+        self.assertEqual(ask_text.call_args.args[2], "")
+
+    def test_shape_menu_tool_uses_the_active_rig(self):
+        self.build_outside_the_asset(HERO)
+        self.cmds.select(clear=True)
+        self.tools.save_control_shapes_ui()
+        self.assertTrue(self.hero.file_exists("shapes", "game"))
 
     def test_build_rig_ui_selects_the_new_rig_root(self):
         self.make_buildable_asset()

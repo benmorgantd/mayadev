@@ -76,7 +76,7 @@
             "guid": "de84cb3f-aae6-4494-a163-25c6778855ad",
             "name": "Select All Controls",
             "short_name": "Sel Ctrls",
-            "script": "import maya.cmds as cmds\nroots = cmds.ls(sl=True, type='rigRootModule')\nif len(roots) != 1:\n    raise RuntimeError('Select one rig root (rigRootModule).')\ncmds.select(cmds.getRigControls(roots[0]), replace=True)\n",
+            "script": "import maya.cmds as cmds\nimport bmaya.maya.activerig\nrig_root = bmaya.maya.activerig.get_active_rig().rig_root\ncmds.select(cmds.getRigControls(rig_root), replace=True)\n",
             "icon": null,
             "enabled": true
         },
@@ -92,7 +92,7 @@
             "guid": "ad7cd44b-5f64-45ab-bbd1-b78392ac63f4",
             "name": "Mirror Shapes Left to Right",
             "short_name": "Shapes L>R",
-            "script": "import maya.cmds as cmds\nroots = cmds.ls(sl=True, type='rigRootModule')\nif len(roots) != 1:\n    raise RuntimeError('Select one rig root (rigRootModule).')\ncmds.mirrorRigControlShapes(roots[0], leftToRight=True)\n",
+            "script": "import maya.cmds as cmds\nimport bmaya.maya.activerig\nrig_root = bmaya.maya.activerig.get_active_rig().rig_root\ncmds.mirrorRigControlShapes(rig_root, leftToRight=True)\n",
             "icon": null,
             "enabled": true
         },
@@ -100,7 +100,7 @@
             "guid": "5807a01a-d836-4d13-84fb-e053df0a714e",
             "name": "Mirror Shapes Right to Left",
             "short_name": "Shapes R>L",
-            "script": "import maya.cmds as cmds\nroots = cmds.ls(sl=True, type='rigRootModule')\nif len(roots) != 1:\n    raise RuntimeError('Select one rig root (rigRootModule).')\ncmds.mirrorRigControlShapes(roots[0], leftToRight=False)\n",
+            "script": "import maya.cmds as cmds\nimport bmaya.maya.activerig\nrig_root = bmaya.maya.activerig.get_active_rig().rig_root\ncmds.mirrorRigControlShapes(rig_root, leftToRight=False)\n",
             "icon": null,
             "enabled": true
         },

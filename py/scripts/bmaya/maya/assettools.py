@@ -8,7 +8,7 @@ The shape and rig save tools fall back to a file dialog for a rig whose asset fo
 Once it exists, they always use the asset's paths, so a file never lands in two places.
 
 The functions at the top take everything as arguments, so batch jobs and other tools can call them. The
-*_ui functions below read the selection, ask with dialogs, and call them.
+*_ui functions below act on the active rig (bmaya.maya.activerig), ask with dialogs, and call them.
 """
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ import rigmodules.template
 import bmaya.asset
 import bmaya.asset.handlers
 import bmaya.core.log
+import bmaya.maya.activerig
 import bmaya.maya.assethandlers
 
 SCENE_FILTER = "Maya ASCII (*.ma)"
@@ -159,8 +160,7 @@ def new_project_ui() -> None:
 
 
 def new_asset_ui() -> None:
-    asset_id = _ask_text("New Asset", "Asset id, its folder below the projects root (game|project|type|name):",
-                         _selected_asset_id() or "")
+    asset_id = _ask_asset_id("New Asset", "Asset id, its folder below the projects root (game|project|type|name):")
     if not asset_id:
         return
     project = bmaya.asset.Asset(asset_id).project   # raises when no project.json is above the folder
@@ -197,40 +197,27 @@ def build_rig_ui() -> None:
 
 
 def save_rig_ui() -> None:
-    save_rig(_selected_rig_node())
+    save_rig(bmaya.maya.activerig.get_active_rig().rig_root)
 
 
 def save_control_shapes_ui() -> None:
-    save_control_shapes(_selected_rig_node())
+    save_control_shapes(bmaya.maya.activerig.get_active_rig().rig_root)
 
 
 def load_control_shapes_ui() -> None:
-    load_control_shapes(_selected_rig_node())
+    load_control_shapes(bmaya.maya.activerig.get_active_rig().rig_root)
 
 
-# ---- selection and dialogs -------------------------------------------------------------------
+# ---- dialogs ---------------------------------------------------------------------------------
 
-def _selected_rig_node() -> str:
-    selection = cmds.ls(selection=True)
-    if not selection:
-        raise RuntimeError("Select a control, module or rig root of the rig.")
-    return selection[0]
-
-
-def _selected_asset_id() -> str | None:
-    """The asset id of the selected rig node, or None when nothing from a rig is selected."""
-    selection = cmds.ls(selection=True)
-    if not selection:
-        return None
+def _ask_asset_id(title: str, message: str = "Asset id (game|project|type|name):") -> str | None:
+    """An asset id typed in a dialog, filled in with the active rig's asset id when the scene has a rig. Always
+    asks, so the asset a tool is about to write to is on screen first."""
     try:
-        return rigmodules.query.get_rig_info(selection[0]).asset_id
+        default = bmaya.maya.activerig.get_active_rig().asset_id
     except RuntimeError:
-        return None
-
-
-def _ask_asset_id(title: str) -> str | None:
-    """The selected rig's asset id, or one typed in a dialog when no rig is selected."""
-    return _selected_asset_id() or _ask_text(title, "Asset id (game|project|type|name):", "")
+        default = ""
+    return _ask_text(title, message, default)
 
 
 def _ask_text(title: str, message: str, text: str) -> str | None:

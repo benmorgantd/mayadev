@@ -107,7 +107,10 @@ class MenuScripts(unittest.TestCase):
 
     def run_tool(self, name, selection):
         """Runs a registry script as the menu does: exec, with the selection set first."""
-        self.cmds.select(selection, replace=True)
+        if selection:
+            self.cmds.select(selection, replace=True)
+        else:
+            self.cmds.select(clear=True)
         exec(self.tools[name]["script"], {})
 
     def selected(self):
@@ -134,9 +137,17 @@ class MenuScripts(unittest.TestCase):
         expected = [c.lstrip(":") for c in self.cmds.getRigControls(self.root)]
         self.assertEqual(sorted(self.selected()), sorted(expected))
 
-    def test_rig_tools_need_one_rig_root(self):
-        with self.assertRaises(RuntimeError):
-            self.run_tool("Select All Controls", self.left)
+    def test_rig_tools_act_on_the_active_rig_without_selecting_its_root(self):
+        expected = sorted(c.lstrip(":") for c in self.cmds.getRigControls(self.root))
+        for selection in ([self.left], [self.joints[0]], []):
+            with self.subTest(selection=selection):
+                self.run_tool("Select All Controls", selection or None)
+                self.assertEqual(sorted(self.selected()), expected)
+
+    def test_rig_tools_need_a_rig_in_the_scene(self):
+        self.cmds.file(new=True, force=True)
+        with self.assertRaisesRegex(RuntimeError, "no RigModules rig"):
+            self.run_tool("Select All Controls", None)
 
     def test_select_mirror_controls(self):
         self.run_tool("Select Mirror Controls", [self.left])

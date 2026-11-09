@@ -43,6 +43,10 @@ def _run_deferred_setup():
     if not _IS_BATCH:
         _setup_tool_views(tools_registry, rigmodules_loaded)
 
+    # The RigModules menu tools act on the active rig, so they need the tracker's selection callbacks
+    if rigmodules_loaded and not _IS_BATCH:
+        _start_active_rig_tracker()
+
     log.info("Custom startup scripts complete!")
 
     pmanager.end()
@@ -83,6 +87,14 @@ def _setup_tool_registry():
     registry.load_registry(constants.TOOL_REGISTRY_PATH)
 
     return registry
+
+
+def _start_active_rig_tracker():
+    """Follows the rig the RigModules menu tools act on, through selection and file new and open callbacks."""
+    import bmaya.maya.activerig
+
+    pmanager.update(70, "Tracking the active rig")
+    bmaya.maya.activerig.ActiveRigTracker()
 
 
 def _load_rigmodules():
