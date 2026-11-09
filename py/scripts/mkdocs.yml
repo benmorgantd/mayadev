@@ -23,6 +23,7 @@ nav:
   - Manual Guides:
       - How To Build A Rig: guides/How To Build a Rig.md
       - Mayadev Env Setup: guides/Mayadev Env Setup.md
+      - Asset Layout: guides/Asset Layout.md
   - API Reference:
       - Core:
           - Constants: core/constants.md
