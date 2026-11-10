@@ -1,4 +1,4 @@
-"""Dev reload for the RigModules plugin: swaps in a fresh build without restarting Maya.
+"""Dev reload and unload for the RigModules plugin: swaps in a fresh build, or removes it, without restarting Maya.
 
 A loaded .mll is locked, so the build output can't be rebuilt while Maya has it loaded. Reload tears down
 everything tied to the plugin (the active rig tracker, the RigModules menu), starts a new scene, unloads the
@@ -84,6 +84,13 @@ def reload_rigmodules() -> None:
     cmds.evalDeferred(lambda: _reload(build_path))
 
 
+def unload_rigmodules() -> None:
+    """Unloads the plugin and leaves Maya without it, so the build output is unlocked for a rebuild. The menu is
+    rebuilt afterwards, so Reload is still there to bring the plugin back. Deferred for the same reason as the full
+    reload."""
+    cmds.evalDeferred(_unload)
+
+
 def reload_menu() -> None:
     """Deletes the RigModules menu and builds it again from the layout and registry files, so edits to them show
     without a restart. The plugin and the scene are untouched. Deferred for the same reason as the full reload."""
@@ -94,6 +101,13 @@ def _reload_menu() -> None:
     _delete_menu()
     _build_menu()
     bmaya.core.log.info("Reloaded the RigModules menu")
+
+
+def _unload() -> None:
+    _tear_down()
+    _forget_python_package()
+    _build_menu()
+    bmaya.core.log.info("Unloaded RigModules")
 
 
 def _reload(build_path: str) -> None:

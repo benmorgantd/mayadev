@@ -143,6 +143,11 @@
                 },
                 {
                     "type": "tool",
+                    "guid": "c4e8a7d1-5b92-4f36-8a0d-6e3b9f1c2d84",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
                     "guid": "3b1f6a52-8c0e-4d7a-9e45-1a2c7d5f9b30",
                     "enabled": true
                 }
