@@ -26,13 +26,17 @@ MENU_ID = "rigmodules_menu"
 _COPY_ROOT = os.path.join(tempfile.gettempdir(), "rigmodules_dev")
 
 
+def _delete_menu() -> None:
+    if cmds.menu(MENU_ID, exists=True):
+        cmds.deleteUI(MENU_ID, menu=True)
+
+
 def _tear_down() -> None:
     """Everything that holds the plugin: callbacks, the menu, nodes, undo entries and cached viewport items."""
     tracker = bmaya.maya.activerig.ActiveRigTracker.current()
     if tracker is not None:
         tracker.stop()
-    if cmds.menu(MENU_ID, exists=True):
-        cmds.deleteUI(MENU_ID, menu=True)
+    _delete_menu()
 
     cmds.select(clear=True)
     cmds.file(new=True, force=True)
@@ -78,6 +82,18 @@ def reload_rigmodules() -> None:
             f"(RigModules/cpp/x64/Release/RigModules.mll). It is '{build_path}'."
         )
     cmds.evalDeferred(lambda: _reload(build_path))
+
+
+def reload_menu() -> None:
+    """Deletes the RigModules menu and builds it again from the layout and registry files, so edits to them show
+    without a restart. The plugin and the scene are untouched. Deferred for the same reason as the full reload."""
+    cmds.evalDeferred(_reload_menu)
+
+
+def _reload_menu() -> None:
+    _delete_menu()
+    _build_menu()
+    bmaya.core.log.info("Reloaded the RigModules menu")
 
 
 def _reload(build_path: str) -> None:

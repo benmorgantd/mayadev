@@ -72,7 +72,7 @@ class MenuLayout(unittest.TestCase):
     def test_every_registry_tool_is_in_the_menu_once(self):
         guids = [i["guid"] for i in _walk(_load("rigmodules_menu.json")["items"]) if i["type"] == "tool"]
         self.assertEqual(len(guids), len(set(guids)))
-        self.assertEqual(len(guids), 20)
+        self.assertEqual(len(guids), 21)
 
     def test_every_script_compiles(self):
         for name, tool in _menu_tools().items():
