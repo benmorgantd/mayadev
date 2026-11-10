@@ -121,6 +121,38 @@
             "enabled": true
         },
         {
+            "guid": "005d756b-2a9a-45f0-bd2f-cefed2ab29a8",
+            "name": "Mark Meshes for Skinning",
+            "short_name": "Mark Meshes",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.mark_meshes_for_skinning()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "d19679a5-4371-47b1-b5eb-d23368c7f724",
+            "name": "Mark Meshes with New Ids",
+            "short_name": "New Mesh Ids",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.mark_meshes_for_skinning(new_ids=True)\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "f89c9583-9ecf-4298-96b1-af40feddcc69",
+            "name": "Save Skin Weights...",
+            "short_name": "Save Weights",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.save_skin_weights_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "42df57b8-3882-4607-93c2-2f27a13265a1",
+            "name": "Load Skin Weights...",
+            "short_name": "Load Weights",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.load_skin_weights_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
             "guid": "99e72b04-4a77-4492-962a-1a96e91991e1",
             "name": "New Project...",
             "short_name": "New Project",
@@ -149,6 +181,14 @@
             "name": "Save Skeleton...",
             "short_name": "Save Skeleton",
             "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.save_skeleton_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "0bb96eec-4232-4264-806e-2c51c04f44bd",
+            "name": "Save Model...",
+            "short_name": "Save Model",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.save_model_ui()\n",
             "icon": null,
             "enabled": true
         },

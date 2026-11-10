@@ -31,13 +31,17 @@ The rig tools act on the **active rig**, so there is no need to select a rig roo
 | Select Mirror Controls | controls | Selects the controls on the other side instead |
 | Mirror Shapes Left to Right / Right to Left | active rig | Mirrors control shapes from one side to the other |
 | Save Control Shapes... / Load Control Shapes... | active rig | Saves or loads the variant's `shapes.json` in the rig's asset. Before the asset folder exists, uses a file dialog |
+| Mark Meshes for Skinning | meshes | Gives each selected mesh a `meshId` (RigModules `setRigMeshId`), the id its weight files are matched by. A mesh keeps the id it has |
+| Mark Meshes with New Ids | meshes | The same, but replaces their ids. Use it on a duplicated mesh, which copied its source's id |
+| Save Skin Weights... / Load Skin Weights... | active rig | Saves every skinned mesh in the rig's namespace to the variant's `weights` folder, one file per mesh, or loads the folder onto the meshes, matched by `meshId`, as one undo step. Before the asset folder exists, uses a folder dialog |
 | New Project... | nothing | Writes a `project.json` into a folder you pick |
 | New Asset... | nothing | Asks for an asset id and one of the project's asset types, then writes the asset's `asset.json` |
 | New Variant... | nothing | Copies a template you pick into the asset as the variant named by its `rigName` |
 | Save Skeleton... | nothing | Saves the open scene as the asset's skeleton file |
-| Build Rig from Asset... | nothing | Imports the asset's skeleton into its namespace, builds a variant's template on it, and loads the variant's shapes |
+| Save Model... | nothing | Saves the open scene as a variant's model file, the meshes it skins. Mark the meshes for skinning first: it warns about meshes without a `meshId` |
+| Build Rig from Asset... | nothing | Imports the asset's skeleton into its namespace, builds a variant's template on it, then loads the variant's shapes, imports its model into the same namespace and loads its skin weights, each when the asset has it |
 | Save Rig | active rig | Saves the open scene as the variant's rig file. Before the asset folder exists, uses a file dialog |
 
-The tools that ask for an asset id fill it in with the active rig's asset id. A rig can be built anywhere before its asset exists. Once the asset folder exists, the shape and rig tools always use the asset's paths. The asset tools are in `bmaya.maya.assettools`, and their functions take arguments, so scripts can call them without the dialogs.
+The tools that ask for an asset id fill it in with the active rig's asset id. A rig can be built anywhere before its asset exists. Once the asset folder exists, the shape, weight and rig tools always use the asset's paths. The asset tools are in `bmaya.maya.assettools`, and their functions take arguments, so scripts can call them without the dialogs.
 
 The scripts live in `toolsets/master_tool_registry.json`. Their tests are in `tests/rigging/rigmodules_menu`, `tests/asset/test_maya_asset_tools.py` and `tests/asset/test_maya_active_rig.py`.

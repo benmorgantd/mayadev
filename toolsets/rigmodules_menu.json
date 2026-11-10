@@ -52,6 +52,29 @@
         },
         {
             "type": "tool",
+            "guid": "005d756b-2a9a-45f0-bd2f-cefed2ab29a8",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "d19679a5-4371-47b1-b5eb-d23368c7f724",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "f89c9583-9ecf-4298-96b1-af40feddcc69",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "42df57b8-3882-4607-93c2-2f27a13265a1",
+            "enabled": true
+        },
+        {
+            "type": "separator"
+        },
+        {
+            "type": "tool",
             "guid": "99e72b04-4a77-4492-962a-1a96e91991e1",
             "enabled": true
         },
@@ -68,6 +91,11 @@
         {
             "type": "tool",
             "guid": "ce86f44b-ba73-4234-b0cd-7c48d17a5ff3",
+            "enabled": true
+        },
+        {
+            "type": "tool",
+            "guid": "0bb96eec-4232-4264-806e-2c51c04f44bd",
             "enabled": true
         },
         {

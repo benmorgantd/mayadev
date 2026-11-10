@@ -174,6 +174,32 @@ class MenuScripts(unittest.TestCase):
             self.run_tool("Load Control Shapes...", self.root)
         self.assertEqual(cmds.getAttr(self.left + ".shapeType"), before)
 
+    def make_skinned_box(self):
+        cmds = self.cmds
+        box = cmds.polyCube(name=":hero:box_geo", constructionHistory=False)[0]
+        cluster = cmds.skinCluster("hero:spine1_jnt", "hero:arm_l_jnt", box, toSelectedBones=True)[0]
+        return box, cluster
+
+    def test_mark_meshes_for_skinning_and_new_ids(self):
+        box, _ = self.make_skinned_box()
+        self.run_tool("Mark Meshes for Skinning", [box, self.joints[0]])
+        first = self.cmds.getAttr(box + ".meshId")
+        self.assertTrue(first)
+        self.run_tool("Mark Meshes with New Ids", [box])
+        self.assertNotEqual(self.cmds.getAttr(box + ".meshId"), first)
+
+    def test_save_and_load_skin_weights_through_the_folder_dialog(self):
+        cmds = self.cmds
+        box, cluster = self.make_skinned_box()
+        self.run_tool("Mark Meshes for Skinning", [box])
+        folder = os.path.join(self.temp, "weights")
+        with mock.patch.object(cmds, "fileDialog2", return_value=[folder]):
+            self.run_tool("Save Skin Weights...", self.root)
+            self.assertEqual(os.listdir(folder), ["box_geo.json"])
+            cmds.delete(cluster)
+            self.run_tool("Load Skin Weights...", self.root)
+        self.assertTrue(cmds.ls(cmds.listHistory(box), type="skinCluster"))
+
     def test_cancelled_file_dialog_does_nothing(self):
         with mock.patch.object(self.cmds, "fileDialog2", return_value=None):
             self.run_tool("Save Control Shapes...", self.root)

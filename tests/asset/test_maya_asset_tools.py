@@ -72,7 +72,7 @@ class AssetTools(unittest.TestCase):
         bmaya.asset.Project.create(os.path.join(self.root, "shooter", "main"))
         self.hero = bmaya.asset.Asset.create(HERO, "Character")
         self.template = self.write_template(TEMPLATE)
-        for file_type in bmaya.maya.assethandlers.MAYA_FILE_TYPES + ("shapes", "template"):
+        for file_type in bmaya.maya.assethandlers.MAYA_FILE_TYPES + ("shapes", "template", "weights"):
             self.addCleanup(bmaya.asset.handlers.unregister, file_type)
         cmds.file(new=True, force=True)
 
@@ -224,6 +224,134 @@ class AssetTools(unittest.TestCase):
         with mock.patch.object(self.cmds, "fileDialog2", return_value=[path]):
             self.assertEqual(self.tools.save_rig("nobody:spine1_ctrl_c"), path)
         self.assertTrue(os.path.isfile(path))
+
+    # ---- meshes and skin weights ----
+
+    def make_box(self, namespace=""):
+        """A 2-unit-tall cube standing on the origin, so spine1 (y=0) and spine2 (y=2) can skin it."""
+        cmds = self.cmds
+        box = cmds.polyCube(name=f":{namespace}:box_geo" if namespace else "box_geo", height=2, constructionHistory=False)[0]
+        cmds.move(0, 1, 0, box)
+        cmds.makeIdentity(box, apply=True, translate=True)
+        return box
+
+    def skin_box(self, box, namespace="hero"):
+        cmds = self.cmds
+        joints = [f"{namespace}:spine1_jnt", f"{namespace}:spine2_jnt"]
+        cluster = cmds.skinCluster(*joints, box, toSelectedBones=True)[0]
+        cmds.skinPercent(cluster, box + ".vtx[0]", transformValue=[(joints[0], 0.25), (joints[1], 0.75)])
+        return cluster
+
+    def spine2_weights(self, box, namespace="hero"):
+        cmds = self.cmds
+        cluster = cmds.ls(cmds.listHistory(box), type="skinCluster")[0]
+        return [round(cmds.skinPercent(cluster, f"{box}.vtx[{v}]", transform=f"{namespace}:spine2_jnt", query=True), 6)
+                for v in range(8)]
+
+    def test_mark_meshes_for_skinning_marks_the_selected_meshes(self):
+        box = self.make_box()
+        joint = self.make_skeleton()[0]
+        self.cmds.select(box, joint)
+        ids = self.tools.mark_meshes_for_skinning()
+        self.assertEqual(ids, [self.cmds.getAttr(box + ".meshId")])
+        self.assertNotEqual(self.tools.mark_meshes_for_skinning(new_ids=True), ids)
+
+    def test_save_model_saves_the_open_scene_as_the_variant_model(self):
+        self.tools.new_variant(HERO, self.template)
+        self.cmds.setRigMeshId(self.make_box())
+        path = self.tools.save_model(HERO, "game")
+        self.assertEqual(path, self.hero.path("model", "game"))
+        self.assertTrue(os.path.isfile(path))
+
+    def test_save_model_needs_the_variant(self):
+        self.make_box()
+        with self.assertRaisesRegex(RuntimeError, "Add its template with New Variant first"):
+            self.tools.save_model(HERO, "game")
+
+    def test_skin_weights_round_trip_through_the_asset(self):
+        cmds = self.cmds
+        rig_root = self.build_outside_the_asset(HERO)
+        box = self.make_box("hero")
+        cmds.setRigMeshId(box)
+        cluster = self.skin_box(box)
+        saved = self.spine2_weights(box)
+        with mock.patch.object(cmds, "fileDialog2") as dialog:
+            files = self.tools.save_skin_weights(rig_root)
+            self.assertEqual([os.path.basename(f) for f in files], ["box_geo.json"])
+            self.assertEqual(os.path.dirname(files[0]), self.hero.path("weights", "game"))
+            cmds.delete(cluster)
+            self.assertEqual([m.split("|")[-1] for m in self.tools.load_skin_weights(rig_root)], ["hero:box_geo"])
+        dialog.assert_not_called()
+        self.assertEqual(self.spine2_weights(box), saved)
+
+    def test_save_skin_weights_needs_marked_meshes(self):
+        rig_root = self.build_outside_the_asset(HERO)
+        self.skin_box(self.make_box("hero"))
+        with self.assertRaisesRegex(RuntimeError, "Mark Meshes for Skinning"):
+            self.tools.save_skin_weights(rig_root)
+
+    def test_a_renamed_mesh_replaces_its_old_weight_file(self):
+        cmds = self.cmds
+        rig_root = self.build_outside_the_asset(HERO)
+        box = self.make_box("hero")
+        cmds.setRigMeshId(box)
+        self.skin_box(box)
+        self.tools.save_skin_weights(rig_root)
+        cmds.rename(box, ":hero:crate_geo")
+        files = self.tools.save_skin_weights(rig_root)
+        self.assertEqual([os.path.basename(f) for f in files], ["crate_geo.json"])
+        self.assertEqual(sorted(os.listdir(self.hero.path("weights", "game"))), ["crate_geo.json"])
+
+    def test_load_skips_a_file_whose_mesh_is_not_in_the_scene(self):
+        cmds = self.cmds
+        rig_root = self.build_outside_the_asset(HERO)
+        box = self.make_box("hero")
+        cmds.setRigMeshId(box)
+        self.skin_box(box)
+        self.tools.save_skin_weights(rig_root)
+        cmds.delete(box)
+        self.assertEqual(self.tools.load_skin_weights(rig_root), [])
+
+    def test_load_skin_weights_is_one_undo_step(self):
+        cmds = self.cmds
+        rig_root = self.build_outside_the_asset(HERO)
+        box = self.make_box("hero")
+        cmds.setRigMeshId(box)
+        cluster = self.skin_box(box)
+        self.tools.save_skin_weights(rig_root)
+        cmds.delete(cluster)
+        cmds.undoInfo(state=True, infinity=True)
+        self.tools.load_skin_weights(rig_root)
+        cmds.undo()
+        self.assertEqual(cmds.ls(cmds.listHistory(box), type="skinCluster"), [])
+
+    def test_weights_use_a_folder_dialog_before_the_asset_exists(self):
+        cmds = self.cmds
+        rig_root = self.build_outside_the_asset("shooter|main|characters|nobody")
+        box = self.make_box("nobody")
+        cmds.setRigMeshId(box)
+        self.skin_box(box, "nobody")
+        folder = os.path.join(self.temp, "chosen_weights")
+        with mock.patch.object(cmds, "fileDialog2", return_value=[folder]):
+            self.tools.save_skin_weights(rig_root)
+        self.assertEqual(os.listdir(folder), ["box_geo.json"])
+
+    def test_build_rig_imports_the_model_and_loads_its_weights(self):
+        cmds = self.cmds
+        self.make_buildable_asset()
+        cmds.setRigMeshId(self.make_box())
+        self.tools.save_model(HERO, "game")
+
+        cmds.file(new=True, force=True)
+        rig_root = self.tools.build_rig(HERO, "game")
+        self.assertEqual(cmds.ls(cmds.listHistory("hero:box_geo"), type="skinCluster"), [])
+        self.skin_box("hero:box_geo")
+        saved = self.spine2_weights("hero:box_geo")
+        self.tools.save_skin_weights(rig_root)
+
+        cmds.file(new=True, force=True)
+        self.tools.build_rig(HERO, "game")
+        self.assertEqual(self.spine2_weights("hero:box_geo"), saved)
 
     def test_rig_tools_need_a_rig_node(self):
         self.make_skeleton()

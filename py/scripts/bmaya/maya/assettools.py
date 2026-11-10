@@ -4,7 +4,8 @@ A rig can be built anywhere, before its asset exists. Once the asset's folder ex
 write the asset's files. A built rig names its own asset id and variant (the rig root's rigName), read
 through rigmodules.query. Nothing here walks rig nodes or parses names (RigModules D24).
 
-The shape and rig save tools fall back to a file dialog for a rig whose asset folder doesn't exist yet.
+The shape, weight and rig tools fall back to a file or folder dialog for a rig whose asset folder doesn't exist
+yet.
 Once it exists, they always use the asset's paths, so a file never lands in two places.
 
 The functions at the top take everything as arguments, so batch jobs and other tools can call them. The
@@ -17,6 +18,7 @@ import os
 
 import maya.cmds as cmds
 import rigmodules.query
+import rigmodules.skinweights
 import rigmodules.template
 
 import bmaya.asset
@@ -71,9 +73,26 @@ def save_skeleton(asset_id: str) -> str:
     return path
 
 
+def save_model(asset_id: str, variant: str) -> str:
+    """Saves the open scene as the variant's model file, the meshes the variant skins. The scene is renamed to
+    that file. Warns about meshes without a meshId, because their weights can't be saved or loaded."""
+    asset = require_asset(asset_id)
+    if variant not in asset.variants:
+        raise bmaya.asset.AssetError(f"{asset.id} has no variant {variant!r}. Add its template with New Variant first.")
+    unmarked = [mesh for mesh in _scene_meshes() if not rigmodules.skinweights.get_mesh_id(mesh)]
+    if unmarked:
+        bmaya.core.log.warning("These meshes have no meshId, so their weights can't be saved. Mark them with "
+                               "Mark Meshes for Skinning: " + ", ".join(unmarked))
+    bmaya.maya.assethandlers.register()
+    path = bmaya.asset.handlers.save(asset, "model", variant)
+    bmaya.core.log.info(f"Saved the model of {asset.id} variant {variant!r}: {path}")
+    return path
+
+
 def build_rig(asset_id: str, variant: str, namespace: str | None = None) -> str:
-    """Imports the asset's skeleton, builds the variant's template on it, and loads the variant's shape file
-    when there is one. Builds into the open scene. Returns the rig root."""
+    """Imports the asset's skeleton, builds the variant's template on it, then loads the variant's files that
+    exist: its shape file, its model (imported into the same namespace) and its skin weights. Builds into the
+    open scene. Returns the rig root."""
     asset = require_asset(asset_id)
     bmaya.maya.assethandlers.register()
     template = bmaya.asset.handlers.load(asset, "template", variant)
@@ -93,6 +112,10 @@ def build_rig(asset_id: str, variant: str, namespace: str | None = None) -> str:
     rig_root = next(info.rig_root for info in rigmodules.query.get_rigs(namespace) if info.variant == variant)
     if asset.file_exists("shapes", variant):
         bmaya.asset.handlers.load(asset, "shapes", variant, rig_root=rig_root)
+    if asset.file_exists("model", variant):
+        bmaya.asset.handlers.load(asset, "model", variant, namespace=namespace)
+        if asset.file_exists("weights", variant):
+            bmaya.asset.handlers.load(asset, "weights", variant, namespace=namespace)
     bmaya.core.log.info(f"Built {asset.id} variant {variant!r} into namespace {namespace!r}.")
     return rig_root
 
@@ -150,6 +173,52 @@ def load_control_shapes(node: str) -> str | None:
     return asset.path("shapes", info.variant)
 
 
+def save_skin_weights(node: str) -> list[str] | None:
+    """Saves the weights of every skinned mesh in the rig's namespace to its asset's weights folder, or to a
+    folder chosen in a dialog when the asset folder doesn't exist. Returns the files written, or None when the
+    dialog is cancelled."""
+    info = rigmodules.query.get_rig_info(node)
+    asset = find_asset(info.asset_id)
+    handler = bmaya.maya.assethandlers.RigSkinWeightsHandler()
+    if asset is None:
+        folder = _ask_folder("Save Skin Weights: pick the weights folder")
+        return handler.save(None, folder, namespace=info.namespace) if folder else None
+
+    bmaya.maya.assethandlers.register()
+    path = bmaya.asset.handlers.save(asset, "weights", info.variant, namespace=info.namespace)
+    bmaya.core.log.info(f"Saved the skin weights of {asset.id} variant {info.variant!r}: {path}")
+    return handler.files(path)
+
+
+def load_skin_weights(node: str) -> list[str] | None:
+    """Loads the weights in its asset's weights folder onto the meshes in the rig's namespace, matched by meshId,
+    or from a folder chosen in a dialog when the asset folder doesn't exist. Returns the meshes loaded, or None
+    when the dialog is cancelled."""
+    info = rigmodules.query.get_rig_info(node)
+    asset = find_asset(info.asset_id)
+    if asset is None:
+        folder = _ask_folder("Load Skin Weights: pick the weights folder")
+        handler = bmaya.maya.assethandlers.RigSkinWeightsHandler()
+        return handler.load(None, folder, namespace=info.namespace) if folder else None
+
+    bmaya.maya.assethandlers.register()
+    return bmaya.asset.handlers.load(asset, "weights", info.variant, namespace=info.namespace)
+
+
+def mark_meshes_for_skinning(new_ids: bool = False) -> list[str]:
+    """Gives every selected mesh a meshId, the id its weight files are matched by. A mesh keeps the id it has
+    unless new_ids, which a duplicated mesh needs. Returns the ids."""
+    ids = cmds.setRigMeshId(newId=new_ids)
+    bmaya.core.log.info(f"{len(ids)} mesh(es) marked for skinning.")
+    return ids
+
+
+def _scene_meshes() -> list[str]:
+    """Every visible mesh's transform in the scene, sorted."""
+    shapes = cmds.ls(type="mesh", noIntermediate=True, long=True) or []
+    return sorted({cmds.listRelatives(shape, parent=True, fullPath=True)[0] for shape in shapes})
+
+
 # ---- menu entry points ---------------------------------------------------------------------
 
 def new_project_ui() -> None:
@@ -184,14 +253,20 @@ def save_skeleton_ui() -> None:
         save_skeleton(asset_id)
 
 
+def save_model_ui() -> None:
+    asset_id = _ask_asset_id("Save Model")
+    if not asset_id:
+        return
+    variant = _choose_variant("Save Model", asset_id)
+    if variant:
+        save_model(asset_id, variant)
+
+
 def build_rig_ui() -> None:
     asset_id = _ask_asset_id("Build Rig")
     if not asset_id:
         return
-    variants = require_asset(asset_id).variants
-    if not variants:
-        raise bmaya.asset.AssetError(f"{asset_id} has no variants. Add a template with New Variant first.")
-    variant = variants[0] if len(variants) == 1 else _choose("Build Rig", f"Variant of {asset_id}:", variants)
+    variant = _choose_variant("Build Rig", asset_id)
     if variant:
         cmds.select(build_rig(asset_id, variant), replace=True)
 
@@ -208,6 +283,14 @@ def load_control_shapes_ui() -> None:
     load_control_shapes(bmaya.maya.activerig.get_active_rig().rig_root)
 
 
+def save_skin_weights_ui() -> None:
+    save_skin_weights(bmaya.maya.activerig.get_active_rig().rig_root)
+
+
+def load_skin_weights_ui() -> None:
+    load_skin_weights(bmaya.maya.activerig.get_active_rig().rig_root)
+
+
 # ---- dialogs ---------------------------------------------------------------------------------
 
 def _ask_asset_id(title: str, message: str = "Asset id (game|project|type|name):") -> str | None:
@@ -218,6 +301,14 @@ def _ask_asset_id(title: str, message: str = "Asset id (game|project|type|name):
     except RuntimeError:
         default = ""
     return _ask_text(title, message, default)
+
+
+def _choose_variant(title: str, asset_id: str) -> str | None:
+    """The asset's only variant, or one picked in a dialog. Raises when it has none."""
+    variants = require_asset(asset_id).variants
+    if not variants:
+        raise bmaya.asset.AssetError(f"{asset_id} has no variants. Add a template with New Variant first.")
+    return variants[0] if len(variants) == 1 else _choose(title, f"Variant of {asset_id}:", variants)
 
 
 def _ask_text(title: str, message: str, text: str) -> str | None:

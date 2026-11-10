@@ -140,6 +140,7 @@ Where a file lives is kept apart from how it is read. `bmaya.asset.handlers` dis
 |---|---|
 | `skeleton`, `model`, `rig` | Save renames and saves the open scene. Load imports into the asset's namespace (or `namespace=`), merging into it if it exists. Never references |
 | `shapes` | RigModules `saveRigControlShapes` / `loadRigControlShapes`. Pass `rig_root=` |
+| `weights` | One RigModules weight file per skinned mesh in `namespace=`, named after the mesh (`box_geo.json`). Save fails on a skinned mesh without a `meshId`, and removes a file left from a mesh's old name. Load matches each file to a mesh by the `meshId` inside it, never by name, skips a file whose mesh isn't in the scene with a warning, and is one undo step |
 | `template` | Save copies the template file passed as `source=`, and fails unless its `rigName` is the variant. Load returns the template's path |
 
 ```python
@@ -150,9 +151,10 @@ assethandlers.register()                                      # once per session
 hero = Asset("shooter|main|characters|hero")
 handlers.load(hero, "skeleton")
 handlers.save(hero, "shapes", variant="game", rig_root="hero:rigRootModule1")
+handlers.save(hero, "weights", variant="game", namespace="hero")
 ```
 
-Weights, textures, shaders, postops, poses and anims have no handler yet.
+Textures, shaders, postops, poses and anims have no handler yet.
 
 ## Tools
 
@@ -163,14 +165,17 @@ import bmaya.maya.assettools
 
 bmaya.maya.assettools.new_variant("shooter|main|characters|hero", r"C:\rigs\Human.json")   # variant "Human"
 bmaya.maya.assettools.save_skeleton("shooter|main|characters|hero")              # the open scene
+bmaya.maya.assettools.save_model("shooter|main|characters|hero", "Human")        # the open scene, meshes only
 rig_root = bmaya.maya.assettools.build_rig("shooter|main|characters|hero", "Human")
 bmaya.maya.assettools.save_control_shapes(rig_root)                                # variants/Human/shapes.json
+bmaya.maya.assettools.save_skin_weights(rig_root)                                  # variants/Human/weights/*.json
 bmaya.maya.assettools.save_rig(rig_root)                                           # variants/Human/hero_Human.ma
 ```
 
 - A variant is added by copying its template in. The template's `rigName` names it.
-- `build_rig` imports the skeleton into the asset's namespace and builds there. A namespace that already holds a rig is refused, so build a second variant into a new scene or another namespace.
-- The shape and rig saves fall back to a file dialog only while the rig's asset folder doesn't exist.
+- `build_rig` imports the skeleton into the asset's namespace and builds there. Then it loads what the variant has: its shape file, its model (imported into the same namespace) and, with the model, its weights. A namespace that already holds a rig is refused, so build a second variant into a new scene or another namespace.
+- Weights need each skinned mesh's `meshId`, which lives in the model file. Mark the meshes for skinning (`mark_meshes_for_skinning`, RigModules `setRigMeshId`) in the model scene, before `save_model`, so every build imports meshes that already carry their ids.
+- The shape, weight and rig saves fall back to a file or folder dialog only while the rig's asset folder doesn't exist.
 
 ## Tests
 

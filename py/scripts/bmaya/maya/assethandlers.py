@@ -1,8 +1,8 @@
 """Maya save and load handlers for asset file types (bmaya.asset.handlers).
 
-Only formats that exist get a handler: Maya scenes, RigModules templates and RigModules shape files.
-Other file types (weights, textures, shaders, postops, poses, anims) have none yet, so saving or loading
-them raises NotImplementedError until one is written.
+Only formats that exist get a handler: Maya scenes, RigModules templates, shape files and skin weights.
+Other file types (textures, shaders, postops, poses, anims) have none yet, so saving or loading them
+raises NotImplementedError until one is written.
 
 Call register() once per session before handlers.save / handlers.load.
 
@@ -13,14 +13,20 @@ Call register() once per session before handlers.save / handlers.load.
     hero = Asset("shooter|main|characters|hero")
     handlers.load(hero, "skeleton")                                  # imports into the hero namespace
     handlers.save(hero, "shapes", variant="game", rig_root="hero:rigRootModule1")
+    handlers.save(hero, "weights", variant="game", namespace="hero")
 """
 
 from __future__ import annotations
 
+import glob
+import os
 import shutil
 
 import maya.cmds as cmds
+import rigmodules.skinweights
 import rigmodules.template
+
+import bmaya.core.log
 
 from bmaya.asset import handlers
 from bmaya.asset.asset import Asset
@@ -79,6 +85,76 @@ class RigTemplateHandler(handlers.FileHandler):
         return path
 
 
+class RigSkinWeightsHandler(handlers.FileHandler):
+    """A variant's skin weights: a folder with one RigModules weight file per skinned mesh, named after the mesh.
+    Files are matched to meshes by the meshId inside them, never by name, so a renamed mesh still loads. Needs
+    the namespace the meshes are in."""
+
+    @staticmethod
+    def files(folder: str) -> list[str]:
+        """The weight files in a weights folder, sorted."""
+        return sorted(glob.glob(os.path.join(folder, "*.json")))
+
+    def save(self, asset: Asset | None, path: str, namespace: str | None = None, **context) -> list[str]:
+        """Saves every skinned mesh in namespace into the folder at path. Returns the files written. A file left
+        from a mesh's old name is removed (handlers.save has already kept a version copy of the folder)."""
+        namespace = _require_namespace(namespace)
+        meshes = rigmodules.skinweights.get_skinned_meshes(namespace)
+        if not meshes:
+            raise RuntimeError(f"Namespace {namespace!r} has no skinned meshes.")
+        unmarked = [mesh for mesh in meshes if not rigmodules.skinweights.get_mesh_id(mesh)]
+        if unmarked:
+            raise RuntimeError("These meshes have no meshId. Run Mark Meshes for Skinning on them first: "
+                               + ", ".join(_short_name(mesh) for mesh in unmarked))
+
+        os.makedirs(path, exist_ok=True)
+        written = {}
+        for mesh in meshes:
+            file_path = os.path.join(path, _short_name(mesh) + ".json")
+            cmds.saveRigSkinWeights(mesh, file=file_path.replace("\\", "/"))
+            written[rigmodules.skinweights.get_mesh_id(mesh)] = os.path.normcase(file_path)
+        for stale in self.files(path):
+            if os.path.normcase(stale) not in written.values() and rigmodules.skinweights.read_file_mesh_id(stale) in written:
+                os.remove(stale)
+        return sorted(written.values())
+
+    def load(self, asset: Asset | None, path: str, namespace: str | None = None, **context) -> list[str]:
+        """Loads every weight file in the folder at path onto the mesh in namespace with its meshId, as one undo
+        step. A file whose mesh isn't in the scene is skipped with a warning. Returns the meshes loaded."""
+        namespace = _require_namespace(namespace)
+        files: dict[str, str] = {}
+        for file_path in self.files(path):
+            mesh_id = rigmodules.skinweights.read_file_mesh_id(file_path)
+            if mesh_id in files:
+                raise RuntimeError(f"{files[mesh_id]} and {file_path} are both for meshId {mesh_id}. Remove the old one.")
+            files[mesh_id] = file_path
+        meshes = rigmodules.skinweights.get_meshes(namespace)
+
+        loaded = []
+        cmds.undoInfo(openChunk=True, chunkName="Load Skin Weights")
+        try:
+            for mesh_id, file_path in sorted(files.items(), key=lambda item: item[1]):
+                mesh = meshes.get(mesh_id)
+                if mesh is None:
+                    bmaya.core.log.warning(f"No mesh in namespace {namespace!r} has meshId {mesh_id}: skipped {file_path}")
+                    continue
+                cmds.loadRigSkinWeights(mesh, file=file_path.replace("\\", "/"))
+                loaded.append(mesh)
+        finally:
+            cmds.undoInfo(closeChunk=True)
+        return loaded
+
+
+def _short_name(node: str) -> str:
+    return node.split("|")[-1].split(":")[-1]
+
+
+def _require_namespace(namespace: str | None) -> str:
+    if namespace is None:
+        raise ValueError("Skin weights belong to the meshes in one namespace: pass namespace.")
+    return namespace
+
+
 def _require_rig_root(rig_root: str | None) -> str:
     if not rig_root:
         raise ValueError("Shape files belong to one rig: pass rig_root, the rigRootModule node.")
@@ -90,4 +166,5 @@ def register() -> None:
     for file_type in MAYA_FILE_TYPES:
         handlers.register(file_type, scene)
     handlers.register("shapes", RigShapesHandler())
+    handlers.register("weights", RigSkinWeightsHandler())
     handlers.register("template", RigTemplateHandler())
