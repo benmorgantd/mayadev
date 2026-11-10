@@ -40,10 +40,18 @@ def _load(name):
         return json.load(handle)
 
 
+def _walk(items):
+    """Every menu item, depth first, descending into submenus."""
+    for item in items:
+        yield item
+        if item["type"] == "submenu":
+            yield from _walk(item["items"])
+
+
 def _menu_tools():
     """The registry entries the menu lists, by name, in menu order."""
     registry = {tool["guid"]: tool for tool in _load("master_tool_registry.json")["tools"]}
-    items = _load("rigmodules_menu.json")["items"]
+    items = _walk(_load("rigmodules_menu.json")["items"])
     return {registry[item["guid"]]["name"]: registry[item["guid"]] for item in items if item["type"] == "tool"}
 
 
@@ -51,10 +59,20 @@ class MenuLayout(unittest.TestCase):
 
     def test_every_menu_tool_is_in_the_registry(self):
         registry = {tool["guid"] for tool in _load("master_tool_registry.json")["tools"]}
-        for item in _load("rigmodules_menu.json")["items"]:
-            self.assertIn(item["type"], ("tool", "separator"))
+        for item in _walk(_load("rigmodules_menu.json")["items"]):
+            self.assertIn(item["type"], ("tool", "separator", "submenu"))
             if item["type"] == "tool":
                 self.assertIn(item["guid"], registry)
+
+    def test_top_level_is_submenus_in_order(self):
+        items = _load("rigmodules_menu.json")["items"]
+        self.assertEqual([i["type"] for i in items], ["submenu"] * len(items))
+        self.assertEqual([i["label"] for i in items], ["asset", "control", "shapes", "weights", "dev", "joints"])
+
+    def test_every_registry_tool_is_in_the_menu_once(self):
+        guids = [i["guid"] for i in _walk(_load("rigmodules_menu.json")["items"]) if i["type"] == "tool"]
+        self.assertEqual(len(guids), len(set(guids)))
+        self.assertEqual(len(guids), 20)
 
     def test_every_script_compiles(self):
         for name, tool in _menu_tools().items():
