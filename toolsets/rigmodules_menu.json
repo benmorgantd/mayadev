@@ -107,6 +107,14 @@
             "type": "tool",
             "guid": "f0eb6807-08a0-46fb-9289-f3b37d1c5ddf",
             "enabled": true
+        },
+        {
+            "type": "separator"
+        },
+        {
+            "type": "tool",
+            "guid": "76c7c4b3-930d-4fcd-8bba-3283e19ff3da",
+            "enabled": true
         }
     ]
 }

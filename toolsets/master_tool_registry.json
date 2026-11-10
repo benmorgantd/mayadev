@@ -207,6 +207,14 @@
             "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.save_rig_ui()\n",
             "icon": null,
             "enabled": true
+        },
+        {
+            "guid": "76c7c4b3-930d-4fcd-8bba-3283e19ff3da",
+            "name": "Reload RigModules (dev)",
+            "short_name": "Reload",
+            "script": "import bmaya.maya.devreload\nbmaya.maya.devreload.reload_rigmodules()\n",
+            "icon": null,
+            "enabled": true
         }
     ]
 }
