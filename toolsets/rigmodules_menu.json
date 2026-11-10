@@ -44,16 +44,48 @@
         },
         {
             "type": "submenu",
-            "label": "control",
+            "label": "mesh",
             "items": [
                 {
                     "type": "tool",
-                    "guid": "de84cb3f-aae6-4494-a163-25c6778855ad",
+                    "guid": "005d756b-2a9a-45f0-bd2f-cefed2ab29a8",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "790149a8-eec2-46a7-ba8f-f52c58a4777e",
+                    "guid": "d19679a5-4371-47b1-b5eb-d23368c7f724",
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "type": "submenu",
+            "label": "joints",
+            "items": [
+                {
+                    "type": "tool",
+                    "guid": "b2c664f6-76da-405d-960e-9846fa1a70c1",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "e34dcbca-0f06-4406-93d1-afde0876f8dc",
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "type": "submenu",
+            "label": "weights",
+            "items": [
+                {
+                    "type": "tool",
+                    "guid": "f89c9583-9ecf-4298-96b1-af40feddcc69",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "42df57b8-3882-4607-93c2-2f27a13265a1",
                     "enabled": true
                 }
             ]
@@ -86,26 +118,16 @@
         },
         {
             "type": "submenu",
-            "label": "weights",
+            "label": "control",
             "items": [
                 {
                     "type": "tool",
-                    "guid": "005d756b-2a9a-45f0-bd2f-cefed2ab29a8",
+                    "guid": "de84cb3f-aae6-4494-a163-25c6778855ad",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "d19679a5-4371-47b1-b5eb-d23368c7f724",
-                    "enabled": true
-                },
-                {
-                    "type": "tool",
-                    "guid": "f89c9583-9ecf-4298-96b1-af40feddcc69",
-                    "enabled": true
-                },
-                {
-                    "type": "tool",
-                    "guid": "42df57b8-3882-4607-93c2-2f27a13265a1",
+                    "guid": "790149a8-eec2-46a7-ba8f-f52c58a4777e",
                     "enabled": true
                 }
             ]
@@ -117,22 +139,6 @@
                 {
                     "type": "tool",
                     "guid": "76c7c4b3-930d-4fcd-8bba-3283e19ff3da",
-                    "enabled": true
-                }
-            ]
-        },
-        {
-            "type": "submenu",
-            "label": "joints",
-            "items": [
-                {
-                    "type": "tool",
-                    "guid": "b2c664f6-76da-405d-960e-9846fa1a70c1",
-                    "enabled": true
-                },
-                {
-                    "type": "tool",
-                    "guid": "e34dcbca-0f06-4406-93d1-afde0876f8dc",
                     "enabled": true
                 }
             ]

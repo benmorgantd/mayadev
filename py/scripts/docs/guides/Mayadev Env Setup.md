@@ -19,7 +19,7 @@ Maya reads `.mod` files from `documents\maya\modules`.
 - `RigModules.mod` puts RigModules' `python` folder on the Python path, so `rigmodules` is found. The asset tools need it. Copy it from the RigModules repo root and replace its `.` with the repo's full path (see RigModules' `docs/python.md`).
 
 ## RigModules menu
-When startup loads RigModules, it adds a **RigModules** menu built from `toolsets/rigmodules_menu.json`. If the plugin doesn't load, startup logs a warning and skips the menu. The tools ask with small dialogs and report errors in the Script Editor. The menu is a set of submenus: asset, control, shapes, weights, dev and joints. A new tool goes in the submenu for its topic, and only a tool animators use constantly goes at the top level.
+When startup loads RigModules, it adds a **RigModules** menu built from `toolsets/rigmodules_menu.json`. If the plugin doesn't load, startup logs a warning and skips the menu. The tools ask with small dialogs and report errors in the Script Editor. The menu is a set of submenus: asset, mesh, joints, weights, shapes, control and dev. A new tool goes in the submenu for its topic, and only a tool animators use constantly goes at the top level.
 
 The rig tools act on the **active rig**, so there is no need to select a rig root. Selecting any control, joint, module or rig root of a rig makes it active, and it stays active while you select other things. The Script Editor logs `Active rig: ...` when it changes. A new or opened scene makes its first rig active. Startup starts the tracker (`bmaya.maya.activerig`) once the plugin loads.
 

@@ -67,7 +67,7 @@ class MenuLayout(unittest.TestCase):
     def test_top_level_is_submenus_in_order(self):
         items = _load("rigmodules_menu.json")["items"]
         self.assertEqual([i["type"] for i in items], ["submenu"] * len(items))
-        self.assertEqual([i["label"] for i in items], ["asset", "control", "shapes", "weights", "dev", "joints"])
+        self.assertEqual([i["label"] for i in items], ["asset", "mesh", "joints", "weights", "shapes", "control", "dev"])
 
     def test_every_registry_tool_is_in_the_menu_once(self):
         guids = [i["guid"] for i in _walk(_load("rigmodules_menu.json")["items"]) if i["type"] == "tool"]
