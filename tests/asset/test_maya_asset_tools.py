@@ -310,6 +310,18 @@ class AssetTools(unittest.TestCase):
         self.assertEqual(ids, [self.cmds.getAttr(box + ".meshId")])
         self.assertNotEqual(self.tools.mark_meshes_for_skinning(new_ids=True), ids)
 
+    def test_mark_meshes_for_skinning_logs_new_and_kept_ids(self):
+        import bmaya.core.log
+        box = self.make_box()
+        self.cmds.select(box)
+        with mock.patch.object(bmaya.core.log, "info") as info:
+            self.tools.mark_meshes_for_skinning()
+            self.assertIn("1 new id(s), 0 already", info.call_args[0][0])
+            self.tools.mark_meshes_for_skinning()
+            self.assertIn("0 new id(s), 1 already", info.call_args[0][0])
+            self.tools.mark_meshes_for_skinning(new_ids=True)
+            self.assertIn("given new ids", info.call_args[0][0])
+
     def test_save_model_saves_the_open_scene_as_the_variant_model(self):
         self.tools.new_variant(HERO, self.template)
         self.cmds.setRigMeshId(self.make_box())

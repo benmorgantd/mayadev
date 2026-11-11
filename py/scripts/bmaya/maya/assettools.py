@@ -232,9 +232,16 @@ def load_skin_weights(node: str) -> list[str] | None:
 
 def mark_meshes_for_skinning(new_ids: bool = False) -> list[str]:
     """Gives every selected mesh a meshId, the id its weight files are matched by. A mesh keeps the id it has
-    unless new_ids, which a duplicated mesh needs. Returns the ids."""
-    ids = cmds.setRigMeshId(newId=new_ids)
-    bmaya.core.log.info(f"{len(ids)} mesh(es) marked for skinning.")
+    unless new_ids, which a duplicated mesh needs. Returns the ids. The log says how many ids were new and how many
+    were kept, so marking meshes that already have ids doesn't look like it did nothing."""
+    before = {cmds.getAttr(plug) for plug in cmds.ls("*.meshId") or []}
+    ids = cmds.setRigMeshId(newId=new_ids) or []
+    if new_ids:
+        bmaya.core.log.info(f"{len(ids)} mesh(es) given new ids.")
+    else:
+        kept = sum(1 for mesh_id in ids if mesh_id in before)
+        bmaya.core.log.info(f"{len(ids)} mesh(es) marked for skinning: {len(ids) - kept} new id(s), "
+                            f"{kept} already had one and kept it.")
     return ids
 
 

@@ -31,8 +31,8 @@ The rig tools act on the **active rig**, so there is no need to select a rig roo
 | Select Mirror Controls | controls | Selects the controls on the other side instead |
 | Mirror Shapes Left to Right / Right to Left | active rig | Mirrors control shapes from one side to the other |
 | Save Control Shapes... / Load Control Shapes... | active rig | Saves or loads the variant's `shapes.json` in the rig's asset. Before the asset folder exists, uses a file dialog |
-| Mark Meshes for Skinning | meshes | Gives each selected mesh a `meshId` (RigModules `setRigMeshId`), the id its weight files are matched by. A mesh keeps the id it has |
-| Mark Meshes with New Ids | meshes | The same, but replaces their ids. Use it on a duplicated mesh, which copied its source's id |
+| Mark Meshes for Skinning | meshes | Gives each selected mesh a `meshId` (RigModules `setRigMeshId`), the id its weight files are matched by. A mesh keeps the id it has, and the log says how many were new and how many kept theirs |
+| Mark Meshes with New Ids | meshes | The same, but replaces their ids. Use it on a duplicated mesh, which copied its source's id. The log reads "N mesh(es) given new ids" |
 | Save Skin Weights... / Load Skin Weights... | active rig | Saves every skinned mesh in the rig's namespace to the variant's `weights` folder, one file per mesh, or loads the folder onto the meshes, matched by `meshId`, as one undo step. Before the asset folder exists, uses a folder dialog |
 | New Project... | nothing | Writes a `project.json` into a folder you pick |
 | New Asset... | nothing | Asks for an asset id and one of the project's asset types, then writes the asset's `asset.json` |
