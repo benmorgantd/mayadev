@@ -231,6 +231,78 @@
             "script": "import bmaya.maya.devreload\nbmaya.maya.devreload.reload_menu()\n",
             "icon": null,
             "enabled": true
+        },
+        {
+            "guid": "043e10f1-931c-450d-bef3-949a8ae40d8b",
+            "name": "Save Pose...",
+            "short_name": "Save Pose",
+            "script": "import bmaya.maya.posetools\nbmaya.maya.posetools.save_pose_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "ef5d3e8f-0859-4c85-8b36-ab0d7a4f09fb",
+            "name": "Load Pose...",
+            "short_name": "Load Pose",
+            "script": "import bmaya.maya.posetools\nbmaya.maya.posetools.load_pose_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "63538cab-b582-4c79-bb27-7f2500cfc3be",
+            "name": "Mirror Pose",
+            "short_name": "Mirror Pose",
+            "script": "import bmaya.maya.posetools\nbmaya.maya.posetools.mirror_pose_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "19cab4b2-ab66-4090-bd19-b8df252d5204",
+            "name": "Mirror Pose Left to Right",
+            "short_name": "Pose L>R",
+            "script": "import bmaya.maya.posetools\nbmaya.maya.posetools.mirror_pose_ui(left_to_right=True)\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "72ef5dad-6d99-41cf-ac5a-b819e4a748c0",
+            "name": "Mirror Pose Right to Left",
+            "short_name": "Pose R>L",
+            "script": "import bmaya.maya.posetools\nbmaya.maya.posetools.mirror_pose_ui(left_to_right=False)\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "5911e291-473d-4e8f-a741-f3cce9c894f5",
+            "name": "Flip Pose",
+            "short_name": "Flip Pose",
+            "script": "import bmaya.maya.posetools\nbmaya.maya.posetools.flip_pose_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "151abfe7-5ede-4fdf-9970-3d1fd3fa5511",
+            "name": "Zero Pose",
+            "short_name": "Zero Pose",
+            "script": "import bmaya.maya.posetools\nbmaya.maya.posetools.zero_pose_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "bc56cf2b-94dc-4b53-8e70-f1838ded9ce7",
+            "name": "Key All Controls",
+            "short_name": "Key All",
+            "script": "import bmaya.maya.posetools\nbmaya.maya.posetools.key_all_controls_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "7ff7ad02-a833-4a97-9fdf-3e3575edc412",
+            "name": "Key Selected Modules",
+            "short_name": "Key Modules",
+            "script": "import bmaya.maya.posetools\nbmaya.maya.posetools.key_selected_modules_ui()\n",
+            "icon": null,
+            "enabled": true
         }
     ]
 }

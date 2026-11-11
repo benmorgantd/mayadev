@@ -134,6 +134,57 @@
         },
         {
             "type": "submenu",
+            "label": "pose",
+            "items": [
+                {
+                    "type": "tool",
+                    "guid": "043e10f1-931c-450d-bef3-949a8ae40d8b",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "ef5d3e8f-0859-4c85-8b36-ab0d7a4f09fb",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "63538cab-b582-4c79-bb27-7f2500cfc3be",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "19cab4b2-ab66-4090-bd19-b8df252d5204",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "72ef5dad-6d99-41cf-ac5a-b819e4a748c0",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "5911e291-473d-4e8f-a741-f3cce9c894f5",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "151abfe7-5ede-4fdf-9970-3d1fd3fa5511",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "bc56cf2b-94dc-4b53-8e70-f1838ded9ce7",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "7ff7ad02-a833-4a97-9fdf-3e3575edc412",
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "type": "submenu",
             "label": "dev",
             "items": [
                 {

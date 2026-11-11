@@ -67,12 +67,12 @@ class MenuLayout(unittest.TestCase):
     def test_top_level_is_submenus_in_order(self):
         items = _load("rigmodules_menu.json")["items"]
         self.assertEqual([i["type"] for i in items], ["submenu"] * len(items))
-        self.assertEqual([i["label"] for i in items], ["asset", "mesh", "joints", "weights", "shapes", "control", "dev"])
+        self.assertEqual([i["label"] for i in items], ["asset", "mesh", "joints", "weights", "shapes", "control", "pose", "dev"])
 
     def test_every_registry_tool_is_in_the_menu_once(self):
         guids = [i["guid"] for i in _walk(_load("rigmodules_menu.json")["items"]) if i["type"] == "tool"]
         self.assertEqual(len(guids), len(set(guids)))
-        self.assertEqual(len(guids), 21)
+        self.assertEqual(len(guids), 31)
 
     def test_every_script_compiles(self):
         for name, tool in _menu_tools().items():
@@ -191,6 +191,85 @@ class MenuScripts(unittest.TestCase):
             cmds.setAttr(self.left + ".shapeType", (before + 1) % 2)
             self.run_tool("Load Control Shapes...", self.root)
         self.assertEqual(cmds.getAttr(self.left + ".shapeType"), before)
+
+    def test_mirror_pose_goes_from_the_selected_controls_side(self):
+        cmds = self.cmds
+        cmds.setAttr(self.left + ".rotateY", 20)
+        cmds.setAttr(self.right + ".rotateY", -5)
+        self.run_tool("Mirror Pose", [self.left])
+        self.assertEqual(cmds.getAttr(self.right + ".rotateY"), 20)
+
+        self.run_tool("Mirror Pose", [self.right])   # the Right control is now the source, and it holds 20 as well
+        cmds.setAttr(self.right + ".rotateY", 7)
+        self.run_tool("Mirror Pose", [self.right])
+        self.assertEqual(cmds.getAttr(self.left + ".rotateY"), 7)
+
+    def test_mirror_pose_both_directions_on_the_whole_rig(self):
+        cmds = self.cmds
+        cmds.setAttr(self.left + ".rotateY", 20)
+        self.run_tool("Mirror Pose Left to Right", None)
+        self.assertEqual(cmds.getAttr(self.right + ".rotateY"), 20)
+        cmds.setAttr(self.right + ".rotateY", 9)
+        self.run_tool("Mirror Pose Right to Left", None)
+        self.assertEqual(cmds.getAttr(self.left + ".rotateY"), 9)
+
+    def test_flip_pose_swaps_the_sides(self):
+        cmds = self.cmds
+        cmds.setAttr(self.left + ".rotateY", 20)
+        cmds.setAttr(self.right + ".rotateY", 3)
+        self.run_tool("Flip Pose", None)
+        self.assertAlmostEqual(cmds.getAttr(self.left + ".rotateY"), 3)
+        self.assertAlmostEqual(cmds.getAttr(self.right + ".rotateY"), 20)
+
+    def test_zero_pose_acts_on_the_selection_only(self):
+        cmds = self.cmds
+        cmds.setAttr(self.left + ".rotateY", 20)
+        cmds.setAttr(self.right + ".rotateY", 20)
+        self.run_tool("Zero Pose", [self.left])
+        self.assertEqual(cmds.getAttr(self.left + ".rotateY"), 0)
+        self.assertEqual(cmds.getAttr(self.right + ".rotateY"), 20)
+
+    def test_save_and_load_pose_through_the_file_dialog(self):
+        cmds = self.cmds
+        path = os.path.join(self.temp, "pose.json").replace("\\", "/")
+        cmds.setAttr(self.left + ".rotateY", 20)
+        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+            self.run_tool("Save Pose...", None)
+            self.assertTrue(os.path.isfile(path))
+            cmds.setAttr(self.left + ".rotateY", 0)
+            self.run_tool("Load Pose...", None)
+        self.assertEqual(cmds.getAttr(self.left + ".rotateY"), 20)
+
+    def test_cancelled_pose_dialog_does_nothing(self):
+        with mock.patch.object(self.cmds, "fileDialog2", return_value=None):
+            self.run_tool("Save Pose...", None)
+        self.assertEqual(os.listdir(self.temp), ["template.json"])
+
+    def test_pose_tools_never_key(self):
+        self.cmds.setAttr(self.left + ".rotateY", 20)
+        for name in ("Mirror Pose", "Flip Pose", "Zero Pose"):
+            self.run_tool(name, None)
+        self.assertEqual(self.cmds.ls(type="animCurve"), [])
+
+    def test_key_all_controls_keys_every_control_without_a_selection(self):
+        self.run_tool("Key All Controls", None)
+        for control in self.cmds.getRigControls(self.root):
+            self.assertTrue(self.cmds.keyframe(control, query=True, name=True), control)
+
+    def test_key_selected_modules_keys_the_module_of_a_selected_control(self):
+        self.run_tool("Key Selected Modules", [self.left])
+        self.assertTrue(self.cmds.keyframe(self.left, query=True, name=True))
+        self.assertFalse(self.cmds.keyframe(self.right, query=True, name=True))
+
+    def test_key_selected_modules_accepts_a_module_node(self):
+        module = self.cmds.listConnections(self.left + ".rigModule", source=True, destination=False)[0]
+        self.run_tool("Key Selected Modules", [module])
+        self.assertTrue(self.cmds.keyframe(self.left, query=True, name=True))
+        self.assertFalse(self.cmds.keyframe(self.right, query=True, name=True))
+
+    def test_key_selected_modules_needs_a_selection(self):
+        with self.assertRaisesRegex(RuntimeError, "Select modules"):
+            self.run_tool("Key Selected Modules", None)
 
     def make_skinned_box(self):
         cmds = self.cmds
