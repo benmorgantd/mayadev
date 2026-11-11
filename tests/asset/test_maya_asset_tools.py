@@ -206,6 +206,60 @@ class AssetTools(unittest.TestCase):
         self.assertTrue(os.path.isfile(path))
         self.assertFalse(os.path.exists(os.path.join(self.root, "shooter", "main", "characters", "nobody")))
 
+    def test_save_pose_names_a_file_in_the_assets_poses_folder(self):
+        cmds = self.cmds
+        self.build_outside_the_asset(HERO)
+        cmds.select(clear=True)
+        cmds.setAttr("hero:spine1_ctrl_c.translateY", 2)
+        with mock.patch.object(self.tools, "_ask_text", return_value="idle"),                 mock.patch.object(cmds, "fileDialog2") as dialog:
+            path = self.tools.save_pose_ui()
+        dialog.assert_not_called()
+        self.assertEqual(path, os.path.join(self.hero.path("poses"), "idle.json"))
+        self.assertTrue(os.path.isfile(path))
+
+    def test_save_pose_replace_keeps_a_version_and_cancel_keeps_the_file(self):
+        cmds = self.cmds
+        self.build_outside_the_asset(HERO)
+        cmds.select(clear=True)
+        with mock.patch.object(self.tools, "_ask_text", return_value="idle"):
+            path = self.tools.save_pose_ui()
+            cmds.setAttr("hero:spine1_ctrl_c.translateY", 5)
+            with mock.patch.object(cmds, "confirmDialog", return_value="Cancel"):
+                self.assertIsNone(self.tools.save_pose_ui())
+            with open(path, encoding="utf-8") as handle:
+                self.assertEqual(json.load(handle)["controls"]["Center"]["spine1"]["translateY"], 0)
+            with mock.patch.object(cmds, "confirmDialog", return_value="Replace"):
+                self.tools.save_pose_ui()
+        with open(path, encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle)["controls"]["Center"]["spine1"]["translateY"], 5)
+
+    def test_save_pose_rejects_a_name_that_is_not_a_file_name(self):
+        self.build_outside_the_asset(HERO)
+        with self.assertRaisesRegex(ValueError, "not a pose name"):
+            self.tools.save_pose(HERO, "a/b", ["hero:spine1_ctrl_c"])
+
+    def test_load_pose_dialog_opens_in_the_poses_folder(self):
+        cmds = self.cmds
+        self.build_outside_the_asset(HERO)
+        cmds.select(clear=True)
+        with mock.patch.object(self.tools, "_ask_text", return_value="idle"):
+            path = self.tools.save_pose_ui()
+        cmds.setAttr("hero:spine1_ctrl_c.translateY", 5)
+        with mock.patch.object(cmds, "fileDialog2", return_value=[path]) as dialog:
+            self.assertEqual(self.tools.load_pose_ui(), path)
+        self.assertEqual(dialog.call_args.kwargs["startingDirectory"], self.hero.path("poses"))
+        self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateY"), 0)
+
+    def test_pose_tools_use_a_file_dialog_before_the_asset_exists(self):
+        cmds = self.cmds
+        self.build_outside_the_asset("shooter|main|characters|nobody")
+        cmds.select(clear=True)
+        path = os.path.join(self.temp, "chosen_pose.json").replace("\\", "/")
+        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+            self.assertEqual(self.tools.save_pose_ui(), path)
+            self.assertEqual(self.tools.load_pose_ui(), path)
+        self.assertTrue(os.path.isfile(path))
+
     def test_save_rig_writes_the_variant_rig_file(self):
         self.tools.new_variant(HERO, self.template)
         self.build_outside_the_asset(HERO)

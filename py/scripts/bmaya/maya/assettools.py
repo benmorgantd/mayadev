@@ -15,6 +15,7 @@ The functions at the top take everything as arguments, so batch jobs and other t
 from __future__ import annotations
 
 import os
+import re
 
 import maya.cmds as cmds
 import rigmodules.query
@@ -23,13 +24,18 @@ import rigmodules.template
 
 import bmaya.asset
 import bmaya.asset.handlers
+import bmaya.asset.sourcecontrol
+import bmaya.asset.versions
 import bmaya.core.log
 import bmaya.maya.activerig
 import bmaya.maya.assethandlers
+import bmaya.maya.posetools
 
 SCENE_FILTER = "Maya ASCII (*.ma)"
 SHAPES_FILTER = "Shape files (*.json)"
 TEMPLATE_FILTER = "Rig templates (*.json)"
+POSE_FILTER = "Pose files (*.json)"
+POSE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_ -]*$")
 
 
 def find_asset(asset_id: str) -> bmaya.asset.Asset | None:
@@ -173,6 +179,25 @@ def load_control_shapes(node: str) -> str | None:
     return asset.path("shapes", info.variant)
 
 
+def save_pose(asset_id: str, name: str, scope: list[str]) -> str:
+    """Saves the pose of scope (a rig root, or controls of one rig) as poses/<name>.json in the asset's poses
+    folder, which every variant of the asset shares. An existing file is versioned first. Returns the path."""
+    asset = require_asset(asset_id)
+    if not POSE_NAME.match(name):
+        raise ValueError(f"{name!r} is not a pose name: use letters, digits, spaces, '_' and '-'.")
+    path = os.path.join(asset.path("poses"), name + ".json")
+    existed = os.path.exists(path)
+    if existed:
+        bmaya.asset.versions.version(path, asset.root)
+        bmaya.asset.sourcecontrol.current().checkout(path)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    cmds.saveRigPose(*scope, file=path.replace("\\", "/"))
+    if not existed:
+        bmaya.asset.sourcecontrol.current().add(path)
+    bmaya.core.log.info(f"Saved pose {name!r} of {asset.id}: {path}")
+    return path
+
+
 def save_skin_weights(node: str) -> list[str] | None:
     """Saves the weights of every skinned mesh in the rig's namespace to its asset's weights folder, or to a
     folder chosen in a dialog when the asset folder doesn't exist. Returns the files written, or None when the
@@ -283,6 +308,44 @@ def load_control_shapes_ui() -> None:
     load_control_shapes(bmaya.maya.activerig.get_active_rig().rig_root)
 
 
+def save_pose_ui() -> str | None:
+    """Saves the pose of the selected controls, or of the whole active rig, under a name typed in a dialog, in the
+    asset's poses folder. Before the asset's folder exists, asks for a file instead. Returns the path, or None
+    when cancelled."""
+    scope = bmaya.maya.posetools.get_scope()
+    info = rigmodules.query.get_rig_info(scope[0])
+    asset = find_asset(info.asset_id)
+    if asset is None:
+        path = _ask_file("Save Pose", POSE_FILTER, save=True)
+        if path:
+            cmds.saveRigPose(*scope, file=path)
+        return path
+
+    name = _ask_text("Save Pose", f"Pose name, saved in the poses folder of {asset.id}:", "")
+    if not name:
+        return None
+    path = os.path.join(asset.path("poses"), name + ".json")
+    if os.path.exists(path) and cmds.confirmDialog(
+            title="Save Pose", message=f"Pose {name!r} exists. Replace it? The old file is kept as a local version.",
+            button=["Replace", "Cancel"], defaultButton="Cancel", cancelButton="Cancel",
+            dismissString="Cancel") != "Replace":
+        return None
+    return save_pose(asset.id, name, scope)
+
+
+def load_pose_ui() -> str | None:
+    """Loads a pose file chosen in a dialog that opens in the asset's poses folder, onto the selected controls or
+    the whole active rig. Returns the path, or None when cancelled."""
+    scope = bmaya.maya.posetools.get_scope()
+    asset = find_asset(rigmodules.query.get_rig_info(scope[0]).asset_id)
+    folder = asset.path("poses") if asset else ""
+    path = _ask_file("Load Pose", POSE_FILTER, save=False, folder=folder if os.path.isdir(folder) else "")
+    if path:
+        changed = cmds.loadRigPose(*scope, file=path) or []
+        bmaya.core.log.info(f"Loaded the pose onto {len(changed)} control(s): {path}")
+    return path
+
+
 def save_skin_weights_ui() -> None:
     save_skin_weights(bmaya.maya.activerig.get_active_rig().rig_root)
 
@@ -337,8 +400,10 @@ def _choose(title: str, message: str, options: list[str]) -> str | None:
     return picked["value"] if cmds.layoutDialog(title=title, uiScript=layout) == "OK" else None
 
 
-def _ask_file(caption: str, file_filter: str, save: bool) -> str | None:
-    paths = cmds.fileDialog2(caption=caption, fileFilter=file_filter, fileMode=0 if save else 1)
+def _ask_file(caption: str, file_filter: str, save: bool, folder: str = "") -> str | None:
+    """A file chosen in a dialog that opens in folder, when it is given."""
+    paths = cmds.fileDialog2(caption=caption, fileFilter=file_filter, fileMode=0 if save else 1,
+                             startingDirectory=folder)
     return paths[0] if paths else None
 
 

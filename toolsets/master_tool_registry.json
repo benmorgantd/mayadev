@@ -236,7 +236,7 @@
             "guid": "043e10f1-931c-450d-bef3-949a8ae40d8b",
             "name": "Save Pose...",
             "short_name": "Save Pose",
-            "script": "import bmaya.maya.posetools\nbmaya.maya.posetools.save_pose_ui()\n",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.save_pose_ui()\n",
             "icon": null,
             "enabled": true
         },
@@ -244,7 +244,7 @@
             "guid": "ef5d3e8f-0859-4c85-8b36-ab0d7a4f09fb",
             "name": "Load Pose...",
             "short_name": "Load Pose",
-            "script": "import bmaya.maya.posetools\nbmaya.maya.posetools.load_pose_ui()\n",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.load_pose_ui()\n",
             "icon": null,
             "enabled": true
         },
