@@ -18,6 +18,7 @@ import os
 import re
 
 import maya.cmds as cmds
+import rigmodules.displaylayers
 import rigmodules.query
 import rigmodules.skinweights
 import rigmodules.template
@@ -119,7 +120,8 @@ def build_rig(asset_id: str, variant: str, namespace: str | None = None) -> str:
     if asset.file_exists("shapes", variant):
         bmaya.asset.handlers.load(asset, "shapes", variant, rig_root=rig_root)
     if asset.file_exists("model", variant):
-        bmaya.asset.handlers.load(asset, "model", variant, namespace=namespace)
+        model_nodes = bmaya.asset.handlers.load(asset, "model", variant, namespace=namespace)
+        rigmodules.displaylayers.add_meshes(rig_root, model_nodes)
         if asset.file_exists("weights", variant):
             bmaya.asset.handlers.load(asset, "weights", variant, namespace=namespace)
     bmaya.core.log.info(f"Built {asset.id} variant {variant!r} into namespace {namespace!r}.")
