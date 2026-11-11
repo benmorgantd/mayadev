@@ -32,7 +32,7 @@ DEFAULT_PROJECT = {
         "shapes": {"path": "variants/{variant}/shapes.json"},
         "weights": {"path": "variants/{variant}/weights", "folder": True},
         "postops": {"path": "variants/{variant}/postops.py"},
-        "rig": {"path": "variants/{variant}/{name}_{variant}.ma"},
+        "rig": {"path": "variants/{variant}/{name}_{variant}_rig.ma"},
         "publish": {"path": "variants/{variant}/publish", "folder": True},
         "poses": {"path": "poses", "folder": True},
         "anims": {"path": "anims", "folder": True},

@@ -35,7 +35,7 @@ shooter|main|characters|hero   ->   <RIGGING_PROJECT_DIR>\shooter\main\character
       template.json  shapes.json  postops.py
       model\hero_game_model.ma
       textures\  shaders\  weights\
-      hero_game.ma                the built rig
+      hero_game_rig.ma            the built rig
       publish\20261108T142012Z_bmorgan\
         publish.json              one folder per publish, never edited
 ```

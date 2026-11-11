@@ -132,6 +132,8 @@ class Projects(TempRoot):
         self.assertEqual(shapes.relative_path("hero", "game"), os.path.join("variants", "game", "shapes.json"))
         self.assertEqual(self.project.file_type("skeleton").relative_path("hero"),
                          os.path.join("skeleton", "hero_skeleton.ma"))
+        self.assertEqual(self.project.file_type("rig").relative_path("hero", "game"),
+                         os.path.join("variants", "game", "hero_game_rig.ma"))
         self.assertEqual(self.project.file_type("template").variant_parent(), "variants")
         with self.assertRaises(ProjectError):
             self.project.file_type("skeleton").variant_parent()
