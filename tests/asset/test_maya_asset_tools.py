@@ -214,7 +214,7 @@ class AssetTools(unittest.TestCase):
         with mock.patch.object(self.tools, "_ask_text", return_value="idle"),                 mock.patch.object(cmds, "fileDialog2") as dialog:
             path = self.tools.save_pose_ui()
         dialog.assert_not_called()
-        self.assertEqual(path, os.path.join(self.hero.path("poses"), "idle.json"))
+        self.assertEqual(path, os.path.join(self.hero.path("controlposes"), "idle.json"))
         self.assertTrue(os.path.isfile(path))
 
     def test_save_pose_replace_keeps_a_version_and_cancel_keeps_the_file(self):
@@ -238,7 +238,7 @@ class AssetTools(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not a pose name"):
             self.tools.save_pose(HERO, "a/b", ["hero:spine1_ctrl_c"])
 
-    def test_capture_joint_clip_names_a_usd_in_the_assets_anims_folder(self):
+    def test_capture_joint_clip_names_an_fbx_in_the_assets_exports_folder(self):
         cmds = self.cmds
         rig_root = self.build_outside_the_asset(HERO)
         cmds.playbackOptions(minTime=1, maxTime=3)
@@ -248,10 +248,10 @@ class AssetTools(unittest.TestCase):
                 mock.patch.object(cmds, "fileDialog2") as dialog:
             path = self.tools.capture_joint_clip_ui()
         dialog.assert_not_called()
-        self.assertEqual(path, os.path.join(self.hero.path("anims"), "walk.usd"))
+        self.assertEqual(path, os.path.join(self.hero.path("exports"), "walk", "walk.fbx"))
         self.assertTrue(os.path.isfile(path))
 
-    def test_load_pose_dialog_opens_in_the_poses_folder(self):
+    def test_load_pose_dialog_opens_in_the_controlposes_folder(self):
         cmds = self.cmds
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
@@ -260,7 +260,7 @@ class AssetTools(unittest.TestCase):
         cmds.setAttr("hero:spine1_ctrl_c.translateY", 5)
         with mock.patch.object(cmds, "fileDialog2", return_value=[path]) as dialog:
             self.assertEqual(self.tools.load_pose_ui(), path)
-        self.assertEqual(dialog.call_args.kwargs["startingDirectory"], self.hero.path("poses"))
+        self.assertEqual(dialog.call_args.kwargs["startingDirectory"], self.hero.path("controlposes"))
         self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateY"), 0)
 
     def test_pose_tools_use_a_file_dialog_before_the_asset_exists(self):

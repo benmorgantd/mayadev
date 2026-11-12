@@ -34,8 +34,9 @@ DEFAULT_PROJECT = {
         "postops": {"path": "variants/{variant}/postops.py"},
         "rig": {"path": "variants/{variant}/{name}_{variant}_rig.ma"},
         "publish": {"path": "variants/{variant}/publish", "folder": True},
-        "poses": {"path": "poses", "folder": True},
-        "anims": {"path": "anims", "folder": True},
+        "controlposes": {"path": "controlposes", "folder": True},
+        "exports": {"path": "exports", "folder": True},
+        "sources": {"path": "sources", "folder": True},
     },
 }
 

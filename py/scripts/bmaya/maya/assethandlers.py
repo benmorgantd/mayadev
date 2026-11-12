@@ -1,7 +1,7 @@
 """Maya save and load handlers for asset file types (bmaya.asset.handlers).
 
 Only formats that exist get a handler: Maya scenes, RigModules templates, shape files, skin weights and
-animation clips. Other file types (textures, shaders, postops, poses) have none yet, so saving or loading
+animation clips (FBX, RigModules D42). Other file types (textures, shaders, postops, controlposes, sources) have none yet, so saving or loading
 them raises NotImplementedError until one is written.
 
 Call register() once per session before handlers.save / handlers.load.
@@ -15,8 +15,8 @@ Call register() once per session before handlers.save / handlers.load.
     handlers.save(hero, "shapes", variant="game", rig_root="hero:rigRootModule1")
     handlers.save(hero, "weights", variant="game", namespace="hero")
     assethandlers.save_anim_clip(hero, "walk", rig_root="hero:rigRootModule1", start_frame=1, end_frame=48)
-    clip = handlers.load(hero, "anims", name="walk")                 # an AnimClip
-    cmds.animateRigFromJointClip("hero:rigRootModule1", jointClip=clip.joint_clip, sidecar=clip.sidecar)
+    clip = handlers.load(hero, "exports", name="walk")               # an AnimClip, read from exports/walk/walk.fbx
+    cmds.animateRigFromJointClip("hero:rigRootModule1", jointClip=clip.joint_clip)
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ MAYA_FILE_TYPES = ("skeleton", "model", "rig")
 
 # The same rule as a pose name: it becomes a file name.
 CLIP_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_ -]*$")
-SIDECAR_SUFFIX = ".rigdata.json"
+BONE_MAP_SUFFIX = ".bonemap.json"
 
 
 class MayaSceneHandler(handlers.FileHandler):
@@ -158,32 +158,34 @@ class RigSkinWeightsHandler(handlers.FileHandler):
 
 @dataclasses.dataclass(frozen=True)
 class AnimClip:
-    """A clip loaded from an asset's anims folder."""
+    """A clip loaded from an FBX file."""
 
     name: str
-    usd: str                 # the clip's USD file in the asset
+    fbx: str                 # the clip's FBX file
     joint_clip: str          # the JointClip file read from it, a temporary: cmds.animateRigFromJointClip(jointClip=...)
-    sidecar: str | None      # the .rigdata.json beside the USD, or None when the clip has none
 
 
 class AnimClipHandler(handlers.FileHandler):
-    """Animation clips in an asset's anims folder, which every variant of the asset shares. A clip is
-    <name>.usd, a UsdSkel file written through rigmodules.jointclip, and optionally <name>.rigdata.json, its
-    sidecar (the pose file data the joints can't hold, RigModules D41). The two share a basename and are
-    never linked in the files, so either can be moved or versioned alone."""
+    """Animation clips in an asset's exports folder, which every variant of the asset shares (RigModules D42). A
+    clip is an FBX file written through rigmodules.jointclip, in a folder of its own, exports/<name>/<name>.fbx,
+    because an export is a bundle: the engine properties and the control animation it was made from go beside it.
+    A bone map, <name>.bonemap.json beside an FBX, gives a file from another tool its joint markup."""
 
     @staticmethod
-    def usd_path(folder: str, name: str) -> str:
-        return os.path.join(folder, name + ".usd")
+    def fbx_path(folder: str, name: str, own_folder: bool = True) -> str:
+        """Where the clip <name> is in the exports folder `folder`: in a folder of its own, or in `folder` itself."""
+        return os.path.join(folder, name, name + ".fbx") if own_folder else os.path.join(folder, name + ".fbx")
 
     @staticmethod
-    def sidecar_path(folder: str, name: str) -> str:
-        return os.path.join(folder, name + SIDECAR_SUFFIX)
+    def bone_map_path(fbx: str) -> str:
+        return os.path.splitext(fbx)[0] + BONE_MAP_SUFFIX
 
     @staticmethod
     def names(folder: str) -> list[str]:
-        """The clips in an anims folder, sorted."""
-        return sorted(os.path.splitext(os.path.basename(path))[0] for path in glob.glob(os.path.join(folder, "*.usd")))
+        """The clips in an exports folder, sorted."""
+        return sorted(
+            os.path.basename(os.path.dirname(path)) for path in glob.glob(os.path.join(folder, "*", "*.fbx"))
+            if os.path.basename(path) == os.path.basename(os.path.dirname(path)) + ".fbx")
 
     def save(
         self,
@@ -194,20 +196,18 @@ class AnimClipHandler(handlers.FileHandler):
         rig_root: str | None = None,
         start_frame: int | None = None,
         end_frame: int | None = None,
-        sidecar: str | None = None,
+        own_folder: bool = True,
         **context,
     ) -> str:
-        """Writes the clip <name> into the folder at path from a JointClip file (joint_clip), or captured from
-        the rig's export joints over start_frame to end_frame (rig_root). Copies sidecar beside it when given,
-        and removes the sidecar an older clip of that name had when not, because it describes the old
-        animation. Returns the USD path. Nothing is written when an argument is wrong."""
+        """Writes the clip <name> into the exports folder at path from a JointClip file (joint_clip), or captured
+        from the rig's export joints over start_frame to end_frame (rig_root). own_folder=False writes
+        <path>/<name>.fbx itself, for a file the user chose. Returns the FBX path. Nothing is written when an
+        argument is wrong."""
         name = _require_clip_name(name)
         if (joint_clip is None) == (rig_root is None):
             raise ValueError("Pass joint_clip (a JointClip file), or rig_root with start_frame and end_frame.")
         if rig_root is not None and (start_frame is None or end_frame is None):
             raise ValueError("Capturing from a rig needs start_frame and end_frame.")
-        if sidecar is not None and not os.path.isfile(sidecar):
-            raise FileNotFoundError(sidecar)
 
         captured = None
         if rig_root is not None:
@@ -217,19 +217,13 @@ class AnimClipHandler(handlers.FileHandler):
         try:
             if captured:
                 rigmodules.jointclip.capture_joint_clip(rig_root, start_frame, end_frame, captured)
-            os.makedirs(path, exist_ok=True)
-            usd = self.usd_path(path, name)
-            rigmodules.jointclip.write_usd(joint_clip, usd)
+            fbx = self.fbx_path(path, name, own_folder)
+            os.makedirs(os.path.dirname(fbx), exist_ok=True)
+            rigmodules.jointclip.write_fbx(joint_clip, fbx)
         finally:
             if captured and os.path.exists(captured):
                 os.remove(captured)
-
-        sidecar_path = self.sidecar_path(path, name)
-        if sidecar is not None:
-            shutil.copyfile(sidecar, sidecar_path)
-        elif os.path.exists(sidecar_path):
-            os.remove(sidecar_path)
-        return usd
+        return fbx
 
     def load(
         self,
@@ -237,41 +231,44 @@ class AnimClipHandler(handlers.FileHandler):
         path: str,
         name: str | None = None,
         joint_clip: str | None = None,
+        bone_map: str | None = None,
         **context,
     ) -> AnimClip:
-        """Reads the clip <name> from the folder at path into a JointClip file (joint_clip, or a file named
-        after the clip in a temporary folder that the next load of the same name overwrites). Any name that
-        names a file is accepted, so clips from other tools load too."""
+        """Reads the clip <name> from the folder at path into a JointClip file (joint_clip, or a file named after
+        the clip in a temporary folder that the next load of the same name overwrites). The FBX is
+        <path>/<name>/<name>.fbx (an exports folder) or <path>/<name>.fbx (a folder of FBX files, such as the
+        one a file dialog chose from), so a file from another tool loads too. Its bone map is bone_map, or the
+        one beside the FBX when there is one."""
         if not name:
-            raise ValueError("Pass name, the clip's file name without .usd.")
-        usd = self.usd_path(path, name)
-        if not os.path.isfile(usd):
+            raise ValueError("Pass name, the clip's file name without .fbx.")
+        fbx = next((candidate for candidate in (self.fbx_path(path, name), self.fbx_path(path, name, False))
+                    if os.path.isfile(candidate)), None)
+        if fbx is None:
             raise FileNotFoundError(f"{path} has no clip {name!r}. It has: {', '.join(self.names(path)) or 'none'}.")
         if joint_clip is None:
             folder = os.path.join(tempfile.gettempdir(), "bmaya_joint_clips")
             os.makedirs(folder, exist_ok=True)
             joint_clip = os.path.join(folder, name + ".json")
-        rigmodules.jointclip.read_usd(usd, joint_clip)
-        sidecar = self.sidecar_path(path, name)
-        return AnimClip(name, usd, joint_clip, sidecar if os.path.isfile(sidecar) else None)
+        if bone_map is None and os.path.isfile(self.bone_map_path(fbx)):
+            bone_map = self.bone_map_path(fbx)
+        rigmodules.jointclip.read_fbx(fbx, joint_clip, bone_map)
+        return AnimClip(name, fbx, joint_clip)
 
 
 def save_anim_clip(asset: Asset, name: str, **context) -> str:
     """Saves a clip through AnimClipHandler.save (its arguments go in context). Versions and checks out only the
-    clip's own files first, where handlers.save would copy the whole anims folder, and adds new files to source
-    control. Returns the USD path."""
+    clip's own FBX first, where handlers.save would copy the whole exports folder, and adds a new file to source
+    control. Returns the FBX path."""
     handler = AnimClipHandler()
-    folder = asset.path("anims")
-    files = [handler.usd_path(folder, name), handler.sidecar_path(folder, name)]
-    existing = [path for path in files if os.path.exists(path)]
-    for path in existing:
-        versions.version(path, asset.root)
-        sourcecontrol.current().checkout(path)
-    usd = handler.save(asset, folder, name=name, **context)
-    for path in files:
-        if path not in existing and os.path.exists(path):
-            sourcecontrol.current().add(path)
-    return usd
+    fbx = handler.fbx_path(asset.path("exports"), _require_clip_name(name))
+    existing = os.path.exists(fbx)
+    if existing:
+        versions.version(fbx, asset.root)
+        sourcecontrol.current().checkout(fbx)
+    fbx = handler.save(asset, asset.path("exports"), name=name, **context)
+    if not existing and os.path.exists(fbx):
+        sourcecontrol.current().add(fbx)
+    return fbx
 
 
 def _short_name(node: str) -> str:
@@ -303,4 +300,4 @@ def register() -> None:
     handlers.register("shapes", RigShapesHandler())
     handlers.register("weights", RigSkinWeightsHandler())
     handlers.register("template", RigTemplateHandler())
-    handlers.register("anims", AnimClipHandler())
+    handlers.register("exports", AnimClipHandler())

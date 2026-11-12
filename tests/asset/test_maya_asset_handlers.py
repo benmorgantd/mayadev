@@ -63,9 +63,10 @@ class MayaHandlers(unittest.TestCase):
         self.hero = Asset.create(HERO, "Character", root=self.root)
 
         assethandlers.register()
-        for file_type in assethandlers.MAYA_FILE_TYPES + ("shapes", "anims"):
+        for file_type in assethandlers.MAYA_FILE_TYPES + ("shapes", "exports"):
             self.addCleanup(handlers.unregister, file_type)
         cmds.file(new=True, force=True)
+        cmds.currentUnit(time="ntsc")   # the clips here are 30 fps
 
     def make_skeleton(self):
         cmds = self.cmds
@@ -158,14 +159,14 @@ class MayaHandlers(unittest.TestCase):
         with open(path, encoding="utf-8") as handle:
             return json.load(handle)
 
-    def test_a_clip_saves_as_usd_in_the_anims_folder_and_loads_back(self):
-        path = self.handlers.save(self.hero, "anims", name="walk", joint_clip=self.write_joint_clip())
-        self.assertEqual(path, self.hero.path("anims"))
-        usd = os.path.join(path, "walk.usd")
-        self.assertTrue(os.path.isfile(usd))
+    def test_a_clip_saves_as_fbx_in_its_own_exports_folder_and_loads_back(self):
+        path = self.handlers.save(self.hero, "exports", name="walk", joint_clip=self.write_joint_clip())
+        self.assertEqual(path, self.hero.path("exports"))
+        fbx = os.path.join(path, "walk", "walk.fbx")
+        self.assertTrue(os.path.isfile(fbx))
 
-        clip = self.handlers.load(self.hero, "anims", name="walk")
-        self.assertEqual((clip.name, clip.usd, clip.sidecar), ("walk", usd, None))
+        clip = self.handlers.load(self.hero, "exports", name="walk")
+        self.assertEqual((clip.name, clip.fbx), ("walk", fbx))
         data = self.read_json(clip.joint_clip)
         self.assertEqual(len(data["poses"]), 2)
         self.assertEqual([joint["path"] for joint in data["joints"]], ["hips", "hips/tip"])
@@ -176,46 +177,52 @@ class MayaHandlers(unittest.TestCase):
         rig_root = self.build_rig()
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=1, value=0)
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=3, value=4)
-        usd = self.assethandlers.save_anim_clip(self.hero, "rise", rig_root=rig_root, start_frame=1, end_frame=3)
-        self.assertEqual(usd, os.path.join(self.hero.path("anims"), "rise.usd"))
+        fbx = self.assethandlers.save_anim_clip(self.hero, "rise", rig_root=rig_root, start_frame=1, end_frame=3)
+        self.assertEqual(fbx, os.path.join(self.hero.path("exports"), "rise", "rise.fbx"))
 
-        data = self.read_json(self.handlers.load(self.hero, "anims", name="rise").joint_clip)
+        data = self.read_json(self.handlers.load(self.hero, "exports", name="rise").joint_clip)
         self.assertEqual(len(data["poses"]), 3)
         self.assertEqual({joint["path"] for joint in data["joints"]}, {"spine1_jnt", "spine1_jnt/spine2_jnt"})
         self.assertEqual([name for name in os.listdir(tempfile.gettempdir()) if name.endswith(".jointclip.json")], [])
 
-    def test_a_sidecar_is_copied_beside_the_usd_and_loaded_with_it(self):
-        sidecar = os.path.join(self.root, "source.rigdata.json")
-        with open(sidecar, "w", encoding="utf-8") as handle:
-            json.dump({"formatVersion": 1, "frameRate": 30, "frames": {}}, handle)
-        self.handlers.save(self.hero, "anims", name="walk", joint_clip=self.write_joint_clip(), sidecar=sidecar)
-        folder = self.hero.path("anims")
-        self.assertEqual(sorted(os.listdir(folder)), ["walk.rigdata.json", "walk.usd"])
-        self.assertEqual(self.handlers.load(self.hero, "anims", name="walk").sidecar,
-                         os.path.join(folder, "walk.rigdata.json"))
+    def test_a_file_chosen_in_a_dialog_is_written_where_it_was_chosen(self):
+        fbx = self.assethandlers.AnimClipHandler().save(
+            None, self.root, name="chosen", joint_clip=self.write_joint_clip(), own_folder=False)
+        self.assertEqual(fbx, os.path.join(self.root, "chosen.fbx"))
+        clip = self.assethandlers.AnimClipHandler().load(None, self.root, name="chosen")
+        self.assertEqual(clip.fbx, fbx)
 
-    def test_saving_a_clip_without_a_sidecar_removes_the_old_ones(self):
-        sidecar = os.path.join(self.root, "source.rigdata.json")
-        with open(sidecar, "w", encoding="utf-8") as handle:
-            json.dump({"formatVersion": 1, "frameRate": 30, "frames": {}}, handle)
-        self.handlers.save(self.hero, "anims", name="walk", joint_clip=self.write_joint_clip(), sidecar=sidecar)
-        self.handlers.save(self.hero, "anims", name="walk", joint_clip=self.write_joint_clip())
-        self.assertEqual(os.listdir(self.hero.path("anims")), ["walk.usd"])
+    def test_a_bone_map_beside_an_fbx_marks_its_joints_when_it_loads(self):
+        from rigmodules import bonemap
+        unmarked = self.write_joint_clip()
+        with open(unmarked, encoding="utf-8") as handle:
+            clip = json.load(handle)
+        for joint in clip["joints"]:
+            joint["markup"] = ""
+        with open(unmarked, "w", encoding="utf-8") as handle:
+            json.dump(clip, handle)
+        fbx = self.assethandlers.AnimClipHandler().save(None, self.root, name="mocap", joint_clip=unmarked, own_folder=False)
+        markup = {"markupVersion": 1, "side": "Center", "usage": "hips", "export": True, "skin": True}
+        bonemap.write_bone_map(fbx[:-4] + ".bonemap.json", "shooter|main|characters|hero", "shooter|main|skeletons|human",
+                               {"hips": json.dumps(markup)})
+        data = self.read_json(self.assethandlers.AnimClipHandler().load(None, self.root, name="mocap").joint_clip)
+        self.assertEqual(json.loads(data["joints"][0]["markup"]), markup)
+        self.assertEqual(data["joints"][1]["markup"], "")
 
-    def test_save_anim_clip_versions_only_that_clips_files(self):
+    def test_save_anim_clip_versions_only_that_clips_fbx(self):
         from bmaya.asset import versions
         module = self.assethandlers
         source = self.write_joint_clip()
         module.save_anim_clip(self.hero, "walk", joint_clip=source)
         module.save_anim_clip(self.hero, "run", joint_clip=source)
-        usd = os.path.join(self.hero.path("anims"), "walk.usd")
-        self.assertEqual(versions.list_versions(usd, self.root), [], "a first save has nothing to version")
+        fbx = os.path.join(self.hero.path("exports"), "walk", "walk.fbx")
+        self.assertEqual(versions.list_versions(fbx, self.root), [], "a first save has nothing to version")
 
         module.save_anim_clip(self.hero, "walk", joint_clip=self.write_joint_clip(poses=3))
-        self.assertEqual(len(versions.list_versions(usd, self.root)), 1)
-        self.assertEqual(versions.list_versions(os.path.join(self.hero.path("anims"), "run.usd"), self.root), [])
-        self.assertEqual(len(self.read_json(self.handlers.load(self.hero, "anims", name="walk").joint_clip)["poses"]), 3)
-        self.assertEqual(module.AnimClipHandler.names(self.hero.path("anims")), ["run", "walk"])
+        self.assertEqual(len(versions.list_versions(fbx, self.root)), 1)
+        self.assertEqual(versions.list_versions(os.path.join(self.hero.path("exports"), "run", "run.fbx"), self.root), [])
+        self.assertEqual(len(self.read_json(self.handlers.load(self.hero, "exports", name="walk").joint_clip)["poses"]), 3)
+        self.assertEqual(module.AnimClipHandler.names(self.hero.path("exports")), ["run", "walk"])
 
     def test_clip_arguments_are_checked_before_anything_is_written(self):
         source = self.write_joint_clip()
@@ -225,16 +232,15 @@ class MayaHandlers(unittest.TestCase):
             {"name": "walk"},
             {"name": "walk", "joint_clip": source, "rig_root": "hero:rigRootModule1"},
             {"name": "walk", "rig_root": "hero:rigRootModule1"},
-            {"name": "walk", "joint_clip": source, "sidecar": os.path.join(self.root, "missing.json")},
         ):
             with self.subTest(kwargs=kwargs), self.assertRaises((ValueError, FileNotFoundError)):
-                self.handlers.save(self.hero, "anims", **kwargs)
-        self.assertFalse(os.path.exists(os.path.join(self.hero.path("anims"), "walk.usd")))
+                self.handlers.save(self.hero, "exports", **kwargs)
+        self.assertFalse(os.path.exists(os.path.join(self.hero.path("exports"), "walk")))
 
     def test_loading_a_clip_that_is_not_there_names_the_clips_that_are(self):
-        self.handlers.save(self.hero, "anims", name="walk", joint_clip=self.write_joint_clip())
+        self.handlers.save(self.hero, "exports", name="walk", joint_clip=self.write_joint_clip())
         with self.assertRaisesRegex(FileNotFoundError, "no clip 'run'.*walk"):
-            self.handlers.load(self.hero, "anims", name="run")
+            self.handlers.load(self.hero, "exports", name="run")
 
 
 if __name__ == "__main__":

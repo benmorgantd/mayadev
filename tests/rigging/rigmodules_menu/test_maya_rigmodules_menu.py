@@ -240,36 +240,37 @@ class MenuScripts(unittest.TestCase):
             self.run_tool("Load Pose...", None)
         self.assertEqual(cmds.getAttr(self.left + ".rotateY"), 20)
 
-    def read_usd(self, path):
+    def read_fbx(self, path):
         import rigmodules.jointclip
         out = os.path.join(self.temp, "read.json")
-        rigmodules.jointclip.read_usd(path, out)
+        rigmodules.jointclip.read_fbx(path, out)
         with open(out, encoding="utf-8") as handle:
             return json.load(handle)
 
-    def test_capture_joint_clip_writes_a_usd_of_the_export_joints_over_the_playback_range(self):
+    def test_capture_joint_clip_writes_an_fbx_of_the_export_joints_over_the_playback_range(self):
         cmds = self.cmds
-        path = os.path.join(self.temp, "walk.usd").replace("\\", "/")
+        path = os.path.join(self.temp, "walk.fbx").replace("\\", "/")
         cmds.playbackOptions(minTime=1, maxTime=4)
         with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
             self.run_tool("Capture Joint Clip...", None)
-        clip = self.read_usd(path)
+        clip = self.read_fbx(path)
         self.assertEqual(clip["startFrame"], 1)
         self.assertEqual(len(clip["poses"]), 4)
         self.assertEqual(sorted(joint["path"] for joint in clip["joints"]), ["spine1_jnt", "spine1_jnt/arm_l_jnt", "spine1_jnt/arm_r_jnt"])
 
-    def test_capture_joint_pose_writes_a_usd_with_one_pose_at_the_current_frame(self):
+    def test_capture_joint_pose_writes_an_fbx_with_one_static_pose(self):
         cmds = self.cmds
-        path = os.path.join(self.temp, "idle.usd").replace("\\", "/")
+        path = os.path.join(self.temp, "idle.fbx").replace("\\", "/")
         cmds.currentTime(7)
         with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
             self.run_tool("Capture Joint Pose...", None)
-        clip = self.read_usd(path)
-        self.assertEqual((clip["startFrame"], len(clip["poses"])), (7, 1))
+        clip = self.read_fbx(path)
+        # an FBX with no animation has no frame number: the pose reads back at frame 1
+        self.assertEqual((clip["startFrame"], len(clip["poses"])), (1, 1))
 
     def test_a_captured_pose_restores_the_controls(self):
         cmds = self.cmds
-        path = os.path.join(self.temp, "idle.usd").replace("\\", "/")
+        path = os.path.join(self.temp, "idle.fbx").replace("\\", "/")
         cmds.setAttr(self.left + ".rotateY", 20)
         with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
             self.run_tool("Capture Joint Pose...", None)
@@ -280,7 +281,7 @@ class MenuScripts(unittest.TestCase):
 
     def test_a_captured_clip_keys_the_controls(self):
         cmds = self.cmds
-        path = os.path.join(self.temp, "walk.usd").replace("\\", "/")
+        path = os.path.join(self.temp, "walk.fbx").replace("\\", "/")
         cmds.setKeyframe(self.left + ".rotateY", time=1, value=0, inTangentType="linear", outTangentType="linear")
         cmds.setKeyframe(self.left + ".rotateY", time=3, value=60, inTangentType="linear", outTangentType="linear")
         cmds.playbackOptions(minTime=1, maxTime=3)
@@ -292,9 +293,9 @@ class MenuScripts(unittest.TestCase):
         self.assertAlmostEqual(cmds.getAttr(self.left + ".rotateY", time=2), 30, places=2)
         self.assertAlmostEqual(cmds.getAttr(self.left + ".rotateY", time=3), 60, places=2)
 
-    def test_joint_clip_tools_reject_a_file_that_is_not_usd(self):
+    def test_joint_clip_tools_reject_a_file_that_is_not_fbx(self):
         cmds = self.cmds
-        path = os.path.join(self.temp, "bad.usd").replace("\\", "/")
+        path = os.path.join(self.temp, "bad.fbx").replace("\\", "/")
         with open(path, "w", encoding="utf-8") as handle:
             handle.write("{}")
         with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
@@ -302,16 +303,6 @@ class MenuScripts(unittest.TestCase):
                 with self.subTest(name):
                     with self.assertRaises(Exception):
                         self.run_tool(name, None)
-
-    def test_the_sidecar_beside_a_clip_is_passed_to_the_command(self):
-        cmds = self.cmds
-        path = os.path.join(self.temp, "idle.usd").replace("\\", "/")
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
-            self.run_tool("Capture Joint Pose...", None)
-            with open(os.path.join(self.temp, "idle.rigdata.json"), "w", encoding="utf-8") as handle:
-                handle.write("{}")
-            with self.assertRaisesRegex(RuntimeError, "pose"):   # the sidecar is read first, and is not a pose file
-                self.run_tool("Pose From Joint Pose...", None)
 
     def test_cancelled_joint_pose_dialog_does_nothing(self):
         with mock.patch.object(self.cmds, "fileDialog2", return_value=None):
