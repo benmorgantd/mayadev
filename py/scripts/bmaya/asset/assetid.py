@@ -1,6 +1,6 @@
 """Asset ids: the asset folder's path below RIGGING_PROJECT_DIR, with SEPARATOR between folders.
 
-"shooter|main|characters|hero" is the folder <RIGGING_PROJECT_DIR>/shooter/main/characters/hero.
+"shooter\\main\\characters\\hero" is the folder <RIGGING_PROJECT_DIR>/shooter/main/characters/hero.
 Any depth. Each token is a folder name of letters, digits and "_". Ids compare without case and are
 stored as authored. The rules match RigModules' core/AssetId (D29 in RigModules' decisions.md).
 
@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 import re
 
-SEPARATOR = "|"
+SEPARATOR = "\\"
 
 _TOKEN = re.compile(r"[A-Za-z0-9_]+")
 

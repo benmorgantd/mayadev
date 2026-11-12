@@ -19,7 +19,7 @@ from bmaya.asset import Asset, AssetError, AssetIdError, Project, ProjectError, 
 from bmaya.asset import assetid, handlers, publishes, sourcecontrol, versions  # noqa: E402
 from bmaya.asset.project import DEFAULT_PROJECT, PROJECTS_ROOT_ENV, projects_root  # noqa: E402
 
-HERO = "shooter|main|characters|hero"
+HERO = "shooter\\main\\characters\\hero"
 
 
 class RecordingSourceControl(sourcecontrol.SourceControl):
@@ -34,7 +34,7 @@ class RecordingSourceControl(sourcecontrol.SourceControl):
 
 
 class TempRoot(unittest.TestCase):
-    """A projects root with one project, shooter|main, using the default project.json. Local versions go
+    """A projects root with one project, shooter\\main, using the default project.json. Local versions go
     to a temporary folder, and source control calls are recorded."""
 
     def setUp(self):
@@ -75,14 +75,14 @@ class TempRoot(unittest.TestCase):
 class AssetIds(unittest.TestCase):
 
     def test_valid_ids_any_depth(self):
-        for asset_id in ["hero", "shooter|hero", HERO, "a_1|B2|c"]:
+        for asset_id in ["hero", "shooter\\hero", HERO, "a_1\\B2\\c"]:
             self.assertTrue(assetid.is_valid(asset_id), asset_id)
 
     def test_invalid_ids(self):
-        for asset_id in ["", "|hero", "hero|", "a||b", "shooter/hero", "main chars|hero", "hero\n", "h-ero", None, 5]:
+        for asset_id in ["", "\\hero", "hero\\", "a\\\\b", "shooter/hero", "shooter|hero", "main chars\\hero", "hero\n", "h-ero", None, 5]:
             self.assertFalse(assetid.is_valid(asset_id), repr(asset_id))
         with self.assertRaises(AssetIdError):
-            assetid.check("a||b")
+            assetid.check("a\\\\b")
 
     def test_name_is_the_last_token(self):
         self.assertEqual(assetid.name(HERO), "hero")
@@ -90,7 +90,7 @@ class AssetIds(unittest.TestCase):
 
     def test_ids_compare_without_case(self):
         self.assertTrue(assetid.equals(HERO, HERO.upper()))
-        self.assertFalse(assetid.equals(HERO, "shooter|main|characters|villain"))
+        self.assertFalse(assetid.equals(HERO, "shooter\\main\\characters\\villain"))
 
     def test_relative_path_round_trip(self):
         relative = assetid.to_relative_path(HERO)
@@ -165,10 +165,10 @@ class Projects(TempRoot):
 class Assets(TempRoot):
 
     def test_create_writes_only_identity(self):
-        hero = self.create(skeleton="shooter|main|skeletons|biped")
+        hero = self.create(skeleton="shooter\\main\\skeletons\\biped")
         self.assertTrue(hero.exists())
         self.assertEqual(json.loads(self.read(hero.info_path)),
-                         {"formatVersion": 1, "assetType": "Character", "skeleton": "shooter|main|skeletons|biped"})
+                         {"formatVersion": 1, "assetType": "Character", "skeleton": "shooter\\main\\skeletons\\biped"})
         self.assertEqual(hero.project.root, self.project.root)
         self.assertEqual(self.source_control.calls, [("add", hero.info_path)])
 
@@ -177,21 +177,21 @@ class Assets(TempRoot):
         with self.assertRaises(AssetError):
             self.create()                                                    # already exists
         with self.assertRaises(ProjectError):
-            self.create("shooter|main|props|crate", asset_type="Crate")      # not a project asset type
+            self.create("shooter\\main\\props\\crate", asset_type="Crate")      # not a project asset type
         with self.assertRaises(ProjectError):
-            Asset.create("loose|crate", "Prop", root=self.root)              # no project.json above
+            Asset.create("loose\\crate", "Prop", root=self.root)              # no project.json above
         with self.assertRaises(AssetIdError):
-            self.create("shooter|main|props|crate", skeleton="bad||id")
+            self.create("shooter\\main\\props\\crate", skeleton="bad\\\\id")
 
     def test_assets_never_nest(self):
         self.create()
         with self.assertRaises(AssetError):
-            self.create(HERO + "|sword", asset_type="Weapon")
-        self.create("shooter|main|props|crate|lid", asset_type="Prop")
+            self.create(HERO + "\\sword", asset_type="Weapon")
+        self.create("shooter\\main\\props\\crate\\lid", asset_type="Prop")
         with self.assertRaises(AssetError):
-            self.create("shooter|main|props|crate", asset_type="Prop")
+            self.create("shooter\\main\\props\\crate", asset_type="Prop")
         with self.assertRaises(AssetError):
-            self.create("shooter|main", asset_type="Prop")                    # the project folder itself
+            self.create("shooter\\main", asset_type="Prop")                    # the project folder itself
 
     def test_paths_never_touch_the_disk(self):
         hero = Asset(HERO, root=self.root)
@@ -213,7 +213,7 @@ class Assets(TempRoot):
 
     def test_skeleton_defaults_to_the_asset_itself(self):
         self.assertEqual(self.create().skeleton, HERO)
-        villain = self.create("shooter|main|characters|villain", skeleton=HERO)
+        villain = self.create("shooter\\main\\characters\\villain", skeleton=HERO)
         self.assertEqual(villain.skeleton, HERO)
 
     def test_variants_are_folders_with_a_template(self):
@@ -281,11 +281,11 @@ class Registries(TempRoot):
 
     def test_scan_finds_assets_at_any_depth(self):
         self.create()
-        self.create("shooter|main|props|crate", asset_type="Prop")
-        self.create("shooter|main|env|forest|rocks|boulder", asset_type="Environment")
+        self.create("shooter\\main\\props\\crate", asset_type="Prop")
+        self.create("shooter\\main\\env\\forest\\rocks\\boulder", asset_type="Environment")
         registry = self.registry()
-        self.assertEqual(registry.ids(), ["shooter|main|characters|hero", "shooter|main|env|forest|rocks|boulder",
-                                          "shooter|main|props|crate"])
+        self.assertEqual(registry.ids(), ["shooter\\main\\characters\\hero", "shooter\\main\\env\\forest\\rocks\\boulder",
+                                          "shooter\\main\\props\\crate"])
         self.assertEqual(registry.errors, [])
 
     def test_entries(self):
@@ -298,17 +298,17 @@ class Registries(TempRoot):
         self.assertIsNone(self.registry().latest_publish(HERO, "cine"))
 
     def test_find_by_type_and_skeleton(self):
-        self.create("shooter|main|skeletons|biped", asset_type="Skeleton")
-        self.create(skeleton="shooter|main|skeletons|biped")
-        self.create("shooter|main|characters|villain", skeleton="shooter|main|skeletons|biped")
-        self.create("shooter|main|characters|dog")
+        self.create("shooter\\main\\skeletons\\biped", asset_type="Skeleton")
+        self.create(skeleton="shooter\\main\\skeletons\\biped")
+        self.create("shooter\\main\\characters\\villain", skeleton="shooter\\main\\skeletons\\biped")
+        self.create("shooter\\main\\characters\\dog")
         registry = self.registry()
         self.assertEqual(registry.find(asset_type="Character"),
-                         ["shooter|main|characters|dog", HERO, "shooter|main|characters|villain"])
-        self.assertEqual(registry.find(skeleton="SHOOTER|main|skeletons|biped"),
-                         [HERO, "shooter|main|characters|villain", "shooter|main|skeletons|biped"])
-        self.assertEqual(registry.find(asset_type="Character", skeleton="shooter|main|characters|dog"),
-                         ["shooter|main|characters|dog"])
+                         ["shooter\\main\\characters\\dog", HERO, "shooter\\main\\characters\\villain"])
+        self.assertEqual(registry.find(skeleton="SHOOTER\\main\\skeletons\\biped"),
+                         [HERO, "shooter\\main\\characters\\villain", "shooter\\main\\skeletons\\biped"])
+        self.assertEqual(registry.find(asset_type="Character", skeleton="shooter\\main\\characters\\dog"),
+                         ["shooter\\main\\characters\\dog"])
 
     def test_refresh_sees_changes_on_disk(self):
         registry = Registry.of(self.project, root=self.root)
@@ -321,11 +321,11 @@ class Registries(TempRoot):
     def test_scan_skips_other_projects_and_stops_at_assets(self):
         hero = self.create()
         dlc = Project.create(os.path.join(self.project.root, "dlc"))
-        Asset.create("shooter|main|dlc|props|crate", "Prop", root=self.root)
+        Asset.create("shooter\\main\\dlc\\props\\crate", "Prop", root=self.root)
         # An asset.json inside an asset (made by hand) is not walked into.
         self.write(os.path.join(hero.folder, "sword", "asset.json"), json.dumps({"formatVersion": 1, "assetType": "Weapon"}))
         self.assertEqual(self.registry().ids(), [HERO])
-        self.assertEqual(Registry(dlc, root=self.root).ids(), ["shooter|main|dlc|props|crate"])
+        self.assertEqual(Registry(dlc, root=self.root).ids(), ["shooter\\main\\dlc\\props\\crate"])
 
     def test_scan_reports_unreadable_assets(self):
         self.create()

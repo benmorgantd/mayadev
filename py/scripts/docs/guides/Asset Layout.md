@@ -8,10 +8,10 @@ It is built for Perforce without shared files: a routine save never touches a fi
 
 ## Asset ids
 
-An asset id is the asset folder's path below `RIGGING_PROJECT_DIR`, with `|` between folders, at any depth:
+An asset id is the asset folder's path below `RIGGING_PROJECT_DIR`, with `\` between folders, at any depth:
 
 ```
-shooter|main|characters|hero   ->   <RIGGING_PROJECT_DIR>\shooter\main\characters\hero
+shooter\main\characters\hero   ->   <RIGGING_PROJECT_DIR>\shooter\main\characters\hero
 ```
 
 - Each folder name is letters, digits and `_`.
@@ -72,7 +72,7 @@ All JSON is written with sorted keys and one item per line, so it diffs and merg
 {
   "assetType": "Character",
   "formatVersion": 1,
-  "skeleton": "shooter|main|skeletons|biped"
+  "skeleton": "shooter\\main\\skeletons\\biped"
 }
 ```
 
@@ -89,9 +89,9 @@ The id is not stored, because it is the folder's path.
 from bmaya.asset import Asset, Project, Registry, publishes
 
 Project.create(r"D:\projects\shooter\main")                  # once per project
-hero = Asset.create("shooter|main|characters|hero", "Character", skeleton="shooter|main|skeletons|biped")
+hero = Asset.create("shooter\\main\\characters\\hero", "Character", skeleton="shooter\\main\\skeletons\\biped")
 
-hero = Asset("shooter|main|characters|hero")                  # an existing asset
+hero = Asset("shooter\\main\\characters\\hero")                  # an existing asset
 hero.path("shapes", variant="game")                           # never touches the disk
 hero.variants                                                 # ["cine", "game"]: folders with a template.json
 
@@ -151,7 +151,7 @@ from bmaya.asset import Asset, handlers
 from bmaya.maya import assethandlers
 
 assethandlers.register()                                      # once per session
-hero = Asset("shooter|main|characters|hero")
+hero = Asset("shooter\\main\\characters\\hero")
 handlers.load(hero, "skeleton")
 handlers.save(hero, "shapes", variant="game", rig_root="hero:rigRootModule1")
 handlers.save(hero, "weights", variant="game", namespace="hero")
@@ -169,10 +169,10 @@ Textures, shaders and postops have no handler yet. `bmaya.maya.assettools.save_p
 ```python
 import bmaya.maya.assettools
 
-bmaya.maya.assettools.new_variant("shooter|main|characters|hero", r"C:\rigs\Human.json")   # variant "Human"
-bmaya.maya.assettools.save_skeleton("shooter|main|characters|hero")              # the open scene
-bmaya.maya.assettools.save_model("shooter|main|characters|hero", "Human")        # the open scene, meshes only
-rig_root = bmaya.maya.assettools.build_rig("shooter|main|characters|hero", "Human")
+bmaya.maya.assettools.new_variant("shooter\\main\\characters\\hero", r"C:\rigs\Human.json")   # variant "Human"
+bmaya.maya.assettools.save_skeleton("shooter\\main\\characters\\hero")              # the open scene
+bmaya.maya.assettools.save_model("shooter\\main\\characters\\hero", "Human")        # the open scene, meshes only
+rig_root = bmaya.maya.assettools.build_rig("shooter\\main\\characters\\hero", "Human")
 bmaya.maya.assettools.save_control_shapes(rig_root)                                # variants/Human/shapes.json
 bmaya.maya.assettools.save_skin_weights(rig_root)                                  # variants/Human/weights/*.json
 bmaya.maya.assettools.save_rig(rig_root)                                           # variants/Human/hero_Human.ma

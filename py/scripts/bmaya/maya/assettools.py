@@ -299,7 +299,7 @@ def new_project_ui() -> None:
 
 
 def new_asset_ui() -> None:
-    asset_id = _ask_asset_id("New Asset", "Asset id, its folder below the projects root (game|project|type|name):")
+    asset_id = _ask_asset_id("New Asset", "Asset id, its folder below the projects root (game\\project\\type\\name):")
     if not asset_id:
         return
     project = bmaya.asset.Asset(asset_id).project   # raises when no project.json is above the folder
@@ -564,7 +564,7 @@ def load_skin_weights_ui() -> None:
 
 # ---- dialogs ---------------------------------------------------------------------------------
 
-def _ask_asset_id(title: str, message: str = "Asset id (game|project|type|name):") -> str | None:
+def _ask_asset_id(title: str, message: str = "Asset id (game\\project\\type\\name):") -> str | None:
     """An asset id typed in a dialog, filled in with the active rig's asset id when the scene has a rig. Always
     asks, so the asset a tool is about to write to is on screen first."""
     try:

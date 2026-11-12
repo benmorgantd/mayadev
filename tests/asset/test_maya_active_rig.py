@@ -71,7 +71,7 @@ class ActiveRig(unittest.TestCase):
         """Builds the template on a new two-joint skeleton. Returns the rig root and the joints."""
         cmds = self.cmds
         cmds.select(clear=True)
-        name = asset_id.split("|")[-1]
+        name = asset_id.split("\\")[-1]
         joints = []
         for i, usage in enumerate(("spine1", "spine2")):
             joint = cmds.joint(name=f"{usage}_jnt", position=(0, i * 2, 0))
@@ -83,15 +83,15 @@ class ActiveRig(unittest.TestCase):
         return rig_root, [f"{name}:{joint}" for joint in joints]
 
     def test_selected_control_joint_or_root_finds_the_rig(self):
-        rig_root, joints = self.build("shooter|hero")
+        rig_root, joints = self.build("shooter\\hero")
         for node in ("hero:spine1_ctrl_c", joints[1], rig_root):
             with self.subTest(node=node):
                 self.cmds.select(node, replace=True)
                 self.assertEqual(self.activerig.rig_from_selection().rig_root, rig_root)
 
     def test_last_selected_rig_node_wins(self):
-        hero, _ = self.build("shooter|hero")
-        villain, _ = self.build("shooter|villain")
+        hero, _ = self.build("shooter\\hero")
+        villain, _ = self.build("shooter\\villain")
         self.cmds.select(["hero:spine1_ctrl_c", "villain:spine1_ctrl_c"], replace=True)
         self.assertEqual(self.activerig.rig_from_selection().rig_root, villain)
         cube = self.cmds.polyCube()[0]
@@ -104,8 +104,8 @@ class ActiveRig(unittest.TestCase):
         self.assertIsNone(self.activerig.rig_from_selection())
 
     def test_without_a_tracker_falls_back_to_the_first_rig(self):
-        hero, _ = self.build("shooter|hero")
-        self.build("shooter|villain")
+        hero, _ = self.build("shooter\\hero")
+        self.build("shooter\\villain")
         self.cmds.select(clear=True)
         self.assertEqual(self.activerig.get_active_rig().rig_root, hero)
 
@@ -115,8 +115,8 @@ class ActiveRig(unittest.TestCase):
 
     def test_tracker_keeps_the_last_selected_rig(self):
         """Drives the real SelectionChanged callback, which mayapy fires on cmds.select."""
-        hero, _ = self.build("shooter|hero")
-        villain, _ = self.build("shooter|villain")
+        hero, _ = self.build("shooter\\hero")
+        villain, _ = self.build("shooter\\villain")
         tracker = self.activerig.ActiveRigTracker()
         self.cmds.select("villain:spine1_ctrl_c", replace=True)
         self.cmds.select(self.cmds.polyCube()[0], replace=True)
@@ -125,14 +125,14 @@ class ActiveRig(unittest.TestCase):
         self.assertEqual(tracker.rig_root, hero)
 
     def test_tracker_resets_on_a_new_scene(self):
-        self.build("shooter|hero")
+        self.build("shooter\\hero")
         tracker = self.activerig.ActiveRigTracker()
         self.cmds.file(new=True, force=True)
         self.assertIsNone(tracker.rig_root)
 
     def test_deleted_active_rig_falls_back(self):
-        hero, _ = self.build("shooter|hero")
-        villain, _ = self.build("shooter|villain")
+        hero, _ = self.build("shooter\\hero")
+        villain, _ = self.build("shooter\\villain")
         tracker = self.activerig.ActiveRigTracker()
         tracker.set_rig_root(villain)
         self.cmds.delete(villain)

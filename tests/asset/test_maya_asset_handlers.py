@@ -20,7 +20,7 @@ except ImportError:
     maya = None
 
 PLUGIN = os.environ.get("RIGMODULES_PLUGIN", "")
-HERO = "shooter|main|characters|hero"
+HERO = "shooter\\main\\characters\\hero"
 TEMPLATE = {
     "rigVersion": 1,
     "rigTemplateName": "HandlerTest",
@@ -328,7 +328,7 @@ class MayaHandlers(unittest.TestCase):
             json.dump(clip, handle)
         fbx = self.assethandlers.AnimClipHandler().save(None, self.root, name="mocap", joint_clip=unmarked, own_folder=False)
         markup = {"markupVersion": 1, "side": "Center", "usage": "hips", "export": True, "skin": True}
-        bonemap.write_bone_map(fbx[:-4] + ".bonemap.json", "shooter|main|characters|hero", "shooter|main|skeletons|human",
+        bonemap.write_bone_map(fbx[:-4] + ".bonemap.json", "shooter\\main\\characters\\hero", "shooter\\main\\skeletons\\human",
                                {"hips": json.dumps(markup)})
         data = self.read_json(self.assethandlers.AnimClipHandler().load(None, self.root, name="mocap").joint_clip)
         self.assertEqual(json.loads(data["joints"][0]["markup"]), markup)

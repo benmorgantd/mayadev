@@ -10,7 +10,7 @@ Call register() once per session before handlers.save / handlers.load.
     from bmaya.maya import assethandlers
 
     assethandlers.register()
-    hero = Asset("shooter|main|characters|hero")
+    hero = Asset("shooter\\main\\characters\\hero")
     handlers.load(hero, "skeleton")                                  # imports into the hero namespace
     handlers.save(hero, "shapes", variant="game", rig_root="hero:rigRootModule1")
     handlers.save(hero, "weights", variant="game", namespace="hero")

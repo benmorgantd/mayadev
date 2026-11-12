@@ -5,7 +5,7 @@ load handlers live in bmaya.maya.assethandlers. The design is RigModules' design
 
     from bmaya.asset import Asset, Registry
 
-    hero = Asset("shooter|main|characters|hero")
+    hero = Asset("shooter\\main\\characters\\hero")
     hero.path("shapes", variant="game")                       # where the game rig's shape file lives
     Registry.of(hero.project).find(skeleton=hero.skeleton)   # assets that can share hero's animation
 """

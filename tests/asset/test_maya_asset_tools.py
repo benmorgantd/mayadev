@@ -7,6 +7,7 @@ Run with tests/asset/run.bat.
 
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -21,7 +22,7 @@ except ImportError:
     maya = None
 
 PLUGIN = os.environ.get("RIGMODULES_PLUGIN", "")
-HERO = "shooter|main|characters|hero"
+HERO = "shooter\\main\\characters\\hero"
 TEMPLATE = {
     "rigVersion": 1,
     "rigTemplateName": "AssetToolsTest",
@@ -123,7 +124,7 @@ class AssetTools(unittest.TestCase):
 
     def test_new_variant_needs_the_asset(self):
         with self.assertRaisesRegex(RuntimeError, "Create it with New Asset first"):
-            self.tools.new_variant("shooter|main|characters|nobody", self.template)
+            self.tools.new_variant("shooter\\main\\characters\\nobody", self.template)
 
     def test_new_variant_needs_a_rig_name(self):
         path = self.write_template({"rigVersion": 1}, "no_rig_name.json")
@@ -139,9 +140,9 @@ class AssetTools(unittest.TestCase):
 
     def test_save_skeleton_of_an_asset_that_shares_another_skeleton_fails(self):
         import bmaya.asset
-        bmaya.asset.Asset.create("shooter|main|characters|villain", "Character", skeleton=HERO)
-        with self.assertRaisesRegex(RuntimeError, "uses the skeleton of " + HERO.replace("|", r"\|")):
-            self.tools.save_skeleton("shooter|main|characters|villain")
+        bmaya.asset.Asset.create("shooter\\main\\characters\\villain", "Character", skeleton=HERO)
+        with self.assertRaisesRegex(RuntimeError, "uses the skeleton of " + re.escape(HERO)):
+            self.tools.save_skeleton("shooter\\main\\characters\\villain")
 
     # ---- building from the asset ----
 
@@ -199,7 +200,7 @@ class AssetTools(unittest.TestCase):
 
     def test_shapes_use_a_file_dialog_before_the_asset_exists(self):
         cmds = self.cmds
-        self.build_outside_the_asset("shooter|main|characters|nobody")
+        self.build_outside_the_asset("shooter\\main\\characters\\nobody")
         path = os.path.join(self.temp, "chosen_shapes.json").replace("\\", "/")
         with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
             self.assertEqual(self.tools.save_control_shapes("nobody:spine1_ctrl_c"), path)
@@ -265,7 +266,7 @@ class AssetTools(unittest.TestCase):
 
     def test_pose_tools_use_a_file_dialog_before_the_asset_exists(self):
         cmds = self.cmds
-        self.build_outside_the_asset("shooter|main|characters|nobody")
+        self.build_outside_the_asset("shooter\\main\\characters\\nobody")
         cmds.select(clear=True)
         path = os.path.join(self.temp, "chosen_pose.json").replace("\\", "/")
         with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
@@ -322,7 +323,7 @@ class AssetTools(unittest.TestCase):
 
     def test_animation_tools_use_a_file_dialog_before_the_asset_exists(self):
         cmds = self.cmds
-        self.build_outside_the_asset("shooter|main|characters|nobody")
+        self.build_outside_the_asset("shooter\\main\\characters\\nobody")
         cmds.select(clear=True)
         cmds.setKeyframe("nobody:spine1_ctrl_c.translateY", time=1, value=1)
         path = os.path.join(self.temp, "chosen_anim.json").replace("\\", "/")
@@ -407,7 +408,7 @@ class AssetTools(unittest.TestCase):
             self.tools.save_rig("hero:spine1_ctrl_c")
 
     def test_save_rig_uses_a_file_dialog_before_the_asset_exists(self):
-        self.build_outside_the_asset("shooter|main|characters|nobody")
+        self.build_outside_the_asset("shooter\\main\\characters\\nobody")
         path = os.path.join(self.temp, "chosen_rig.ma").replace("\\", "/")
         with mock.patch.object(self.cmds, "fileDialog2", return_value=[path]):
             self.assertEqual(self.tools.save_rig("nobody:spine1_ctrl_c"), path)
@@ -527,7 +528,7 @@ class AssetTools(unittest.TestCase):
 
     def test_weights_use_a_folder_dialog_before_the_asset_exists(self):
         cmds = self.cmds
-        rig_root = self.build_outside_the_asset("shooter|main|characters|nobody")
+        rig_root = self.build_outside_the_asset("shooter\\main\\characters\\nobody")
         box = self.make_box("nobody")
         cmds.setRigMeshId(box)
         self.skin_box(box, "nobody")
@@ -561,16 +562,16 @@ class AssetTools(unittest.TestCase):
     # ---- menu entry points ----
 
     def test_new_asset_ui_creates_the_asset_with_the_chosen_type(self):
-        with mock.patch.object(self.tools, "_ask_text", return_value="shooter|main|props|crate"), \
+        with mock.patch.object(self.tools, "_ask_text", return_value="shooter\\main\\props\\crate"), \
                 mock.patch.object(self.tools, "_choose", return_value="Prop") as choose:
             self.tools.new_asset_ui()
         import bmaya.asset
-        self.assertEqual(bmaya.asset.Asset("shooter|main|props|crate").asset_type, "Prop")
+        self.assertEqual(bmaya.asset.Asset("shooter\\main\\props\\crate").asset_type, "Prop")
         self.assertIn("Prop", choose.call_args.args[2])
 
     def test_new_asset_ui_without_a_project_fails(self):
         import bmaya.asset
-        with mock.patch.object(self.tools, "_ask_text", return_value="elsewhere|props|crate"):
+        with mock.patch.object(self.tools, "_ask_text", return_value="elsewhere\\props\\crate"):
             with self.assertRaises(bmaya.asset.ProjectError):
                 self.tools.new_asset_ui()
 
