@@ -67,12 +67,12 @@ class MenuLayout(unittest.TestCase):
     def test_top_level_is_submenus_in_order(self):
         items = _load("rigmodules_menu.json")["items"]
         self.assertEqual([i["type"] for i in items], ["submenu"] * len(items))
-        self.assertEqual([i["label"] for i in items], ["asset", "mesh", "joints", "weights", "shapes", "control", "pose", "dev"])
+        self.assertEqual([i["label"] for i in items], ["asset", "mesh", "joints", "weights", "shapes", "control", "pose", "clip", "dev"])
 
     def test_every_registry_tool_is_in_the_menu_once(self):
         guids = [i["guid"] for i in _walk(_load("rigmodules_menu.json")["items"]) if i["type"] == "tool"]
         self.assertEqual(len(guids), len(set(guids)))
-        self.assertEqual(len(guids), 31)
+        self.assertEqual(len(guids), 35)
 
     def test_every_script_compiles(self):
         for name, tool in _menu_tools().items():
@@ -239,6 +239,68 @@ class MenuScripts(unittest.TestCase):
             cmds.setAttr(self.left + ".rotateY", 0)
             self.run_tool("Load Pose...", None)
         self.assertEqual(cmds.getAttr(self.left + ".rotateY"), 20)
+
+    def test_capture_joint_clip_writes_the_export_joints_over_the_playback_range(self):
+        cmds = self.cmds
+        path = os.path.join(self.temp, "walk.json").replace("\\", "/")
+        cmds.playbackOptions(minTime=1, maxTime=4)
+        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+            self.run_tool("Capture Joint Clip...", None)
+        with open(path, encoding="utf-8") as handle:
+            clip = json.load(handle)
+        self.assertEqual(clip["startFrame"], 1)
+        self.assertEqual(len(clip["poses"]), 4)
+        self.assertEqual(sorted(joint["path"] for joint in clip["joints"]), ["spine1_jnt", "spine1_jnt/arm_l_jnt", "spine1_jnt/arm_r_jnt"])
+
+    def test_capture_joint_pose_writes_one_pose_at_the_current_frame(self):
+        cmds = self.cmds
+        path = os.path.join(self.temp, "idle.json").replace("\\", "/")
+        cmds.currentTime(7)
+        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+            self.run_tool("Capture Joint Pose...", None)
+        with open(path, encoding="utf-8") as handle:
+            clip = json.load(handle)
+        self.assertEqual((clip["startFrame"], len(clip["poses"])), (7, 1))
+
+    def test_a_captured_pose_loads_as_far_as_the_unbuilt_solve(self):
+        # The solve is not built yet (RigModules D41), so the command fails once the file has been read and checked.
+        cmds = self.cmds
+        path = os.path.join(self.temp, "idle.json").replace("\\", "/")
+        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+            self.run_tool("Capture Joint Pose...", None)
+            with self.assertRaisesRegex(RuntimeError, "solve is not built yet"):
+                self.run_tool("Pose From Joint Pose...", None)
+            with self.assertRaisesRegex(RuntimeError, "not built yet"):
+                self.run_tool("Animate From Joint Clip...", None)
+
+    def test_joint_clip_tools_reject_a_file_that_is_not_a_joint_clip(self):
+        cmds = self.cmds
+        path = os.path.join(self.temp, "bad.json").replace("\\", "/")
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write("{}")
+        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+            for name in ("Pose From Joint Pose...", "Animate From Joint Clip..."):
+                with self.subTest(name):
+                    with self.assertRaisesRegex(RuntimeError, "JointClip file"):
+                        self.run_tool(name, None)
+
+    def test_the_sidecar_beside_a_joint_clip_is_passed_to_the_command(self):
+        cmds = self.cmds
+        path = os.path.join(self.temp, "idle.json").replace("\\", "/")
+        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+            self.run_tool("Capture Joint Pose...", None)
+            with open(os.path.join(self.temp, "idle.rigdata.json"), "w", encoding="utf-8") as handle:
+                handle.write("{}")
+            with self.assertRaisesRegex(RuntimeError, "pose"):   # the sidecar is read first, and is not a pose file
+                self.run_tool("Pose From Joint Pose...", None)
+
+    def test_cancelled_joint_pose_dialog_does_nothing(self):
+        with mock.patch.object(self.cmds, "fileDialog2", return_value=None):
+            self.run_tool("Pose From Joint Pose...", None)
+            self.run_tool("Animate From Joint Clip...", None)
+            self.run_tool("Capture Joint Clip...", None)
+            self.run_tool("Capture Joint Pose...", None)
+        self.assertEqual(os.listdir(self.temp), ["template.json"])
 
     def test_cancelled_pose_dialog_does_nothing(self):
         with mock.patch.object(self.cmds, "fileDialog2", return_value=None):

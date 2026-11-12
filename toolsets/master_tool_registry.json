@@ -303,6 +303,38 @@
             "script": "import bmaya.maya.posetools\nbmaya.maya.posetools.key_selected_modules_ui()\n",
             "icon": null,
             "enabled": true
+        },
+        {
+            "guid": "15bd1c98-45dc-48b6-9780-58f26d8f503d",
+            "name": "Pose From Joint Pose...",
+            "short_name": "Pose From Joints",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.pose_from_joint_pose_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "d4483e2f-8d55-4115-85e4-a5df87a152d3",
+            "name": "Animate From Joint Clip...",
+            "short_name": "Animate From Joints",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.animate_from_joint_clip_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "610bbb7f-1727-4dda-b692-8b9102febf45",
+            "name": "Capture Joint Clip...",
+            "short_name": "Capture Clip",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.capture_joint_clip_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "9bd83b8f-0eb8-4f7b-8206-130cda3cad87",
+            "name": "Capture Joint Pose...",
+            "short_name": "Capture Joint Pose",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.capture_joint_pose_ui()\n",
+            "icon": null,
+            "enabled": true
         }
     ]
 }

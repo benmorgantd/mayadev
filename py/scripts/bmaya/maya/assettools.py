@@ -19,6 +19,7 @@ import re
 
 import maya.cmds as cmds
 import rigmodules.displaylayers
+import rigmodules.jointclip
 import rigmodules.query
 import rigmodules.skinweights
 import rigmodules.template
@@ -36,6 +37,7 @@ SCENE_FILTER = "Maya ASCII (*.ma)"
 SHAPES_FILTER = "Shape files (*.json)"
 TEMPLATE_FILTER = "Rig templates (*.json)"
 POSE_FILTER = "Pose files (*.json)"
+JOINT_CLIP_FILTER = "JointClip files (*.json)"
 POSE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_ -]*$")
 
 
@@ -353,6 +355,58 @@ def load_pose_ui() -> str | None:
         changed = cmds.loadRigPose(*scope, file=path) or []
         bmaya.core.log.info(f"Loaded the pose onto {len(changed)} control(s): {path}")
     return path
+
+
+def capture_joint_clip_ui() -> str | None:
+    """Captures the active rig's export joints over the playback range into a JointClip file chosen in a dialog
+    (RigModules D41). Returns the path, or None when cancelled."""
+    start = int(cmds.playbackOptions(query=True, minTime=True))
+    end = int(cmds.playbackOptions(query=True, maxTime=True))
+    return _capture_joint_clip("Capture Joint Clip", start, end)
+
+
+def capture_joint_pose_ui() -> str | None:
+    """Captures the active rig's export joints at the current frame into a JointClip file with one JointPose,
+    chosen in a dialog. Returns the path, or None when cancelled."""
+    frame = int(cmds.currentTime(query=True))
+    return _capture_joint_clip("Capture Joint Pose", frame, frame)
+
+
+def _capture_joint_clip(caption: str, start_frame: int, end_frame: int) -> str | None:
+    rig_root = bmaya.maya.activerig.get_active_rig().rig_root
+    path = _ask_file(caption, JOINT_CLIP_FILTER, save=True)
+    if path:
+        joints = rigmodules.jointclip.capture_joint_clip(rig_root, start_frame, end_frame, path)
+        bmaya.core.log.info(f"Captured {len(joints)} joint(s) on frames {start_frame} to {end_frame}: {path}")
+    return path
+
+
+def pose_from_joint_pose_ui() -> str | None:
+    """Sets the selected controls, or the whole active rig, from a JointClip file with one JointPose, chosen in a
+    dialog (RigModules D41). A pose file named like it, with .rigdata.json in place of .json, is its sidecar when it
+    exists. Returns the path, or None when cancelled."""
+    path = _ask_file("Pose Rig From Joint Pose", JOINT_CLIP_FILTER, save=False)
+    if path:
+        kwargs = _sidecar_kwargs(path)
+        changed = cmds.poseRigFromJointPose(*bmaya.maya.posetools.get_scope(), jointPose=path, **kwargs) or []
+        bmaya.core.log.info(f"Posed {len(changed)} control(s) from the joint pose: {path}")
+    return path
+
+
+def animate_from_joint_clip_ui() -> str | None:
+    """Keys the selected controls, or the whole active rig, from a JointClip file chosen in a dialog (RigModules
+    D41). The sidecar is found as for pose_from_joint_pose_ui. Returns the path, or None when cancelled."""
+    path = _ask_file("Animate Rig From Joint Clip", JOINT_CLIP_FILTER, save=False)
+    if path:
+        cmds.animateRigFromJointClip(*bmaya.maya.posetools.get_scope(), jointClip=path, **_sidecar_kwargs(path))
+        bmaya.core.log.info(f"Animated the rig from the joint clip: {path}")
+    return path
+
+
+def _sidecar_kwargs(joint_clip_path: str) -> dict[str, str]:
+    """{"sidecar": path} for the file beside a JointClip file that shares its name and ends in .rigdata.json."""
+    sidecar = os.path.splitext(joint_clip_path)[0] + ".rigdata.json"
+    return {"sidecar": sidecar} if os.path.isfile(sidecar) else {}
 
 
 def save_skin_weights_ui() -> None:

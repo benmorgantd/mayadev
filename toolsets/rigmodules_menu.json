@@ -185,6 +185,32 @@
         },
         {
             "type": "submenu",
+            "label": "clip",
+            "items": [
+                {
+                    "type": "tool",
+                    "guid": "610bbb7f-1727-4dda-b692-8b9102febf45",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "9bd83b8f-0eb8-4f7b-8206-130cda3cad87",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "15bd1c98-45dc-48b6-9780-58f26d8f503d",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "guid": "d4483e2f-8d55-4115-85e4-a5df87a152d3",
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "type": "submenu",
             "label": "dev",
             "items": [
                 {
