@@ -43,6 +43,7 @@ MAYA_FILE_TYPES = ("skeleton", "model", "rig")
 # The same rule as a pose name: it becomes a file name.
 CLIP_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_ -]*$")
 BONE_MAP_SUFFIX = ".bonemap.json"
+CONTROL_ANIM_SUFFIX = ".anim.json"
 
 
 class MayaSceneHandler(handlers.FileHandler):
@@ -163,12 +164,15 @@ class AnimClip:
     name: str
     fbx: str                 # the clip's FBX file
     joint_clip: str          # the JointClip file read from it, a temporary: cmds.animateRigFromJointClip(jointClip=...)
+    sidecar: str | None      # the ControlAnim beside the FBX (<name>.anim.json), or None: animateRigFromJointClip(sidecar=...)
 
 
 class AnimClipHandler(handlers.FileHandler):
     """Animation clips in an asset's exports folder, which every variant of the asset shares (RigModules D42). A
     clip is an FBX file written through rigmodules.jointclip, in a folder of its own, exports/<name>/<name>.fbx,
-    because an export is a bundle: the engine properties and the control animation it was made from go beside it.
+    because an export is a bundle: the engine properties go beside it, and so does the control animation it was made
+    from, <name>.anim.json, written when a clip is captured from a rig. That ControlAnim is the sidecar of a restore:
+    it gives back what joints can't (spaces, blends, Layout controls) with the animator's own keys.
     A bone map, <name>.bonemap.json beside an FBX, gives a file from another tool its joint markup."""
 
     @staticmethod
@@ -179,6 +183,10 @@ class AnimClipHandler(handlers.FileHandler):
     @staticmethod
     def bone_map_path(fbx: str) -> str:
         return os.path.splitext(fbx)[0] + BONE_MAP_SUFFIX
+
+    @staticmethod
+    def control_anim_path(fbx: str) -> str:
+        return os.path.splitext(fbx)[0] + CONTROL_ANIM_SUFFIX
 
     @staticmethod
     def names(folder: str) -> list[str]:
@@ -202,7 +210,7 @@ class AnimClipHandler(handlers.FileHandler):
         """Writes the clip <name> into the exports folder at path from a JointClip file (joint_clip), or captured
         from the rig's export joints over start_frame to end_frame (rig_root). own_folder=False writes
         <path>/<name>.fbx itself, for a file the user chose. Returns the FBX path. Nothing is written when an
-        argument is wrong."""
+        argument is wrong. A clip captured from a rig also gets its ControlAnim beside it."""
         name = _require_clip_name(name)
         if (joint_clip is None) == (rig_root is None):
             raise ValueError("Pass joint_clip (a JointClip file), or rig_root with start_frame and end_frame.")
@@ -220,6 +228,9 @@ class AnimClipHandler(handlers.FileHandler):
             fbx = self.fbx_path(path, name, own_folder)
             os.makedirs(os.path.dirname(fbx), exist_ok=True)
             rigmodules.jointclip.write_fbx(joint_clip, fbx)
+            if captured:
+                cmds.saveRigAnimation(
+                    rig_root, file=self.control_anim_path(fbx).replace("\\", "/"), startFrame=start_frame, endFrame=end_frame)
         finally:
             if captured and os.path.exists(captured):
                 os.remove(captured)
@@ -252,7 +263,8 @@ class AnimClipHandler(handlers.FileHandler):
         if bone_map is None and os.path.isfile(self.bone_map_path(fbx)):
             bone_map = self.bone_map_path(fbx)
         rigmodules.jointclip.read_fbx(fbx, joint_clip, bone_map)
-        return AnimClip(name, fbx, joint_clip)
+        control_anim = self.control_anim_path(fbx)
+        return AnimClip(name, fbx, joint_clip, control_anim if os.path.isfile(control_anim) else None)
 
 
 def save_anim_clip(asset: Asset, name: str, **context) -> str:

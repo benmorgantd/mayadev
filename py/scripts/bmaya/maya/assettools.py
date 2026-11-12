@@ -417,11 +417,12 @@ def pose_from_joint_pose_ui() -> str | None:
 
 
 def animate_from_joint_clip_ui() -> str | None:
-    """Keys the selected controls, or the whole active rig, from an FBX clip chosen in a dialog (RigModules D42).
-    Returns the FBX path, or None when cancelled."""
+    """Keys the selected controls, or the whole active rig, from an FBX clip chosen in a dialog (RigModules D42),
+    with the ControlAnim beside it as the sidecar when it has one. Returns the FBX path, or None when cancelled."""
     clip = _ask_clip("Animate Rig From Joint Clip")
     if clip:
-        cmds.animateRigFromJointClip(*bmaya.maya.posetools.get_scope(), jointClip=_command_path(clip.joint_clip))
+        sidecar = {"sidecar": _command_path(clip.sidecar)} if clip.sidecar else {}
+        cmds.animateRigFromJointClip(*bmaya.maya.posetools.get_scope(), jointClip=_command_path(clip.joint_clip), **sidecar)
         bmaya.core.log.info(f"Animated the rig from the joint clip: {clip.fbx}")
         return clip.fbx
     return None

@@ -166,7 +166,7 @@ class MayaHandlers(unittest.TestCase):
         self.assertTrue(os.path.isfile(fbx))
 
         clip = self.handlers.load(self.hero, "exports", name="walk")
-        self.assertEqual((clip.name, clip.fbx), ("walk", fbx))
+        self.assertEqual((clip.name, clip.fbx, clip.sidecar), ("walk", fbx, None))
         data = self.read_json(clip.joint_clip)
         self.assertEqual(len(data["poses"]), 2)
         self.assertEqual([joint["path"] for joint in data["joints"]], ["hips", "hips/tip"])
@@ -184,6 +184,28 @@ class MayaHandlers(unittest.TestCase):
         self.assertEqual(len(data["poses"]), 3)
         self.assertEqual({joint["path"] for joint in data["joints"]}, {"spine1_jnt", "spine1_jnt/spine2_jnt"})
         self.assertEqual([name for name in os.listdir(tempfile.gettempdir()) if name.endswith(".jointclip.json")], [])
+
+    def test_a_clip_captured_from_a_rig_carries_its_control_anim_and_restores_with_it(self):
+        cmds = self.cmds
+        rig_root = self.build_rig()
+        cmds.currentUnit(time="film")
+        cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=1, value=0)
+        cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=3, value=4)
+        fbx = self.assethandlers.save_anim_clip(self.hero, "rise", rig_root=rig_root, start_frame=1, end_frame=3)
+        control_anim = os.path.join(os.path.dirname(fbx), "rise.anim.json")
+        self.assertTrue(os.path.isfile(control_anim))
+        self.assertEqual(sorted(os.listdir(os.path.dirname(fbx))), ["rise.anim.json", "rise.fbx"])
+
+        clip = self.handlers.load(self.hero, "exports", name="rise")
+        self.assertEqual(clip.sidecar, control_anim)
+        cmds.cutKey("hero:spine1_ctrl_c", attribute="translateY", clear=True)
+        cmds.setAttr("hero:spine1_ctrl_c.translateY", 0)
+        cmds.animateRigFromJointClip(rig_root, jointClip=clip.joint_clip.replace("\\", "/"), sidecar=clip.sidecar.replace("\\", "/"))
+        self.assertAlmostEqual(cmds.getAttr("hero:spine1_ctrl_c.translateY", time=3), 4.0, places=3)
+
+    def test_a_clip_without_a_control_anim_has_no_sidecar(self):
+        self.handlers.save(self.hero, "exports", name="walk", joint_clip=self.write_joint_clip())
+        self.assertIsNone(self.handlers.load(self.hero, "exports", name="walk").sidecar)
 
     def test_a_file_chosen_in_a_dialog_is_written_where_it_was_chosen(self):
         fbx = self.assethandlers.AnimClipHandler().save(
