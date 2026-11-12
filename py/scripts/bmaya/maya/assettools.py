@@ -37,7 +37,7 @@ SCENE_FILTER = "Maya ASCII (*.ma)"
 SHAPES_FILTER = "Shape files (*.json)"
 TEMPLATE_FILTER = "Rig templates (*.json)"
 POSE_FILTER = "Pose files (*.json)"
-JOINT_CLIP_FILTER = "JointClip files (*.json)"
+CLIP_FILTER = "USD clips (*.usd)"
 POSE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_ -]*$")
 
 
@@ -336,10 +336,7 @@ def save_pose_ui() -> str | None:
     if not name:
         return None
     path = os.path.join(asset.path("poses"), name + ".json")
-    if os.path.exists(path) and cmds.confirmDialog(
-            title="Save Pose", message=f"Pose {name!r} exists. Replace it? The old file is kept as a local version.",
-            button=["Replace", "Cancel"], defaultButton="Cancel", cancelButton="Cancel",
-            dismissString="Cancel") != "Replace":
+    if os.path.exists(path) and not _confirm_replace("Save Pose", f"Pose {name!r}"):
         return None
     return save_pose(asset.id, name, scope)
 
@@ -357,56 +354,99 @@ def load_pose_ui() -> str | None:
     return path
 
 
+def save_joint_clip(asset_id: str, name: str, rig_root: str, start_frame: int, end_frame: int) -> str:
+    """Captures the rig's export joints over start_frame to end_frame into <name>.usd in the asset's anims
+    folder, which every variant of the asset shares. An existing clip's files are versioned first. Returns the USD
+    path."""
+    asset = require_asset(asset_id)
+    usd = bmaya.maya.assethandlers.save_anim_clip(
+        asset, name, rig_root=rig_root, start_frame=start_frame, end_frame=end_frame)
+    bmaya.core.log.info(f"Saved clip {name!r} of {asset.id} on frames {start_frame} to {end_frame}: {usd}")
+    return usd
+
+
 def capture_joint_clip_ui() -> str | None:
-    """Captures the active rig's export joints over the playback range into a JointClip file chosen in a dialog
-    (RigModules D41). Returns the path, or None when cancelled."""
+    """Captures the active rig's export joints over the playback range as a USD clip (RigModules D41), under a
+    name typed in a dialog, in the asset's anims folder. Before the asset's folder exists, asks for a file
+    instead. Returns the USD path, or None when cancelled."""
     start = int(cmds.playbackOptions(query=True, minTime=True))
     end = int(cmds.playbackOptions(query=True, maxTime=True))
     return _capture_joint_clip("Capture Joint Clip", start, end)
 
 
 def capture_joint_pose_ui() -> str | None:
-    """Captures the active rig's export joints at the current frame into a JointClip file with one JointPose,
-    chosen in a dialog. Returns the path, or None when cancelled."""
+    """Captures the active rig's export joints at the current frame as a USD clip with one pose, saved as
+    capture_joint_clip_ui saves a clip. Returns the USD path, or None when cancelled."""
     frame = int(cmds.currentTime(query=True))
     return _capture_joint_clip("Capture Joint Pose", frame, frame)
 
 
 def _capture_joint_clip(caption: str, start_frame: int, end_frame: int) -> str | None:
-    rig_root = bmaya.maya.activerig.get_active_rig().rig_root
-    path = _ask_file(caption, JOINT_CLIP_FILTER, save=True)
-    if path:
-        joints = rigmodules.jointclip.capture_joint_clip(rig_root, start_frame, end_frame, path)
-        bmaya.core.log.info(f"Captured {len(joints)} joint(s) on frames {start_frame} to {end_frame}: {path}")
-    return path
+    rig = bmaya.maya.activerig.get_active_rig()
+    asset = find_asset(rig.asset_id)
+    if asset is None:
+        path = _ask_file(caption, CLIP_FILTER, save=True)
+        if not path:
+            return None
+        folder, file_name = os.path.split(path)
+        usd = bmaya.maya.assethandlers.AnimClipHandler().save(
+            None, folder, name=os.path.splitext(file_name)[0], rig_root=rig.rig_root,
+            start_frame=start_frame, end_frame=end_frame)
+        bmaya.core.log.info(f"Captured the joints on frames {start_frame} to {end_frame}: {usd}")
+        return usd
+
+    name = _ask_text(caption, f"Clip name, saved in the anims folder of {asset.id}:", "")
+    if not name:
+        return None
+    usd = bmaya.maya.assethandlers.AnimClipHandler.usd_path(asset.path("anims"), name)
+    if os.path.exists(usd) and not _confirm_replace(caption, f"Clip {name!r}"):
+        return None
+    return save_joint_clip(asset.id, name, rig.rig_root, start_frame, end_frame)
 
 
 def pose_from_joint_pose_ui() -> str | None:
-    """Sets the selected controls, or the whole active rig, from a JointClip file with one JointPose, chosen in a
-    dialog (RigModules D41). A pose file named like it, with .rigdata.json in place of .json, is its sidecar when it
-    exists. Returns the path, or None when cancelled."""
-    path = _ask_file("Pose Rig From Joint Pose", JOINT_CLIP_FILTER, save=False)
-    if path:
-        kwargs = _sidecar_kwargs(path)
-        changed = cmds.poseRigFromJointPose(*bmaya.maya.posetools.get_scope(), jointPose=path, **kwargs) or []
-        bmaya.core.log.info(f"Posed {len(changed)} control(s) from the joint pose: {path}")
-    return path
+    """Sets the selected controls, or the whole active rig, from a USD clip with one pose, chosen in a dialog
+    (RigModules D41). The clip's .rigdata.json sidecar is used when it has one. Returns the USD path, or None when
+    cancelled."""
+    clip = _ask_clip("Pose Rig From Joint Pose")
+    if clip:
+        changed = cmds.poseRigFromJointPose(
+            *bmaya.maya.posetools.get_scope(), jointPose=_command_path(clip.joint_clip), **_sidecar_kwargs(clip)) or []
+        bmaya.core.log.info(f"Posed {len(changed)} control(s) from the joint pose: {clip.usd}")
+        return clip.usd
+    return None
 
 
 def animate_from_joint_clip_ui() -> str | None:
-    """Keys the selected controls, or the whole active rig, from a JointClip file chosen in a dialog (RigModules
-    D41). The sidecar is found as for pose_from_joint_pose_ui. Returns the path, or None when cancelled."""
-    path = _ask_file("Animate Rig From Joint Clip", JOINT_CLIP_FILTER, save=False)
-    if path:
-        cmds.animateRigFromJointClip(*bmaya.maya.posetools.get_scope(), jointClip=path, **_sidecar_kwargs(path))
-        bmaya.core.log.info(f"Animated the rig from the joint clip: {path}")
-    return path
+    """Keys the selected controls, or the whole active rig, from a USD clip chosen in a dialog (RigModules D41).
+    The sidecar is found as for pose_from_joint_pose_ui. Returns the USD path, or None when cancelled."""
+    clip = _ask_clip("Animate Rig From Joint Clip")
+    if clip:
+        cmds.animateRigFromJointClip(
+            *bmaya.maya.posetools.get_scope(), jointClip=_command_path(clip.joint_clip), **_sidecar_kwargs(clip))
+        bmaya.core.log.info(f"Animated the rig from the joint clip: {clip.usd}")
+        return clip.usd
+    return None
 
 
-def _sidecar_kwargs(joint_clip_path: str) -> dict[str, str]:
-    """{"sidecar": path} for the file beside a JointClip file that shares its name and ends in .rigdata.json."""
-    sidecar = os.path.splitext(joint_clip_path)[0] + ".rigdata.json"
-    return {"sidecar": sidecar} if os.path.isfile(sidecar) else {}
+def _ask_clip(caption: str) -> bmaya.maya.assethandlers.AnimClip | None:
+    """A USD clip chosen in a dialog that opens in the active rig's asset's anims folder, read into a JointClip
+    file. None when cancelled."""
+    asset = find_asset(bmaya.maya.activerig.get_active_rig().asset_id)
+    folder = asset.path("anims") if asset else ""
+    path = _ask_file(caption, CLIP_FILTER, save=False, folder=folder if os.path.isdir(folder) else "")
+    if not path:
+        return None
+    folder, file_name = os.path.split(path)
+    return bmaya.maya.assethandlers.AnimClipHandler().load(asset, folder, name=os.path.splitext(file_name)[0])
+
+
+def _sidecar_kwargs(clip: bmaya.maya.assethandlers.AnimClip) -> dict[str, str]:
+    return {"sidecar": _command_path(clip.sidecar)} if clip.sidecar else {}
+
+
+def _command_path(path: str) -> str:
+    return path.replace("\\", "/")
 
 
 def save_skin_weights_ui() -> None:
@@ -461,6 +501,13 @@ def _choose(title: str, message: str, options: list[str]) -> str | None:
         cmds.button(label="Cancel", width=150, command=lambda *_: cmds.layoutDialog(dismiss="Cancel"))
 
     return picked["value"] if cmds.layoutDialog(title=title, uiScript=layout) == "OK" else None
+
+
+def _confirm_replace(title: str, what: str) -> bool:
+    return cmds.confirmDialog(
+        title=title, message=f"{what} exists. Replace it? The old file is kept as a local version.",
+        button=["Replace", "Cancel"], defaultButton="Cancel", cancelButton="Cancel",
+        dismissString="Cancel") == "Replace"
 
 
 def _ask_file(caption: str, file_filter: str, save: bool, folder: str = "") -> str | None:

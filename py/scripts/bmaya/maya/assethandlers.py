@@ -240,8 +240,10 @@ class AnimClipHandler(handlers.FileHandler):
         **context,
     ) -> AnimClip:
         """Reads the clip <name> from the folder at path into a JointClip file (joint_clip, or a file named
-        after the clip in a temporary folder that the next load of the same name overwrites)."""
-        name = _require_clip_name(name)
+        after the clip in a temporary folder that the next load of the same name overwrites). Any name that
+        names a file is accepted, so clips from other tools load too."""
+        if not name:
+            raise ValueError("Pass name, the clip's file name without .usd.")
         usd = self.usd_path(path, name)
         if not os.path.isfile(usd):
             raise FileNotFoundError(f"{path} has no clip {name!r}. It has: {', '.join(self.names(path)) or 'none'}.")

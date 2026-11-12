@@ -180,6 +180,7 @@ bmaya.maya.assettools.save_rig(rig_root)                                        
 - `build_rig` imports the skeleton into the asset's namespace and builds there. Then it loads what the variant has: its shape file, its model (imported into the same namespace) and, with the model, its weights. A namespace that already holds a rig is refused, so build a second variant into a new scene or another namespace.
 - Weights need each skinned mesh's `meshId`, which lives in the model file. Mark the meshes for skinning (`mark_meshes_for_skinning`, RigModules `setRigMeshId`) in the model scene, before `save_model`, so every build imports meshes that already carry their ids.
 - The shape, weight and rig saves fall back to a file or folder dialog only while the rig's asset folder doesn't exist.
+- The RigModules menu's clip tools (Capture Joint Clip, Capture Joint Pose, Pose From Joint Pose, Animate From Joint Clip) use USD clips. Capture asks for a clip name and saves it in the asset's `anims` folder (`save_joint_clip` for scripts), or asks for a `.usd` file while the asset folder doesn't exist. Pose and Animate open a file dialog in `anims` and pass the clip's `.rigdata.json` sidecar to the command when it has one. A clip with more than one pose can't be used by Pose From Joint Pose.
 
 ## Tests
 

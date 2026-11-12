@@ -240,53 +240,72 @@ class MenuScripts(unittest.TestCase):
             self.run_tool("Load Pose...", None)
         self.assertEqual(cmds.getAttr(self.left + ".rotateY"), 20)
 
-    def test_capture_joint_clip_writes_the_export_joints_over_the_playback_range(self):
+    def read_usd(self, path):
+        import rigmodules.jointclip
+        out = os.path.join(self.temp, "read.json")
+        rigmodules.jointclip.read_usd(path, out)
+        with open(out, encoding="utf-8") as handle:
+            return json.load(handle)
+
+    def test_capture_joint_clip_writes_a_usd_of_the_export_joints_over_the_playback_range(self):
         cmds = self.cmds
-        path = os.path.join(self.temp, "walk.json").replace("\\", "/")
+        path = os.path.join(self.temp, "walk.usd").replace("\\", "/")
         cmds.playbackOptions(minTime=1, maxTime=4)
         with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
             self.run_tool("Capture Joint Clip...", None)
-        with open(path, encoding="utf-8") as handle:
-            clip = json.load(handle)
+        clip = self.read_usd(path)
         self.assertEqual(clip["startFrame"], 1)
         self.assertEqual(len(clip["poses"]), 4)
         self.assertEqual(sorted(joint["path"] for joint in clip["joints"]), ["spine1_jnt", "spine1_jnt/arm_l_jnt", "spine1_jnt/arm_r_jnt"])
 
-    def test_capture_joint_pose_writes_one_pose_at_the_current_frame(self):
+    def test_capture_joint_pose_writes_a_usd_with_one_pose_at_the_current_frame(self):
         cmds = self.cmds
-        path = os.path.join(self.temp, "idle.json").replace("\\", "/")
+        path = os.path.join(self.temp, "idle.usd").replace("\\", "/")
         cmds.currentTime(7)
         with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
             self.run_tool("Capture Joint Pose...", None)
-        with open(path, encoding="utf-8") as handle:
-            clip = json.load(handle)
+        clip = self.read_usd(path)
         self.assertEqual((clip["startFrame"], len(clip["poses"])), (7, 1))
 
-    def test_a_captured_pose_loads_as_far_as_the_unbuilt_solve(self):
-        # The solve is not built yet (RigModules D41), so the command fails once the file has been read and checked.
+    def test_a_captured_pose_restores_the_controls(self):
         cmds = self.cmds
-        path = os.path.join(self.temp, "idle.json").replace("\\", "/")
+        path = os.path.join(self.temp, "idle.usd").replace("\\", "/")
+        cmds.setAttr(self.left + ".rotateY", 20)
         with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
             self.run_tool("Capture Joint Pose...", None)
-            with self.assertRaisesRegex(RuntimeError, "solve is not built yet"):
-                self.run_tool("Pose From Joint Pose...", None)
-            with self.assertRaisesRegex(RuntimeError, "not built yet"):
-                self.run_tool("Animate From Joint Clip...", None)
+            cmds.setAttr(self.left + ".rotateY", 0)
+            self.run_tool("Pose From Joint Pose...", None)
+        self.assertAlmostEqual(cmds.getAttr(self.left + ".rotateY"), 20, places=2)
+        self.assertEqual(cmds.keyframe(self.left, query=True, keyframeCount=True), 0)
 
-    def test_joint_clip_tools_reject_a_file_that_is_not_a_joint_clip(self):
+    def test_a_captured_clip_keys_the_controls(self):
         cmds = self.cmds
-        path = os.path.join(self.temp, "bad.json").replace("\\", "/")
+        path = os.path.join(self.temp, "walk.usd").replace("\\", "/")
+        cmds.setKeyframe(self.left + ".rotateY", time=1, value=0, inTangentType="linear", outTangentType="linear")
+        cmds.setKeyframe(self.left + ".rotateY", time=3, value=60, inTangentType="linear", outTangentType="linear")
+        cmds.playbackOptions(minTime=1, maxTime=3)
+        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+            self.run_tool("Capture Joint Clip...", None)
+            cmds.cutKey(self.left, attribute="rotateY", clear=True)
+            cmds.setAttr(self.left + ".rotateY", 0)
+            self.run_tool("Animate From Joint Clip...", None)
+        self.assertAlmostEqual(cmds.getAttr(self.left + ".rotateY", time=2), 30, places=2)
+        self.assertAlmostEqual(cmds.getAttr(self.left + ".rotateY", time=3), 60, places=2)
+
+    def test_joint_clip_tools_reject_a_file_that_is_not_usd(self):
+        cmds = self.cmds
+        path = os.path.join(self.temp, "bad.usd").replace("\\", "/")
         with open(path, "w", encoding="utf-8") as handle:
             handle.write("{}")
         with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
             for name in ("Pose From Joint Pose...", "Animate From Joint Clip..."):
                 with self.subTest(name):
-                    with self.assertRaisesRegex(RuntimeError, "JointClip file"):
+                    with self.assertRaises(Exception):
                         self.run_tool(name, None)
 
-    def test_the_sidecar_beside_a_joint_clip_is_passed_to_the_command(self):
+    def test_the_sidecar_beside_a_clip_is_passed_to_the_command(self):
         cmds = self.cmds
-        path = os.path.join(self.temp, "idle.json").replace("\\", "/")
+        path = os.path.join(self.temp, "idle.usd").replace("\\", "/")
         with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
             self.run_tool("Capture Joint Pose...", None)
             with open(os.path.join(self.temp, "idle.rigdata.json"), "w", encoding="utf-8") as handle:

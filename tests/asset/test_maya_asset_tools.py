@@ -238,6 +238,19 @@ class AssetTools(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not a pose name"):
             self.tools.save_pose(HERO, "a/b", ["hero:spine1_ctrl_c"])
 
+    def test_capture_joint_clip_names_a_usd_in_the_assets_anims_folder(self):
+        cmds = self.cmds
+        rig_root = self.build_outside_the_asset(HERO)
+        cmds.playbackOptions(minTime=1, maxTime=3)
+        with mock.patch.object(self.tools.bmaya.maya.activerig, "get_active_rig",
+                               return_value=mock.Mock(rig_root=rig_root, asset_id=HERO)), \
+                mock.patch.object(self.tools, "_ask_text", return_value="walk"), \
+                mock.patch.object(cmds, "fileDialog2") as dialog:
+            path = self.tools.capture_joint_clip_ui()
+        dialog.assert_not_called()
+        self.assertEqual(path, os.path.join(self.hero.path("anims"), "walk.usd"))
+        self.assertTrue(os.path.isfile(path))
+
     def test_load_pose_dialog_opens_in_the_poses_folder(self):
         cmds = self.cmds
         self.build_outside_the_asset(HERO)
