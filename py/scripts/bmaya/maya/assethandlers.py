@@ -1,8 +1,8 @@
 """Maya save and load handlers for asset file types (bmaya.asset.handlers).
 
-Only formats that exist get a handler: Maya scenes, RigModules templates, shape files, skin weights and
-animation clips (FBX, RigModules D42). Other file types (textures, shaders, postops, controlposes, sources) have none yet, so saving or loading
-them raises NotImplementedError until one is written.
+Only formats that exist get a handler: Maya scenes, RigModules templates, shape files, skin weights, control
+poses and animations (ControlPose and ControlAnim files) and animation clips (FBX, RigModules D42). Other file types
+(textures, shaders, postops) have none yet, so saving or loading them raises NotImplementedError until one is written.
 
 Call register() once per session before handlers.save / handlers.load.
 
@@ -35,7 +35,7 @@ import rigmodules.template
 
 import bmaya.core.log
 
-from bmaya.asset import handlers, sourcecontrol, versions
+from bmaya.asset import animproperties, handlers, sourcecontrol, versions
 from bmaya.asset.asset import Asset
 
 MAYA_FILE_TYPES = ("skeleton", "model", "rig")
@@ -165,6 +165,7 @@ class AnimClip:
     fbx: str                 # the clip's FBX file
     joint_clip: str          # the JointClip file read from it, a temporary: cmds.animateRigFromJointClip(jointClip=...)
     sidecar: str | None      # the ControlAnim beside the FBX (<name>.anim.json), or None: animateRigFromJointClip(sidecar=...)
+    properties: animproperties.AnimProperties | None   # the engine properties beside the FBX, or None
 
 
 class AnimClipHandler(handlers.FileHandler):
@@ -173,6 +174,8 @@ class AnimClipHandler(handlers.FileHandler):
     because an export is a bundle: the engine properties go beside it, and so does the control animation it was made
     from, <name>.anim.json, written when a clip is captured from a rig. That ControlAnim is the sidecar of a restore:
     it gives back what joints can't (spaces, blends, Layout controls) with the animator's own keys.
+    The engine properties are <name>.animproperties.json (bmaya.asset.animproperties): a clip captured from a rig
+    gets the defaults when it has none, and an existing file is never overwritten by a re-export.
     A bone map, <name>.bonemap.json beside an FBX, gives a file from another tool its joint markup."""
 
     @staticmethod
@@ -205,12 +208,15 @@ class AnimClipHandler(handlers.FileHandler):
         start_frame: int | None = None,
         end_frame: int | None = None,
         own_folder: bool = True,
+        properties: animproperties.AnimProperties | None = None,
         **context,
     ) -> str:
         """Writes the clip <name> into the exports folder at path from a JointClip file (joint_clip), or captured
         from the rig's export joints over start_frame to end_frame (rig_root). own_folder=False writes
         <path>/<name>.fbx itself, for a file the user chose. Returns the FBX path. Nothing is written when an
-        argument is wrong. A clip captured from a rig also gets its ControlAnim beside it."""
+        argument is wrong. A clip captured from a rig also gets its ControlAnim beside it. properties are written
+        as the clip's engine properties (replacing a file there). Without them an export folder's clip gets the
+        defaults when it has no file, and an existing file is kept. A file chosen in a dialog gets none."""
         name = _require_clip_name(name)
         if (joint_clip is None) == (rig_root is None):
             raise ValueError("Pass joint_clip (a JointClip file), or rig_root with start_frame and end_frame.")
@@ -228,6 +234,9 @@ class AnimClipHandler(handlers.FileHandler):
             fbx = self.fbx_path(path, name, own_folder)
             os.makedirs(os.path.dirname(fbx), exist_ok=True)
             rigmodules.jointclip.write_fbx(joint_clip, fbx)
+            properties_path = animproperties.get_path(fbx)
+            if properties is not None or (own_folder and not os.path.exists(properties_path)):
+                animproperties.write(properties_path, properties or animproperties.AnimProperties())
             if captured:
                 cmds.saveRigAnimation(
                     rig_root, file=self.control_anim_path(fbx).replace("\\", "/"), startFrame=start_frame, endFrame=end_frame)
@@ -264,7 +273,126 @@ class AnimClipHandler(handlers.FileHandler):
             bone_map = self.bone_map_path(fbx)
         rigmodules.jointclip.read_fbx(fbx, joint_clip, bone_map)
         control_anim = self.control_anim_path(fbx)
-        return AnimClip(name, fbx, joint_clip, control_anim if os.path.isfile(control_anim) else None)
+        properties = animproperties.get_path(fbx)
+        return AnimClip(
+            name, fbx, joint_clip, control_anim if os.path.isfile(control_anim) else None,
+            animproperties.read(properties) if os.path.isfile(properties) else None)
+
+
+class ControlDataHandler(handlers.FileHandler):
+    """A folder of control data files, <name>.json (RigModules D42): ControlPoses in controlposes and ControlAnims in
+    controlanims. Control data is bound to a rig's controls by markup, so a file works on any rig of the asset's
+    skeleton. A subclass names the commands and what its file is called (kind). The scope is a rig root, or controls
+    of one rig."""
+
+    kind = "control data"
+
+    def _write(self, scope: list[str], file: str, **context) -> None:
+        raise NotImplementedError
+
+    def _read(self, scope: list[str], file: str, **context) -> list[str]:
+        raise NotImplementedError
+
+    @staticmethod
+    def file_path(folder: str, name: str) -> str:
+        return os.path.join(folder, name + ".json")
+
+    @staticmethod
+    def names(folder: str) -> list[str]:
+        """The files in a control data folder, sorted."""
+        return sorted(os.path.splitext(os.path.basename(path))[0] for path in glob.glob(os.path.join(folder, "*.json")))
+
+    def save(self, asset: Asset | None, path: str, name: str | None = None, scope: list[str] | None = None, **context) -> str:
+        """Writes <path>/<name>.json from the controls in scope. Returns the file."""
+        file = self.file_path(path, _require_clip_name(name, self.kind))
+        if not scope:
+            raise ValueError("Pass scope: a rig root, or controls of one rig.")
+        os.makedirs(path, exist_ok=True)
+        self._write(scope, file.replace("\\", "/"), **context)
+        return file
+
+    def load(self, asset: Asset | None, path: str, name: str | None = None, scope: list[str] | None = None, **context) -> list[str]:
+        """Loads <path>/<name>.json onto the controls in scope. Returns the controls the command changed."""
+        file = self.file_path(path, name or "")
+        if not name or not os.path.isfile(file):
+            raise FileNotFoundError(f"{path} has no file {name!r}. It has: {', '.join(self.names(path)) or 'none'}.")
+        if not scope:
+            raise ValueError("Pass scope: a rig root, or controls of one rig.")
+        return self._read(scope, file.replace("\\", "/"), **context) or []
+
+
+class ControlPoseHandler(ControlDataHandler):
+    """ControlPoses (cmds.saveRigPose, cmds.loadRigPose)."""
+
+    kind = "pose"
+
+    def _write(self, scope: list[str], file: str, **context) -> None:
+        cmds.saveRigPose(*scope, file=file)
+
+    def _read(self, scope: list[str], file: str, **context) -> list[str]:
+        return cmds.loadRigPose(*scope, file=file)
+
+
+class ControlAnimHandler(ControlDataHandler):
+    """ControlAnims (cmds.saveRigAnimation, cmds.loadRigAnimation). Save takes start_frame and end_frame, load takes
+    offset and mirror."""
+
+    kind = "animation"
+
+    def _write(self, scope: list[str], file: str, start_frame: int | None = None, end_frame: int | None = None, **context) -> None:
+        if start_frame is None or end_frame is None:
+            raise ValueError("A ControlAnim needs start_frame and end_frame.")
+        cmds.saveRigAnimation(*scope, file=file, startFrame=start_frame, endFrame=end_frame)
+
+    def _read(self, scope: list[str], file: str, offset: int = 0, mirror: bool = False, **context) -> list[str]:
+        return cmds.loadRigAnimation(*scope, file=file, offset=offset, mirror=mirror)
+
+
+class SourceClipHandler(AnimClipHandler):
+    """Skeleton data brought in from other tools (a mocap take, a vendor skeleton) in the asset's sources folder.
+    It loads like a clip, with the bone map beside the FBX, and never saves: the files come from outside."""
+
+    def save(self, asset: Asset | None, path: str, **context) -> None:
+        raise NotImplementedError("Sources are brought in from other tools: copy the FBX (and its bone map) into the sources folder.")
+
+
+def save_control_file(handler: ControlDataHandler, asset: Asset, folder_type: str, name: str, **context) -> str:
+    """Saves a control data file of an asset through its handler, as save_anim_clip saves a clip: versions and checks
+    out only that file first, and adds a new one to source control. Returns the file."""
+    folder = asset.path(folder_type)
+    file = handler.file_path(folder, _require_clip_name(name, handler.kind))
+    existing = os.path.exists(file)
+    if existing:
+        versions.version(file, asset.root)
+        sourcecontrol.current().checkout(file)
+    handler.save(asset, folder, name=name, **context)
+    if not existing:
+        sourcecontrol.current().add(file)
+    return file
+
+
+def save_skeleton_export(asset: Asset, rig_root: str) -> tuple[str, str]:
+    """Writes the engine's skeleton asset source into the asset's exports folder: <name>_skeleton.fbx, the rig's
+    export joints at rest, and <name>_skeleton.bonemap.json beside it, with the asset's id and its skeleton's id
+    (RigModules D42). Existing files are versioned first. Returns the FBX and the bone map."""
+    fbx = get_skeleton_export_path(asset)
+    bone_map = AnimClipHandler.bone_map_path(fbx)
+    existing = [path for path in (fbx, bone_map) if os.path.exists(path)]
+    for path in existing:
+        versions.version(path, asset.root)
+        sourcecontrol.current().checkout(path)
+    os.makedirs(os.path.dirname(fbx), exist_ok=True)
+    rigmodules.jointclip.write_skeleton_fbx(rig_root, asset.skeleton, fbx, bone_map)
+    for path in (fbx, bone_map):
+        if path not in existing:
+            sourcecontrol.current().add(path)
+    return fbx, bone_map
+
+
+def get_skeleton_export_path(asset: Asset) -> str:
+    """Where the asset's skeleton export FBX is, or will be. It sits in the exports folder itself, so it is not a
+    clip (clips are folders)."""
+    return os.path.join(asset.path("exports"), f"{asset.name}_skeleton.fbx")
 
 
 def save_anim_clip(asset: Asset, name: str, **context) -> str:
@@ -293,9 +421,9 @@ def _require_namespace(namespace: str | None) -> str:
     return namespace
 
 
-def _require_clip_name(name: str | None) -> str:
+def _require_clip_name(name: str | None, kind: str = "clip") -> str:
     if not name or not CLIP_NAME.match(name):
-        raise ValueError(f"{name!r} is not a clip name: use letters, digits, spaces, '_' and '-'.")
+        raise ValueError(f"{name!r} is not a {kind} name: use letters, digits, spaces, '_' and '-'.")
     return name
 
 
@@ -313,3 +441,6 @@ def register() -> None:
     handlers.register("weights", RigSkinWeightsHandler())
     handlers.register("template", RigTemplateHandler())
     handlers.register("exports", AnimClipHandler())
+    handlers.register("sources", SourceClipHandler())
+    handlers.register("controlposes", ControlPoseHandler())
+    handlers.register("controlanims", ControlAnimHandler())

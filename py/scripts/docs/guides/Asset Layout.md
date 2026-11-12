@@ -30,7 +30,7 @@ shooter|main|characters|hero   ->   <RIGGING_PROJECT_DIR>\shooter\main\character
   characters\hero\
     asset.json                    type and skeleton only
     skeleton\hero_skeleton.ma     shared by every variant
-    controlposes\  exports\  sources\
+    controlposes\  controlanims\  exports\  sources\
     variants\game\                a variant: a folder with a template.json
       template.json  shapes.json  postops.py
       model\hero_game_model.ma
@@ -142,7 +142,9 @@ Where a file lives is kept apart from how it is read. `bmaya.asset.handlers` dis
 | `shapes` | RigModules `saveRigControlShapes` / `loadRigControlShapes`. Pass `rig_root=` |
 | `weights` | One RigModules weight file per skinned mesh in `namespace=`, named after the mesh (`box_geo.json`). Save fails on a skinned mesh without a `meshId`, and removes a file left from a mesh's old name. Load matches each file to a mesh by the `meshId` inside it, never by name, skips a file whose mesh isn't in the scene with a warning, and is one undo step |
 | `template` | Save copies the template file passed as `source=`, and fails unless its `rigName` is the variant. Load returns the template's path |
-| `exports` | One clip per `name=` in the asset's `exports` folder, in a folder of its own: `exports/<name>/<name>.fbx`, written and read through `rigmodules.jointclip` (RigModules D42). A bone map `<name>.bonemap.json` beside an FBX gives a file from another tool its joint markup when it loads. Save takes `joint_clip=` (a RigModules JointClip file) or `rig_root=` with `start_frame=` and `end_frame=` (captures the rig's export joints). A clip captured from a rig also gets its ControlAnim beside it, `<name>.anim.json` (`cmds.saveRigAnimation`). Load returns an `AnimClip` (`name`, `fbx`, `joint_clip`, `sidecar`): `joint_clip` is a temporary file for `cmds.animateRigFromJointClip(jointClip=...)`, and `sidecar` is the ControlAnim beside the FBX, or `None`, for its `sidecar=` flag, so a restore gets back what joints can't give, with the animator's own keys. Use `assethandlers.save_anim_clip(asset, name, ...)` to save: it versions only that clip's FBX, where `handlers.save` copies the whole `exports` folder |
+| `exports` | One clip per `name=` in the asset's `exports` folder, in a folder of its own: `exports/<name>/<name>.fbx`, written and read through `rigmodules.jointclip` (RigModules D42). A bone map `<name>.bonemap.json` beside an FBX gives a file from another tool its joint markup when it loads. Save takes `joint_clip=` (a RigModules JointClip file) or `rig_root=` with `start_frame=` and `end_frame=` (captures the rig's export joints). A clip captured from a rig also gets its ControlAnim beside it, `<name>.anim.json` (`cmds.saveRigAnimation`), and the engine properties `<name>.animproperties.json` (`bmaya.asset.animproperties`: `loop`, `rootMotion`, `additive` of `none`, `local` or `mesh`, `events` and engine float `curves`). Save writes the defaults when the file is missing, keeps an existing one, and replaces it when given `properties=`. A file chosen in a dialog gets no properties. Load returns an `AnimClip` (`name`, `fbx`, `joint_clip`, `sidecar`, `properties`): `joint_clip` is a temporary file for `cmds.animateRigFromJointClip(jointClip=...)`, and `sidecar` is the ControlAnim beside the FBX, or `None`, for its `sidecar=` flag, so a restore gets back what joints can't give, with the animator's own keys. Use `assethandlers.save_anim_clip(asset, name, ...)` to save: it versions only that clip's FBX, where `handlers.save` copies the whole `exports` folder |
+| `sources` | Skeleton data brought in from other tools (a mocap take, a vendor skeleton): `<name>.fbx` in the `sources` folder, with its bone map `<name>.bonemap.json` beside it. Load works like `exports` and returns an `AnimClip`. Save raises, because the files come from outside |
+| `controlposes`, `controlanims` | RigModules ControlPose and ControlAnim files, `<name>.json` in the folder (`cmds.saveRigPose` / `loadRigPose`, `cmds.saveRigAnimation` / `loadRigAnimation`). Pass `scope=` (a rig root, or controls of one rig). Save takes `start_frame=` and `end_frame=` for an animation, load takes `offset=` and `mirror=`. `assethandlers.save_control_file` saves one with a local version of the old file first |
 
 ```python
 from bmaya.asset import Asset, handlers
@@ -158,7 +160,7 @@ clip = handlers.load(hero, "exports", name="walk")
 cmds.animateRigFromJointClip("hero:rigRootModule1", jointClip=clip.joint_clip)
 ```
 
-Textures, shaders, postops, sources and controlposes have no handler yet. Control poses are saved by `bmaya.maya.assettools.save_pose`.
+Textures, shaders and postops have no handler yet. `bmaya.maya.assettools.save_pose` and `save_animation` save control data through the handlers, `save_skeleton_export` writes the skeleton asset source into `exports` (`<name>_skeleton.fbx` and `<name>_skeleton.bonemap.json`, with the asset id and its skeleton's id; it sits in the folder itself, so it is not a clip), and `check_clip_skeleton` compares a clip with it by joint names and parents.
 
 ## Tools
 
@@ -180,6 +182,7 @@ bmaya.maya.assettools.save_rig(rig_root)                                        
 - `build_rig` imports the skeleton into the asset's namespace and builds there. Then it loads what the variant has: its shape file, its model (imported into the same namespace) and, with the model, its weights. A namespace that already holds a rig is refused, so build a second variant into a new scene or another namespace.
 - Weights need each skinned mesh's `meshId`, which lives in the model file. Mark the meshes for skinning (`mark_meshes_for_skinning`, RigModules `setRigMeshId`) in the model scene, before `save_model`, so every build imports meshes that already carry their ids.
 - The shape, weight and rig saves fall back to a file or folder dialog only while the rig's asset folder doesn't exist.
+- The RigModules menu's pose submenu also has Save Animation, Load Animation and Load Animation Mirrored: they act on the selected controls, or the whole active rig, save over the playback range into `controlanims` under a name typed in a dialog (a file dialog before the asset exists), and load from a dialog that opens there. The clip submenu has Save Skeleton Export (needs the asset's folder), Check Clip Against Skeleton (an FBX against the skeleton export, naming every joint that differs) and Edit Clip Properties (loop, root motion and additive type of a clip's `animproperties` in a small dialog, keeping its events and curves).
 - The RigModules menu's clip tools (Capture Joint Clip, Capture Joint Pose, Pose From Joint Pose, Animate From Joint Clip) use FBX clips. Capture asks for a clip name and saves it in the asset's `exports` folder (`save_joint_clip` for scripts), or asks for a `.fbx` file while the asset folder doesn't exist. Pose and Animate open a file dialog in `exports`, and use the bone map beside the FBX when it has one. Animate also passes the ControlAnim beside the FBX as the sidecar. A clip with more than one pose can't be used by Pose From Joint Pose.
 
 ## Tests

@@ -35,6 +35,7 @@ DEFAULT_PROJECT = {
         "rig": {"path": "variants/{variant}/{name}_{variant}_rig.ma"},
         "publish": {"path": "variants/{variant}/publish", "folder": True},
         "controlposes": {"path": "controlposes", "folder": True},
+        "controlanims": {"path": "controlanims", "folder": True},
         "exports": {"path": "exports", "folder": True},
         "sources": {"path": "sources", "folder": True},
     },

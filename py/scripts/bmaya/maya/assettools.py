@@ -14,8 +14,8 @@ The functions at the top take everything as arguments, so batch jobs and other t
 
 from __future__ import annotations
 
+import dataclasses
 import os
-import re
 
 import maya.cmds as cmds
 import rigmodules.displaylayers
@@ -25,9 +25,8 @@ import rigmodules.skinweights
 import rigmodules.template
 
 import bmaya.asset
+import bmaya.asset.animproperties
 import bmaya.asset.handlers
-import bmaya.asset.sourcecontrol
-import bmaya.asset.versions
 import bmaya.core.log
 import bmaya.maya.activerig
 import bmaya.maya.assethandlers
@@ -37,8 +36,8 @@ SCENE_FILTER = "Maya ASCII (*.ma)"
 SHAPES_FILTER = "Shape files (*.json)"
 TEMPLATE_FILTER = "Rig templates (*.json)"
 POSE_FILTER = "Pose files (*.json)"
+ANIMATION_FILTER = "Animation files (*.json)"
 CLIP_FILTER = "FBX clips (*.fbx)"
-POSE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_ -]*$")
 
 
 def find_asset(asset_id: str) -> bmaya.asset.Asset | None:
@@ -184,22 +183,57 @@ def load_control_shapes(node: str) -> str | None:
 
 
 def save_pose(asset_id: str, name: str, scope: list[str]) -> str:
-    """Saves the pose of scope (a rig root, or controls of one rig) as poses/<name>.json in the asset's poses
-    folder, which every variant of the asset shares. An existing file is versioned first. Returns the path."""
+    """Saves the pose of scope (a rig root, or controls of one rig) as controlposes/<name>.json in the asset's
+    controlposes folder, which every variant of the asset shares. An existing file is versioned first. Returns the
+    path."""
     asset = require_asset(asset_id)
-    if not POSE_NAME.match(name):
-        raise ValueError(f"{name!r} is not a pose name: use letters, digits, spaces, '_' and '-'.")
-    path = os.path.join(asset.path("controlposes"), name + ".json")
-    existed = os.path.exists(path)
-    if existed:
-        bmaya.asset.versions.version(path, asset.root)
-        bmaya.asset.sourcecontrol.current().checkout(path)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    cmds.saveRigPose(*scope, file=path.replace("\\", "/"))
-    if not existed:
-        bmaya.asset.sourcecontrol.current().add(path)
+    path = bmaya.maya.assethandlers.save_control_file(
+        bmaya.maya.assethandlers.ControlPoseHandler(), asset, "controlposes", name, scope=scope)
     bmaya.core.log.info(f"Saved pose {name!r} of {asset.id}: {path}")
     return path
+
+
+def save_animation(asset_id: str, name: str, scope: list[str], start_frame: int, end_frame: int) -> str:
+    """Saves the keys of scope (a rig root, or controls of one rig) over start_frame to end_frame as
+    controlanims/<name>.json in the asset's controlanims folder (a ControlAnim, RigModules D42). An existing file is
+    versioned first. Returns the path."""
+    asset = require_asset(asset_id)
+    path = bmaya.maya.assethandlers.save_control_file(
+        bmaya.maya.assethandlers.ControlAnimHandler(), asset, "controlanims", name,
+        scope=scope, start_frame=start_frame, end_frame=end_frame)
+    bmaya.core.log.info(f"Saved animation {name!r} of {asset.id} on frames {start_frame} to {end_frame}: {path}")
+    return path
+
+
+def save_skeleton_export(asset_id: str, rig_root: str) -> tuple[str, str]:
+    """Writes the asset's skeleton export, the skeleton asset source for the engine, and its bone map into the
+    asset's exports folder. Returns the FBX and the bone map."""
+    asset = require_asset(asset_id)
+    fbx, bone_map = bmaya.maya.assethandlers.save_skeleton_export(asset, rig_root)
+    bmaya.core.log.info(f"Saved the skeleton export of {asset.id}: {fbx}")
+    return fbx, bone_map
+
+
+def check_clip_skeleton(asset_id: str, fbx: str) -> None:
+    """Checks that the animation FBX has the joint names and parents of the asset's skeleton export. Raises
+    FileNotFoundError when the asset has no skeleton export, and ValueError naming every joint that differs."""
+    asset = require_asset(asset_id)
+    skeleton = bmaya.maya.assethandlers.get_skeleton_export_path(asset)
+    if not os.path.isfile(skeleton):
+        raise FileNotFoundError(f"{asset.id} has no skeleton export at {skeleton}. Save it with Save Skeleton Export first.")
+    rigmodules.jointclip.check_skeleton_match(fbx, skeleton)
+    bmaya.core.log.info(f"{fbx} matches the skeleton of {asset.id}.")
+
+
+def set_clip_properties(fbx: str, **changes) -> bmaya.asset.animproperties.AnimProperties:
+    """Changes fields of the engine properties beside the clip's FBX (loop, root_motion, additive, events, curves),
+    starting from the defaults when it has none. Returns the new properties."""
+    path = bmaya.asset.animproperties.get_path(fbx)
+    current = bmaya.asset.animproperties.read(path) if os.path.isfile(path) else bmaya.asset.animproperties.AnimProperties()
+    properties = dataclasses.replace(current, **changes)
+    bmaya.asset.animproperties.write(path, properties)
+    bmaya.core.log.info(f"Saved the clip properties: {path}")
+    return properties
 
 
 def save_skin_weights(node: str) -> list[str] | None:
@@ -354,6 +388,43 @@ def load_pose_ui() -> str | None:
     return path
 
 
+def save_animation_ui() -> str | None:
+    """Saves the keys of the selected controls, or of the whole active rig, over the playback range, under a name
+    typed in a dialog, in the asset's controlanims folder. Before the asset's folder exists, asks for a file
+    instead. Returns the path, or None when cancelled."""
+    scope = bmaya.maya.posetools.get_scope()
+    start = int(cmds.playbackOptions(query=True, minTime=True))
+    end = int(cmds.playbackOptions(query=True, maxTime=True))
+    asset = find_asset(rigmodules.query.get_rig_info(scope[0]).asset_id)
+    if asset is None:
+        path = _ask_file("Save Animation", ANIMATION_FILTER, save=True)
+        if path:
+            cmds.saveRigAnimation(*scope, file=_command_path(path), startFrame=start, endFrame=end)
+        return path
+
+    name = _ask_text("Save Animation", f"Animation name, saved in the controlanims folder of {asset.id}:", "")
+    if not name:
+        return None
+    existing = bmaya.maya.assethandlers.ControlAnimHandler.file_path(asset.path("controlanims"), name)
+    if os.path.exists(existing) and not _confirm_replace("Save Animation", f"Animation {name!r}"):
+        return None
+    return save_animation(asset.id, name, scope, start, end)
+
+
+def load_animation_ui(mirror: bool = False) -> str | None:
+    """Loads an animation file chosen in a dialog that opens in the asset's controlanims folder onto the selected
+    controls or the whole active rig, keys at the frames they were saved on. mirror puts the Left side's keys on the
+    Right and the Right's on the Left. Returns the path, or None when cancelled."""
+    scope = bmaya.maya.posetools.get_scope()
+    asset = find_asset(rigmodules.query.get_rig_info(scope[0]).asset_id)
+    folder = asset.path("controlanims") if asset else ""
+    path = _ask_file("Load Animation", ANIMATION_FILTER, save=False, folder=folder if os.path.isdir(folder) else "")
+    if path:
+        changed = cmds.loadRigAnimation(*scope, file=_command_path(path), mirror=mirror) or []
+        bmaya.core.log.info(f"Loaded the animation onto {len(changed)} control(s){' mirrored' if mirror else ''}: {path}")
+    return path
+
+
 def save_joint_clip(asset_id: str, name: str, rig_root: str, start_frame: int, end_frame: int) -> str:
     """Captures the rig's export joints over start_frame to end_frame into exports/<name>/<name>.fbx in the
     asset's folder, which every variant of the asset shares. An existing clip is versioned first. Returns the FBX
@@ -444,6 +515,45 @@ def _command_path(path: str) -> str:
     return path.replace("\\", "/")
 
 
+def save_skeleton_export_ui() -> str | None:
+    """Writes the active rig's skeleton export (the export joints at rest, as the skeleton asset source for the
+    engine, with its bone map) into its asset's exports folder. Needs the asset's folder. Returns the FBX path."""
+    rig = bmaya.maya.activerig.get_active_rig()
+    fbx, _ = save_skeleton_export(rig.asset_id, rig.rig_root)
+    return fbx
+
+
+def check_clip_skeleton_ui() -> str | None:
+    """Checks an animation FBX chosen in a dialog against the active rig's asset's skeleton export. Raises when the
+    joints differ, naming them. Returns the FBX path, or None when cancelled."""
+    rig = bmaya.maya.activerig.get_active_rig()
+    asset = find_asset(rig.asset_id)
+    folder = asset.path("exports") if asset else ""
+    path = _ask_file("Check Clip Against Skeleton", CLIP_FILTER, save=False, folder=folder if os.path.isdir(folder) else "")
+    if path:
+        check_clip_skeleton(rig.asset_id, path)
+    return path
+
+
+def edit_clip_properties_ui() -> str | None:
+    """Sets the engine properties of an exported clip: an FBX chosen in a dialog that opens in the active rig's
+    asset's exports folder, then loop, root motion and additive type in a small dialog. Events and curves are kept as
+    they are. Returns the FBX path, or None when cancelled."""
+    asset = find_asset(bmaya.maya.activerig.get_active_rig().asset_id)
+    folder = asset.path("exports") if asset else ""
+    path = _ask_file("Edit Clip Properties: pick the clip", CLIP_FILTER, save=False, folder=folder if os.path.isdir(folder) else "")
+    if not path:
+        return None
+    properties_path = bmaya.asset.animproperties.get_path(path)
+    current = (bmaya.asset.animproperties.read(properties_path) if os.path.isfile(properties_path)
+               else bmaya.asset.animproperties.AnimProperties())
+    changes = _ask_clip_properties(current)
+    if changes is None:
+        return None
+    set_clip_properties(path, **changes)
+    return path
+
+
 def save_skin_weights_ui() -> None:
     save_skin_weights(bmaya.maya.activerig.get_active_rig().rig_root)
 
@@ -496,6 +606,27 @@ def _choose(title: str, message: str, options: list[str]) -> str | None:
         cmds.button(label="Cancel", width=150, command=lambda *_: cmds.layoutDialog(dismiss="Cancel"))
 
     return picked["value"] if cmds.layoutDialog(title=title, uiScript=layout) == "OK" else None
+
+
+def _ask_clip_properties(current: bmaya.asset.animproperties.AnimProperties) -> dict | None:
+    """Loop, root motion and additive type, chosen in a dialog that starts at current's values. None when cancelled."""
+    picked = {"loop": current.loop, "root_motion": current.root_motion, "additive": current.additive}
+
+    def layout():
+        form = cmds.setParent(query=True)
+        cmds.formLayout(form, edit=True, width=320)
+        column = cmds.columnLayout(adjustableColumn=True, rowSpacing=8, columnAttach=("both", 10))
+        cmds.checkBox(label="Loop", value=current.loop, changeCommand=lambda value: picked.update(loop=bool(value)))
+        cmds.checkBox(label="Root motion", value=current.root_motion, changeCommand=lambda value: picked.update(root_motion=bool(value)))
+        menu = cmds.optionMenu(label="Additive", changeCommand=lambda value: picked.update(additive=value))
+        for option in bmaya.asset.animproperties.ADDITIVE_TYPES:
+            cmds.menuItem(label=option, parent=menu)
+        cmds.optionMenu(menu, edit=True, value=current.additive)
+        cmds.rowLayout(numberOfColumns=2, parent=column)
+        cmds.button(label="OK", width=150, command=lambda *_: cmds.layoutDialog(dismiss="OK"))
+        cmds.button(label="Cancel", width=150, command=lambda *_: cmds.layoutDialog(dismiss="Cancel"))
+
+    return picked if cmds.layoutDialog(title="Clip Properties", uiScript=layout) == "OK" else None
 
 
 def _confirm_replace(title: str, what: str) -> bool:

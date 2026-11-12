@@ -63,7 +63,7 @@ class MayaHandlers(unittest.TestCase):
         self.hero = Asset.create(HERO, "Character", root=self.root)
 
         assethandlers.register()
-        for file_type in assethandlers.MAYA_FILE_TYPES + ("shapes", "exports"):
+        for file_type in assethandlers.MAYA_FILE_TYPES + ("shapes", "exports", "sources", "controlposes", "controlanims"):
             self.addCleanup(handlers.unregister, file_type)
         cmds.file(new=True, force=True)
         cmds.currentUnit(time="ntsc")   # the clips here are 30 fps
@@ -194,7 +194,7 @@ class MayaHandlers(unittest.TestCase):
         fbx = self.assethandlers.save_anim_clip(self.hero, "rise", rig_root=rig_root, start_frame=1, end_frame=3)
         control_anim = os.path.join(os.path.dirname(fbx), "rise.anim.json")
         self.assertTrue(os.path.isfile(control_anim))
-        self.assertEqual(sorted(os.listdir(os.path.dirname(fbx))), ["rise.anim.json", "rise.fbx"])
+        self.assertEqual(sorted(os.listdir(os.path.dirname(fbx))), ["rise.anim.json", "rise.animproperties.json", "rise.fbx"])
 
         clip = self.handlers.load(self.hero, "exports", name="rise")
         self.assertEqual(clip.sidecar, control_anim)
@@ -207,10 +207,113 @@ class MayaHandlers(unittest.TestCase):
         self.handlers.save(self.hero, "exports", name="walk", joint_clip=self.write_joint_clip())
         self.assertIsNone(self.handlers.load(self.hero, "exports", name="walk").sidecar)
 
+    def test_an_export_gets_default_properties_and_a_re_export_keeps_edited_ones(self):
+        from bmaya.asset import animproperties
+        joint_clip = self.write_joint_clip()
+        self.handlers.save(self.hero, "exports", name="walk", joint_clip=joint_clip)
+        self.assertEqual(self.handlers.load(self.hero, "exports", name="walk").properties, animproperties.AnimProperties())
+
+        edited = animproperties.AnimProperties(loop=True, events=(animproperties.AnimEvent("footstep", 12.0),))
+        self.handlers.save(self.hero, "exports", name="walk", joint_clip=joint_clip, properties=edited)
+        self.assertEqual(self.handlers.load(self.hero, "exports", name="walk").properties, edited)
+
+        self.handlers.save(self.hero, "exports", name="walk", joint_clip=joint_clip)
+        self.assertEqual(self.handlers.load(self.hero, "exports", name="walk").properties, edited)
+
+    def test_a_clip_without_a_properties_file_has_none_and_a_bad_one_is_refused_on_load(self):
+        from bmaya.asset import animproperties
+        self.handlers.save(self.hero, "exports", name="walk", joint_clip=self.write_joint_clip())
+        path = animproperties.get_path(os.path.join(self.hero.path("exports"), "walk", "walk.fbx"))
+        os.remove(path)
+        self.assertIsNone(self.handlers.load(self.hero, "exports", name="walk").properties)
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write('{"formatVersion": 1}')
+        with self.assertRaises(animproperties.AnimPropertiesError):
+            self.handlers.load(self.hero, "exports", name="walk")
+
+    # ---- control data, sources and the skeleton export ---------------------------------------
+
+    def test_a_control_pose_saves_to_controlposes_and_loads_onto_the_rig(self):
+        cmds = self.cmds
+        rig_root = self.build_rig()
+        cmds.setAttr("hero:spine1_ctrl_c.translateY", 3)
+        path = self.assethandlers.save_control_file(
+            self.assethandlers.ControlPoseHandler(), self.hero, "controlposes", "idle", scope=[rig_root])
+        self.assertEqual(path, os.path.join(self.hero.path("controlposes"), "idle.json"))
+        self.assertEqual(self.assethandlers.ControlPoseHandler.names(self.hero.path("controlposes")), ["idle"])
+
+        cmds.setAttr("hero:spine1_ctrl_c.translateY", 0)
+        changed = self.handlers.load(self.hero, "controlposes", name="idle", scope=[rig_root])
+        self.assertIn("hero:spine1_ctrl_c", [c.lstrip(":") for c in changed])
+        self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateY"), 3)
+
+    def test_a_control_animation_saves_to_controlanims_and_loads_with_an_offset(self):
+        cmds = self.cmds
+        rig_root = self.build_rig()
+        cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=1, value=0)
+        cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=3, value=4)
+        path = self.assethandlers.save_control_file(
+            self.assethandlers.ControlAnimHandler(), self.hero, "controlanims", "rise", scope=[rig_root], start_frame=1, end_frame=3)
+        self.assertEqual(path, os.path.join(self.hero.path("controlanims"), "rise.json"))
+
+        cmds.cutKey("hero:spine1_ctrl_c", attribute="translateY", clear=True)
+        self.handlers.load(self.hero, "controlanims", name="rise", scope=[rig_root], offset=10)
+        self.assertEqual(cmds.keyframe("hero:spine1_ctrl_c.translateY", query=True, timeChange=True), [11, 13])
+        self.assertEqual(cmds.keyframe("hero:spine1_ctrl_c.translateY", query=True, valueChange=True), [0, 4])
+
+    def test_control_data_arguments_are_checked_before_anything_is_written(self):
+        rig_root = self.build_rig()
+        handler = self.assethandlers.ControlPoseHandler()
+        with self.assertRaisesRegex(ValueError, "not a pose name"):
+            self.assethandlers.save_control_file(handler, self.hero, "controlposes", "a/b", scope=[rig_root])
+        with self.assertRaisesRegex(ValueError, "scope"):
+            handler.save(self.hero, self.hero.path("controlposes"), name="idle")
+        with self.assertRaisesRegex(ValueError, "start_frame"):
+            self.assethandlers.ControlAnimHandler().save(self.hero, self.hero.path("controlanims"), name="x", scope=[rig_root])
+        self.assertFalse(os.path.exists(os.path.join(self.hero.path("controlposes"), "idle.json")))
+
+    def test_loading_control_data_that_is_not_there_names_the_files_that_are(self):
+        rig_root = self.build_rig()
+        self.assethandlers.save_control_file(
+            self.assethandlers.ControlPoseHandler(), self.hero, "controlposes", "idle", scope=[rig_root])
+        with self.assertRaisesRegex(FileNotFoundError, "idle"):
+            self.handlers.load(self.hero, "controlposes", name="walk", scope=[rig_root])
+
+    def test_the_new_file_types_are_in_a_new_projects_project_json(self):
+        for file_type in ("controlposes", "controlanims", "exports", "sources"):
+            self.assertTrue(self.hero.project.file_type(file_type).folder)
+
+    def test_a_source_loads_like_a_clip_and_is_never_saved(self):
+        sources = self.hero.path("sources")
+        os.makedirs(sources)
+        self.assethandlers.AnimClipHandler().save(
+            None, sources, name="take", joint_clip=self.write_joint_clip(), own_folder=False)
+        clip = self.handlers.load(self.hero, "sources", name="take")
+        self.assertEqual(clip.fbx, os.path.join(sources, "take.fbx"))
+        self.assertEqual(len(self.read_json(clip.joint_clip)["poses"]), 2)
+        with self.assertRaises(NotImplementedError):
+            self.handlers.save(self.hero, "sources", name="take", joint_clip=self.write_joint_clip())
+
+    def test_the_skeleton_export_is_an_fbx_and_a_bone_map_in_the_exports_folder_and_is_not_a_clip(self):
+        rig_root = self.build_rig()
+        fbx, bone_map = self.assethandlers.save_skeleton_export(self.hero, rig_root)
+        self.assertEqual(fbx, os.path.join(self.hero.path("exports"), "hero_skeleton.fbx"))
+        self.assertEqual(bone_map, os.path.join(self.hero.path("exports"), "hero_skeleton.bonemap.json"))
+        data = self.read_json(bone_map)
+        self.assertEqual((data["assetId"], data["skeletonId"]), (HERO, HERO))
+        self.assertEqual(sorted(data["joints"]), ["spine1_jnt", "spine2_jnt"])
+        self.assertEqual(self.assethandlers.AnimClipHandler.names(self.hero.path("exports")), [])
+
+        from bmaya.asset import versions
+        self.assethandlers.save_skeleton_export(self.hero, rig_root)
+        self.assertEqual(len(versions.list_versions(fbx, self.root)), 1, "a second export keeps the first as a version")
+        self.assertEqual(len(versions.list_versions(bone_map, self.root)), 1)
+
     def test_a_file_chosen_in_a_dialog_is_written_where_it_was_chosen(self):
         fbx = self.assethandlers.AnimClipHandler().save(
             None, self.root, name="chosen", joint_clip=self.write_joint_clip(), own_folder=False)
         self.assertEqual(fbx, os.path.join(self.root, "chosen.fbx"))
+        self.assertNotIn("chosen.animproperties.json", os.listdir(self.root), "a dialog's file gets no properties")
         clip = self.assethandlers.AnimClipHandler().load(None, self.root, name="chosen")
         self.assertEqual(clip.fbx, fbx)
 

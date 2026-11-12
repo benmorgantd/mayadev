@@ -335,6 +335,54 @@
             "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.capture_joint_pose_ui()\n",
             "icon": null,
             "enabled": true
+        },
+        {
+            "guid": "2d2b160a-9054-44ab-8664-150955ab187d",
+            "name": "Save Animation...",
+            "short_name": "Save Animation",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.save_animation_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "e176f47e-df15-415c-933c-28048ef096e9",
+            "name": "Load Animation...",
+            "short_name": "Load Animation",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.load_animation_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "eaf11b48-03ce-4f7e-837e-fdced3d3296f",
+            "name": "Load Animation Mirrored...",
+            "short_name": "Load Anim Mirrored",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.load_animation_ui(mirror=True)\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "765e6320-113b-49a8-b24c-202d2d2ccb6f",
+            "name": "Save Skeleton Export",
+            "short_name": "Skeleton Export",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.save_skeleton_export_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "edadd701-fa68-4b54-9263-9ba9636b439c",
+            "name": "Check Clip Against Skeleton...",
+            "short_name": "Check Clip",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.check_clip_skeleton_ui()\n",
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "guid": "d8faae93-fd7e-404b-93d6-516d9bc5a242",
+            "name": "Edit Clip Properties...",
+            "short_name": "Clip Properties",
+            "script": "import bmaya.maya.assettools\nbmaya.maya.assettools.edit_clip_properties_ui()\n",
+            "icon": null,
+            "enabled": true
         }
     ]
 }

@@ -72,7 +72,7 @@ class MenuLayout(unittest.TestCase):
     def test_every_registry_tool_is_in_the_menu_once(self):
         guids = [i["guid"] for i in _walk(_load("rigmodules_menu.json")["items"]) if i["type"] == "tool"]
         self.assertEqual(len(guids), len(set(guids)))
-        self.assertEqual(len(guids), 35)
+        self.assertEqual(len(guids), 41)
 
     def test_every_script_compiles(self):
         for name, tool in _menu_tools().items():
@@ -258,15 +258,15 @@ class MenuScripts(unittest.TestCase):
         self.assertEqual(len(clip["poses"]), 4)
         self.assertEqual(sorted(joint["path"] for joint in clip["joints"]), ["spine1_jnt", "spine1_jnt/arm_l_jnt", "spine1_jnt/arm_r_jnt"])
 
-    def test_capture_joint_pose_writes_an_fbx_with_one_static_pose(self):
+    def test_capture_joint_pose_writes_an_fbx_with_one_frame(self):
         cmds = self.cmds
         path = os.path.join(self.temp, "idle.fbx").replace("\\", "/")
         cmds.currentTime(7)
         with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
             self.run_tool("Capture Joint Pose...", None)
         clip = self.read_fbx(path)
-        # an FBX with no animation has no frame number: the pose reads back at frame 1
-        self.assertEqual((clip["startFrame"], len(clip["poses"])), (1, 1))
+        # a pose is a one-frame animation (RigModules D42), so it keeps the frame it was captured on
+        self.assertEqual((clip["startFrame"], len(clip["poses"])), (7, 1))
 
     def test_a_captured_pose_restores_the_controls(self):
         cmds = self.cmds
@@ -304,12 +304,65 @@ class MenuScripts(unittest.TestCase):
                     with self.assertRaises(Exception):
                         self.run_tool(name, None)
 
+    def test_save_and_load_animation_through_the_file_dialog(self):
+        cmds = self.cmds
+        path = os.path.join(self.temp, "anim.json").replace("\\", "/")
+        cmds.setKeyframe(self.left + ".rotateY", time=1, value=0)
+        cmds.setKeyframe(self.left + ".rotateY", time=3, value=60)
+        cmds.playbackOptions(minTime=1, maxTime=3)
+        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+            self.run_tool("Save Animation...", None)
+            self.assertTrue(os.path.isfile(path))
+            cmds.cutKey(self.left, attribute="rotateY", clear=True)
+            self.run_tool("Load Animation...", None)
+        self.assertEqual(cmds.keyframe(self.left + ".rotateY", query=True, timeChange=True), [1, 3])
+        self.assertAlmostEqual(cmds.getAttr(self.left + ".rotateY", time=3), 60, places=3)
+        self.assertEqual(cmds.keyframe(self.right + ".rotateY", query=True, keyframeCount=True), 0)
+
+    def test_load_animation_mirrored_puts_the_left_keys_on_the_right(self):
+        cmds = self.cmds
+        path = os.path.join(self.temp, "anim.json").replace("\\", "/")
+        cmds.setKeyframe(self.left + ".rotateY", time=1, value=20)
+        cmds.playbackOptions(minTime=1, maxTime=1)
+        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+            self.run_tool("Save Animation...", None)
+            cmds.cutKey(self.left, attribute="rotateY", clear=True)
+            self.run_tool("Load Animation Mirrored...", None)
+        self.assertEqual(cmds.keyframe(self.right + ".rotateY", query=True, keyframeCount=True), 1)
+        self.assertEqual(cmds.keyframe(self.left + ".rotateY", query=True, keyframeCount=True), 0)
+
+    def test_the_skeleton_and_clip_tools_need_the_assets_folder(self):
+        import bmaya.asset
+        import bmaya.maya.assettools
+        cmds = self.cmds
+        path = os.path.join(self.temp, "walk.fbx").replace("\\", "/")
+        with mock.patch.object(bmaya.maya.assettools, "find_asset", return_value=None),                 mock.patch.object(bmaya.asset.Asset, "exists", return_value=False),                 mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+            for name in ("Save Skeleton Export", "Check Clip Against Skeleton..."):
+                with self.subTest(name):
+                    with self.assertRaisesRegex(bmaya.asset.AssetError, "New Asset"):
+                        self.run_tool(name, None)
+
+    def test_edit_clip_properties_writes_the_file_beside_the_fbx(self):
+        import bmaya.asset.animproperties as animproperties
+        import bmaya.maya.assettools
+        path = os.path.join(self.temp, "walk.fbx").replace("\\", "/")
+        changes = {"loop": True, "root_motion": False, "additive": "local"}
+        with mock.patch.object(self.cmds, "fileDialog2", return_value=[path]),                 mock.patch.object(bmaya.maya.assettools, "_ask_clip_properties", return_value=changes):
+            self.run_tool("Edit Clip Properties...", None)
+        properties = animproperties.read(animproperties.get_path(path))
+        self.assertEqual((properties.loop, properties.root_motion, properties.additive), (True, False, "local"))
+
     def test_cancelled_joint_pose_dialog_does_nothing(self):
         with mock.patch.object(self.cmds, "fileDialog2", return_value=None):
             self.run_tool("Pose From Joint Pose...", None)
             self.run_tool("Animate From Joint Clip...", None)
             self.run_tool("Capture Joint Clip...", None)
             self.run_tool("Capture Joint Pose...", None)
+            self.run_tool("Save Animation...", None)
+            self.run_tool("Load Animation...", None)
+            self.run_tool("Load Animation Mirrored...", None)
+            self.run_tool("Check Clip Against Skeleton...", None)
+            self.run_tool("Edit Clip Properties...", None)
         self.assertEqual(os.listdir(self.temp), ["template.json"])
 
     def test_cancelled_pose_dialog_does_nothing(self):

@@ -273,6 +273,127 @@ class AssetTools(unittest.TestCase):
             self.assertEqual(self.tools.load_pose_ui(), path)
         self.assertTrue(os.path.isfile(path))
 
+    def active_rig(self, rig_root):
+        return mock.patch.object(self.tools.bmaya.maya.activerig, "get_active_rig",
+                                 return_value=mock.Mock(rig_root=rig_root, asset_id=HERO))
+
+    def test_save_animation_names_a_file_in_the_assets_controlanims_folder_and_replace_keeps_a_version(self):
+        cmds = self.cmds
+        self.build_outside_the_asset(HERO)
+        cmds.select(clear=True)
+        cmds.playbackOptions(minTime=1, maxTime=3)
+        cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=1, value=0)
+        cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=3, value=4)
+        with mock.patch.object(self.tools, "_ask_text", return_value="rise"), mock.patch.object(cmds, "fileDialog2") as dialog:
+            path = self.tools.save_animation_ui()
+            dialog.assert_not_called()
+            self.assertEqual(path, os.path.join(self.hero.path("controlanims"), "rise.json"))
+            with open(path, encoding="utf-8") as handle:
+                self.assertEqual(json.load(handle)["endFrame"], 3)
+            with mock.patch.object(cmds, "confirmDialog", return_value="Cancel"):
+                self.assertIsNone(self.tools.save_animation_ui())
+            with mock.patch.object(cmds, "confirmDialog", return_value="Replace"):
+                self.tools.save_animation_ui()
+        from bmaya.asset import versions
+        self.assertEqual(len(versions.list_versions(path, self.root)), 1)
+
+    def test_load_animation_dialog_opens_in_controlanims_and_mirror_flips_a_center_control(self):
+        cmds = self.cmds
+        self.build_outside_the_asset(HERO)
+        cmds.select(clear=True)
+        cmds.setKeyframe("hero:spine1_ctrl_c.translateX", time=1, value=2)
+        with mock.patch.object(self.tools, "_ask_text", return_value="lean"):
+            path = self.tools.save_animation_ui()
+        cmds.cutKey("hero:spine1_ctrl_c", attribute="translateX", clear=True)
+        cmds.setAttr("hero:spine1_ctrl_c.translateX", 0)
+        with mock.patch.object(cmds, "fileDialog2", return_value=[path]) as dialog:
+            self.assertEqual(self.tools.load_animation_ui(), path)
+            self.assertEqual(dialog.call_args.kwargs["startingDirectory"], self.hero.path("controlanims"))
+            self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateX", time=1), 2)
+            self.assertEqual(self.tools.load_animation_ui(mirror=True), path)
+        self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateX", time=1), -2)
+
+    def test_load_animation_cancelled_changes_nothing(self):
+        self.build_outside_the_asset(HERO)
+        self.cmds.select(clear=True)
+        with mock.patch.object(self.cmds, "fileDialog2", return_value=None):
+            self.assertIsNone(self.tools.load_animation_ui())
+        self.assertEqual(self.cmds.ls(type="animCurve") or [], [])
+
+    def test_animation_tools_use_a_file_dialog_before_the_asset_exists(self):
+        cmds = self.cmds
+        self.build_outside_the_asset("shooter|main|characters|nobody")
+        cmds.select(clear=True)
+        cmds.setKeyframe("nobody:spine1_ctrl_c.translateY", time=1, value=1)
+        path = os.path.join(self.temp, "chosen_anim.json").replace("\\", "/")
+        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+            self.assertEqual(self.tools.save_animation_ui(), path)
+            self.assertEqual(self.tools.load_animation_ui(), path)
+        self.assertTrue(os.path.isfile(path))
+
+    def test_the_skeleton_export_checks_clips_against_its_joints(self):
+        cmds = self.cmds
+        rig_root = self.build_outside_the_asset(HERO)
+        cmds.playbackOptions(minTime=1, maxTime=2)
+        with self.active_rig(rig_root):
+            fbx = self.tools.save_skeleton_export_ui()
+        self.assertEqual(fbx, os.path.join(self.hero.path("exports"), "hero_skeleton.fbx"))
+        self.assertTrue(os.path.isfile(fbx[:-4] + ".bonemap.json"))
+
+        clip = self.tools.save_joint_clip(HERO, "walk", rig_root, 1, 2)
+        with self.active_rig(rig_root), mock.patch.object(cmds, "fileDialog2", return_value=[clip]) as dialog:
+            self.assertEqual(self.tools.check_clip_skeleton_ui(), clip)
+        self.assertEqual(dialog.call_args.kwargs["startingDirectory"], self.hero.path("exports"))
+
+        identity = {"translate": [0, 0, 0], "rotate": [0, 0, 0, 1], "scale": [1, 1, 1]}
+        other = {"formatVersion": 1, "frameRate": 30.0, "startFrame": 1, "poses": [[identity]],
+                 "joints": [{"path": "elbow_jnt", "markup": "", "rest": identity}]}
+        other_json = os.path.join(self.temp, "other.json")
+        with open(other_json, "w", encoding="utf-8") as handle:
+            json.dump(other, handle)
+        cmds.currentUnit(time="ntsc")
+        other_fbx = os.path.join(self.temp, "other.fbx")
+        import rigmodules.jointclip
+        rigmodules.jointclip.write_fbx(other_json, other_fbx)
+        with self.assertRaisesRegex(ValueError, "the animation lacks spine1_jnt, spine2_jnt"):
+            self.tools.check_clip_skeleton(HERO, other_fbx)
+
+    def test_checking_a_clip_needs_the_skeleton_export(self):
+        with self.assertRaisesRegex(FileNotFoundError, "Save Skeleton Export"):
+            self.tools.check_clip_skeleton(HERO, os.path.join(self.temp, "walk.fbx"))
+
+    def test_clip_properties_are_set_from_a_dialog_and_keep_events_and_curves(self):
+        import bmaya.asset.animproperties as animproperties
+        fbx = os.path.join(self.temp, "walk.fbx")
+        animproperties.write(animproperties.get_path(fbx), animproperties.AnimProperties(
+            events=(animproperties.AnimEvent("footstep", 4.0),),
+            curves=(animproperties.AnimCurve("lock", ((1.0, 0.0), (2.0, 1.0))),)))
+        changes = {"loop": True, "root_motion": True, "additive": "mesh"}
+        with mock.patch.object(self.cmds, "fileDialog2", return_value=[fbx]), \
+                mock.patch.object(self.tools, "_ask_clip_properties", return_value=changes) as ask, \
+                self.active_rig("hero:rigRootModule1"):
+            self.assertEqual(self.tools.edit_clip_properties_ui(), fbx)
+        self.assertEqual(ask.call_args.args[0].events[0].name, "footstep", "the dialog starts at the file's values")
+        properties = animproperties.read(animproperties.get_path(fbx))
+        self.assertEqual((properties.loop, properties.root_motion, properties.additive), (True, True, "mesh"))
+        self.assertEqual(len(properties.events), 1)
+        self.assertEqual(len(properties.curves), 1)
+
+    def test_editing_clip_properties_cancelled_writes_nothing(self):
+        import bmaya.asset.animproperties as animproperties
+        fbx = os.path.join(self.temp, "walk.fbx")
+        for dialog_result in ({"fileDialog2": None}, {"fileDialog2": [fbx], "_ask_clip_properties": None}):
+            with mock.patch.object(self.cmds, "fileDialog2", return_value=dialog_result["fileDialog2"]), \
+                    mock.patch.object(self.tools, "_ask_clip_properties", return_value=dialog_result.get("_ask_clip_properties")), \
+                    self.active_rig("hero:rigRootModule1"):
+                self.assertIsNone(self.tools.edit_clip_properties_ui())
+        self.assertFalse(os.path.exists(animproperties.get_path(fbx)))
+
+    def test_set_clip_properties_refuses_a_bad_value(self):
+        import bmaya.asset.animproperties as animproperties
+        with self.assertRaises(animproperties.AnimPropertiesError):
+            self.tools.set_clip_properties(os.path.join(self.temp, "walk.fbx"), additive="relative")
+
     def test_save_rig_writes_the_variant_rig_file(self):
         self.tools.new_variant(HERO, self.template)
         self.build_outside_the_asset(HERO)
