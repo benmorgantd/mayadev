@@ -1,8 +1,8 @@
 """Maya save and load handlers for asset file types (bmaya.asset.handlers).
 
-Only formats that exist get a handler: Maya scenes, RigModules templates, shape files and skin weights.
-Other file types (textures, shaders, postops, poses, anims) have none yet, so saving or loading them
-raises NotImplementedError until one is written.
+Only formats that exist get a handler: Maya scenes, RigModules templates, shape files, skin weights and
+animation clips. Other file types (textures, shaders, postops, poses) have none yet, so saving or loading
+them raises NotImplementedError until one is written.
 
 Call register() once per session before handlers.save / handlers.load.
 
@@ -14,24 +14,35 @@ Call register() once per session before handlers.save / handlers.load.
     handlers.load(hero, "skeleton")                                  # imports into the hero namespace
     handlers.save(hero, "shapes", variant="game", rig_root="hero:rigRootModule1")
     handlers.save(hero, "weights", variant="game", namespace="hero")
+    assethandlers.save_anim_clip(hero, "walk", rig_root="hero:rigRootModule1", start_frame=1, end_frame=48)
+    clip = handlers.load(hero, "anims", name="walk")                 # an AnimClip
+    cmds.animateRigFromJointClip("hero:rigRootModule1", jointClip=clip.joint_clip, sidecar=clip.sidecar)
 """
 
 from __future__ import annotations
 
+import dataclasses
 import glob
 import os
+import re
 import shutil
+import tempfile
 
 import maya.cmds as cmds
+import rigmodules.jointclip
 import rigmodules.skinweights
 import rigmodules.template
 
 import bmaya.core.log
 
-from bmaya.asset import handlers
+from bmaya.asset import handlers, sourcecontrol, versions
 from bmaya.asset.asset import Asset
 
 MAYA_FILE_TYPES = ("skeleton", "model", "rig")
+
+# The same rule as a pose name: it becomes a file name.
+CLIP_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_ -]*$")
+SIDECAR_SUFFIX = ".rigdata.json"
 
 
 class MayaSceneHandler(handlers.FileHandler):
@@ -145,6 +156,122 @@ class RigSkinWeightsHandler(handlers.FileHandler):
         return loaded
 
 
+@dataclasses.dataclass(frozen=True)
+class AnimClip:
+    """A clip loaded from an asset's anims folder."""
+
+    name: str
+    usd: str                 # the clip's USD file in the asset
+    joint_clip: str          # the JointClip file read from it, a temporary: cmds.animateRigFromJointClip(jointClip=...)
+    sidecar: str | None      # the .rigdata.json beside the USD, or None when the clip has none
+
+
+class AnimClipHandler(handlers.FileHandler):
+    """Animation clips in an asset's anims folder, which every variant of the asset shares. A clip is
+    <name>.usd, a UsdSkel file written through rigmodules.jointclip, and optionally <name>.rigdata.json, its
+    sidecar (the pose file data the joints can't hold, RigModules D41). The two share a basename and are
+    never linked in the files, so either can be moved or versioned alone."""
+
+    @staticmethod
+    def usd_path(folder: str, name: str) -> str:
+        return os.path.join(folder, name + ".usd")
+
+    @staticmethod
+    def sidecar_path(folder: str, name: str) -> str:
+        return os.path.join(folder, name + SIDECAR_SUFFIX)
+
+    @staticmethod
+    def names(folder: str) -> list[str]:
+        """The clips in an anims folder, sorted."""
+        return sorted(os.path.splitext(os.path.basename(path))[0] for path in glob.glob(os.path.join(folder, "*.usd")))
+
+    def save(
+        self,
+        asset: Asset | None,
+        path: str,
+        name: str | None = None,
+        joint_clip: str | None = None,
+        rig_root: str | None = None,
+        start_frame: int | None = None,
+        end_frame: int | None = None,
+        sidecar: str | None = None,
+        **context,
+    ) -> str:
+        """Writes the clip <name> into the folder at path from a JointClip file (joint_clip), or captured from
+        the rig's export joints over start_frame to end_frame (rig_root). Copies sidecar beside it when given,
+        and removes the sidecar an older clip of that name had when not, because it describes the old
+        animation. Returns the USD path. Nothing is written when an argument is wrong."""
+        name = _require_clip_name(name)
+        if (joint_clip is None) == (rig_root is None):
+            raise ValueError("Pass joint_clip (a JointClip file), or rig_root with start_frame and end_frame.")
+        if rig_root is not None and (start_frame is None or end_frame is None):
+            raise ValueError("Capturing from a rig needs start_frame and end_frame.")
+        if sidecar is not None and not os.path.isfile(sidecar):
+            raise FileNotFoundError(sidecar)
+
+        captured = None
+        if rig_root is not None:
+            handle, captured = tempfile.mkstemp(prefix=name + "_", suffix=".jointclip.json")
+            os.close(handle)
+            joint_clip = captured
+        try:
+            if captured:
+                rigmodules.jointclip.capture_joint_clip(rig_root, start_frame, end_frame, captured)
+            os.makedirs(path, exist_ok=True)
+            usd = self.usd_path(path, name)
+            rigmodules.jointclip.write_usd(joint_clip, usd)
+        finally:
+            if captured and os.path.exists(captured):
+                os.remove(captured)
+
+        sidecar_path = self.sidecar_path(path, name)
+        if sidecar is not None:
+            shutil.copyfile(sidecar, sidecar_path)
+        elif os.path.exists(sidecar_path):
+            os.remove(sidecar_path)
+        return usd
+
+    def load(
+        self,
+        asset: Asset | None,
+        path: str,
+        name: str | None = None,
+        joint_clip: str | None = None,
+        **context,
+    ) -> AnimClip:
+        """Reads the clip <name> from the folder at path into a JointClip file (joint_clip, or a file named
+        after the clip in a temporary folder that the next load of the same name overwrites)."""
+        name = _require_clip_name(name)
+        usd = self.usd_path(path, name)
+        if not os.path.isfile(usd):
+            raise FileNotFoundError(f"{path} has no clip {name!r}. It has: {', '.join(self.names(path)) or 'none'}.")
+        if joint_clip is None:
+            folder = os.path.join(tempfile.gettempdir(), "bmaya_joint_clips")
+            os.makedirs(folder, exist_ok=True)
+            joint_clip = os.path.join(folder, name + ".json")
+        rigmodules.jointclip.read_usd(usd, joint_clip)
+        sidecar = self.sidecar_path(path, name)
+        return AnimClip(name, usd, joint_clip, sidecar if os.path.isfile(sidecar) else None)
+
+
+def save_anim_clip(asset: Asset, name: str, **context) -> str:
+    """Saves a clip through AnimClipHandler.save (its arguments go in context). Versions and checks out only the
+    clip's own files first, where handlers.save would copy the whole anims folder, and adds new files to source
+    control. Returns the USD path."""
+    handler = AnimClipHandler()
+    folder = asset.path("anims")
+    files = [handler.usd_path(folder, name), handler.sidecar_path(folder, name)]
+    existing = [path for path in files if os.path.exists(path)]
+    for path in existing:
+        versions.version(path, asset.root)
+        sourcecontrol.current().checkout(path)
+    usd = handler.save(asset, folder, name=name, **context)
+    for path in files:
+        if path not in existing and os.path.exists(path):
+            sourcecontrol.current().add(path)
+    return usd
+
+
 def _short_name(node: str) -> str:
     return node.split("|")[-1].split(":")[-1]
 
@@ -153,6 +280,12 @@ def _require_namespace(namespace: str | None) -> str:
     if namespace is None:
         raise ValueError("Skin weights belong to the meshes in one namespace: pass namespace.")
     return namespace
+
+
+def _require_clip_name(name: str | None) -> str:
+    if not name or not CLIP_NAME.match(name):
+        raise ValueError(f"{name!r} is not a clip name: use letters, digits, spaces, '_' and '-'.")
+    return name
 
 
 def _require_rig_root(rig_root: str | None) -> str:
@@ -168,3 +301,4 @@ def register() -> None:
     handlers.register("shapes", RigShapesHandler())
     handlers.register("weights", RigSkinWeightsHandler())
     handlers.register("template", RigTemplateHandler())
+    handlers.register("anims", AnimClipHandler())

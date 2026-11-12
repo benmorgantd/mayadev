@@ -142,6 +142,7 @@ Where a file lives is kept apart from how it is read. `bmaya.asset.handlers` dis
 | `shapes` | RigModules `saveRigControlShapes` / `loadRigControlShapes`. Pass `rig_root=` |
 | `weights` | One RigModules weight file per skinned mesh in `namespace=`, named after the mesh (`box_geo.json`). Save fails on a skinned mesh without a `meshId`, and removes a file left from a mesh's old name. Load matches each file to a mesh by the `meshId` inside it, never by name, skips a file whose mesh isn't in the scene with a warning, and is one undo step |
 | `template` | Save copies the template file passed as `source=`, and fails unless its `rigName` is the variant. Load returns the template's path |
+| `anims` | One clip per `name=` in the asset's `anims` folder: `<name>.usd`, a UsdSkel file, written and read through `rigmodules.jointclip`, plus an optional `<name>.rigdata.json` sidecar beside it. Save takes `joint_clip=` (a RigModules JointClip file) or `rig_root=` with `start_frame=` and `end_frame=` (captures the rig's export joints), and `sidecar=` to copy a sidecar in. A save without `sidecar=` removes the sidecar the old clip had, because it described the old animation. Load returns an `AnimClip` (`name`, `usd`, `joint_clip`, `sidecar`): `joint_clip` is a temporary file for `cmds.animateRigFromJointClip(jointClip=...)`. Use `assethandlers.save_anim_clip(asset, name, ...)` to save: it versions only that clip's files, where `handlers.save` copies the whole `anims` folder |
 
 ```python
 from bmaya.asset import Asset, handlers
@@ -152,9 +153,12 @@ hero = Asset("shooter|main|characters|hero")
 handlers.load(hero, "skeleton")
 handlers.save(hero, "shapes", variant="game", rig_root="hero:rigRootModule1")
 handlers.save(hero, "weights", variant="game", namespace="hero")
+assethandlers.save_anim_clip(hero, "walk", rig_root="hero:rigRootModule1", start_frame=1, end_frame=48)
+clip = handlers.load(hero, "anims", name="walk")
+cmds.animateRigFromJointClip("hero:rigRootModule1", jointClip=clip.joint_clip, sidecar=clip.sidecar)
 ```
 
-Textures, shaders, postops, poses and anims have no handler yet.
+Textures, shaders, postops and poses have no handler yet. Poses are saved by `bmaya.maya.assettools.save_pose`.
 
 ## Tools
 
