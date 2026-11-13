@@ -154,6 +154,11 @@ class AssetTools(unittest.TestCase):
         self.assertEqual((info.asset_id, info.variant, info.namespace), (HERO, "game", "hero"))
         self.assertTrue(self.cmds.objExists("hero:spine1_ctrl_c"))
 
+    def test_build_rig_leaves_nothing_selected(self):
+        self.make_buildable_asset()
+        self.tools.build_rig(HERO, "game")
+        self.assertEqual([], self.cmds.ls(selection=True))
+
     def test_build_rig_loads_the_variant_shape_file(self):
         cmds = self.cmds
         self.make_buildable_asset()

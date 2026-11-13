@@ -127,6 +127,8 @@ def build_rig(asset_id: str, variant: str, namespace: str | None = None) -> str:
         rigmodules.groups.parent_meshes(rig_root, model_nodes)
         if asset.file_exists("weights", variant):
             bmaya.asset.handlers.load(asset, "weights", variant, namespace=namespace)
+    # The imports above leave their nodes selected. A finished build starts with nothing selected.
+    cmds.select(clear=True)
     bmaya.core.log.info(f"Built {asset.id} variant {variant!r} into namespace {namespace!r}.")
     return rig_root
 
