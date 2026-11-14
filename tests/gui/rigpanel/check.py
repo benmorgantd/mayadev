@@ -112,6 +112,27 @@ def steps_rest():
     pump(200)
     check(panel.session.rig.namespace == "villain", "selecting another rig switched the panel to %s" % panel.session.rig.namespace)
 
+    # The space section follows the selection and switches the space.
+    root = cmds.ls("villain:*", type="rigRootModule")[0]
+    arm = cmds.getRigControls(root, side="Left")[0]
+    cmds.createRigConstraint(arm, driver=["layout.end", "spine.end"], label=["World", "Chest"])
+    check(not panel.space_section.isVisible(), "no Space section while no control is selected")
+    cmds.select(arm, replace=True)
+    pump(300)
+    check(panel.space_section.isVisible() and [b.text() for b in panel.space_buttons] == ["World", "Chest"],
+          "selecting a control with a space switch shows its spaces")
+    panel.space_buttons[1].click()
+    pump(300)
+    check(cmds.getAttr(arm + ".space") == 1 and panel.space_buttons[1].isChecked(), "pressing Chest switches the space")
+    cmds.currentTime(20)
+    panel.space_key.setChecked(True)
+    panel.space_buttons[0].click()
+    pump(300)
+    check(cmds.keyframe(arm + ".space", query=True, timeChange=True) == [19.0, 20.0], "Key checked: keys frames 19 and 20")
+    cmds.select(villain_ctrl, replace=True)
+    pump(300)
+    check(not panel.space_section.isVisible(), "selecting a control with no space switch hides the section")
+
     # Reopen several times: the path that crashes with dockable widgets.
     for index in range(3):
         panel = bmaya.maya_ui.rigpanel.show_window()

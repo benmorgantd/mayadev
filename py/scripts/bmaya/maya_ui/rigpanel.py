@@ -1,15 +1,15 @@
 """The active rig panel: widgets bound to a RigPanelSession (RigModules design/active-rig-panel.md, D50).
 
-The panel is a launcher and a state display, in three folding sections: Rig, Select and Pose. Every button is one
-call on the session. It doesn't list controls: Maya's Outliner does that, so the Select section has one button
-per module and side instead. Qt only, no Maya (host.py docks it).
+The panel is a launcher and a state display, in folding sections: Rig, Select, Pose, and Space when the one selected
+control has a space switch. Every button is one call on the session. It doesn't list controls: Maya's Outliner does
+that, so the Select section has one button per module and side instead. Qt only, no Maya (host.py docks it).
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 import bmaya.core.log
 import bmaya.maya.rigpanel
@@ -51,7 +51,8 @@ class RigPanel(QtWidgets.QWidget):
         self.rig_section = CollapsibleSection("Rig")
         self.select_section = CollapsibleSection("Select")
         self.pose_section = CollapsibleSection("Pose")
-        for section in (self.rig_section, self.select_section, self.pose_section):
+        self.space_section = CollapsibleSection("Space")
+        for section in (self.rig_section, self.select_section, self.pose_section, self.space_section):
             layout.addWidget(section)
         layout.addStretch(1)
 
@@ -86,9 +87,21 @@ class RigPanel(QtWidgets.QWidget):
             pose.addWidget(self._button(name, text, command, tip), index // 3, index % 3)
         self.pose_section.content_layout.addLayout(pose)
 
+        self.space_label = QtWidgets.QLabel()
+        self.space_layout = QtWidgets.QGridLayout()
+        self.space_key = QtWidgets.QCheckBox("Key")
+        self.space_key.setToolTip("Key the control on the previous frame and on this one, so the animation holds "
+                                  "the old space up to the switch")
+        self.space_section.content_layout.addWidget(self.space_label)
+        self.space_section.content_layout.addLayout(self.space_layout)
+        self.space_section.content_layout.addWidget(self.space_key)
+        self.space_buttons: list[QtWidgets.QPushButton] = []
+
         self.rig_combo.currentIndexChanged.connect(self._on_rig_picked)
         self.session.changed.connect(self.reload)
+        self.session.spaces_changed.connect(self.reload_space)
         self.reload()
+        self.reload_space()
 
     def _button(self, name: str, text: str, command: Callable[[], None], tip: str) -> QtWidgets.QPushButton:
         button = QtWidgets.QPushButton(text)
@@ -136,6 +149,38 @@ class RigPanel(QtWidgets.QWidget):
         self.empty_label.setVisible(not has_rig)
         self.select_section.body.setEnabled(has_rig)
         self.pose_section.body.setEnabled(has_rig)
+
+    def reload_space(self) -> None:
+        """Shows the Space section for the selected control's space switch, or hides it when there is none."""
+        for button in self.space_buttons:
+            self.space_layout.removeWidget(button)
+            button.deleteLater()
+        self.space_buttons = []
+        space = self.session.space
+        self.space_section.setVisible(space is not None)
+        if space is None:
+            return
+        self.space_label.setText(leaf_name(space.control))
+        for index, label in enumerate(space.labels):
+            button = QtWidgets.QPushButton(label)
+            button.setCheckable(True)
+            button.setChecked(index == space.current)
+            button.clicked.connect(lambda checked=False, label=label: self._on_space_clicked(label))
+            self.space_layout.addWidget(button, index // GROUP_COLUMNS, index % GROUP_COLUMNS)
+            self.space_buttons.append(button)
+
+    def _on_space_clicked(self, label: str) -> None:
+        self.run(lambda: self.session.set_space(label, key=self.space_key.isChecked()))
+        self.reload_space()   # a refused switch puts the checked button back on the current space
+
+    def showEvent(self, event: QtGui.QShowEvent) -> None:
+        """The session reads the selected control's space only while the panel is showing."""
+        super().showEvent(event)
+        self.session.watch_selection(True)
+
+    def hideEvent(self, event: QtGui.QHideEvent) -> None:
+        super().hideEvent(event)
+        self.session.watch_selection(False)
 
     def _on_group_clicked(self, group: bmaya.maya.rigpanel.ControlGroup) -> None:
         """Selects the group's controls in Maya. Ctrl or Shift adds them to the selection."""

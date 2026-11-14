@@ -298,6 +298,114 @@ class Session(RigPanelBase):
         self.assertEqual(calls, [])
 
 
+class SpaceSwitch(RigPanelBase):
+    """The selected control's space switch, and switching it (D50). The left arm gets World and Chest drivers."""
+
+    def setUp(self):
+        super().setUp()
+        self.root = self.build("shooter\\hero")
+        self.arm = self.cmds.getRigControls(self.root, side="Left")[0]
+        self.spine = self.cmds.getRigControls(self.root, side="Center", usage="spine1")[0]
+        self.constraint = self.cmds.createRigConstraint(
+            self.arm, driver=["layout.end", "spine.end"], label=["World", "Chest"])
+        self.session = self.rigpanel.RigPanelSession()
+        self.addCleanup(self.session.close)
+        self.seen = []
+        self.session.spaces_changed.connect(lambda: self.seen.append(self.session.space))
+
+    def test_one_selected_control_with_a_space_switch_gives_its_state(self):
+        self.cmds.select(self.arm, replace=True)
+        self.session.refresh_space()
+        self.assertEqual(self.session.space, self.rigpanel.SpaceState(
+            self.arm, self.constraint.lstrip(":"), ("World", "Chest"), 0))
+
+    def test_no_selection_a_control_without_a_switch_or_several_controls_give_none(self):
+        for selection in ([], [self.spine], [self.arm, self.spine]):
+            with self.subTest(selection=selection):
+                self.cmds.select(selection, replace=True) if selection else self.cmds.select(clear=True)
+                self.session.refresh_space()
+                self.assertIsNone(self.session.space)
+
+    def test_spaces_changed_emits_only_when_the_space_changes(self):
+        self.cmds.select(self.arm, replace=True)
+        self.session.refresh_space()
+        self.session.refresh_space()
+        self.assertEqual(len(self.seen), 1)
+        self.cmds.select(clear=True)
+        self.session.refresh_space()
+        self.assertEqual(self.seen[-1], None)
+        self.assertEqual(len(self.seen), 2)
+
+    def test_switching_keeps_the_control_where_it_was_and_keys_nothing(self):
+        self.cmds.select(self.arm, replace=True)
+        self.session.refresh_space()
+        before = self.cmds.xform(self.arm, query=True, worldSpace=True, matrix=True)
+        self.session.set_space("Chest")
+        self.assertEqual(self.cmds.getAttr(self.arm + ".space"), 1)
+        self.assertEqual(self.session.space.current, 1)
+        for matrix_before, matrix_after in zip(before, self.cmds.xform(self.arm, query=True, worldSpace=True, matrix=True)):
+            self.assertAlmostEqual(matrix_before, matrix_after, places=4)
+        self.assertFalse(self.cmds.keyframe(self.arm, query=True, keyframeCount=True))
+
+    def test_switching_to_the_current_space_does_nothing(self):
+        self.cmds.select(self.arm, replace=True)
+        self.session.refresh_space()
+        self.session.set_space("World")
+        self.assertEqual(self.cmds.undoInfo(query=True, undoName=True) or "", "")
+
+    def test_key_holds_the_old_space_on_the_previous_frame_and_keys_the_new_one_here(self):
+        self.cmds.currentTime(10)
+        self.cmds.select(self.arm, replace=True)
+        self.session.refresh_space()
+        self.session.set_space("Chest", key=True)
+        self.assertEqual(self.cmds.keyframe(self.arm + ".space", query=True, timeChange=True), [9.0, 10.0])
+        self.assertEqual(self.cmds.keyframe(self.arm + ".space", query=True, valueChange=True), [0.0, 1.0])
+        self.assertEqual(self.cmds.keyframe(self.arm + ".translateX", query=True, timeChange=True), [9.0, 10.0])
+
+    def test_one_undo_reverts_the_switch_and_its_keys(self):
+        self.cmds.undoInfo(state=True, infinity=True)
+        self.cmds.currentTime(10)
+        self.cmds.select(self.arm, replace=True)
+        self.session.refresh_space()
+        self.session.set_space("Chest", key=True)
+        self.cmds.undo()
+        self.assertEqual(self.cmds.getAttr(self.arm + ".space"), 0)
+        self.assertFalse(self.cmds.keyframe(self.arm, query=True, keyframeCount=True))
+
+    def test_an_unknown_label_or_no_space_is_an_error(self):
+        with self.assertRaisesRegex(RuntimeError, "Select one control"):
+            self.session.set_space("World")
+        self.cmds.select(self.arm, replace=True)
+        self.session.refresh_space()
+        with self.assertRaisesRegex(RuntimeError, "no space labelled 'Head'.*World, Chest"):
+            self.session.set_space("Head")
+
+    def test_the_selection_callback_follows_the_selection_while_watching(self):
+        self.session.watch_selection(True)
+        self.session.watch_selection(True)   # twice is harmless
+        self.cmds.select(self.arm, replace=True)
+        self.assertEqual(self.session.space.labels, ("World", "Chest"))
+        self.cmds.select(self.spine, replace=True)
+        self.assertIsNone(self.session.space)
+
+    def test_it_stops_following_when_not_watching_and_on_close(self):
+        self.session.watch_selection(True)
+        self.session.watch_selection(False)
+        self.cmds.select(self.arm, replace=True)
+        self.assertIsNone(self.session.space)
+        self.session.watch_selection(True)
+        self.assertIsNotNone(self.session.space)   # watching again reads the selection at once
+        self.session.close()
+        self.cmds.select(self.spine, replace=True)
+        self.assertIsNotNone(self.session.space)   # closed: not updated
+
+    def test_a_rig_change_reads_the_selected_control_again(self):
+        self.build("shooter\\villain")
+        self.cmds.select(self.arm, replace=True)
+        self.session.refresh()
+        self.assertEqual(self.session.space.control, self.arm)
+
+
 class GroupControls(unittest.TestCase):
     """The grouping alone, on plain data."""
 

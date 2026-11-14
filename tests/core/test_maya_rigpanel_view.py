@@ -45,6 +45,9 @@ class FakeSession:
         import bmaya.core.observable
         import bmaya.maya.rigpanel
         self.changed = bmaya.core.observable.Event()
+        self.spaces_changed = bmaya.core.observable.Event()
+        self.space = None
+        self.watching = []
         self.rigs = rigs
         self.rig = rigs[active] if rigs else None
         self.groups = [
@@ -59,6 +62,8 @@ class FakeSession:
             raise RuntimeError(self.error)
         self.calls.append(call)
 
+    def watch_selection(self, watch): self.watching.append(watch)
+    def set_space(self, label, key=False): self._record("set_space", label, key)
     def close(self): self.calls.append(("close",))   # a destroyed panel calls it, even when commands are set to fail
     def refresh(self): self._record("refresh")
     def set_active(self, rig_root): self._record("set_active", rig_root)
@@ -159,6 +164,51 @@ class RigPanelView(unittest.TestCase):
         self.assertEqual(session.calls, [])   # filling the picker is not the user picking
         two.rig_combo.setCurrentIndex(1)
         self.assertEqual(session.calls, [("set_active", "villain:rigRoot")])
+
+    def space(self, session, current=0):
+        import bmaya.maya.rigpanel
+        session.space = bmaya.maya.rigpanel.SpaceState("hero:arm_ctrl_l", "hero:arm_ctrl_l_space", ("World", "Chest", "Head"), current)
+        session.spaces_changed.emit()
+
+    def test_the_space_section_shows_only_for_a_control_with_a_space_switch(self):
+        session = FakeSession([make_rig("hero:rigRoot", "hero")])
+        panel = self.panel(session)
+        self.assertFalse(panel.space_section.isVisible())
+        self.space(session, current=1)
+        self.assertTrue(panel.space_section.isVisible())
+        self.assertEqual(panel.space_section.header.text(), "Space")
+        self.assertEqual([button.text() for button in panel.space_buttons], ["World", "Chest", "Head"])
+        self.assertEqual([button.isChecked() for button in panel.space_buttons], [False, True, False])
+        self.assertEqual(panel.space_label.text(), "arm_ctrl_l")
+        session.space = None
+        session.spaces_changed.emit()
+        self.assertFalse(panel.space_section.isVisible())
+
+    def test_a_space_button_switches_and_the_key_box_keys(self):
+        session = FakeSession([make_rig("hero:rigRoot", "hero")])
+        panel = self.panel(session)
+        self.space(session)
+        self.click(panel.space_buttons[1])
+        panel.space_key.setChecked(True)
+        self.click(panel.space_buttons[2])
+        self.assertEqual(session.calls, [("set_space", "Chest", False), ("set_space", "Head", True)])
+
+    def test_a_refused_switch_is_logged_and_the_buttons_show_the_current_space(self):
+        session = FakeSession([make_rig("hero:rigRoot", "hero")])
+        panel = self.panel(session)
+        self.space(session, current=0)
+        session.error = "refused"
+        with mock.patch("bmaya.core.log.error") as error:
+            self.click(panel.space_buttons[2])
+        error.assert_called_once_with("refused")
+        self.assertEqual([button.isChecked() for button in panel.space_buttons], [True, False, False])
+
+    def test_the_panel_watches_the_selection_only_while_it_shows(self):
+        session = FakeSession([make_rig("hero:rigRoot", "hero")])
+        panel = self.panel(session)
+        panel.hide()
+        panel.show()
+        self.assertEqual(session.watching, [True, False, True])
 
     def test_a_destroyed_panel_closes_its_session(self):
         """A docked panel is destroyed with its workspace control, often with no closeEvent."""

@@ -33,6 +33,7 @@ Python `maya.cmds` calls, with the module that makes them.
 | `cmds.saveRigAnimation(*scope, file=, startFrame=, endFrame=)` | `assethandlers.ControlAnimHandler`, `AnimClipHandler`, `assettools` | Animations, and the ControlAnim beside a clip |
 | `cmds.loadRigAnimation(*scope, file=, offset=, mirror=)` | `assethandlers.ControlAnimHandler`, `assettools` | Load animation, optionally mirrored |
 | `cmds.zeroRigControls`, `cmds.mirrorRigPose(leftToRight=)`, `cmds.flipRigPose` | `posetools` | The pose tools |
+| `cmds.setRigConstraintSpace(constraint, label=)` | `rigpanel.RigPanelSession.set_space` | Switch the selected control's space without moving it |
 | `cmds.poseRigFromJointPose(*scope, jointPose=)` | `assettools.pose_from_joint_pose_interactive` | Restore controls from a one-pose clip |
 | `cmds.animateRigFromJointClip(*scope, jointClip=, sidecar=)` | `assettools.animate_from_joint_clip_interactive` | Restore keys from a clip |
 
@@ -50,6 +51,9 @@ Python `maya.cmds` calls, with the module that makes them.
 | `query.get_rig_controls(rig_root)`, `query.find_control(node)` | `posetools.get_selected_modules` | Map a selection to the modules of the active rig |
 | `template.get_rig_name(path)` | `assettools.new_variant`, `RigTemplateHandler` | The `rigName` of a template file, which names the variant |
 | `pose.key_rig(rig_root)`, `pose.key_modules(rig_root, modules)` | `posetools` | Key every channel of a rig, or of chosen modules |
+| `pose.key_controls(controls, time=)` | `rigpanel.RigPanelSession.set_space` | Key the switched control on the previous frame and the current one |
+| `query.find_control_space(control)` | `rigpanel.RigPanelSession.refresh_space` | The selected control's constraint, space labels and current space (RigModules `getRigControlSpace`, D50) |
+| `query.get_rigs()`, `query.get_rig_controls(rig_root)` | `rigpanel.RigPanelSession.refresh` | The rigs in the scene and the active rig's controls, for the active rig panel |
 | `skinweights.get_mesh_id(mesh)`, `get_skinned_meshes(namespace)`, `get_meshes(namespace)`, `read_file_mesh_id(path)` | `assethandlers.RigSkinWeightsHandler`, `assettools.save_model` | Find skinned meshes and match weight files by `meshId` |
 | `displaylayers.add_meshes(rig_root, nodes)`, `groups.parent_meshes(rig_root, nodes)` | `assettools.build_rig` | Put an imported model into the rig's display layers and mesh group |
 | `jointclip.write_fbx`, `read_fbx`, `capture_joint_clip` | `assethandlers.AnimClipHandler` | Clip FBX in and out, and capture a rig's export joints |
