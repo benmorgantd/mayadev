@@ -175,6 +175,17 @@ class RegistryEditor(EditorTest):
                 self.assertEqual(window.label_status.text(), "OK", window.label_status.text())
                 self.assertTrue(window.btn_execute.isEnabled())
 
+    def test_the_function_drop_down_is_as_wide_as_its_longest_function_name(self):
+        window = self.editor()
+        combo = window.combo_function
+        self.select(window, "rigmodules.pose.flip")        # bmaya.maya.posetools
+        posetools_width = combo.minimumWidth()
+        longest = max(combo.itemText(i) for i in range(combo.count()))
+        self.assertGreaterEqual(posetools_width, combo.fontMetrics().horizontalAdvance(longest))
+
+        self.select(window, "bmaya.dev.reload_menu")       # bmaya.maya.devreload: shorter names
+        self.assertLess(combo.minimumWidth(), posetools_width)  # it shrinks again, not only grows
+
     def test_the_call_picker_shows_the_saved_call_and_kwargs(self):
         window = self.editor()
         self.select(window, "rigmodules.pose.mirror_left_to_right")

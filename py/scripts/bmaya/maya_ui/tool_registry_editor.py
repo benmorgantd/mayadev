@@ -382,6 +382,7 @@ class ToolManagerWindow(SimpleWindow):
         self.input_module.setCompleter(self.module_completer)
         self.combo_function = QtWidgets.QComboBox()
         self.combo_function.setEditable(False)
+        self.combo_function.setSizeAdjustPolicy(QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
         self.label_doc = QtWidgets.QLabel("")
         self.label_doc.setWordWrap(True)
         call_form.addRow("Module:", self.input_module)
@@ -522,7 +523,14 @@ class ToolManagerWindow(SimpleWindow):
             self.combo_function.addItem(name)
         self.combo_function.setCurrentIndex(self.combo_function.findText(current) if current else -1)
         self.combo_function.blockSignals(False)
+        self._fit_function_width()
         self._show_doc()
+
+    def _fit_function_width(self) -> None:
+        """Sets the drop-down's minimum width to its size hint, which AdjustToContents sizes to the longest function
+        name, so it follows the module as the call path changes."""
+        self.combo_function.setMinimumWidth(0)
+        self.combo_function.setMinimumWidth(self.combo_function.sizeHint().width())
 
     def _on_module_changed(self) -> None:
         if self._block_ui_updates or not self.active_tool_id:
