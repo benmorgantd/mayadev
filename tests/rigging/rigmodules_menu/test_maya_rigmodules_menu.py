@@ -134,6 +134,19 @@ class MenuScripts(unittest.TestCase):
             joints.append(joint)
         return joints
 
+    @contextlib.contextmanager
+    def answers(self, *answers):
+        """Answers the tools' questions in order for the block, through the session's prompter slot, as a GUI
+        session's Qt prompter would. Every answer must be used."""
+        import bmaya.core.prompts
+        prompter = bmaya.core.prompts.ScriptedPrompter(answers)
+        bmaya.core.prompts.register_prompter(prompter)
+        try:
+            yield prompter
+        finally:
+            bmaya.core.prompts.reset_prompter()
+        self.assertEqual(prompter.remaining, 0, f"unused answers; asked: {prompter.asked}")
+
     def run_tool(self, name, selection):
         """Runs a registry tool as the menu does (run_tool), with the selection set first."""
         if selection:
@@ -196,7 +209,7 @@ class MenuScripts(unittest.TestCase):
         cmds = self.cmds
         path = os.path.join(self.temp, "shapes.json").replace("\\", "/")
         before = cmds.getAttr(self.left + ".shapeType")
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+        with self.answers(path, path):
             self.run_tool("Save Control Shapes...", self.root)
             self.assertTrue(os.path.isfile(path))
             cmds.setAttr(self.left + ".shapeType", (before + 1) % 2)
@@ -244,7 +257,7 @@ class MenuScripts(unittest.TestCase):
         cmds = self.cmds
         path = os.path.join(self.temp, "pose.json").replace("\\", "/")
         cmds.setAttr(self.left + ".rotateY", 20)
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+        with self.answers(path, path):
             self.run_tool("Save Pose...", None)
             self.assertTrue(os.path.isfile(path))
             cmds.setAttr(self.left + ".rotateY", 0)
@@ -262,7 +275,7 @@ class MenuScripts(unittest.TestCase):
         cmds = self.cmds
         path = os.path.join(self.temp, "walk.fbx").replace("\\", "/")
         cmds.playbackOptions(minTime=1, maxTime=4)
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+        with self.answers(path):
             self.run_tool("Capture Joint Clip...", None)
         clip = self.read_fbx(path)
         self.assertEqual(clip["startFrame"], 1)
@@ -273,7 +286,7 @@ class MenuScripts(unittest.TestCase):
         cmds = self.cmds
         path = os.path.join(self.temp, "idle.fbx").replace("\\", "/")
         cmds.currentTime(7)
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+        with self.answers(path):
             self.run_tool("Capture Joint Pose...", None)
         clip = self.read_fbx(path)
         # a pose is a one-frame animation (RigModules D42), so it keeps the frame it was captured on
@@ -283,7 +296,7 @@ class MenuScripts(unittest.TestCase):
         cmds = self.cmds
         path = os.path.join(self.temp, "idle.fbx").replace("\\", "/")
         cmds.setAttr(self.left + ".rotateY", 20)
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+        with self.answers(path, path):
             self.run_tool("Capture Joint Pose...", None)
             cmds.setAttr(self.left + ".rotateY", 0)
             self.run_tool("Pose From Joint Pose...", None)
@@ -296,7 +309,7 @@ class MenuScripts(unittest.TestCase):
         cmds.setKeyframe(self.left + ".rotateY", time=1, value=0, inTangentType="linear", outTangentType="linear")
         cmds.setKeyframe(self.left + ".rotateY", time=3, value=60, inTangentType="linear", outTangentType="linear")
         cmds.playbackOptions(minTime=1, maxTime=3)
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+        with self.answers(path, path):
             self.run_tool("Capture Joint Clip...", None)
             cmds.cutKey(self.left, attribute="rotateY", clear=True)
             cmds.setAttr(self.left + ".rotateY", 0)
@@ -309,7 +322,7 @@ class MenuScripts(unittest.TestCase):
         path = os.path.join(self.temp, "bad.fbx").replace("\\", "/")
         with open(path, "w", encoding="utf-8") as handle:
             handle.write("{}")
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+        with self.answers(path, path):
             for name in ("Pose From Joint Pose...", "Animate From Joint Clip..."):
                 with self.subTest(name):
                     with self.assertRaises(Exception):
@@ -321,7 +334,7 @@ class MenuScripts(unittest.TestCase):
         cmds.setKeyframe(self.left + ".rotateY", time=1, value=0)
         cmds.setKeyframe(self.left + ".rotateY", time=3, value=60)
         cmds.playbackOptions(minTime=1, maxTime=3)
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+        with self.answers(path, path):
             self.run_tool("Save Animation...", None)
             self.assertTrue(os.path.isfile(path))
             cmds.cutKey(self.left, attribute="rotateY", clear=True)
@@ -335,7 +348,7 @@ class MenuScripts(unittest.TestCase):
         path = os.path.join(self.temp, "anim.json").replace("\\", "/")
         cmds.setKeyframe(self.left + ".rotateY", time=1, value=20)
         cmds.playbackOptions(minTime=1, maxTime=1)
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+        with self.answers(path, path):
             self.run_tool("Save Animation...", None)
             cmds.cutKey(self.left, attribute="rotateY", clear=True)
             self.run_tool("Load Animation Mirrored...", None)
@@ -343,28 +356,28 @@ class MenuScripts(unittest.TestCase):
         self.assertEqual(cmds.keyframe(self.left + ".rotateY", query=True, keyframeCount=True), 0)
 
     def test_the_skeleton_and_clip_tools_need_the_assets_folder(self):
-        import bmaya.asset
+        import bmaya.core.asset
         import bmaya.maya.assettools
         cmds = self.cmds
         path = os.path.join(self.temp, "walk.fbx").replace("\\", "/")
-        with mock.patch.object(bmaya.maya.assettools, "find_asset", return_value=None),                 mock.patch.object(bmaya.asset.Asset, "exists", return_value=False),                 mock.patch.object(cmds, "fileDialog2", return_value=[path]):
+        with mock.patch.object(bmaya.maya.assettools, "find_asset", return_value=None),                 mock.patch.object(bmaya.core.asset.Asset, "exists", return_value=False),                 self.answers(path):
             for name in ("Save Skeleton Export", "Check Clip Against Skeleton..."):
                 with self.subTest(name):
-                    with self.assertRaisesRegex(bmaya.asset.AssetError, "New Asset"):
+                    with self.assertRaisesRegex(bmaya.core.asset.AssetError, "New Asset"):
                         self.run_tool(name, None)
 
     def test_edit_clip_properties_writes_the_file_beside_the_fbx(self):
-        import bmaya.asset.animproperties as animproperties
+        import bmaya.core.asset.animproperties as animproperties
         import bmaya.maya.assettools
         path = os.path.join(self.temp, "walk.fbx").replace("\\", "/")
-        changes = {"loop": True, "root_motion": False, "additive": "local"}
-        with mock.patch.object(self.cmds, "fileDialog2", return_value=[path]),                 mock.patch.object(bmaya.maya.assettools, "_ask_clip_properties", return_value=changes):
+        with self.answers(path, bmaya.maya.assettools.ClipSettings(loop=True, root_motion=False, additive="local")) as asked:
             self.run_tool("Edit Clip Properties...", None)
+        self.assertEqual(asked.asked[1].default, bmaya.maya.assettools.ClipSettings(), "the form starts at the defaults")
         properties = animproperties.read(animproperties.get_path(path))
         self.assertEqual((properties.loop, properties.root_motion, properties.additive), (True, False, "local"))
 
     def test_cancelled_joint_pose_dialog_does_nothing(self):
-        with mock.patch.object(self.cmds, "fileDialog2", return_value=None):
+        with self.answers(*[None] * 9):
             self.run_tool("Pose From Joint Pose...", None)
             self.run_tool("Animate From Joint Clip...", None)
             self.run_tool("Capture Joint Clip...", None)
@@ -377,7 +390,7 @@ class MenuScripts(unittest.TestCase):
         self.assertEqual(os.listdir(self.temp), ["template.json"])
 
     def test_cancelled_pose_dialog_does_nothing(self):
-        with mock.patch.object(self.cmds, "fileDialog2", return_value=None):
+        with self.answers(None):
             self.run_tool("Save Pose...", None)
         self.assertEqual(os.listdir(self.temp), ["template.json"])
 
@@ -426,7 +439,7 @@ class MenuScripts(unittest.TestCase):
         box, cluster = self.make_skinned_box()
         self.run_tool("Mark Meshes for Skinning", [box])
         folder = os.path.join(self.temp, "weights")
-        with mock.patch.object(cmds, "fileDialog2", return_value=[folder]):
+        with self.answers(folder, folder):
             self.run_tool("Save Skin Weights...", self.root)
             self.assertEqual(os.listdir(folder), ["box_geo.json"])
             cmds.delete(cluster)
@@ -479,16 +492,17 @@ class MenuScripts(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "Select the joints, then the mesh"):
             self.run_bmaya_tool("bmaya.joints.orient_to_mesh", [joint])
 
-    def test_the_dev_tools_resolve_to_the_devreload_functions(self):
+    def test_the_dev_tools_resolve_to_the_devreload_and_menu_functions(self):
         import bmaya.maya.devreload
+        import bmaya.maya_ui.tool_views.tool_menu
         registry = _registry()
-        for tool_id, name in (("bmaya.dev.reload_rigmodules", "reload_rigmodules"),
-                              ("bmaya.dev.unload_rigmodules", "unload_rigmodules"),
-                              ("bmaya.dev.reload_menu", "reload_menu")):
-            self.assertIs(tool_registry.resolve_call(registry.tools[tool_id].call), getattr(bmaya.maya.devreload, name))
+        for tool_id, function in (("bmaya.dev.reload_rigmodules", bmaya.maya.devreload.reload_rigmodules),
+                                  ("bmaya.dev.unload_rigmodules", bmaya.maya.devreload.unload_rigmodules),
+                                  ("bmaya.dev.reload_menu", bmaya.maya_ui.tool_views.tool_menu.reload_menus)):
+            self.assertIs(tool_registry.resolve_call(registry.tools[tool_id].call), function)
 
     def test_cancelled_file_dialog_does_nothing(self):
-        with mock.patch.object(self.cmds, "fileDialog2", return_value=None):
+        with self.answers(None):
             self.run_tool("Save Control Shapes...", self.root)
         self.assertEqual(os.listdir(self.temp), ["template.json"])
 

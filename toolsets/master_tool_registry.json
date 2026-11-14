@@ -7,7 +7,7 @@
             "short_name": "Zero",
             "call": {
                 "module": "bmaya.maya.rigging.joint",
-                "function": "zero_transforms_ui",
+                "function": "zero_transforms_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -19,7 +19,7 @@
             "short_name": "Tool Registry Editor",
             "call": {
                 "module": "bmaya.maya_ui.tool_registry_editor",
-                "function": "show_ui",
+                "function": "show_window",
                 "kwargs": {}
             },
             "icon": null,
@@ -31,7 +31,7 @@
             "short_name": "Tool Menu Editor",
             "call": {
                 "module": "bmaya.maya_ui.tool_views.tool_menu",
-                "function": "show_menu_editor_ui",
+                "function": "show_window",
                 "kwargs": {}
             },
             "icon": null,
@@ -55,7 +55,7 @@
             "short_name": "oWorld",
             "call": {
                 "module": "bmaya.maya.rigging.joint",
-                "function": "orient_to_world_ui",
+                "function": "orient_to_world_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -67,7 +67,7 @@
             "short_name": "Orient to Mesh",
             "call": {
                 "module": "bmaya.maya.rigging.joint",
-                "function": "orient_to_mesh_ui",
+                "function": "orient_to_mesh_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -79,7 +79,7 @@
             "short_name": "Markup?",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "print_joint_markup_ui",
+                "function": "print_joint_markup_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -91,7 +91,7 @@
             "short_name": "Markup X",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "remove_joint_markup_ui",
+                "function": "remove_joint_markup_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -103,7 +103,7 @@
             "short_name": "Sel Ctrls",
             "call": {
                 "module": "bmaya.maya.posetools",
-                "function": "select_all_controls_ui",
+                "function": "select_all_controls_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -115,7 +115,7 @@
             "short_name": "Sel Mirror",
             "call": {
                 "module": "bmaya.maya.posetools",
-                "function": "select_mirror_controls_ui",
+                "function": "select_mirror_controls_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -127,7 +127,7 @@
             "short_name": "Shapes L>R",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "mirror_control_shapes_ui",
+                "function": "mirror_control_shapes_interactive",
                 "kwargs": {
                     "left_to_right": true
                 }
@@ -141,7 +141,7 @@
             "short_name": "Shapes R>L",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "mirror_control_shapes_ui",
+                "function": "mirror_control_shapes_interactive",
                 "kwargs": {
                     "left_to_right": false
                 }
@@ -155,7 +155,7 @@
             "short_name": "Save Shapes",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "save_control_shapes_ui",
+                "function": "save_control_shapes_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -167,7 +167,7 @@
             "short_name": "Load Shapes",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "load_control_shapes_ui",
+                "function": "load_control_shapes_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -205,7 +205,7 @@
             "short_name": "Save Weights",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "save_skin_weights_ui",
+                "function": "save_skin_weights_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -217,7 +217,7 @@
             "short_name": "Load Weights",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "load_skin_weights_ui",
+                "function": "load_skin_weights_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -229,7 +229,7 @@
             "short_name": "New Project",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "new_project_ui",
+                "function": "new_project_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -241,7 +241,7 @@
             "short_name": "New Asset",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "new_asset_ui",
+                "function": "new_asset_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -253,7 +253,7 @@
             "short_name": "New Variant",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "new_variant_ui",
+                "function": "new_variant_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -265,7 +265,7 @@
             "short_name": "Save Skeleton",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "save_skeleton_ui",
+                "function": "save_skeleton_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -277,7 +277,7 @@
             "short_name": "Save Model",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "save_model_ui",
+                "function": "save_model_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -289,7 +289,7 @@
             "short_name": "Build Rig",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "build_rig_ui",
+                "function": "build_rig_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -301,7 +301,7 @@
             "short_name": "Save Rig",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "save_rig_ui",
+                "function": "save_rig_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -336,8 +336,8 @@
             "name": "Reload Menu (dev)",
             "short_name": "Reload Menu",
             "call": {
-                "module": "bmaya.maya.devreload",
-                "function": "reload_menu",
+                "module": "bmaya.maya_ui.tool_views.tool_menu",
+                "function": "reload_menus",
                 "kwargs": {}
             },
             "icon": null,
@@ -349,7 +349,7 @@
             "short_name": "Save Pose",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "save_pose_ui",
+                "function": "save_pose_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -361,7 +361,7 @@
             "short_name": "Load Pose",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "load_pose_ui",
+                "function": "load_pose_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -373,7 +373,7 @@
             "short_name": "Mirror Pose",
             "call": {
                 "module": "bmaya.maya.posetools",
-                "function": "mirror_pose_ui",
+                "function": "mirror_pose_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -385,7 +385,7 @@
             "short_name": "Pose L>R",
             "call": {
                 "module": "bmaya.maya.posetools",
-                "function": "mirror_pose_ui",
+                "function": "mirror_pose_interactive",
                 "kwargs": {
                     "left_to_right": true
                 }
@@ -399,7 +399,7 @@
             "short_name": "Pose R>L",
             "call": {
                 "module": "bmaya.maya.posetools",
-                "function": "mirror_pose_ui",
+                "function": "mirror_pose_interactive",
                 "kwargs": {
                     "left_to_right": false
                 }
@@ -413,7 +413,7 @@
             "short_name": "Flip Pose",
             "call": {
                 "module": "bmaya.maya.posetools",
-                "function": "flip_pose_ui",
+                "function": "flip_pose_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -425,7 +425,7 @@
             "short_name": "Zero Pose",
             "call": {
                 "module": "bmaya.maya.posetools",
-                "function": "zero_pose_ui",
+                "function": "zero_pose_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -437,7 +437,7 @@
             "short_name": "Key All",
             "call": {
                 "module": "bmaya.maya.posetools",
-                "function": "key_all_controls_ui",
+                "function": "key_all_controls_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -449,7 +449,7 @@
             "short_name": "Key Modules",
             "call": {
                 "module": "bmaya.maya.posetools",
-                "function": "key_selected_modules_ui",
+                "function": "key_selected_modules_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -461,7 +461,7 @@
             "short_name": "Pose From Joints",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "pose_from_joint_pose_ui",
+                "function": "pose_from_joint_pose_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -473,7 +473,7 @@
             "short_name": "Animate From Joints",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "animate_from_joint_clip_ui",
+                "function": "animate_from_joint_clip_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -485,7 +485,7 @@
             "short_name": "Capture Clip",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "capture_joint_clip_ui",
+                "function": "capture_joint_clip_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -497,7 +497,7 @@
             "short_name": "Capture Joint Pose",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "capture_joint_pose_ui",
+                "function": "capture_joint_pose_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -509,7 +509,7 @@
             "short_name": "Save Animation",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "save_animation_ui",
+                "function": "save_animation_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -521,7 +521,7 @@
             "short_name": "Load Animation",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "load_animation_ui",
+                "function": "load_animation_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -533,7 +533,7 @@
             "short_name": "Load Anim Mirrored",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "load_animation_ui",
+                "function": "load_animation_interactive",
                 "kwargs": {
                     "mirror": true
                 }
@@ -547,7 +547,7 @@
             "short_name": "Skeleton Export",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "save_skeleton_export_ui",
+                "function": "save_skeleton_export_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -559,7 +559,7 @@
             "short_name": "Check Clip",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "check_clip_skeleton_ui",
+                "function": "check_clip_skeleton_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -571,7 +571,7 @@
             "short_name": "Clip Properties",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "edit_clip_properties_ui",
+                "function": "edit_clip_properties_interactive",
                 "kwargs": {}
             },
             "icon": null,

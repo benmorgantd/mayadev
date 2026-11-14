@@ -1,8 +1,8 @@
 # Assets
 
-`bmaya.asset`: where assets sit on disk and how tools find, save, load and version their files. The design and its reasons are in RigModules' `design/asset-model.md` (D29).
+`bmaya.core.asset`: where assets sit on disk and how tools find, save, load and version their files. The design and its reasons are in RigModules' `design/asset-model.md` (D29).
 
-`bmaya.asset` is plain Python with no Maya import. It runs in Maya, mayapy, batch jobs and tools outside Maya. The Maya handlers that read and write the files are in `bmaya.maya.assethandlers`, and the menu tools that call them are in `bmaya.maya.assettools` ([`tools.md`](tools.md)).
+`bmaya.core.asset` is plain Python with no Maya import. It runs in Maya, mayapy, batch jobs and tools outside Maya. The Maya handlers that read and write the files are in `bmaya.maya.assethandlers`, and the menu tools that call them are in `bmaya.maya.assettools` ([`tools.md`](tools.md)).
 
 It is built for Perforce without shared files: a routine save never touches a file someone else needs. Files in the depot change only when someone deliberately changes that asset.
 
@@ -21,7 +21,7 @@ shooter\main\characters\hero   ->   <RIGGING_PROJECT_DIR>\shooter\main\character
 - The id is relative to the projects root, so it means the same asset in every workspace and branch.
 - The same rules are in RigModules' `core/AssetId`, which validates the `assetId` of a built rig.
 
-`bmaya.asset.assetid` holds the rules, and code that splits or joins an id goes through it, so a later change of separator is a change in one place.
+`bmaya.core.asset.assetid` holds the rules, and code that splits or joins an id goes through it, so a later change of separator is a change in one place.
 
 | Function | Returns |
 |---|---|
@@ -119,7 +119,7 @@ The id is not stored, because it is the folder's path: a copied or moved folder 
 ## Using it
 
 ```python
-from bmaya.asset import Asset, Project, Registry, publishes
+from bmaya.core.asset import Asset, Project, Registry, publishes
 
 Project.create(r"D:\projects\shooter\main")                  # once per project
 hero = Asset.create("shooter\\main\\characters\\hero", "Character", skeleton="shooter\\main\\skeletons\\biped")
@@ -191,7 +191,7 @@ Not built yet: the publish step that builds the rig and writes the folder's cont
 
 ## Local versions
 
-Saving through `bmaya.asset.handlers.save` first copies the old file to the versions root, mirroring its place under the projects root:
+Saving through `bmaya.core.asset.handlers.save` first copies the old file to the versions root, mirroring its place under the projects root:
 
 ```
 ...\characters\hero\variants\game\shapes.json  ->  <versions root>\...\characters\hero\variants\game\shapes.v007.json
@@ -199,19 +199,19 @@ Saving through `bmaya.asset.handlers.save` first copies the old file to the vers
 
 A folder such as `weights\` becomes `weights.v003\`. The next number is the highest existing number plus one, so deleting an old copy never reuses a number. This is the undo for a save between source control submits, and the only one without source control.
 
-The versions root is `%LOCALAPPDATA%\bmaya\versions`, private to the machine and never submitted. Set `BMAYA_VERSIONS_DIR` to put it somewhere else, such as a synced drive. `bmaya.asset.versions.list_versions(path, root)` lists the copies as `(number, path)`.
+The versions root is `%LOCALAPPDATA%\bmaya\versions`, private to the machine and never submitted. Set `BMAYA_VERSIONS_DIR` to put it somewhere else, such as a synced drive. `bmaya.core.asset.versions.list_versions(path, root)` lists the copies as `(number, path)`.
 
 `bmaya.core.util.fileUtils.version_file` is an older, separate scheme (a `<name>.Versions` folder beside the file) that the asset code does not use.
 
 ## Source control
 
-Saves call `bmaya.asset.sourcecontrol`: `checkout(path)` before overwriting an existing file, `add(path)` after writing a new one. The default `SourceControl` does nothing, so everything works without source control. A Perforce adapter is a `SourceControl` subclass set with `sourcecontrol.set_current(adapter)`. None is written yet. For a folder file type the adapter handles everything under it (in Perforce terms, `<folder>/...`).
+Saves call `bmaya.core.asset.sourcecontrol`: `checkout(path)` before overwriting an existing file, `add(path)` after writing a new one. The default `SourceControl` does nothing, so everything works without source control. A Perforce adapter is a `SourceControl` subclass set with `sourcecontrol.set_current(adapter)`. None is written yet. For a folder file type the adapter handles everything under it (in Perforce terms, `<folder>/...`).
 
 Ask the Perforce admin for `+l` (exclusive lock) on files that can't be merged, including `.ma`.
 
 ## Saving and loading
 
-`bmaya.asset.handlers` dispatches by file type key to a registered `FileHandler`. `save(asset, file_type, variant=None, **context)` keeps a local version of the old file, checks it out (or adds it after a write), makes the folders and calls the handler with the path. `load(asset, file_type, variant=None, **context)` raises `FileNotFoundError` for a missing path and returns whatever the handler returns. `context` is the handler's own keyword arguments. A file type with no handler raises `NotImplementedError`.
+`bmaya.core.asset.handlers` dispatches by file type key to a registered `FileHandler`. `save(asset, file_type, variant=None, **context)` keeps a local version of the old file, checks it out (or adds it after a write), makes the folders and calls the handler with the path. `load(asset, file_type, variant=None, **context)` raises `FileNotFoundError` for a missing path and returns whatever the handler returns. `context` is the handler's own keyword arguments. A file type with no handler raises `NotImplementedError`.
 
 The Maya handlers are registered by `bmaya.maya.assethandlers.register()`:
 
@@ -231,7 +231,7 @@ The Maya handlers are registered by `bmaya.maya.assethandlers.register()`:
 ```python
 import maya.cmds as cmds
 
-from bmaya.asset import Asset, handlers
+from bmaya.core.asset import Asset, handlers
 from bmaya.maya import assethandlers
 
 assethandlers.register()                                      # once per session

@@ -1,4 +1,4 @@
-"""Maya save and load handlers for asset file types (bmaya.asset.handlers).
+"""Maya save and load handlers for asset file types (bmaya.core.asset.handlers).
 
 Only formats that exist get a handler: Maya scenes, RigModules templates, shape files, skin weights, control
 poses and animations (ControlPose and ControlAnim files) and animation clips (FBX, RigModules D42). Other file types
@@ -6,7 +6,7 @@ poses and animations (ControlPose and ControlAnim files) and animation clips (FB
 
 Call register() once per session before handlers.save / handlers.load.
 
-    from bmaya.asset import Asset, handlers
+    from bmaya.core.asset import Asset, handlers
     from bmaya.maya import assethandlers
 
     assethandlers.register()
@@ -35,8 +35,8 @@ import rigmodules.template
 
 import bmaya.core.log
 
-from bmaya.asset import animproperties, handlers, sourcecontrol, versions
-from bmaya.asset.asset import Asset
+from bmaya.core.asset import animproperties, handlers, sourcecontrol, versions
+from bmaya.core.asset.asset import Asset
 
 MAYA_FILE_TYPES = ("skeleton", "model", "rig")
 
@@ -174,7 +174,7 @@ class AnimClipHandler(handlers.FileHandler):
     because an export is a bundle: the engine properties go beside it, and so does the control animation it was made
     from, <name>.anim.json, written when a clip is captured from a rig. That ControlAnim is the sidecar of a restore:
     it gives back what joints can't (spaces, blends, Layout controls) with the animator's own keys.
-    The engine properties are <name>.animproperties.json (bmaya.asset.animproperties): a clip captured from a rig
+    The engine properties are <name>.animproperties.json (bmaya.core.asset.animproperties): a clip captured from a rig
     gets the defaults when it has none, and an existing file is never overwritten by a re-export.
     A bone map, <name>.bonemap.json beside an FBX, gives a file from another tool its joint markup."""
 

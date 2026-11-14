@@ -13,14 +13,14 @@ mayadev owns everything around the rigs: where an asset's files live and how the
 | Pose and animation | Save and load poses and animations as asset files, mirror, flip, zero and key a whole rig or a selection | [docs/tools.md](docs/tools.md) |
 | Clips | Capture a rig's joints to an FBX clip, restore a rig from an FBX clip, check a clip against the skeleton export, edit the engine's clip properties | [docs/clips.md](docs/clips.md) |
 | Menus | A tool is an id and one function call in JSON. A layout file arranges tools into a menu. Both are checked on every read and write, and both have editors | [docs/tools.md](docs/tools.md) |
-| Framework | Logger, progress window, callback registry, mayapy batch runner, Qt base classes | [docs/framework.md](docs/framework.md) |
+| Framework | Logger, progress window, `Event`, callback registry, mayapy batch runner, Qt base classes, the Qt prompter and forms | [docs/framework.md](docs/framework.md) |
 | Skinning and joints | Weight tools, joint authoring and a set of generic Maya utilities, most of them older code | [docs/status.md](docs/status.md) |
 
 ## Requirements
 
 - Maya 2026 with `mayapy`. Windows is the only platform the batch files and paths are written for.
 - The RigModules plugin (`RigModules.mll`) and its `python/rigmodules` package. Without the plugin, startup logs a warning and skips the RigModules menu. Without the package, `bmaya.maya.assettools`, `activerig`, `posetools` and `assethandlers` fail to import.
-- `bmaya.asset` needs only Python 3.10 or newer. It has no Maya import, so it runs in plain Python, mayapy and batch jobs.
+- `bmaya.core.asset` needs only Python 3.10 or newer. It has no Maya import, so it runs in plain Python, mayapy and batch jobs.
 
 ## Install
 
@@ -36,7 +36,7 @@ The steps in full, with an example `Maya.env`, are in [docs/setup.md](docs/setup
 Create a project, an asset and a variant from the RigModules menu (asset submenu: **New Project...**, **New Asset...**, **New Variant...**), or from Python:
 
 ```python
-from bmaya.asset import Asset, Project
+from bmaya.core.asset import Asset, Project
 
 Project.create(r"D:\projects\shooter\main")
 hero = Asset.create("shooter\\main\\characters\\hero", "Character")
@@ -48,13 +48,13 @@ Save the skeleton scene with **Save Skeleton...**, then **Build Rig from Asset..
 
 ```
 py/scripts/
-  userSetup.py          deferred startup: logger, plugin load, menus, active rig tracker
+  userSetup.py          deferred startup: registration passes, logger, plugin load, menus, active rig tracker
   Maya.env              Maya environment file
   bmaya/
-    asset/              assets on disk: ids, projects, registry, versions. No Maya import
-    core/               logger, progress manager, tool registry, batch base, file utils
-    maya/               everything that imports maya: handlers, tools, active rig, events, utils, skinning
-    maya_ui/            Qt: base classes, the two editors, the menu builder
+    core/               plain Python: logger, progress manager, prompts, Event, tool registry, batch base, file utils
+      asset/            assets on disk: ids, projects, registry, versions
+    maya/               everything that imports maya: handlers, tools, active rig, events, startup, utils, skinning
+    maya_ui/            Qt: base classes, the Qt prompter and forms, the two editors, the menu builder
   docs/, mkdocs.yml     deprecated mkdocs site: generated API pages and two old guides (batch/docgen)
   plug-ins/             Python API nodes, older code
 py/plug-ins/            more Python API nodes, older code

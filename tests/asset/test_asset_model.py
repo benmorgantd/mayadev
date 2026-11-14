@@ -1,4 +1,4 @@
-"""bmaya.asset in plain Python: ids, projects, assets, the registry, publishes, local versions, source
+"""bmaya.core.asset in plain Python: ids, projects, assets, the registry, publishes, local versions, source
 control calls and handler dispatch.
 
 Run with tests/asset/run.bat, or: python -m unittest discover -s tests/asset -p "test_asset_*.py"
@@ -15,9 +15,9 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "py", "scripts"))
 
-from bmaya.asset import Asset, AssetError, AssetIdError, Project, ProjectError, Registry  # noqa: E402
-from bmaya.asset import assetid, handlers, publishes, sourcecontrol, versions  # noqa: E402
-from bmaya.asset.project import DEFAULT_PROJECT, PROJECTS_ROOT_ENV, projects_root  # noqa: E402
+from bmaya.core.asset import Asset, AssetError, AssetIdError, Project, ProjectError, Registry  # noqa: E402
+from bmaya.core.asset import assetid, handlers, publishes, sourcecontrol, versions  # noqa: E402
+from bmaya.core.asset.project import DEFAULT_PROJECT, PROJECTS_ROOT_ENV, projects_root  # noqa: E402
 
 HERO = "shooter\\main\\characters\\hero"
 

@@ -48,7 +48,7 @@ class MayaHandlers(unittest.TestCase):
 
     def setUp(self):
         from maya import cmds
-        from bmaya.asset import Asset, Project, handlers
+        from bmaya.core.asset import Asset, Project, handlers
         from bmaya.maya import assethandlers
 
         self.cmds = cmds
@@ -105,7 +105,7 @@ class MayaHandlers(unittest.TestCase):
         self.assertEqual(cmds.getAttr(control + ".shapeType", asString=True), "Box")
 
         self.handlers.save(self.hero, "shapes", variant="game", rig_root=rig_root)
-        from bmaya.asset import versions
+        from bmaya.core.asset import versions
         self.assertEqual(len(versions.list_versions(path, self.root)), 1, "the second save keeps the first as a version")
 
     def test_shapes_need_a_rig_root(self):
@@ -208,7 +208,7 @@ class MayaHandlers(unittest.TestCase):
         self.assertIsNone(self.handlers.load(self.hero, "exports", name="walk").sidecar)
 
     def test_an_export_gets_default_properties_and_a_re_export_keeps_edited_ones(self):
-        from bmaya.asset import animproperties
+        from bmaya.core.asset import animproperties
         joint_clip = self.write_joint_clip()
         self.handlers.save(self.hero, "exports", name="walk", joint_clip=joint_clip)
         self.assertEqual(self.handlers.load(self.hero, "exports", name="walk").properties, animproperties.AnimProperties())
@@ -221,7 +221,7 @@ class MayaHandlers(unittest.TestCase):
         self.assertEqual(self.handlers.load(self.hero, "exports", name="walk").properties, edited)
 
     def test_a_clip_without_a_properties_file_has_none_and_a_bad_one_is_refused_on_load(self):
-        from bmaya.asset import animproperties
+        from bmaya.core.asset import animproperties
         self.handlers.save(self.hero, "exports", name="walk", joint_clip=self.write_joint_clip())
         path = animproperties.get_path(os.path.join(self.hero.path("exports"), "walk", "walk.fbx"))
         os.remove(path)
@@ -304,7 +304,7 @@ class MayaHandlers(unittest.TestCase):
         self.assertEqual(sorted(data["joints"]), ["spine1_jnt", "spine2_jnt"])
         self.assertEqual(self.assethandlers.AnimClipHandler.names(self.hero.path("exports")), [])
 
-        from bmaya.asset import versions
+        from bmaya.core.asset import versions
         self.assethandlers.save_skeleton_export(self.hero, rig_root)
         self.assertEqual(len(versions.list_versions(fbx, self.root)), 1, "a second export keeps the first as a version")
         self.assertEqual(len(versions.list_versions(bone_map, self.root)), 1)
@@ -335,7 +335,7 @@ class MayaHandlers(unittest.TestCase):
         self.assertEqual(data["joints"][1]["markup"], "")
 
     def test_save_anim_clip_versions_only_that_clips_fbx(self):
-        from bmaya.asset import versions
+        from bmaya.core.asset import versions
         module = self.assethandlers
         source = self.write_joint_clip()
         module.save_anim_clip(self.hero, "walk", joint_clip=source)

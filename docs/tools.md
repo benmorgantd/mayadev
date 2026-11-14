@@ -25,7 +25,7 @@ A tool can be in any number of layouts, or none. A menu item holds a call and no
             "short_name": "Pose L>R",
             "call": {
                 "module": "bmaya.maya.posetools",
-                "function": "mirror_pose_ui",
+                "function": "mirror_pose_interactive",
                 "kwargs": { "left_to_right": true }
             },
             "icon": null,
@@ -127,7 +127,7 @@ Each format has its own version (`REGISTRY_VERSION`, `LAYOUT_VERSION`) and an up
 
 Both are Qt windows opened from the **bmaya tool menu**.
 
-**Tool Registry Editor** (`bmaya.maya_ui.tool_registry_editor.show_ui`): create, edit, run and delete tools.
+**Tool Registry Editor** (`bmaya.maya_ui.tool_registry_editor.show_window`): create, edit, run and delete tools.
 
 | Part | Does |
 |---|---|
@@ -139,7 +139,7 @@ Both are Qt windows opened from the **bmaya tool menu**.
 | Open Registry | Replaces the loaded registry with the file's, and asks first when there are unsaved edits. A file that fails its check is refused with the full report |
 | Save Registry | Runs the structure check and the calls check on the whole registry, and, for the master registry, every menu layout against it. Deleting a tool a layout still uses is an error that names the layout. A refused save shows the full report and writes nothing |
 
-**Tool Menu Editor** (`bmaya.maya_ui.tool_views.tool_menu.show_menu_editor_ui`): arrange registry tools into submenus, separators and order.
+**Tool Menu Editor** (`bmaya.maya_ui.tool_views.tool_menu.show_window`): arrange registry tools into submenus, separators and order.
 
 - A tool row has a check box, and the check box is the item's `enabled`. Its tooltip is the tool id.
 - Open Menu Layout uses `read_layout`, so a bad file is refused with its report and the tree is left as it was. Save uses `write_layout`, which checks against the loaded registry.
@@ -154,8 +154,8 @@ Saving in an editor and then running **Reload Menu (dev)** shows the change with
 |---|---|---|
 | (top level) | Tool Registry Editor, Tool Menu Editor | The two editors above |
 | Joints | Create Joint at Center | `joint.create_joint_at_selection_center()` |
-| Joints | Zero Transforms | `joint.zero_transforms_ui`: `cmds.makeIdentity` on the selection (translate, rotate, scale) |
-| Joints | Orient to World, Orient to Mesh | `joint.orient_to_world_ui` on the selected joints, and `joint.orient_to_mesh_ui` (the last selection is the mesh) |
+| Joints | Zero Transforms | `joint.zero_transforms_interactive`: `cmds.makeIdentity` on the selection (translate, rotate, scale) |
+| Joints | Orient to World, Orient to Mesh | `joint.orient_to_world_interactive` on the selected joints, and `joint.orient_to_mesh_interactive` (the last selection is the mesh) |
 | dev | Reload RigModules (dev), Unload RigModules (dev), Reload Menu (dev) | See [`setup.md`](setup.md#dev-reload). They are in this menu, which has no plugin, so they stay reachable after an unload |
 
 ### RigModules menu
@@ -247,7 +247,7 @@ Clips are FBX files ([`clips.md`](clips.md)).
 
 ### Scripts call the same functions
 
-Every tool above is a call into `bmaya.maya.assettools`, `bmaya.maya.posetools` or `bmaya.maya.rigging.joint`, and those functions take arguments, so scripts and batch jobs call them without the dialogs. The functions at the top of `assettools` (`new_variant`, `save_skeleton`, `save_model`, `build_rig`, `save_rig`, `save_control_shapes`, `load_control_shapes`, `save_pose`, `save_animation`, `save_joint_clip`, `save_skeleton_export`, `check_clip_skeleton`, `set_clip_properties`, `save_skin_weights`, `load_skin_weights`, `mark_meshes_for_skinning`) are the scriptable ones, and the `*_ui` functions below them ask and call them.
+Every tool above is a call into `bmaya.maya.assettools`, `bmaya.maya.posetools` or `bmaya.maya.rigging.joint`, and those functions take arguments, so scripts and batch jobs call them without the dialogs. The functions at the top of `assettools` (`new_variant`, `save_skeleton`, `save_model`, `build_rig`, `save_rig`, `save_control_shapes`, `load_control_shapes`, `save_pose`, `save_animation`, `save_joint_clip`, `save_skeleton_export`, `check_clip_skeleton`, `set_clip_properties`, `save_skin_weights`, `load_skin_weights`, `mark_meshes_for_skinning`) are the scriptable ones. The `*_interactive` functions below them are the menu's entry points: they read the active rig and ask through a `Prompter` (Qt dialogs in a GUI session), then call them. A script can run an entry point too, with its answers in a `bmaya.core.prompts.ScriptedPrompter` ([`architecture.md`](architecture.md#questions-a-tool-asks)). In mayapy with no prompter, a question raises `PromptError` naming it rather than waiting on a dialog.
 
 ```python
 import bmaya.maya.assettools

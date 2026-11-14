@@ -1,11 +1,17 @@
-"""Singleton class for tracking the progress of different tasks, which a UI can watch to update itself."""
+"""The progress of the current task, as a view-model any number of views can watch through its changed Event."""
 
-import weakref
-from typing import Optional, Callable
+from __future__ import annotations
+
+from typing import Optional
+
 from . import log
+from .observable import Event
 
 
 class ProgressManager:
+    """A singleton: one task's status text and value. Views connect to changed. In mayapy nothing listens and
+    progress goes to the debug log."""
+
     _instance: Optional["ProgressManager"] = None
 
     def __new__(cls) -> "ProgressManager":
@@ -15,67 +21,45 @@ class ProgressManager:
         return cls._instance
 
     def _init_manager(self) -> None:
-        """Initialize the singleton state variables."""
         self.active: bool = False
         self.status_text: str = "Ready"
         self.current_value: int = 0
         self.max_value: int = 100
-        self._on_update_callback: Optional[weakref.WeakMethod] = None
+        self.changed = Event()
 
     def start(self, status: str, max_value: int = 100) -> None:
-        """Explicitly kick off a progress tracking session."""
+        """Starts tracking a task."""
         self.status_text = status
         self.max_value = max_value
         self.current_value = 0
         self.active = True
-        self._trigger_update()
+        self.changed.emit()
 
     def update(self, value: int, status: Optional[str] = None) -> None:
-        """Update progress value and optionally the status text from anywhere."""
+        """Sets the value and, when given, the status text. Does nothing while no task is active."""
         if not self.active:
             return
         self.current_value = min(value, self.max_value)
         if status is not None:
             self.status_text = status
         log.debug(f"[ProgressManager] {value}% - {status}")
-        self._trigger_update()
+        self.changed.emit()
 
     def increment(self, amount: int = 1, status: Optional[str] = None) -> None:
-        """Increment current progress by a specific amount."""
         self.update(self.current_value + amount, status)
 
     def end(self) -> None:
-        """Clean up state and signal that progress is finished."""
+        """Ends the task."""
         self.active = False
         self.current_value = 0
-        self._trigger_update()
+        self.changed.emit()
 
-    def register_callback(self, callback: Callable[[], None]) -> None:
-        """Hook for the UI to listen for updates using weak methods safely."""
-        if hasattr(callback, "__self__"):
-            # Hold a STRONG reference to the instance (the window) to stop GC
-            self._ui_window = callback.__self__
-            self._on_update_callback = weakref.WeakMethod(callback)
-        else:
-            self._on_update_callback = weakref.ref(callback)
-
-    def _trigger_update(self) -> None:
-        if self._on_update_callback:
-            callback = self._on_update_callback()
-            if callback is not None:
-                callback()
-            else:
-                # Clean up if the reference dead-ended
-                self._on_update_callback = None
-
-    # --- Context Manager Support for Exception Handling ---
     def __enter__(self) -> "ProgressManager":
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
-        """Ensures that progress resets/ends cleanly even if an exception occurs."""
+        """Ends the task even when it raised, and lets the exception through."""
         if exc_type is not None:
             log.error(f"[ProgressManager] Execution failed {exc_val}")
-
         self.end()
-        return False  # Do not suppress the exception; let Maya handle or display it
+        return False

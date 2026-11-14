@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 import maya.cmds as cmds
 import bmaya.core.log as log
+import bmaya.maya.startup
 from bmaya.core import progressmanager
 
 _IS_BATCH = cmds.about(batch=True)
@@ -14,11 +15,22 @@ if _IS_BATCH:
 
 if not _IS_BATCH:
     # ui-related imports
+    import bmaya.maya_ui.startup
     from bmaya.maya_ui.qtbase import ProgressWindow
+
+# The progress window listens to the progress manager, which holds it weakly, so this module keeps it alive
+_progress_window = None
 
 
 def _run_deferred_setup():
+    global _progress_window
     print(f"{_print_prefix}[bmaya][startup] Starting custom startup")
+
+    # The registration passes fill the slots lower layers declare: log output, the prompter, reload hooks
+    # (RigModules D49). The UI pass runs only with a UI.
+    bmaya.maya.startup.register()
+    if not _IS_BATCH:
+        bmaya.maya_ui.startup.register()
 
     # Setup logger
     log.init_logger()
@@ -27,7 +39,7 @@ def _run_deferred_setup():
     pmanager.start("Running Deferred Startup")
 
     if not _IS_BATCH:
-        ProgressWindow().show()
+        _progress_window = ProgressWindow()
 
     pmanager.update(10, "Set up log streaming")
 

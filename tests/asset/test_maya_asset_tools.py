@@ -5,6 +5,7 @@ loaded), and the rigmodules package on the path (RigModules.mod puts it there). 
 Run with tests/asset/run.bat.
 """
 
+import dataclasses
 import json
 import os
 import re
@@ -54,8 +55,8 @@ class AssetTools(unittest.TestCase):
 
     def setUp(self):
         from maya import cmds
-        import bmaya.asset
-        import bmaya.asset.handlers
+        import bmaya.core.asset
+        import bmaya.core.asset.handlers
         import bmaya.maya.assethandlers
         import bmaya.maya.assettools
 
@@ -70,12 +71,18 @@ class AssetTools(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-        bmaya.asset.Project.create(os.path.join(self.root, "shooter", "main"))
-        self.hero = bmaya.asset.Asset.create(HERO, "Character")
+        bmaya.core.asset.Project.create(os.path.join(self.root, "shooter", "main"))
+        self.hero = bmaya.core.asset.Asset.create(HERO, "Character")
         self.template = self.write_template(TEMPLATE)
         for file_type in bmaya.maya.assethandlers.MAYA_FILE_TYPES + ("shapes", "template", "weights"):
-            self.addCleanup(bmaya.asset.handlers.unregister, file_type)
+            self.addCleanup(bmaya.core.asset.handlers.unregister, file_type)
         cmds.file(new=True, force=True)
+
+    def answers(self, *answers):
+        """A prompter that answers the tool's questions in order. With no prompter, a question raises (the session
+        default), which is how a test asserts that a tool asks nothing."""
+        import bmaya.core.prompts
+        return bmaya.core.prompts.ScriptedPrompter(answers)
 
     def write_template(self, data, name="template.json"):
         path = os.path.join(self.temp, name)
@@ -139,8 +146,8 @@ class AssetTools(unittest.TestCase):
         self.assertTrue(os.path.isfile(path))
 
     def test_save_skeleton_of_an_asset_that_shares_another_skeleton_fails(self):
-        import bmaya.asset
-        bmaya.asset.Asset.create("shooter\\main\\characters\\villain", "Character", skeleton=HERO)
+        import bmaya.core.asset
+        bmaya.core.asset.Asset.create("shooter\\main\\characters\\villain", "Character", skeleton=HERO)
         with self.assertRaisesRegex(RuntimeError, "uses the skeleton of " + re.escape(HERO)):
             self.tools.save_skeleton("shooter\\main\\characters\\villain")
 
@@ -190,12 +197,10 @@ class AssetTools(unittest.TestCase):
     def test_shapes_go_to_the_asset_once_its_folder_exists(self):
         cmds = self.cmds
         rig_root = self.build_outside_the_asset(HERO)
-        with mock.patch.object(cmds, "fileDialog2") as dialog:
-            path = self.tools.save_control_shapes("hero:spine1_ctrl_c")
-            self.assertEqual(path, self.hero.path("shapes", "game"))
-            cmds.setAttr("hero:spine1_ctrl_c.shapeType", 1)
-            self.tools.load_control_shapes(rig_root)
-        dialog.assert_not_called()
+        path = self.tools.save_control_shapes("hero:spine1_ctrl_c")   # no prompter: a question would raise
+        self.assertEqual(path, self.hero.path("shapes", "game"))
+        cmds.setAttr("hero:spine1_ctrl_c.shapeType", 1)
+        self.tools.load_control_shapes(rig_root)
         self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.shapeType", asString=True), "Box")
 
     def test_load_shapes_without_a_saved_file_fails(self):
@@ -203,12 +208,11 @@ class AssetTools(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             self.tools.load_control_shapes("hero:spine1_ctrl_c")
 
-    def test_shapes_use_a_file_dialog_before_the_asset_exists(self):
+    def test_shapes_ask_for_a_file_before_the_asset_exists(self):
         cmds = self.cmds
         self.build_outside_the_asset("shooter\\main\\characters\\nobody")
         path = os.path.join(self.temp, "chosen_shapes.json").replace("\\", "/")
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
-            self.assertEqual(self.tools.save_control_shapes("nobody:spine1_ctrl_c"), path)
+        self.assertEqual(self.tools.save_control_shapes("nobody:spine1_ctrl_c", prompter=self.answers(path)), path)
         self.assertTrue(os.path.isfile(path))
         self.assertFalse(os.path.exists(os.path.join(self.root, "shooter", "main", "characters", "nobody")))
 
@@ -217,9 +221,9 @@ class AssetTools(unittest.TestCase):
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
         cmds.setAttr("hero:spine1_ctrl_c.translateY", 2)
-        with mock.patch.object(self.tools, "_ask_text", return_value="idle"),                 mock.patch.object(cmds, "fileDialog2") as dialog:
-            path = self.tools.save_pose_ui()
-        dialog.assert_not_called()
+        answers = self.answers("idle")
+        path = self.tools.save_pose_interactive(prompter=answers)
+        self.assertEqual([q.kind for q in answers.asked], ["ask_text"], "a name, not a file")
         self.assertEqual(path, os.path.join(self.hero.path("controlposes"), "idle.json"))
         self.assertTrue(os.path.isfile(path))
 
@@ -227,15 +231,14 @@ class AssetTools(unittest.TestCase):
         cmds = self.cmds
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
-        with mock.patch.object(self.tools, "_ask_text", return_value="idle"):
-            path = self.tools.save_pose_ui()
-            cmds.setAttr("hero:spine1_ctrl_c.translateY", 5)
-            with mock.patch.object(cmds, "confirmDialog", return_value="Cancel"):
-                self.assertIsNone(self.tools.save_pose_ui())
-            with open(path, encoding="utf-8") as handle:
-                self.assertEqual(json.load(handle)["controls"]["Center"]["spine1"]["translateY"], 0)
-            with mock.patch.object(cmds, "confirmDialog", return_value="Replace"):
-                self.tools.save_pose_ui()
+        path = self.tools.save_pose_interactive(prompter=self.answers("idle"))
+        cmds.setAttr("hero:spine1_ctrl_c.translateY", 5)
+        cancel = self.answers("idle", False)
+        self.assertIsNone(self.tools.save_pose_interactive(prompter=cancel))
+        self.assertEqual(cancel.asked[1].options, ("Replace",))
+        with open(path, encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle)["controls"]["Center"]["spine1"]["translateY"], 0)
+        self.tools.save_pose_interactive(prompter=self.answers("idle", True))
         with open(path, encoding="utf-8") as handle:
             self.assertEqual(json.load(handle)["controls"]["Center"]["spine1"]["translateY"], 5)
 
@@ -249,11 +252,8 @@ class AssetTools(unittest.TestCase):
         rig_root = self.build_outside_the_asset(HERO)
         cmds.playbackOptions(minTime=1, maxTime=3)
         with mock.patch.object(self.tools.bmaya.maya.activerig, "get_active_rig",
-                               return_value=mock.Mock(rig_root=rig_root, asset_id=HERO)), \
-                mock.patch.object(self.tools, "_ask_text", return_value="walk"), \
-                mock.patch.object(cmds, "fileDialog2") as dialog:
-            path = self.tools.capture_joint_clip_ui()
-        dialog.assert_not_called()
+                               return_value=mock.Mock(rig_root=rig_root, asset_id=HERO)):
+            path = self.tools.capture_joint_clip_interactive(prompter=self.answers("walk"))
         self.assertEqual(path, os.path.join(self.hero.path("exports"), "walk", "walk.fbx"))
         self.assertTrue(os.path.isfile(path))
 
@@ -261,12 +261,11 @@ class AssetTools(unittest.TestCase):
         cmds = self.cmds
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
-        with mock.patch.object(self.tools, "_ask_text", return_value="idle"):
-            path = self.tools.save_pose_ui()
+        path = self.tools.save_pose_interactive(prompter=self.answers("idle"))
         cmds.setAttr("hero:spine1_ctrl_c.translateY", 5)
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]) as dialog:
-            self.assertEqual(self.tools.load_pose_ui(), path)
-        self.assertEqual(dialog.call_args.kwargs["startingDirectory"], self.hero.path("controlposes"))
+        answers = self.answers(path)
+        self.assertEqual(self.tools.load_pose_interactive(prompter=answers), path)
+        self.assertEqual(answers.asked[0].default, self.hero.path("controlposes"))
         self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateY"), 0)
 
     def test_pose_tools_use_a_file_dialog_before_the_asset_exists(self):
@@ -274,9 +273,8 @@ class AssetTools(unittest.TestCase):
         self.build_outside_the_asset("shooter\\main\\characters\\nobody")
         cmds.select(clear=True)
         path = os.path.join(self.temp, "chosen_pose.json").replace("\\", "/")
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
-            self.assertEqual(self.tools.save_pose_ui(), path)
-            self.assertEqual(self.tools.load_pose_ui(), path)
+        self.assertEqual(self.tools.save_pose_interactive(prompter=self.answers(path)), path)
+        self.assertEqual(self.tools.load_pose_interactive(prompter=self.answers(path)), path)
         self.assertTrue(os.path.isfile(path))
 
     def active_rig(self, rig_root):
@@ -290,17 +288,13 @@ class AssetTools(unittest.TestCase):
         cmds.playbackOptions(minTime=1, maxTime=3)
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=1, value=0)
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=3, value=4)
-        with mock.patch.object(self.tools, "_ask_text", return_value="rise"), mock.patch.object(cmds, "fileDialog2") as dialog:
-            path = self.tools.save_animation_ui()
-            dialog.assert_not_called()
-            self.assertEqual(path, os.path.join(self.hero.path("controlanims"), "rise.json"))
-            with open(path, encoding="utf-8") as handle:
-                self.assertEqual(json.load(handle)["endFrame"], 3)
-            with mock.patch.object(cmds, "confirmDialog", return_value="Cancel"):
-                self.assertIsNone(self.tools.save_animation_ui())
-            with mock.patch.object(cmds, "confirmDialog", return_value="Replace"):
-                self.tools.save_animation_ui()
-        from bmaya.asset import versions
+        path = self.tools.save_animation_interactive(prompter=self.answers("rise"))
+        self.assertEqual(path, os.path.join(self.hero.path("controlanims"), "rise.json"))
+        with open(path, encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle)["endFrame"], 3)
+        self.assertIsNone(self.tools.save_animation_interactive(prompter=self.answers("rise", False)))
+        self.tools.save_animation_interactive(prompter=self.answers("rise", True))
+        from bmaya.core.asset import versions
         self.assertEqual(len(versions.list_versions(path, self.root)), 1)
 
     def test_load_animation_dialog_opens_in_controlanims_and_mirror_flips_a_center_control(self):
@@ -308,22 +302,20 @@ class AssetTools(unittest.TestCase):
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
         cmds.setKeyframe("hero:spine1_ctrl_c.translateX", time=1, value=2)
-        with mock.patch.object(self.tools, "_ask_text", return_value="lean"):
-            path = self.tools.save_animation_ui()
+        path = self.tools.save_animation_interactive(prompter=self.answers("lean"))
         cmds.cutKey("hero:spine1_ctrl_c", attribute="translateX", clear=True)
         cmds.setAttr("hero:spine1_ctrl_c.translateX", 0)
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]) as dialog:
-            self.assertEqual(self.tools.load_animation_ui(), path)
-            self.assertEqual(dialog.call_args.kwargs["startingDirectory"], self.hero.path("controlanims"))
-            self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateX", time=1), 2)
-            self.assertEqual(self.tools.load_animation_ui(mirror=True), path)
+        answers = self.answers(path)
+        self.assertEqual(self.tools.load_animation_interactive(prompter=answers), path)
+        self.assertEqual(answers.asked[0].default, self.hero.path("controlanims"))
+        self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateX", time=1), 2)
+        self.assertEqual(self.tools.load_animation_interactive(mirror=True, prompter=self.answers(path)), path)
         self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateX", time=1), -2)
 
     def test_load_animation_cancelled_changes_nothing(self):
         self.build_outside_the_asset(HERO)
         self.cmds.select(clear=True)
-        with mock.patch.object(self.cmds, "fileDialog2", return_value=None):
-            self.assertIsNone(self.tools.load_animation_ui())
+        self.assertIsNone(self.tools.load_animation_interactive(prompter=self.answers(None)))
         self.assertEqual(self.cmds.ls(type="animCurve") or [], [])
 
     def test_animation_tools_use_a_file_dialog_before_the_asset_exists(self):
@@ -332,9 +324,8 @@ class AssetTools(unittest.TestCase):
         cmds.select(clear=True)
         cmds.setKeyframe("nobody:spine1_ctrl_c.translateY", time=1, value=1)
         path = os.path.join(self.temp, "chosen_anim.json").replace("\\", "/")
-        with mock.patch.object(cmds, "fileDialog2", return_value=[path]):
-            self.assertEqual(self.tools.save_animation_ui(), path)
-            self.assertEqual(self.tools.load_animation_ui(), path)
+        self.assertEqual(self.tools.save_animation_interactive(prompter=self.answers(path)), path)
+        self.assertEqual(self.tools.load_animation_interactive(prompter=self.answers(path)), path)
         self.assertTrue(os.path.isfile(path))
 
     def test_the_skeleton_export_checks_clips_against_its_joints(self):
@@ -342,14 +333,15 @@ class AssetTools(unittest.TestCase):
         rig_root = self.build_outside_the_asset(HERO)
         cmds.playbackOptions(minTime=1, maxTime=2)
         with self.active_rig(rig_root):
-            fbx = self.tools.save_skeleton_export_ui()
+            fbx = self.tools.save_skeleton_export_interactive()
         self.assertEqual(fbx, os.path.join(self.hero.path("exports"), "hero_skeleton.fbx"))
         self.assertTrue(os.path.isfile(fbx[:-4] + ".bonemap.json"))
 
         clip = self.tools.save_joint_clip(HERO, "walk", rig_root, 1, 2)
-        with self.active_rig(rig_root), mock.patch.object(cmds, "fileDialog2", return_value=[clip]) as dialog:
-            self.assertEqual(self.tools.check_clip_skeleton_ui(), clip)
-        self.assertEqual(dialog.call_args.kwargs["startingDirectory"], self.hero.path("exports"))
+        answers = self.answers(clip)
+        with self.active_rig(rig_root):
+            self.assertEqual(self.tools.check_clip_skeleton_interactive(prompter=answers), clip)
+        self.assertEqual(answers.asked[0].default, self.hero.path("exports"))
 
         identity = {"translate": [0, 0, 0], "rotate": [0, 0, 0, 1], "scale": [1, 1, 1]}
         other = {"formatVersion": 1, "frameRate": 30.0, "startFrame": 1, "poses": [[identity]],
@@ -369,34 +361,33 @@ class AssetTools(unittest.TestCase):
             self.tools.check_clip_skeleton(HERO, os.path.join(self.temp, "walk.fbx"))
 
     def test_clip_properties_are_set_from_a_dialog_and_keep_events_and_curves(self):
-        import bmaya.asset.animproperties as animproperties
+        import bmaya.core.asset.animproperties as animproperties
         fbx = os.path.join(self.temp, "walk.fbx")
         animproperties.write(animproperties.get_path(fbx), animproperties.AnimProperties(
             events=(animproperties.AnimEvent("footstep", 4.0),),
             curves=(animproperties.AnimCurve("lock", ((1.0, 0.0), (2.0, 1.0))),)))
-        changes = {"loop": True, "root_motion": True, "additive": "mesh"}
-        with mock.patch.object(self.cmds, "fileDialog2", return_value=[fbx]), \
-                mock.patch.object(self.tools, "_ask_clip_properties", return_value=changes) as ask, \
-                self.active_rig("hero:rigRootModule1"):
-            self.assertEqual(self.tools.edit_clip_properties_ui(), fbx)
-        self.assertEqual(ask.call_args.args[0].events[0].name, "footstep", "the dialog starts at the file's values")
+        properties_path = animproperties.get_path(fbx)
+        animproperties.write(properties_path, dataclasses.replace(animproperties.read(properties_path), additive="local"))
+        answers = self.answers(fbx, self.tools.ClipSettings(loop=True, root_motion=True, additive="mesh"))
+        with self.active_rig("hero:rigRootModule1"):
+            self.assertEqual(self.tools.edit_clip_properties_interactive(prompter=answers), fbx)
+        self.assertEqual(answers.asked[1].default, self.tools.ClipSettings(additive="local"),
+                         "the form starts at the file's values")
         properties = animproperties.read(animproperties.get_path(fbx))
         self.assertEqual((properties.loop, properties.root_motion, properties.additive), (True, True, "mesh"))
         self.assertEqual(len(properties.events), 1)
         self.assertEqual(len(properties.curves), 1)
 
     def test_editing_clip_properties_cancelled_writes_nothing(self):
-        import bmaya.asset.animproperties as animproperties
+        import bmaya.core.asset.animproperties as animproperties
         fbx = os.path.join(self.temp, "walk.fbx")
-        for dialog_result in ({"fileDialog2": None}, {"fileDialog2": [fbx], "_ask_clip_properties": None}):
-            with mock.patch.object(self.cmds, "fileDialog2", return_value=dialog_result["fileDialog2"]), \
-                    mock.patch.object(self.tools, "_ask_clip_properties", return_value=dialog_result.get("_ask_clip_properties")), \
-                    self.active_rig("hero:rigRootModule1"):
-                self.assertIsNone(self.tools.edit_clip_properties_ui())
+        for answers in ((None,), (fbx, None)):
+            with self.active_rig("hero:rigRootModule1"):
+                self.assertIsNone(self.tools.edit_clip_properties_interactive(prompter=self.answers(*answers)))
         self.assertFalse(os.path.exists(animproperties.get_path(fbx)))
 
     def test_set_clip_properties_refuses_a_bad_value(self):
-        import bmaya.asset.animproperties as animproperties
+        import bmaya.core.asset.animproperties as animproperties
         with self.assertRaises(animproperties.AnimPropertiesError):
             self.tools.set_clip_properties(os.path.join(self.temp, "walk.fbx"), additive="relative")
 
@@ -415,8 +406,7 @@ class AssetTools(unittest.TestCase):
     def test_save_rig_uses_a_file_dialog_before_the_asset_exists(self):
         self.build_outside_the_asset("shooter\\main\\characters\\nobody")
         path = os.path.join(self.temp, "chosen_rig.ma").replace("\\", "/")
-        with mock.patch.object(self.cmds, "fileDialog2", return_value=[path]):
-            self.assertEqual(self.tools.save_rig("nobody:spine1_ctrl_c"), path)
+        self.assertEqual(self.tools.save_rig("nobody:spine1_ctrl_c", prompter=self.answers(path)), path)
         self.assertTrue(os.path.isfile(path))
 
     # ---- meshes and skin weights ----
@@ -481,13 +471,11 @@ class AssetTools(unittest.TestCase):
         cmds.setRigMeshId(box)
         cluster = self.skin_box(box)
         saved = self.spine2_weights(box)
-        with mock.patch.object(cmds, "fileDialog2") as dialog:
-            files = self.tools.save_skin_weights(rig_root)
-            self.assertEqual([os.path.basename(f) for f in files], ["box_geo.json"])
-            self.assertEqual(os.path.dirname(files[0]), self.hero.path("weights", "game"))
-            cmds.delete(cluster)
-            self.assertEqual([m.split("|")[-1] for m in self.tools.load_skin_weights(rig_root)], ["hero:box_geo"])
-        dialog.assert_not_called()
+        files = self.tools.save_skin_weights(rig_root)   # no prompter: a question would raise
+        self.assertEqual([os.path.basename(f) for f in files], ["box_geo.json"])
+        self.assertEqual(os.path.dirname(files[0]), self.hero.path("weights", "game"))
+        cmds.delete(cluster)
+        self.assertEqual([m.split("|")[-1] for m in self.tools.load_skin_weights(rig_root)], ["hero:box_geo"])
         self.assertEqual(self.spine2_weights(box), saved)
 
     def test_save_skin_weights_needs_marked_meshes(self):
@@ -538,8 +526,9 @@ class AssetTools(unittest.TestCase):
         cmds.setRigMeshId(box)
         self.skin_box(box, "nobody")
         folder = os.path.join(self.temp, "chosen_weights")
-        with mock.patch.object(cmds, "fileDialog2", return_value=[folder]):
-            self.tools.save_skin_weights(rig_root)
+        answers = self.answers(folder)
+        self.tools.save_skin_weights(rig_root, prompter=answers)
+        self.assertEqual(answers.asked[0].default, self.root, "the folder question starts in the projects root")
         self.assertEqual(os.listdir(folder), ["box_geo.json"])
 
     def test_build_rig_imports_the_model_and_loads_its_weights(self):
@@ -566,50 +555,45 @@ class AssetTools(unittest.TestCase):
 
     # ---- menu entry points ----
 
-    def test_new_asset_ui_creates_the_asset_with_the_chosen_type(self):
-        with mock.patch.object(self.tools, "_ask_text", return_value="shooter\\main\\props\\crate"), \
-                mock.patch.object(self.tools, "_choose", return_value="Prop") as choose:
-            self.tools.new_asset_ui()
-        import bmaya.asset
-        self.assertEqual(bmaya.asset.Asset("shooter\\main\\props\\crate").asset_type, "Prop")
-        self.assertIn("Prop", choose.call_args.args[2])
+    def test_new_asset_creates_the_asset_with_the_chosen_type(self):
+        answers = self.answers("shooter\\main\\props\\crate", "Prop")
+        self.tools.new_asset_interactive(prompter=answers)
+        import bmaya.core.asset
+        self.assertEqual(bmaya.core.asset.Asset("shooter\\main\\props\\crate").asset_type, "Prop")
+        self.assertIn("Prop", answers.asked[1].options)
 
-    def test_new_asset_ui_without_a_project_fails(self):
-        import bmaya.asset
-        with mock.patch.object(self.tools, "_ask_text", return_value="elsewhere\\props\\crate"):
-            with self.assertRaises(bmaya.asset.ProjectError):
-                self.tools.new_asset_ui()
+    def test_new_asset_without_a_project_fails(self):
+        import bmaya.core.asset
+        with self.assertRaises(bmaya.core.asset.ProjectError):
+            self.tools.new_asset_interactive(prompter=self.answers("elsewhere\\props\\crate"))
 
-    def test_new_project_ui_writes_a_project_json(self):
+    def test_new_project_writes_a_project_json(self):
         folder = os.path.join(self.root, "other", "main")
-        with mock.patch.object(self.cmds, "fileDialog2", return_value=[folder]):
-            self.tools.new_project_ui()
+        self.tools.new_project_interactive(prompter=self.answers(folder))
         self.assertTrue(os.path.isfile(os.path.join(folder, "project.json")))
 
     def test_asset_id_dialog_starts_with_the_active_rig_asset(self):
         self.build_outside_the_asset(HERO)
         self.cmds.select(clear=True)
-        with mock.patch.object(self.tools, "_ask_file", return_value=self.template), \
-                mock.patch.object(self.tools, "_ask_text", return_value=HERO) as ask_text:
-            self.tools.new_variant_ui()
-        self.assertEqual(ask_text.call_args.args[2], HERO)
+        answers = self.answers(HERO, self.template)
+        self.tools.new_variant_interactive(prompter=answers)
+        self.assertEqual(answers.asked[0].default, HERO)
         self.assertEqual(self.hero.variants, ["game"])
 
     def test_asset_id_dialog_starts_empty_without_a_rig(self):
-        with mock.patch.object(self.tools, "_ask_text", return_value=None) as ask_text:
-            self.tools.save_skeleton_ui()
-        self.assertEqual(ask_text.call_args.args[2], "")
+        answers = self.answers(None)
+        self.tools.save_skeleton_interactive(prompter=answers)
+        self.assertEqual(answers.asked[0].default, "")
 
     def test_shape_menu_tool_uses_the_active_rig(self):
         self.build_outside_the_asset(HERO)
         self.cmds.select(clear=True)
-        self.tools.save_control_shapes_ui()
+        self.tools.save_control_shapes_interactive()
         self.assertTrue(self.hero.file_exists("shapes", "game"))
 
-    def test_build_rig_ui_selects_the_new_rig_root(self):
+    def test_build_rig_selects_the_new_rig_root(self):
         self.make_buildable_asset()
-        with mock.patch.object(self.tools, "_ask_text", return_value=HERO):
-            self.tools.build_rig_ui()
+        self.tools.build_rig_interactive(prompter=self.answers(HERO))   # one variant: no question for it
         import rigmodules.query
         self.assertEqual(self.cmds.ls(selection=True), [rigmodules.query.get_rigs("hero")[0].rig_root])
 

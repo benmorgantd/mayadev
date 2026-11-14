@@ -1,14 +1,10 @@
-"""Base classes for qt widgets compatible with Python 3 and PySide6"""
-
-import os
-import ast
+"""Base classes for Qt windows and widgets (PySide6). Layouts are written in code: no Qt Designer files."""
 
 import maya.cmds as cmds
 import maya.OpenMayaUI as omui
 from bmaya.core import log, progressmanager
 
-# PySide6 Fix: QtCompat removed. Use QtUiTools for loading designer layouts.
-from PySide6 import QtWidgets, QtCore, QtUiTools, QtGui
+from PySide6 import QtWidgets, QtCore, QtGui
 import shiboken6
 
 
@@ -17,20 +13,8 @@ def get_maya_main_window():
     return shiboken6.wrapInstance(int(omui.MQtUtil.mainWindow()), QtWidgets.QWidget)
 
 
-def loadUiFile(designerFile, parent=None):
-    """Helper replacement for the old QtCompat.load_ui layout stream"""
-    loader = QtUiTools.QUiLoader()
-    ui_file = QtCore.QFile(designerFile)
-    if ui_file.open(QtCore.QFile.OpenModeFlag.ReadOnly):
-        widget = loader.load(ui_file, parent)
-        ui_file.close()
-        return widget
-    else:
-        raise RuntimeError(f"Failed to open UI file: {designerFile}")
-
-
 class SimpleWindow(QtWidgets.QMainWindow):
-    def __init__(self, parent=None, designerFile=None, title="Simple Widget"):
+    def __init__(self, parent=None, title="Simple Widget"):
         super(SimpleWindow, self).__init__(parent=parent)
 
         assert isinstance(title, str)
@@ -44,21 +28,14 @@ class SimpleWindow(QtWidgets.QMainWindow):
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
         self.setWindowTitle(self.title)
 
-        if designerFile and isinstance(designerFile, str):
-            if os.path.exists(designerFile):
-                self.widget = loadUiFile(designerFile, self)
-                self.setCentralWidget(self.widget)
-            else:
-                raise RuntimeError("Given Qt Designer file not in folder.")
-        else:
-            self.widget = QtWidgets.QWidget()
-            self.mainLayout = QtWidgets.QVBoxLayout()
-            self.widget.setLayout(self.mainLayout)
-            self.setCentralWidget(self.widget)
+        self.widget = QtWidgets.QWidget()
+        self.mainLayout = QtWidgets.QVBoxLayout()
+        self.widget.setLayout(self.mainLayout)
+        self.setCentralWidget(self.widget)
 
 
 class SimpleWidget(QtWidgets.QWidget):
-    def __init__(self, parent=None, designerFile=None, title="Simple Widget"):
+    def __init__(self, parent=None, title="Simple Widget"):
         super(SimpleWidget, self).__init__(parent=parent)
 
         assert isinstance(title, str)
@@ -71,59 +48,6 @@ class SimpleWidget(QtWidgets.QWidget):
 
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
         self.setWindowTitle(self.title)
-
-        if designerFile and isinstance(designerFile, str):
-            if os.path.exists(designerFile):
-                self.widget = loadUiFile(designerFile, self)
-                layout = QtWidgets.QVBoxLayout()
-                layout.setContentsMargins(0, 0, 0, 0)
-                layout.addWidget(self.widget)
-                self.setLayout(layout)
-            else:
-                raise RuntimeError("Given Qt Designer file not in folder.")
-
-
-class Table(QtWidgets.QTableWidget):
-    def __init__(self):
-        super(Table, self).__init__()
-
-        self.setShowGrid(False)
-        self.setAlternatingRowColors(True)
-        self.horizontalHeader().hide()
-        self.verticalHeader().hide()
-
-        # PySide6 Scoped Enums
-        self.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
-
-        self.cellObjects = {}
-        self.cellData = {}
-
-    def translateToType(self, item):
-        try:
-            return ast.literal_eval(str(item))
-        except (ValueError, SyntaxError):
-            return item
-
-    def toJson(self, dictionary):
-        jsonData = {}
-        for key, value in dictionary.items():
-            jsonData[key] = self.translateToType(value)
-        return jsonData
-
-
-class List(QtWidgets.QListWidget):
-    def __init__(self, parent=None):
-        super(List, self).__init__(parent)
-
-        self.cellData = {}
-        self.moduleLayouts = []
-
-        self.setSpacing(1)
-        self.setAlternatingRowColors(True)
-        self.setMaximumHeight(200)
-
-        self.setDragEnabled(False)
-        self.setAcceptDrops(False)
 
 
 class Tree(QtWidgets.QTreeWidget):
@@ -190,8 +114,8 @@ class TreeItem(QtWidgets.QTreeWidgetItem):
 
 
 class DockableWidget(SimpleWidget):
-    def __init__(self, parent=None, designerFile=None, title="rigManager"):
-        super(DockableWidget, self).__init__(parent, designerFile, title)
+    def __init__(self, parent=None, title="rigManager"):
+        super(DockableWidget, self).__init__(parent, title)
 
     def dock(self, width=385, height=735):
         if cmds.workspaceControl(self.title, q=True, exists=True):
@@ -273,10 +197,8 @@ class ConfirmDialog(Dialog):
 class ProgressWindow(SimpleWindow):
     windowSize = QtCore.QSize(350, 75)
 
-    def __init__(self, parent=None, designerFile=None, title="Progress Tracker"):
-        super(ProgressWindow, self).__init__(
-            parent=parent, designerFile=designerFile, title=title
-        )
+    def __init__(self, parent=None, title="Progress Tracker"):
+        super(ProgressWindow, self).__init__(parent=parent, title=title)
 
         # UI Initialization
         self.statusTextWidget = QtWidgets.QLabel("Ready...")
@@ -291,25 +213,24 @@ class ProgressWindow(SimpleWindow):
             QtCore.Qt.WindowType.Drawer | QtCore.Qt.WindowType.WindowStaysOnTopHint
         )
 
-        # Connect to Singleton
+        # The manager holds this listener weakly, so whoever opens the window keeps a reference to it.
+        self._refreshing = False
         self.manager = progressmanager.ProgressManager()
-        self.manager.register_callback(self.refresh_ui)
-
-        # Polling fallback timer (just in case callbacks drop during aggressive loops)
-        self.poll_timer = QtCore.QTimer(self)
-        self.poll_timer.timeout.connect(self.refresh_ui)
-        self.poll_timer.start(100)  # Check every 100ms
-
-        # Initial Sync
+        self.manager.changed.connect(self.refresh_ui)
         self.refresh_ui()
 
     def refresh_ui(self) -> None:
-        """Syncs the Qt widgets to the current state of the pure python singleton."""
-
-        # Safety gate for if Maya has already killed the C++ object
-        if not shiboken6.isValid(self):
+        """Shows the manager's state. Called by the manager's changed Event."""
+        # Maya may have deleted the C++ window, and processEvents below can bring a second change in mid-refresh
+        if self._refreshing or not shiboken6.isValid(self):
             return
+        self._refreshing = True
+        try:
+            self._show_state()
+        finally:
+            self._refreshing = False
 
+    def _show_state(self) -> None:
         if not self.manager.active:
             if self.isVisible():
                 self.hide()  # Or self.hide() depending on reuse preference
@@ -330,18 +251,9 @@ class ProgressWindow(SimpleWindow):
             self.statusTextWidget.setText(clean_text)
             log.info(self.manager.status_text)
 
-        # Force Maya UI to draw updates during tight execution loops
-        QtWidgets.QApplication.processEvents()
-
-    def closeEvent(self, event):
-        if hasattr(self, "poll_timer") and self.poll_timer.isActive():
-            self.poll_timer.stop()
-
-        # Clear out the strong reference in the manager so it can be GC'd
-        if hasattr(self, "manager") and hasattr(self.manager, "_ui_window"):
-            self.manager._ui_window = None
-
-        super(ProgressWindow, self).closeEvent(event)
+        # Draws the change during a long task on the main thread. User input waits, so a click can't start another
+        # task inside this one.
+        QtWidgets.QApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents)
 
 
 class PythonSyntaxHighlighter(QtGui.QSyntaxHighlighter):

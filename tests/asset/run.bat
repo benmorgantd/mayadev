@@ -1,6 +1,6 @@
 @echo off
 
-:: bmaya.asset tests. The model tests need only Python. The Maya handler tests run in mayapy and need
+:: bmaya.core.asset tests. The model tests need only Python. The Maya handler tests run in mayapy and need
 :: RIGMODULES_PLUGIN set to a RigModules.mll (a copy, if a Maya session has the build loaded); without it they skip.
 set "MAYA_SKIP_USERSETUP_PY=1"
 

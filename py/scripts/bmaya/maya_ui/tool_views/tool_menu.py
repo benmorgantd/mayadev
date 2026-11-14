@@ -67,6 +67,24 @@ def delete_menu(menu_id: str) -> None:
         cmds.deleteUI(menu_id, menu=True)
 
 
+def delete_plugin_menus() -> None:
+    """Deletes the menus that need a plugin. The dev reload runs it before the plugin unloads."""
+    for spec in bmaya.maya.constants.MENUS:
+        if spec.plugin:
+            delete_menu(spec.menu_id)
+
+
+def reload_menus() -> None:
+    """Builds every menu again from the layout and registry files, so edits to them show without a restart. The
+    plugin and the scene are untouched. Deferred, because a menu item starts it and its own menu is rebuilt."""
+    cmds.evalDeferred(_reload_menus)
+
+
+def _reload_menus() -> None:
+    build_menus()
+    log.info("Reloaded the menus")
+
+
 def _plugin_loaded(plugin: str) -> bool:
     try:
         return bool(cmds.pluginInfo(plugin, query=True, loaded=True))
@@ -404,8 +422,8 @@ class ToolMenuEditorWindow(SimpleWindow):
         self._on_save_layout()
 
 
-def show_menu_editor_ui() -> ToolMenuEditorWindow:
-    """Helper instantiation execution method entry pipeline standardizer."""
+def show_window() -> ToolMenuEditorWindow:
+    """Opens the Menu Editor."""
     window = ToolMenuEditorWindow()
     window.show()
     return window

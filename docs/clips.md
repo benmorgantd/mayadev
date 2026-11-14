@@ -34,7 +34,7 @@ exports\
 |---|---|---|---|
 | `<name>.fbx` | `rigmodules.jointclip.write_fbx` | `rigmodules.jointclip.read_fbx` | The clip's joint animation |
 | `<name>.anim.json` | `cmds.saveRigAnimation`, when a clip is captured from a rig | Restore: the `sidecar` flag of `cmds.animateRigFromJointClip` | Gives back what joints can't, with the animator's own keys |
-| `<name>.animproperties.json` | `bmaya.asset.animproperties.write` | `animproperties.read` | How the clip plays and what rides on it. Read only by the engine importer |
+| `<name>.animproperties.json` | `bmaya.core.asset.animproperties.write` | `animproperties.read` | How the clip plays and what rides on it. Read only by the engine importer |
 | `<name>.bonemap.json` | The skeleton export, or by hand | `rigmodules.jointclip.read_fbx(..., bone_map)` | Joint markup, asset id and skeleton id for a file that carries none |
 
 A clip name follows `CLIP_NAME`: it starts with a letter or digit and holds letters, digits, `_`, `-` and spaces.
@@ -42,7 +42,7 @@ A clip name follows `CLIP_NAME`: it starts with a letter or digit and holds lett
 ## Saving a clip
 
 ```python
-from bmaya.asset import Asset
+from bmaya.core.asset import Asset
 from bmaya.maya import assethandlers
 
 hero = Asset("shooter\\main\\characters\\hero")
@@ -67,7 +67,7 @@ A clip captured from a rig also gets its ControlAnim beside it. An export folder
 ## Loading a clip
 
 ```python
-clip = bmaya.asset.handlers.load(hero, "exports", name="walk")
+clip = bmaya.core.asset.handlers.load(hero, "exports", name="walk")
 cmds.animateRigFromJointClip(
     "hero:rigRootModule1", jointClip=clip.joint_clip,
     **({"sidecar": clip.sidecar} if clip.sidecar else {}))
@@ -99,7 +99,7 @@ The engine needs the skeleton as its own asset, and an animation pairs with the 
 
 ## Clip properties
 
-`bmaya.asset.animproperties` is the engine's data about one exported clip, `<name>.animproperties.json`. Only the engine importer reads it. It never names a rig, a control or a RigModules node, so it stays valid when the rig changes. It is Maya-free, like the rest of `bmaya.asset`.
+`bmaya.core.asset.animproperties` is the engine's data about one exported clip, `<name>.animproperties.json`. Only the engine importer reads it. It never names a rig, a control or a RigModules node, so it stays valid when the rig changes. It is Maya-free, like the rest of `bmaya.core.asset`.
 
 ```json
 {

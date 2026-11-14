@@ -2,7 +2,7 @@
 
 An export folder holds the clip's FBX (what the joints do), its ControlAnim (what the rig did) and this file, which
 is read only by the engine importer: how the clip plays and what rides on it. It never names a rig, a control or a
-RigModules node, so it stays valid when the rig changes. Maya-free, like the rest of bmaya.asset.
+RigModules node, so it stays valid when the rig changes. Maya-free, like the rest of bmaya.core.asset.
 
     {
         "formatVersion": 1,

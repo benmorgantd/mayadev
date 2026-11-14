@@ -1,72 +1,74 @@
-"""Logging wrapper for Maya, including handles for if we are in batch mode or not."""
+"""The bmaya logger. Plain Python: where the text goes is a slot, filled at startup.
 
-import sys
+Records go through one LogOutput handler, which writes each record with the writer registered for its level.
+With nothing registered (plain Python, mayapy, batch jobs) every record goes to stdout, read at write time, so a
+batch framework's stream capture sees it. bmaya.maya.startup.register() fills the slot with Maya's MGlobal display
+functions in a GUI session (RigModules design/mayadev-ui.md, D49).
+"""
+
+from __future__ import annotations
+
 import logging
-# TODO: this is in core but we have maya imports here.
-import maya.api.OpenMaya as om
-import bmaya.maya.constants
+import sys
+from collections.abc import Callable, Mapping
+from typing import ClassVar
 
 _LOGGER = None
 
-# LOG_FORMAT = "[%(levelname)s] %(asctime)s.%(msecs)02d %(filename)s:%(lineno)d >> %(message)s"
 LOG_FORMAT = "[%(levelname)s] %(filename)s:%(lineno)d >> %(message)s"
 
-# TODO: move this to a maya level module
-class MayaLogHandler(logging.Handler):
-    """Redirects standard Python logging records to native Maya GUI elements."""
+
+def _write_stdout(text: str) -> None:
+    sys.stdout.write(text + "\n")
+
+
+class LogOutput(logging.Handler):
+    """Writes a record with the writer of the highest registered level at or below the record's level. A record
+    below every registered level, or with none registered, goes to stdout."""
+
+    writers: ClassVar[dict[int, Callable[[str], None]]] = {}
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
-            msg = self.format(record)
-            if record.levelno >= logging.ERROR:
-                om.MGlobal.displayError(msg)
-            elif record.levelno >= logging.WARNING:
-                om.MGlobal.displayWarning(msg)
-            else:
-                om.MGlobal.displayInfo(msg)
+            self.writer_for(record.levelno)(self.format(record))
         except Exception:
             self.handleError(record)
 
+    @classmethod
+    def writer_for(cls, level: int) -> Callable[[str], None]:
+        levels = [registered for registered in cls.writers if registered <= level]
+        return cls.writers[max(levels)] if levels else _write_stdout
 
-def init_logger(is_batch=False) -> logging.Logger:
-    """Explicitly initializes and configures the master bmaya logger."""
+
+def register_writers(writers: Mapping[int, Callable[[str], None]]) -> None:
+    """Fills the log output slot: a writer per level (logging.INFO, logging.WARNING, ...). Replaces the writers
+    registered before. Called only from a layer's startup.register()."""
+    LogOutput.writers = dict(writers)
+
+
+def reset_writers() -> None:
+    """Puts the default back: everything to stdout."""
+    LogOutput.writers = {}
+
+
+def init_logger() -> logging.Logger:
+    """Configures the bmaya logger with one LogOutput handler at INFO. Safe to call again."""
     global _LOGGER
 
-    logger_name = "bmaya"
-    _LOGGER = logging.getLogger(logger_name)
-
-    # Keep the logger at DEBUG so it can capture all event types
+    _LOGGER = logging.getLogger("bmaya")
     _LOGGER.setLevel(logging.DEBUG)
-
     for handler in _LOGGER.handlers[:]:
         _LOGGER.removeHandler(handler)
 
-    # Set default visibility threshold for handlers to INFO
-    default_handler_level = logging.INFO
-
-    # Branch logging behavior for headless batch execution
-    if is_batch:
-        formatter = logging.Formatter(LOG_FORMAT, datefmt="%H:%M:%S")
-
-        # Target sys.stdout so the framework's StreamTee can intercept it
-        stdout_handler = logging.StreamHandler(sys.stdout)
-        stdout_handler.setFormatter(formatter)
-        stdout_handler.setLevel(default_handler_level)
-        _LOGGER.addHandler(stdout_handler)
-    else:
-        # Standard Interactive UI Configuration
-        formatter = logging.Formatter(LOG_FORMAT, datefmt="%H:%M:%S")
-        handler = MayaLogHandler()
-        handler.setFormatter(formatter)
-        handler.setLevel(default_handler_level)
-        _LOGGER.addHandler(handler)
-
+    handler = LogOutput()
+    handler.setFormatter(logging.Formatter(LOG_FORMAT, datefmt="%H:%M:%S"))
+    handler.setLevel(logging.INFO)
+    _LOGGER.addHandler(handler)
     _LOGGER.propagate = False
     return _LOGGER
 
 
 def get_logger() -> logging.Logger:
-    global _LOGGER
     if _LOGGER is None:
         return init_logger()
     return _LOGGER

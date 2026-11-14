@@ -1,4 +1,4 @@
-"""bmaya.asset.animproperties in plain Python: the engine properties file of an exported clip (RigModules D42).
+"""bmaya.core.asset.animproperties in plain Python: the engine properties file of an exported clip (RigModules D42).
 
 Run with tests/asset/run.bat, or: python -m unittest discover -s tests/asset -p "test_asset_*.py"
 """
@@ -12,8 +12,8 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "py", "scripts"))
 
-from bmaya.asset import animproperties  # noqa: E402
-from bmaya.asset.animproperties import AnimCurve, AnimEvent, AnimProperties, AnimPropertiesError  # noqa: E402
+from bmaya.core.asset import animproperties  # noqa: E402
+from bmaya.core.asset.animproperties import AnimCurve, AnimEvent, AnimProperties, AnimPropertiesError  # noqa: E402
 
 FULL = {
     "formatVersion": 1,

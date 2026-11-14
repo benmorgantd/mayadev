@@ -38,12 +38,12 @@ def get_selected_modules(rig_root: str) -> list[str]:
     return modules
 
 
-def zero_pose_ui() -> None:
+def zero_pose_interactive() -> None:
     changed = cmds.zeroRigControls(*get_scope()) or []
     bmaya.core.log.info(f"Zeroed {len(changed)} control(s).")
 
 
-def mirror_pose_ui(left_to_right: bool | None = None) -> None:
+def mirror_pose_interactive(left_to_right: bool | None = None) -> None:
     """Mirrors the pose across the rig. left_to_right None lets the command pick the source side: the side of the
     selected controls when they share one, else Left."""
     kwargs = {} if left_to_right is None else {"leftToRight": left_to_right}
@@ -51,18 +51,18 @@ def mirror_pose_ui(left_to_right: bool | None = None) -> None:
     bmaya.core.log.info(f"Mirrored the pose onto {len(changed)} control(s).")
 
 
-def flip_pose_ui() -> None:
+def flip_pose_interactive() -> None:
     changed = cmds.flipRigPose(*get_scope()) or []
     bmaya.core.log.info(f"Flipped {len(changed)} control(s).")
 
 
-def select_all_controls_ui() -> None:
+def select_all_controls_interactive() -> None:
     """Selects every control of the active rig."""
     rig_root = bmaya.maya.activerig.get_active_rig().rig_root
     cmds.select(cmds.getRigControls(rig_root), replace=True)
 
 
-def select_mirror_controls_ui() -> None:
+def select_mirror_controls_interactive() -> None:
     """Selects the controls on the other side of the selected controls."""
     controls = cmds.ls(selection=True, type=rigmodules.query.RIG_CONTROL_TYPE)
     if not controls:
@@ -70,12 +70,12 @@ def select_mirror_controls_ui() -> None:
     cmds.select([cmds.getRigMirrorControl(control) for control in controls], replace=True)
 
 
-def key_all_controls_ui() -> None:
+def key_all_controls_interactive() -> None:
     count = rigmodules.pose.key_rig(bmaya.maya.activerig.get_active_rig().rig_root)
     bmaya.core.log.info(f"Keyed {count} channel(s) on every control of the active rig.")
 
 
-def key_selected_modules_ui() -> None:
+def key_selected_modules_interactive() -> None:
     rig_root = bmaya.maya.activerig.get_active_rig().rig_root
     modules = get_selected_modules(rig_root)
     count = rigmodules.pose.key_modules(rig_root, modules)

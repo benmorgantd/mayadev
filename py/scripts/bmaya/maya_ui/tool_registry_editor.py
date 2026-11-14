@@ -23,10 +23,10 @@ from bmaya.core import tool_registry
 from bmaya.core.tool_registry import Registry, Tool, ToolCall
 import bmaya.maya.constants
 import bmaya.maya_ui.tool_views.tool_menu
+import bmaya.maya_ui.widgets
 from bmaya.maya_ui.qtbase import SimpleWindow, get_maya_main_window
 
 PACKAGES = ("bmaya", "rigmodules")
-SPIN_LIMIT = 1_000_000_000
 STATUS_OK = "OK"
 
 
@@ -60,17 +60,8 @@ def list_functions(module: types.ModuleType) -> list[str]:
     return [name for _, name in sorted(functions)]
 
 
-def _unwrap_optional(hint: object) -> object:
-    """X | None -> X. Anything else is returned as it is."""
-    if typing.get_origin(hint) in (typing.Union, types.UnionType):
-        options = [a for a in typing.get_args(hint) if a is not type(None)]
-        if len(options) == 1:
-            return options[0]
-    return hint
-
-
 class ArgumentRow(QtCore.QObject):
-    """One parameter: a widget chosen by annotation and a Set check box. An unset row shows the default greyed and
+    """One parameter: an editor chosen by annotation and a Set check box. An unset row shows the default greyed and
     is not saved."""
 
     changed = QtCore.Signal()
@@ -80,63 +71,15 @@ class ArgumentRow(QtCore.QObject):
         self.name = name
         self.has_default = parameter.default is not inspect.Parameter.empty
         self.default = None if not self.has_default else parameter.default
-        self.hint = _unwrap_optional(hint)
-        self.is_json = False
-        self.widget = self._make_widget()
+        self.editor = bmaya.maya_ui.widgets.FieldEditor(hint, self)
+        self.editor.changed.connect(self.changed)
+        self.widget = self.editor.widget
         self.set_check = QtWidgets.QCheckBox("Set")
         self.set_check.setChecked(not self.has_default)
         self.set_check.setEnabled(self.has_default)
         self.set_check.toggled.connect(self._on_set_toggled)
-        self._show_value(self.default)
+        self.editor.show_value(self.default)
         self._on_set_toggled(self.set_check.isChecked())
-
-    def _make_widget(self) -> QtWidgets.QWidget:
-        hint = self.hint
-        if hint is bool:
-            widget = QtWidgets.QCheckBox()
-            widget.toggled.connect(self.changed)
-        elif hint is int:
-            widget = QtWidgets.QSpinBox()
-            widget.setRange(-SPIN_LIMIT, SPIN_LIMIT)
-            widget.valueChanged.connect(self.changed)
-        elif hint is float:
-            widget = QtWidgets.QDoubleSpinBox()
-            widget.setRange(-float(SPIN_LIMIT), float(SPIN_LIMIT))
-            widget.setDecimals(6)
-            widget.valueChanged.connect(self.changed)
-        elif hint is str:
-            widget = QtWidgets.QLineEdit()
-            widget.textChanged.connect(self.changed)
-        elif typing.get_origin(hint) is typing.Literal:
-            widget = QtWidgets.QComboBox()
-            for option in typing.get_args(hint):
-                widget.addItem(str(option), option)
-            widget.currentIndexChanged.connect(self.changed)
-        elif inspect.isclass(hint) and issubclass(hint, enum.Enum):
-            widget = QtWidgets.QComboBox()
-            for member in hint:
-                widget.addItem(member.name, member.value)
-            widget.currentIndexChanged.connect(self.changed)
-        else:
-            self.is_json = True
-            widget = QtWidgets.QLineEdit()
-            widget.setPlaceholderText("JSON value")
-            widget.textChanged.connect(self.changed)
-        return widget
-
-    def _show_value(self, value: object) -> None:
-        widget = self.widget
-        if isinstance(widget, QtWidgets.QCheckBox):
-            widget.setChecked(bool(value))
-        elif isinstance(widget, (QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox)):
-            widget.setValue(value if isinstance(value, (int, float)) and not isinstance(value, bool) else 0)
-        elif isinstance(widget, QtWidgets.QComboBox):
-            index = widget.findData(value)
-            widget.setCurrentIndex(max(index, 0))
-        elif self.is_json:
-            widget.setText("" if value is None or value is inspect.Parameter.empty else json.dumps(value))
-        else:
-            widget.setText("" if value is None else str(value))
 
     def _on_set_toggled(self, checked: bool) -> None:
         self.widget.setEnabled(checked)
@@ -145,27 +88,20 @@ class ArgumentRow(QtCore.QObject):
     def load(self, value: object) -> None:
         """Shows a saved kwarg: the row is set to it."""
         self.set_check.setChecked(True)
-        self._show_value(value)
+        self.editor.show_value(value)
 
     @property
     def is_set(self) -> bool:
         return self.set_check.isChecked()
 
     def value(self) -> object:
-        """The widget's value. Raises ValueError for JSON text that isn't JSON."""
-        widget = self.widget
-        if isinstance(widget, QtWidgets.QCheckBox):
-            return widget.isChecked()
-        if isinstance(widget, (QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox)):
-            return widget.value()
-        if isinstance(widget, QtWidgets.QComboBox):
-            return widget.currentData()
-        if self.is_json:
-            try:
-                return json.loads(widget.text())
-            except json.JSONDecodeError as err:
-                raise ValueError(f"argument '{self.name}' is not valid JSON: {err}") from None
-        return widget.text()
+        """The editor's value as the registry's JSON keeps it: an Enum member's value. Raises ValueError for JSON
+        text that isn't JSON."""
+        try:
+            value = self.editor.value()
+        except ValueError as err:
+            raise ValueError(f"argument '{self.name}' is {err}") from None
+        return value.value if isinstance(value, enum.Enum) else value
 
 
 class ArgumentForm(QtWidgets.QWidget):
@@ -746,8 +682,8 @@ class ToolManagerWindow(SimpleWindow):
             event.ignore()
 
 
-def show_ui() -> ToolManagerWindow:
-    """Helper creation entry standardizing initialization logic."""
+def show_window() -> ToolManagerWindow:
+    """Opens the Registry Editor."""
     window = ToolManagerWindow()
     window.show()
     return window

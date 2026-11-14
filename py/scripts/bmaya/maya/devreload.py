@@ -5,15 +5,20 @@ everything tied to the plugin (the active rig tracker, the menus that need it), 
 plugin, loads a copy of the build from a temp folder, and puts the tracker and menu back. The build is
 RIGMODULES_PLUGIN from Maya.env, which must be a path to the .mll. Startup loads that path directly, so the file
 stays locked until the first reload. Development only: the scene is thrown away.
+
+The menus are UI, so this module doesn't build them. A GUI session registers hooks (register_hooks, called from
+bmaya.maya_ui.startup) that run before the plugin unloads and after it loads. Without them (mayapy) nothing runs.
 """
 
 from __future__ import annotations
 
+import dataclasses
 import os
 import shutil
 import sys
 import tempfile
 import time
+from collections.abc import Callable
 
 import maya.cmds as cmds
 
@@ -25,12 +30,41 @@ PLUGIN_FILE = "RigModules.mll"
 _COPY_ROOT = os.path.join(tempfile.gettempdir(), "rigmodules_dev")
 
 
+def _do_nothing() -> None:
+    pass
+
+
+@dataclasses.dataclass(frozen=True)
+class ReloadHooks:
+    """What a reload runs around the plugin: before_unload while the plugin is still loaded, after_load once the
+    new build is in (or, after an unload, once the plugin is gone)."""
+
+    before_unload: Callable[[], None] = _do_nothing
+    after_load: Callable[[], None] = _do_nothing
+
+
+_hooks = ReloadHooks()
+
+
+def register_hooks(before_unload: Callable[[], None], after_load: Callable[[], None]) -> None:
+    """Fills the reload hooks slot. Replaces the hooks registered before. Called only from a layer's
+    startup.register()."""
+    global _hooks
+    _hooks = ReloadHooks(before_unload, after_load)
+
+
+def reset_hooks() -> None:
+    """Puts the default back: no hooks."""
+    global _hooks
+    _hooks = ReloadHooks()
+
+
 def _tear_down() -> None:
     """Everything that holds the plugin: callbacks, the menu, nodes, undo entries and cached viewport items."""
     tracker = bmaya.maya.activerig.ActiveRigTracker.current()
     if tracker is not None:
         tracker.stop()
-    _delete_plugin_menus()
+    _hooks.before_unload()
 
     cmds.select(clear=True)
     cmds.file(new=True, force=True)
@@ -55,21 +89,6 @@ def _forget_python_package() -> None:
         del sys.modules[name]
 
 
-def _delete_plugin_menus() -> None:
-    """Deletes the menus that need a plugin, before the plugin goes."""
-    import bmaya.maya_ui.tool_views.tool_menu
-
-    for spec in bmaya.maya.constants.MENUS:
-        if spec.plugin:
-            bmaya.maya_ui.tool_views.tool_menu.delete_menu(spec.menu_id)
-
-
-def _build_menus() -> None:
-    from bmaya.maya_ui.tool_views.tool_menu import build_menus
-
-    build_menus()
-
-
 def reload_rigmodules() -> None:
     """Reloads the plugin from RIGMODULES_BUILD. Runs deferred, so a menu item can start it: the menu is deleted
     while the item's own callback would still be on the stack otherwise."""
@@ -89,21 +108,10 @@ def unload_rigmodules() -> None:
     cmds.evalDeferred(_unload)
 
 
-def reload_menu() -> None:
-    """Builds every menu again from the layout and registry files, so edits to them show without a restart. The
-    plugin and the scene are untouched. Deferred for the same reason as the full reload."""
-    cmds.evalDeferred(_reload_menu)
-
-
-def _reload_menu() -> None:
-    _build_menus()
-    bmaya.core.log.info("Reloaded the menus")
-
-
 def _unload() -> None:
     _tear_down()
     _forget_python_package()
-    _build_menus()
+    _hooks.after_load()
     bmaya.core.log.info("Unloaded RigModules")
 
 
@@ -118,5 +126,5 @@ def _reload(build_path: str) -> None:
         return
 
     bmaya.maya.activerig.ActiveRigTracker()
-    _build_menus()
+    _hooks.after_load()
     bmaya.core.log.info(f"Reloaded RigModules from {build_path}")

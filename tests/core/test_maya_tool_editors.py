@@ -183,7 +183,7 @@ class RegistryEditor(EditorTest):
         longest = max(combo.itemText(i) for i in range(combo.count()))
         self.assertGreaterEqual(posetools_width, combo.fontMetrics().horizontalAdvance(longest))
 
-        self.select(window, "bmaya.dev.reload_menu")       # bmaya.maya.devreload: shorter names
+        self.select(window, "bmaya.dev.unload_rigmodules")  # bmaya.maya.devreload: shorter names
         self.assertLess(combo.minimumWidth(), posetools_width)  # it shrinks again, not only grows
 
     def test_the_call_picker_shows_the_saved_call_and_kwargs(self):
@@ -192,11 +192,11 @@ class RegistryEditor(EditorTest):
         self.assertEqual(window.input_id.text(), "rigmodules.pose.mirror_left_to_right")
         self.assertTrue(window.input_id.isReadOnly())
         self.assertEqual(window.input_module.text(), "bmaya.maya.posetools")
-        self.assertEqual(window.combo_function.currentText(), "mirror_pose_ui")
+        self.assertEqual(window.combo_function.currentText(), "mirror_pose_interactive")
         self.assertIn("Mirrors the pose", window.label_doc.text())
         self.assertEqual(window.argument_form.kwargs(), {"left_to_right": True})
         functions = [window.combo_function.itemText(i) for i in range(window.combo_function.count())]
-        self.assertIn("flip_pose_ui", functions)
+        self.assertIn("flip_pose_interactive", functions)
         self.assertNotIn("get_scope_x", functions)
 
     def test_an_unset_argument_is_not_saved_and_a_set_one_is(self):

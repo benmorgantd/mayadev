@@ -13,7 +13,7 @@ mayadev depends on RigModules and never the reverse (D24). A mayadev tool reache
 
 The package imports no Qt, no `bmaya`, reads no environment variables and no asset paths, so it works in a bare mayapy with only the plugin loaded. mayadev supplies the paths.
 
-Modules that import `rigmodules` at the top (`bmaya.maya.activerig`, `posetools`, `assettools`, `assethandlers`) fail on import without it. `bmaya.asset` never imports it.
+Modules that import `rigmodules` at the top (`bmaya.maya.activerig`, `posetools`, `assettools`, `assethandlers`) fail on import without it. `bmaya.core.asset` never imports it.
 
 ## Commands called
 
@@ -33,8 +33,8 @@ Python `maya.cmds` calls, with the module that makes them.
 | `cmds.saveRigAnimation(*scope, file=, startFrame=, endFrame=)` | `assethandlers.ControlAnimHandler`, `AnimClipHandler`, `assettools` | Animations, and the ControlAnim beside a clip |
 | `cmds.loadRigAnimation(*scope, file=, offset=, mirror=)` | `assethandlers.ControlAnimHandler`, `assettools` | Load animation, optionally mirrored |
 | `cmds.zeroRigControls`, `cmds.mirrorRigPose(leftToRight=)`, `cmds.flipRigPose` | `posetools` | The pose tools |
-| `cmds.poseRigFromJointPose(*scope, jointPose=)` | `assettools.pose_from_joint_pose_ui` | Restore controls from a one-pose clip |
-| `cmds.animateRigFromJointClip(*scope, jointClip=, sidecar=)` | `assettools.animate_from_joint_clip_ui` | Restore keys from a clip |
+| `cmds.poseRigFromJointPose(*scope, jointPose=)` | `assettools.pose_from_joint_pose_interactive` | Restore controls from a one-pose clip |
+| `cmds.animateRigFromJointClip(*scope, jointClip=, sidecar=)` | `assettools.animate_from_joint_clip_interactive` | Restore keys from a clip |
 
 `scope` is a rig root, or controls of one rig. Paths go to commands with forward slashes.
 
@@ -59,16 +59,16 @@ Python `maya.cmds` calls, with the module that makes them.
 
 Nothing in RigModules imports `bmaya`. These are the places RigModules documentation names mayadev, and they must stay true:
 
-- The asset id format. `bmaya.asset.assetid` and RigModules' `core/AssetId` use the same rules, and a built rig stores its `assetId` in the rig root. A change to the rules is a change in both repos in one go.
+- The asset id format. `bmaya.core.asset.assetid` and RigModules' `core/AssetId` use the same rules, and a built rig stores its `assetId` in the rig root. A change to the rules is a change in both repos in one go.
 - The folder names `controlposes`, `controlanims`, `exports` and `sources`, which RigModules' `docs/library.md` describes ([`clips.md`](clips.md) lists a discrepancy).
-- The asset model, `design/asset-model.md`, which `bmaya.asset` implements (D29).
+- The asset model, `design/asset-model.md`, which `bmaya.core.asset` implements (D29).
 
 ## Rules for crossing the boundary
 
 1. **Ask `rigmodules`, never the nodes.** A tool that needs a rig's asset, controls, modules or meshes calls a `rigmodules` function. No `cmds.listConnections` into a rig, no splitting node names, no `getAttr` on a module node's attribute.
 2. **A missing capability is a RigModules change first.** Add the command or function there, with its tests and docs, then call it here, and add its name to the tables above in the same change.
 3. **Names are public API.** RigModules treats control, attribute, child plug and socket names as API because saved poses, animation and exports depend on them. mayadev stores the data, not the names: control data goes through markup (`side`, `usage`), never node names.
-4. **mayadev owns paths.** RigModules commands take a file path and read or write it. Where that file lives, the version copy and the source control call are mayadev's (`bmaya.asset.handlers`).
+4. **mayadev owns paths.** RigModules commands take a file path and read or write it. Where that file lives, the version copy and the source control call are mayadev's (`bmaya.core.asset.handlers`).
 5. **No `bmaya` import in `rigmodules`, and no environment variables there.** If a function there needs a path, mayadev passes it.
 
 ## When a RigModules name changes
