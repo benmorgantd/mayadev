@@ -160,9 +160,15 @@ Saving in an editor and then running **Reload Menu (dev)** shows the change with
 
 ### RigModules menu
 
-Built only while the plugin is loaded (`MenuSpec.plugin` in `bmaya.maya.constants.MENUS`), and deleted when it unloads. It is a set of submenus, in this order: asset, mesh, joints, weights, shapes, control, pose, clip. A new tool goes in the submenu for its topic, and only a tool animators use constantly goes at the top level. Dialogs are small, and errors report in the Script Editor.
+Built only while the plugin is loaded (`MenuSpec.plugin` in `bmaya.maya.constants.MENUS`), and deleted when it unloads. It is a set of submenus, in this order: panels, asset, mesh, joints, weights, shapes, control, pose, clip. A new tool goes in the submenu for its topic, and only a tool animators use constantly goes at the top level. Dialogs are small, and errors report in the Script Editor.
 
 Most tools act on the **active rig**, so nobody selects a rig root ([below](#the-active-rig)). The tools that ask for an asset id fill it in with the active rig's asset id. A rig can be built anywhere before its asset exists. Once the asset folder exists, the shape, weight and rig tools always use the asset's paths, so a file never lands in two places. Before it exists, they fall back to a file or folder dialog.
+
+#### panels
+
+| Tool | Does |
+|---|---|
+| Active Rig Panel | Opens the [active rig panel](#the-active-rig-panel), docked beside the Attribute Editor (`bmaya.maya_ui.rigpanel.show_window`) |
 
 #### asset
 
@@ -217,7 +223,11 @@ Mark meshes in the model scene, before **Save Model...**, so every build imports
 
 The pose tools act on the selected rig controls, or on the whole active rig when no control is selected, so an animator can work on a limb or on everything with the same tool (`bmaya.maya.posetools.get_scope`). The pose commands set values and key nothing, so keying is its own tool. Each tool has a plain function with the scope as an argument (`zero_pose(scope)`, `mirror_pose(scope, left_to_right)`, `flip_pose(scope)`, each returning how many controls changed), and the `*_interactive` menu tool is that function on `get_scope()`.
 
-`bmaya.maya.rigpanel.RigPanelSession` is the view-model for the active rig panel (RigModules `design/active-rig-panel.md`, D50). It has no Qt: `rigs`, `rig` and `groups` (a `ControlGroup` per module and side, read once per refresh), the `changed` event, and the commands the panel's buttons will call (`set_active`, `select_group`, `select_all`, `select_mirrors`, `zero`, `mirror`, `flip`, `key_rig`, `key_modules`). It follows `ActiveRigTracker.changed`. The panel window itself is not built yet.
+### The active rig panel
+
+`bmaya.maya_ui.rigpanel.show_window` (RigModules `design/active-rig-panel.md`, D50) opens a panel on the active rig. It shows the active rig, with a drop-down when the scene has more than one. Below it, a tree has one row per module and side with its controls under it, and a filter box. A click selects that row's controls in Maya and a ctrl-click adds them. The tree does not follow the viewport selection. Buttons select every control or the mirror controls, zero, mirror left to right or right to left, flip, key the rig and key the selected controls' modules. They act on the selected controls, or on the whole rig when none is selected, as the menu tools do. An error from a button goes to the log. With no rig in the scene the panel says so and only Refresh works. The space row and the out-of-date line are not built yet.
+
+The window is widgets and connections only. `bmaya.maya.rigpanel.RigPanelSession` is the view-model, and has no Qt: `rigs`, `rig` and `groups` (a `ControlGroup` per module and side, read once per refresh), the `changed` event, and the commands the buttons call (`set_active`, `select_group`, `select_controls`, `select_all`, `select_mirrors`, `zero`, `mirror`, `flip`, `key_rig`, `key_modules`). It follows `ActiveRigTracker.changed`, so a script that changes the active rig updates an open panel.
 
 | Tool | Does |
 |---|---|
@@ -279,4 +289,4 @@ Nodes are matched to rigs by `rigmodules.query.find_rig_info`, which walks the r
 
 ## Tests
 
-The registry, its checks and `run_tool` are tested in `tests/core`, with `build_menus` and both editors offscreen in mayapy. The RigModules menu layout, every registry call and each tool run in Maya are tested in `tests/rigging/rigmodules_menu`, the asset tools in `tests/asset/test_maya_asset_tools.py` the tracker in `tests/asset/test_maya_active_rig.py` and the panel's session, the tracker event and the plain pose functions in `tests/asset/test_maya_rigpanel.py` ([`../tests/README.md`](../tests/README.md)).
+The registry, its checks and `run_tool` are tested in `tests/core`, with `build_menus` and both editors offscreen in mayapy. The RigModules menu layout, every registry call and each tool run in Maya are tested in `tests/rigging/rigmodules_menu`, the asset tools in `tests/asset/test_maya_asset_tools.py`, the tracker in `tests/asset/test_maya_active_rig.py` and the panel's session, the tracker event and the plain pose functions in `tests/asset/test_maya_rigpanel.py`, and the panel window over a fake session, and on a real rig when `RIGMODULES_PLUGIN` is set, in `tests/core/test_maya_rigpanel_view.py` ([`../tests/README.md`](../tests/README.md)).

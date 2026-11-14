@@ -64,12 +64,12 @@ class MenuLayout(unittest.TestCase):
     def test_top_level_is_submenus_in_order(self):
         items = _layout().items
         self.assertEqual([type(i) for i in items], [tool_registry.Submenu] * len(items))
-        self.assertEqual([i.label for i in items], ["asset", "mesh", "joints", "weights", "shapes", "control", "pose", "clip"])
+        self.assertEqual([i.label for i in items], ["panels", "asset", "mesh", "joints", "weights", "shapes", "control", "pose", "clip"])
 
     def test_every_tool_is_in_the_menu_once(self):
         ids = [item.tool for item in _layout().tool_items()]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(len(ids), 38)
+        self.assertEqual(len(ids), 39)
 
     def test_the_dev_tools_are_in_the_bmaya_menu(self):
         ids = [item.tool for item in _layout("bmaya_menu.json").tool_items()]

@@ -115,7 +115,7 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `maya/assettools.py` | The asset, pose, clip and weight tools: plain functions, then the `*_interactive` menu entry points, which ask through a `Prompter`, and `ClipSettings` |
 | `maya/posetools.py` | Zero, mirror, flip and key tools on the selection or the active rig: plain functions with a scope, and the `*_interactive` entry points |
 | `maya/activerig.py` | `get_active_rig`, `ActiveRigTracker` and its `changed` event |
-| `maya/rigpanel.py` | `RigPanelSession` and `ControlGroup`: the active rig panel's view-model, no Qt (the window is not built yet) |
+| `maya/rigpanel.py` | `RigPanelSession` and `ControlGroup`: the active rig panel's view-model, no Qt |
 | `maya/devreload.py` | Reload and unload RigModules, and the reload hooks slot |
 | `maya/eventsregistry.py` | `EventsRegistry`, `EventType`, `pause_callbacks` |
 | `maya/batch/` | `MayaBatchEnvironment`, `MayaStandaloneBatchPackage`, `run_batch_test` |
@@ -123,6 +123,7 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `maya_ui/startup.py` | `register()`: the UI layer's registration pass |
 | `maya_ui/prompter.py` | `QtPrompter`, `FormDialog` |
 | `maya_ui/host.py` | Maya as the host of a window: `parent_window`, `show` (one window per object name, optionally docked), `defer`. With `menus.py`, the only file in `maya_ui` that imports Maya |
+| `maya_ui/rigpanel.py` | `RigPanel`, the active rig panel's window over a `RigPanelSession`, and `show_window` (docked) |
 | `maya_ui/menus.py` | The Maya menus (`ToolMenu`, `build_menus`, `delete_plugin_menus`, `reload_menus`) and the Menu Editor |
 | `maya_ui/widgets.py` | `field_widget`, `show_value` and `read_value` (an editor chosen by a type hint), `DataclassForm`, `SignatureForm` |
 | `maya_ui/qtbase.py` | Window, widget, tree, dialog and progress window base classes |

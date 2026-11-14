@@ -4,6 +4,17 @@
     "items": [
         {
             "type": "submenu",
+            "label": "panels",
+            "items": [
+                {
+                    "type": "tool",
+                    "tool": "rigmodules.panels.active_rig",
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "type": "submenu",
             "label": "asset",
             "items": [
                 {

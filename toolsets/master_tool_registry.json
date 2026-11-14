@@ -98,6 +98,18 @@
             "enabled": true
         },
         {
+            "id": "rigmodules.panels.active_rig",
+            "name": "Active Rig Panel",
+            "short_name": "Active Rig",
+            "call": {
+                "module": "bmaya.maya_ui.rigpanel",
+                "function": "show_window",
+                "kwargs": {}
+            },
+            "icon": null,
+            "enabled": true
+        },
+        {
             "id": "rigmodules.control.select_all",
             "name": "Select All Controls",
             "short_name": "Sel Ctrls",
