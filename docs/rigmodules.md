@@ -1,0 +1,78 @@
+# Using RigModules
+
+Everything mayadev takes from [RigModules](https://github.com/benmorgantd/cpp-rigmodules): what crosses the boundary, who calls it, and the rules for adding to it. This page is the list to check when a RigModules command or `rigmodules` function changes.
+
+mayadev depends on RigModules and never the reverse (D24). A mayadev tool reaches a built rig only through the `rigmodules` Python package and the plugin's commands, never by walking node connections or parsing names. RigModules' own documentation for each name is in its `docs/commands.md` and `docs/python.md`.
+
+## What mayadev needs installed
+
+| Piece | From RigModules | Used for |
+|---|---|---|
+| The plugin `RigModules.mll` | `cpp/x64/Release` | Every `cmds.*Rig*` command. Loaded at startup from `RIGMODULES_PLUGIN` ([`setup.md`](setup.md)) |
+| The `rigmodules` package | `python/rigmodules`, put on `PYTHONPATH` by `RigModules.mod` | The query, template, pose, skin weight, display layer, group and FBX functions |
+
+The package imports no Qt, no `bmaya`, reads no environment variables and no asset paths, so it works in a bare mayapy with only the plugin loaded. mayadev supplies the paths.
+
+Modules that import `rigmodules` at the top (`bmaya.maya.activerig`, `posetools`, `assettools`, `assethandlers`) fail on import without it. `bmaya.asset` never imports it.
+
+## Commands called
+
+Python `maya.cmds` calls, with the module that makes them.
+
+| Command | Called from | Used for |
+|---|---|---|
+| `cmds.createRigFromTemplate(*joints, template=, asset=, namespace=)` | `assettools.build_rig` | Build a variant on the imported skeleton |
+| `cmds.rigJointMarkup(*joints, query=True)` and `remove=True` | Registry scripts (Print and Remove Joint Markup) | Inspect and clear joint markup |
+| `cmds.getRigControls(rig_root)` | Registry script (Select All Controls) | Every control of the active rig |
+| `cmds.getRigMirrorControl(control)` | Registry script (Select Mirror Controls) | The control on the other side |
+| `cmds.mirrorRigControlShapes(rig_root, leftToRight=)` | Registry scripts (Mirror Shapes) | Copy shapes across sides |
+| `cmds.saveRigControlShapes(rig_root, file=)`, `cmds.loadRigControlShapes(...)` | `assethandlers.RigShapesHandler`, `assettools` (no-asset fallback) | The variant's `shapes.json` |
+| `cmds.setRigMeshId(newId=)` | `assettools.mark_meshes_for_skinning` | Give meshes the id weight files match on |
+| `cmds.saveRigSkinWeights(mesh, file=)`, `cmds.loadRigSkinWeights(...)` | `assethandlers.RigSkinWeightsHandler` | One weight file per mesh |
+| `cmds.saveRigPose(*scope, file=)`, `cmds.loadRigPose(...)` | `assethandlers.ControlPoseHandler`, `assettools` | Poses |
+| `cmds.saveRigAnimation(*scope, file=, startFrame=, endFrame=)` | `assethandlers.ControlAnimHandler`, `AnimClipHandler`, `assettools` | Animations, and the ControlAnim beside a clip |
+| `cmds.loadRigAnimation(*scope, file=, offset=, mirror=)` | `assethandlers.ControlAnimHandler`, `assettools` | Load animation, optionally mirrored |
+| `cmds.zeroRigControls`, `cmds.mirrorRigPose(leftToRight=)`, `cmds.flipRigPose` | `posetools` | The pose tools |
+| `cmds.poseRigFromJointPose(*scope, jointPose=)` | `assettools.pose_from_joint_pose_ui` | Restore controls from a one-pose clip |
+| `cmds.animateRigFromJointClip(*scope, jointClip=, sidecar=)` | `assettools.animate_from_joint_clip_ui` | Restore keys from a clip |
+
+`scope` is a rig root, or controls of one rig. Paths go to commands with forward slashes.
+
+## `rigmodules` functions called
+
+| Function | Called from | Used for |
+|---|---|---|
+| `query.get_rig_info(node)` | `assettools` (every tool that finds an asset) | A node of a rig to its asset id, variant, namespace and rig root. Raises when the node isn't in a rig |
+| `query.find_rig_info(node)` | `activerig` | The same, returning `None` when the node isn't in a rig |
+| `query.get_rigs(namespace=None)` | `activerig`, `assettools.build_rig` | The rigs in the scene, or in a namespace. `build_rig` refuses a namespace that already holds one |
+| `query.RigInfo` | `activerig` | The result type. mayadev reads `rig_root`, `asset_id`, `variant` and `namespace`. It also has `asset_root`, `rig_version`, `plugin_version` and `publish_version` |
+| `query.RIG_CONTROL_TYPE` | `posetools.get_scope` | The node type of a rig control, to filter the selection |
+| `query.get_rig_controls(rig_root)`, `query.find_control(node)` | `posetools.get_selected_modules` | Map a selection to the modules of the active rig |
+| `template.get_rig_name(path)` | `assettools.new_variant`, `RigTemplateHandler` | The `rigName` of a template file, which names the variant |
+| `pose.key_rig(rig_root)`, `pose.key_modules(rig_root, modules)` | `posetools` | Key every channel of a rig, or of chosen modules |
+| `skinweights.get_mesh_id(mesh)`, `get_skinned_meshes(namespace)`, `get_meshes(namespace)`, `read_file_mesh_id(path)` | `assethandlers.RigSkinWeightsHandler`, `assettools.save_model` | Find skinned meshes and match weight files by `meshId` |
+| `displaylayers.add_meshes(rig_root, nodes)`, `groups.parent_meshes(rig_root, nodes)` | `assettools.build_rig` | Put an imported model into the rig's display layers and mesh group |
+| `jointclip.write_fbx`, `read_fbx`, `capture_joint_clip` | `assethandlers.AnimClipHandler` | Clip FBX in and out, and capture a rig's export joints |
+| `jointclip.write_skeleton_fbx`, `check_skeleton_match` | `assethandlers.save_skeleton_export`, `assettools.check_clip_skeleton` | The skeleton export and its match check |
+
+## What flows the other way
+
+Nothing in RigModules imports `bmaya`. These are the places RigModules documentation names mayadev, and they must stay true:
+
+- The asset id format. `bmaya.asset.assetid` and RigModules' `core/AssetId` use the same rules, and a built rig stores its `assetId` in the rig root. A change to the rules is a change in both repos in one go.
+- The folder names `controlposes`, `controlanims`, `exports` and `sources`, which RigModules' `docs/library.md` describes ([`clips.md`](clips.md) lists a discrepancy).
+- The asset model, `design/asset-model.md`, which `bmaya.asset` implements (D29).
+
+## Rules for crossing the boundary
+
+1. **Ask `rigmodules`, never the nodes.** A tool that needs a rig's asset, controls, modules or meshes calls a `rigmodules` function. No `cmds.listConnections` into a rig, no splitting node names, no `getAttr` on a module node's attribute.
+2. **A missing capability is a RigModules change first.** Add the command or function there, with its tests and docs, then call it here, and add its name to the tables above in the same change.
+3. **Names are public API.** RigModules treats control, attribute, child plug and socket names as API because saved poses, animation and exports depend on them. mayadev stores the data, not the names: control data goes through markup (`side`, `usage`), never node names.
+4. **mayadev owns paths.** RigModules commands take a file path and read or write it. Where that file lives, the version copy and the source control call are mayadev's (`bmaya.asset.handlers`).
+5. **No `bmaya` import in `rigmodules`, and no environment variables there.** If a function there needs a path, mayadev passes it.
+
+## When a RigModules name changes
+
+Search this repo for the old name, in code, in `toolsets/master_tool_registry.json` (the registry scripts call commands directly) and in `tests/`. The registry scripts are the easy ones to miss: they are strings in JSON, and `test_every_script_compiles` checks only that they parse, not that the commands they call exist.
+
+The Maya tests in `tests/asset` and `tests/rigging` run against a real plugin (`RIGMODULES_PLUGIN`) and are the check that every call here still exists. Without the variable they skip, so a green run with skips has not checked the boundary ([`../tests/README.md`](../tests/README.md)).

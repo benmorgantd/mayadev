@@ -1,0 +1,67 @@
+# Documentation
+
+How the mayadev documentation is organized and kept current. It follows the process RigModules uses (D21 in RigModules' `design/decisions.md`), so a change in either repo is documented the same way.
+
+## Two kinds of documentation
+
+| Where | Reader | Answers | Tense |
+|---|---|---|---|
+| `README.md`, `docs/`, `tests/README.md` | People using or changing mayadev: riggers, animators running the menu tools, tool writers | What does it do, and how do I use it? | What is true now |
+| `py/scripts/docs/` | Anyone looking up one function | What is in this module? | Generated |
+
+`py/scripts/docs/` is the mkdocs site that `batch/docgen` writes from docstrings. Never edit its API pages by hand. It also holds two older hand-written guides (`guides/Mayadev Env Setup.md`, `guides/Asset Layout.md`) that this folder now owns (see [Overlap with the old guides](#overlap-with-the-old-guides)).
+
+**Design history lives in RigModules.** mayadev has no `design/` folder. The decisions that shaped it are in the RigModules repo: D24 (the boundary), D29 (the asset model), D30 (the Python package and the asset tools) and D42 (the pose and animation library, FBX clips). When mayadev changes a behaviour one of those decided, the decision entry is updated in RigModules in the matching change.
+
+## Pages and what each owns
+
+Each topic has one owning page. Other pages link to it instead of repeating it. The README's summaries (the tool areas, the quick start) are the one allowed exception, and they stay consistent with the owning page.
+
+| Page | Owns |
+|---|---|
+| [`../README.md`](../README.md) | What mayadev is, requirements, install, quick start, repo layout, links |
+| [`setup.md`](setup.md) | Environment variables, `.mod` files, the startup sequence, the dev reload tools |
+| [`architecture.md`](architecture.md) | The code: layers and dependency rules, the source map, the file handler pattern, and recipes for adding a tool, a file type or a handler |
+| [`assets.md`](assets.md) | `bmaya.asset`: asset ids, `project.json`, `asset.json`, variants, the registry, publishes, local versions, source control, saving and loading by file type |
+| [`clips.md`](clips.md) | The `exports` and `sources` bundles: FBX clips, the ControlAnim beside them, the bone map, the `animproperties` file format, the skeleton export |
+| [`tools.md`](tools.md) | The tool registry and menu layout files, the two menus, every RigModules menu tool, the active rig, the two editors |
+| [`rigmodules.md`](rigmodules.md) | Everything mayadev takes from RigModules: each command and `rigmodules` function, who calls it, and the rules for crossing the boundary |
+| [`framework.md`](framework.md) | The general tooling: logger, progress manager, events registry, batch framework, Qt base classes, the doc generator |
+| [`status.md`](status.md) | What each area of the code is worth keeping, and the known problems found reading it |
+| [`../tests/README.md`](../tests/README.md) | Running the tests, what each folder covers, where a new test goes |
+
+A topic that fits no page gets a new page here, a row in this table and a link in the README.
+
+## When to update
+
+A change updates its owning page **in the same change** when it touches anything a reader can see:
+
+- An environment variable, a `.mod` file, the startup order or a dev tool → `setup.md`
+- A module, class or folder, a layer rule, a handler or a recipe step → `architecture.md`
+- An asset id rule, a `project.json` or `asset.json` key, a file type, a registry query, a publish or version rule, a handler's arguments → `assets.md`
+- A clip's folder, a file beside it, the `animproperties` format, the bone map or the skeleton export → `clips.md`
+- A menu tool, a menu layout, a registry entry or an editor → `tools.md`
+- A new RigModules command or `rigmodules` function that mayadev calls, or a rule about the boundary → `rigmodules.md`
+- The logger, progress manager, events registry, batch framework, Qt base classes or doc generator → `framework.md`
+- Code deleted, adopted or found broken → `status.md`
+- Test commands or layout → `tests/README.md`
+
+**New things get docs, not just changed things.** A new tool, file type, handler or module is not done until its page has it. Search the pages for the old name after a rename, examples included. When a change touches nothing a reader can see (a refactor, a test-only change), say so in the change summary.
+
+## Writing rules
+
+- **Describe the code, not the plan.** Document what is built. Planned work goes in RigModules' `design/`, or under a clearly marked "Not built yet" note when a reader needs to know.
+- **The code wins.** When a page and the code disagree, fix the page and say so in the change summary. When a page and RigModules' design documents disagree, flag it instead of picking one.
+- **Use the code's names exactly**: function, file type key, JSON key, environment variable.
+- **Command examples are Python `maya.cmds`, never MEL.** Flags are keyword arguments named by the long flag name, and a multi-use flag takes a list. Flag tables name the keyword without a leading `-`.
+- **No import aliases.** Write `import bmaya.asset.handlers` and call `bmaya.asset.handlers.save(...)`. A `from bmaya.asset import Asset` is fine. The one alias is `import maya.cmds as cmds`.
+- **Show, then list.** A short example first, then the full reference table.
+- **Plain Markdown in the repo.** The pages are reviewed in the same diff as the code.
+
+## Overlap with the old guides
+
+`py/scripts/docs/guides/Mayadev Env Setup.md` and `py/scripts/docs/guides/Asset Layout.md` were written first and are accurate for the code they describe. Their content now has owning pages here ([`setup.md`](setup.md), [`tools.md`](tools.md), [`assets.md`](assets.md), [`clips.md`](clips.md)), which add what the guides leave out. Two copies drift, so the guides should shrink to a link to these pages or be removed. That is a change to the mkdocs site and its generated nav, so it is the author's call. Until then, edit these pages first and treat the guides as stale where they differ.
+
+## Tested examples
+
+Not yet: no test reads an example out of the docs. The RigModules suite does this for its README (`tests/maya/concepts/test_docs_examples.py`). The candidates here are the asset examples in [`assets.md`](assets.md), which need only Python and a temporary projects root, and the `animproperties` example in [`clips.md`](clips.md). They are listed in [`status.md`](status.md) as proposed tests.
