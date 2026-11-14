@@ -30,6 +30,7 @@ The mayadev tests use `unittest`. Most of them need nothing but Python, and the 
 | `tests/asset/test_maya_asset_tools.py` | 51 | The `assettools` functions: variants, build, saves and loads, dialogs replaced by fakes |
 | `tests/asset/test_maya_active_rig.py` | 9 | `get_active_rig` and the tracker |
 | `tests/core/test_core_tool_registry.py` | 54 | The registry and layout files: round trip of the repo files, every check (unknown and missing keys, duplicate ids and names, bad ids, dangling and repeated layout references, call checks against fixture modules), versions and `upgrade`, atomic writes, `load_all`, `run_tool` |
+| `tests/core/test_maya_batch.py` | 3 | A batch job in its own mayapy, started through `mayalaunch`: the results folder, the log, `root_dir`, `open_report` |
 | `tests/core/test_maya_tool_editors.py` | 28 | Both editors offscreen: the tree and `Layout` round trip, the call picker and argument form, the status line, the checked save, `build_menus` with the drawing replaced |
 | `tests/rigging/rigmodules_menu/test_maya_rigmodules_menu.py` | 43 | The layout (eight submenus, 38 tools, the dev tools in the bmaya menu), `check_calls` over the repo registry, then each tool run through `run_tool` in Maya, including the joint tools |
 | `tests/basic/startup_test/main.py` | 1 | Maya starts through the batch framework and logs |

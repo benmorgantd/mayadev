@@ -72,9 +72,9 @@ A mayapy runner for a function over a list of scene files, with logs and a Markd
 
 | Class | Layer | Does |
 |---|---|---|
-| `BaseBatchEnvironment` | `bmaya.core.batch` | Makes a results folder, `~\Documents\batch\logs\<prefix>_<timestamp>`, and a file log in it. Plain Python |
-| `BaseBatchPackage` | `bmaya.core.batch` | A job: a file list (or a JSON config with `file_list`), and `execute(item_path)` to override. `run_suite` runs it over every item |
-| `MayaBatchEnvironment` | `bmaya.maya.batch` | Adds Maya: redirects stdout and stderr, at the OS level and in Python, into `session_output.log` in `~\Documents\maya\mayabatch_logs\<folder>`, then `maya.standalone.initialize()`. Restores everything and uninitializes on exit |
+| `BaseBatchEnvironment` | `bmaya.core.batch` | Makes a results folder, `<root_dir>\<prefix>_<timestamp>` (`root_dir` defaults to `~\Documents\batch\logs`), and a file log in it. Plain Python |
+| `BaseBatchPackage` | `bmaya.core.batch` | A job: a file list (or a JSON config with `file_list`), and `execute(item_path)` to override. `run_suite(environment, open_report=True)` runs it over every item. Pass `open_report=False` for an unattended run |
+| `MayaBatchEnvironment` | `bmaya.maya.batch` | Adds Maya: redirects stdout and stderr, at the OS level and in Python, into `session_output.log` in `<root_dir>\<folder>` (`root_dir` defaults to `~\Documents\maya\mayabatch_logs`), then starts standalone Maya, with `userSetup.py`. Restores everything and uninitializes on exit. The redirect and Maya's start and stop are `mayalaunch`'s (below) |
 | `MayaStandaloneBatchPackage` | `bmaya.maya.batch` | Opens each file with `cmds.file(open=True, force=True)` before `execute`. An empty file list runs once on a new blank scene |
 | `run_batch_test(job_class, file_list=None, config_path=None)` | `bmaya.maya.batch.runner` | Adds `MAYADEV_ROOT\py\scripts` to `sys.path`, builds the job and runs it inside a `MayaBatchEnvironment` |
 
@@ -96,6 +96,8 @@ if __name__ == "__main__":
 ```
 
 Run it with mayapy (`tests\basic\startup_test\run.bat` is the working example, with `PYTHONPATH` set to `%MAYADEV_ROOT%\py\scripts`).
+
+The framework runs in the process that hosts it, so it does not start mayapy and a crash ends the whole batch. To start a mayapy from a script, with a timeout and without a crash dialog, use `mayalaunch`, which this framework and RigModules share: `mayalaunch.run_mayapy(script, args, mayalaunch.child_environment(), timeout=...)`. It is a separate repo (`dev\maya\mayalaunch`, see its README). `bmaya.core.mayalaunch_path` finds it (`MAYALAUNCH_ROOT`, else a sibling `mayalaunch` folder above this repo), so `import bmaya.core.mayalaunch_path` comes before `import mayalaunch`. `tests\core\test_maya_batch.py` runs a job through it end to end.
 
 `run_suite` writes the job's results folder: `executed_script.py` (a copy of the job's source), `batch_config.json`, `processed_files.txt`, `succeeded_files.txt`, `failed_files.txt` (each failure with its traceback), `session_output.log` and `report_summary.md`, which it opens in the default application when the run ends. An exception in one item is recorded as a failure and the next item still runs.
 

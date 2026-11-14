@@ -56,6 +56,7 @@ These rules describe the code today, and nothing checks them. The exception is `
 | `core/constants.py` | Naming constants of the older rig builder (see [`status.md`](status.md)) |
 | `core/util/` | `version_file` (a `.Versions` folder beside a file), `firstOrDefault` |
 | `core/batch/base_batch_framework.py` | `BaseBatchEnvironment`, `BaseBatchPackage` |
+| `core/mayalaunch_path.py` | Puts the shared `mayalaunch` package (a sibling repo that starts and ends Maya) on `sys.path` |
 | `maya/constants.py` | `MAYADEV_ROOT`, the toolset paths, `MenuSpec` and `MENUS`, `RIGMODULES_PLUGIN`, `IS_BATCH` |
 | `maya/assethandlers.py` | The Maya handlers and `register()`, `AnimClip`, `save_control_file`, `save_anim_clip`, `save_skeleton_export` |
 | `maya/assettools.py` | The asset, pose, clip and weight tools: plain functions, then the `*_ui` menu entry points |

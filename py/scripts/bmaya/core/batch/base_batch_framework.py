@@ -14,19 +14,19 @@ from datetime import datetime
 class BaseBatchEnvironment:
     """Pure Python context manager handling filesystem initialization and basic logging."""
 
+    DEFAULT_ROOT = os.path.join(os.path.expanduser("~"), "Documents", "batch", "logs")
+
     def __init__(
-        self, log_dir_name: str | None = None, folder_prefix: str = "batch_results"
+        self,
+        log_dir_name: str | None = None,
+        folder_prefix: str = "batch_results",
+        root_dir: str | None = None,
     ) -> None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         folder_name = log_dir_name or f"{folder_prefix}_{timestamp}"
 
-        home_dir = os.path.expanduser("~")
-        self.results_dir = os.path.join(
-            home_dir, "Documents", "batch", "logs", folder_name
-        )
-
-        if not os.path.exists(self.results_dir):
-            os.makedirs(self.results_dir)
+        self.results_dir = os.path.join(root_dir or self.DEFAULT_ROOT, folder_name)
+        os.makedirs(self.results_dir, exist_ok=True)
 
         self.log_file = os.path.join(self.results_dir, "session_output.log")
         self._file_handler = None
@@ -87,7 +87,11 @@ class BaseBatchPackage:
         """
         raise NotImplementedError("Subclasses must implement the execute method.")
 
-    def run_suite(self, environment: BaseBatchEnvironment) -> None:
+    def run_suite(
+        self, environment: BaseBatchEnvironment, open_report: bool = True
+    ) -> None:
+        """Runs execute() over every item and writes the results folder. open_report=False keeps the
+        summary from opening in the default application, for unattended runs."""
         self._write_manifest(environment.results_dir)
 
         processing_queue = self.file_list if self.file_list else [None]
@@ -126,8 +130,8 @@ class BaseBatchPackage:
             environment.results_dir, environment.log_file
         )
 
-        # Automatically show report on completion
-        self._open_report(summary_file)
+        if open_report:
+            self._open_report(summary_file)
 
     def _prepare_item(self, item_path: str | None, idx: int, total: int) -> str:
         if item_path is None:
