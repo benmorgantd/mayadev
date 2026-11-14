@@ -116,10 +116,10 @@ Run it with mayapy (`tests\basic\startup_test\run.bat` is the working example, w
 
 `bmaya.maya_ui.namingTool` is a small window (a name, a side and a type) built on `SimpleWindow`. It reads its side and type names from `bmaya.core.constants`, the older rig builder's naming constants ([`status.md`](status.md)).
 
-## Doc generator
+## Doc generator (deprecated)
 
-`batch/docgen/main.py` is a batch job (`CodebaseDocGenerator`) that writes the API reference in `py/scripts/docs` and updates `py/scripts/mkdocs.yml`. `batch/docgen/run.bat` runs it in mayapy, and `start_docs_server.bat` serves the site with `python -m mkdocs serve` at `http://127.0.0.1:8000`.
+`batch/docgen/main.py` is a batch job (`CodebaseDocGenerator`) that writes the API reference in `py/scripts/docs` and updates `py/scripts/mkdocs.yml`. It, the mkdocs site and the two old guides are deprecated ([`README.md`](README.md#the-old-mkdocs-site-deprecated)): the maintained documentation is this `docs/` folder. The generator still works, logs a deprecation warning, and is kept only because its API pages have no replacement.
 
-It walks `py/scripts/bmaya`, skips `__init__.py` and the batch folders, and for each module tries to import and inspect it, falling back to parsing the source with `ast` when the import fails. A file that fails both (the three Python 2 files listed in [`status.md`](status.md)) is logged as an error and gets no page, which is why the generated site has no pages for them. It then rewrites the `nav` in `mkdocs.yml` and starts the server.
+`batch/docgen/run.bat` runs it in mayapy, and `start_docs_server.bat` serves the site with `python -m mkdocs serve` at `http://127.0.0.1:8000`. It walks `py/scripts/bmaya`, skips `__init__.py` and the batch folders, and for each module tries to import and inspect it, falling back to parsing the source with `ast` when the import fails. A file that fails both (the three Python 2 files listed in [`status.md`](status.md)) is logged as an error and gets no page. It then rewrites the `nav` in `mkdocs.yml` (everything above `nav:` is kept) and starts the server.
 
-It documents each module's docstrings, so a module's top docstring is the first thing a reader of the generated page sees. The pages in `py/scripts/docs` are generated: don't edit them by hand. This `docs/` folder is the hand-written documentation ([`README.md`](README.md)).
+The generated pages are not edited by hand, and a module's top docstring is the first thing a reader of its page sees.

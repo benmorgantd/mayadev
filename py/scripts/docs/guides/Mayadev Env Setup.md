@@ -1,3 +1,7 @@
+!!! warning "Deprecated"
+    This page is no longer maintained and may be out of date. Its content moved to the hand-written
+    documentation in the repo's top-level `docs/` folder: `docs/setup.md` (environment, startup) and `docs/tools.md` (menus). Fix those pages, not this one.
+
 ### Mayadev Environment Setup
 
 ## Environment variables

@@ -1,4 +1,6 @@
-site_name: bmaya Pipeline Documentation
+# DEPRECATED: this site is the generated API reference plus two old guides. The maintained documentation is
+# the top-level docs/ folder (see docs/README.md). The generator (batch/docgen) still works but is not extended.
+site_name: bmaya Pipeline Documentation (deprecated)
 site_description: Rigging & Tool Pipeline Framework Architecture
 
 theme:

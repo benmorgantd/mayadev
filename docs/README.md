@@ -7,9 +7,9 @@ How the mayadev documentation is organized and kept current. It follows the proc
 | Where | Reader | Answers | Tense |
 |---|---|---|---|
 | `README.md`, `docs/`, `tests/README.md` | People using or changing mayadev: riggers, animators running the menu tools, tool writers | What does it do, and how do I use it? | What is true now |
-| `py/scripts/docs/` | Anyone looking up one function | What is in this module? | Generated |
+| `py/scripts/docs/` (**deprecated**) | Anyone looking up one function | What is in this module? | Generated |
 
-`py/scripts/docs/` is the mkdocs site that `batch/docgen` writes from docstrings. Never edit its API pages by hand. It also holds two older hand-written guides (`guides/Mayadev Env Setup.md`, `guides/Asset Layout.md`) that this folder now owns (see [Overlap with the old guides](#overlap-with-the-old-guides)).
+`py/scripts/docs/` is the old mkdocs site, now deprecated (see [The old mkdocs site](#the-old-mkdocs-site-deprecated)). Docstrings stay the function-level reference until something replaces its generated API pages.
 
 **Design history lives in RigModules.** mayadev has no `design/` folder. The decisions that shaped it are in the RigModules repo: D24 (the boundary), D29 (the asset model), D30 (the Python package and the asset tools) and D42 (the pose and animation library, FBX clips). When mayadev changes a behaviour one of those decided, the decision entry is updated in RigModules in the matching change.
 
@@ -58,9 +58,14 @@ A change updates its owning page **in the same change** when it touches anything
 - **Show, then list.** A short example first, then the full reference table.
 - **Plain Markdown in the repo.** The pages are reviewed in the same diff as the code.
 
-## Overlap with the old guides
+## The old mkdocs site (deprecated)
 
-`py/scripts/docs/guides/Mayadev Env Setup.md` and `py/scripts/docs/guides/Asset Layout.md` were written first and are accurate for the code they describe. Their content now has owning pages here ([`setup.md`](setup.md), [`tools.md`](tools.md), [`assets.md`](assets.md), [`clips.md`](clips.md)), which add what the guides leave out. Two copies drift, so the guides should shrink to a link to these pages or be removed. That is a change to the mkdocs site and its generated nav, so it is the author's call. Until then, edit these pages first and treat the guides as stale where they differ.
+`py/scripts/docs/` with `py/scripts/mkdocs.yml` and the generator `batch/docgen` is deprecated. This folder is the maintained documentation.
+
+- **Guides:** `guides/Mayadev Env Setup.md` and `guides/Asset Layout.md` are replaced by [`setup.md`](setup.md), [`tools.md`](tools.md), [`assets.md`](assets.md) and [`clips.md`](clips.md). Each carries a deprecation banner and is no longer edited. Fix this folder's pages, not those.
+- **Generated API pages:** they have no replacement yet, so they stay as the per-function reference. They are not extended: no new pages by hand, and the generator is not changed except to keep it running. It logs a deprecation warning when it runs.
+- **Index and config:** `docs/index.md` and `mkdocs.yml` say the site is deprecated and point here.
+- **Removing it** (the site, `mkdocs.yml`, `batch/docgen` and the mkdocs install) is a later step, when the API pages are no longer wanted. Nothing in the code imports any of it.
 
 ## Tested examples
 

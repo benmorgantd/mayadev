@@ -2,7 +2,7 @@
 
 What each area of the code is worth keeping, who uses it, and the problems found reading it. It starts from the verdicts in RigModules' `design/mayadev-integration.md` and records where the code is now. "Nothing imports it" means a search of `py/scripts`, `toolsets` and `tests` found no importer, so it is a library, a script run by hand, or dead.
 
-Verdicts: **Keep** (current, in use), **Adapt** (the idea stays, the code is to be reworked to sit on RigModules), **Reference** (read it for requirements, don't extend it), **Unused** (nothing calls it).
+Verdicts: **Keep** (current, in use), **Deprecated** (replaced, kept for now), **Adapt** (the idea stays, the code is to be reworked to sit on RigModules), **Reference** (read it for requirements, don't extend it), **Unused** (nothing calls it).
 
 ## By area
 
@@ -15,7 +15,8 @@ Verdicts: **Keep** (current, in use), **Adapt** (the idea stays, the code is to 
 | Startup | `userSetup.py` | Keep | Current ([`setup.md`](setup.md)) |
 | Core utilities | `core/log.py`, `progressmanager.py`, `decorators.py`, `util/` | Keep | In use. `core/log.py` imports Maya (below) |
 | Tool registry, menus, editors | `core/tool_registry.py`, `maya_ui/tool_views/`, `maya_ui/tool_registry_editor.py` | Keep | In use ([`tools.md`](tools.md)) |
-| Batch framework | `core/batch/`, `maya/batch/`, `batch/docgen/` | Keep | Used by one smoke test and the doc generator |
+| Batch framework | `core/batch/`, `maya/batch/` | Keep | Used by one smoke test and the doc generator |
+| mkdocs site and doc generator | `py/scripts/docs`, `py/scripts/mkdocs.yml`, `batch/docgen/` | Deprecated | Replaced by the top-level `docs/` ([`README.md`](README.md#the-old-mkdocs-site-deprecated)). Kept only for the generated API pages |
 | Events registry | `maya/eventsregistry.py` | Keep | Used by the active rig tracker |
 | Qt base | `maya_ui/qtbase.py` | Keep | In use |
 | Joint authoring | `maya/rigging/joint.py` | Keep the tools | Two menu entries are broken, one function is hard-coded (below). `label_joints` is replaced by `cmds.rigJointMarkup` |
@@ -56,7 +57,7 @@ The two guides under `py/scripts/docs/guides/` predate this folder:
 
 - `Mayadev Env Setup.md` lists the RigModules submenus as asset, mesh, joints, weights, shapes, control and dev. The menu also has **pose** and **clip**, and the layout test pins nine submenus.
 - `Asset Layout.md` shows the rig file as `variants/Human/hero_Human.ma`. The default `rig` file type is `variants/{variant}/{name}_{variant}_rig.ma` (`hero_Human_rig.ma`).
-- Both are superseded by [`setup.md`](setup.md), [`tools.md`](tools.md) and [`assets.md`](assets.md) ([`README.md`](README.md#overlap-with-the-old-guides)).
+- Both are deprecated and superseded by [`setup.md`](setup.md), [`tools.md`](tools.md) and [`assets.md`](assets.md) ([`README.md`](README.md#the-old-mkdocs-site-deprecated)). They carry a banner saying so, and these two details are left as they were.
 
 ## Test coverage
 

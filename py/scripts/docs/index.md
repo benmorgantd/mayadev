@@ -1,8 +1,19 @@
+!!! warning "Deprecated"
+    This site is deprecated. The maintained documentation is the hand-written `docs/` folder at the repo
+    root (`docs/README.md` maps the pages). This site keeps only the generated API reference, which has no
+    replacement yet, and two old guides that now point at their replacements. Nothing here is updated by hand.
+
 # bmaya Rigging Infrastructure
 
-Welcome to the centralized internal reference documentation platform for the `bmaya` pipeline.
+Where to read instead:
 
-### Overview Components
-* [Architecture Guide](guides/Mayadev Env Setup.md): High-level system design principles and context workflow layouts.
-* [Asset Layout](guides/Asset Layout.md): asset ids, project and asset files, the registry, local versions, and saving and loading by file type.
-* [API Reference Reference](maya/eventsregistry.md): Code layout and structural documentation generated dynamically within isolated standalone instances.
+* `docs/setup.md`: environment variables, module files, startup, dev reload
+* `docs/assets.md`: asset ids, project and asset files, the registry, local versions, handlers
+* `docs/tools.md`: the tool registry, menus and every RigModules menu tool
+* `docs/architecture.md`: layers, source map and recipes
+
+Still here:
+
+* [Setup guide (deprecated)](guides/Mayadev Env Setup.md)
+* [Asset layout guide (deprecated)](guides/Asset Layout.md)
+* [Generated API reference](maya/eventsregistry.md): module and function docstrings, written by `batch/docgen`

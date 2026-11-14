@@ -1,3 +1,7 @@
+!!! warning "Deprecated"
+    This page is no longer maintained and may be out of date. Its content moved to the hand-written
+    documentation in the repo's top-level `docs/` folder: `docs/assets.md` (asset model) and `docs/clips.md` (clips). Fix those pages, not this one.
+
 # Asset Layout
 
 How assets sit on disk and how tools find their files with `bmaya.asset`. The design and its reasons are in RigModules' `design/asset-model.md` (decision D29).

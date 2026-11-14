@@ -37,6 +37,8 @@ class CodebaseDocGenerator(MayaStandaloneBatchPackage):
         """Executes once inside the clean standalone session to process the entire codebase."""
         from bmaya.core import log
 
+        log.warning("The mkdocs site is deprecated: the maintained docs are the top-level docs/ folder. "
+                    "This generator only refreshes the API reference.")
         log.info("Starting monolithic hybrid codebase documentation generation pass...")
 
         for root, _, files in os.walk(self.source_root):
