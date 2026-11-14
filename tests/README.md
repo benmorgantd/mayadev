@@ -16,7 +16,7 @@ The mayadev tests use `unittest`. Most of them need nothing but Python, and the 
 - `tests\asset\run.bat` runs the plain Python tests first and stops if they fail, then the Maya ones.
 - The Maya tests **skip** without `RIGMODULES_PLUGIN`, or without `maya`, so a run with skips has not checked the boundary with RigModules ([`../docs/rigmodules.md`](../docs/rigmodules.md)). Read the skip count.
 - Copy the `.mll` and point `RIGMODULES_PLUGIN` at the copy when a Maya session has the build loaded, because a loaded plugin locks the file.
-- The Maya tests need RigModules' `rigmodules` package on `PYTHONPATH` (`RigModules.mod`).
+- The Maya tests need RigModules' `rigmodules` and `mayalaunch` packages on `PYTHONPATH` (`RigModules.mod`, or its `python` folder). `test_maya_batch.py` skips without `mayalaunch`.
 - The batch files set `MAYA_SKIP_USERSETUP_PY=1` so Maya starts without `userSetup.py` and the tests see the plugin alone. They call `C:\Program Files\Autodesk\Maya2026\bin\mayapy.exe`.
 - The startup test runs through the batch framework, which writes a results folder under `~\Documents\maya\mayabatch_logs` ([`../docs/framework.md`](../docs/framework.md#batch-framework)).
 

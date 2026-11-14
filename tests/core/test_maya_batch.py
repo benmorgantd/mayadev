@@ -13,8 +13,10 @@ import unittest
 SCRIPTS = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "py", "scripts"))
 sys.path.insert(0, SCRIPTS)
 
-import bmaya.core.mayalaunch_path  # noqa: E402,F401
-import mayalaunch  # noqa: E402
+try:
+    import mayalaunch  # RigModules' python folder, on PYTHONPATH (RigModules.mod)
+except ImportError:
+    mayalaunch = None
 
 JOB = textwrap.dedent('''
     import sys
@@ -37,6 +39,8 @@ JOB = textwrap.dedent('''
 
 class MayaBatchTests(unittest.TestCase):
     def setUp(self):
+        if mayalaunch is None:
+            self.skipTest("RigModules' python folder is not on PYTHONPATH")
         try:
             mayalaunch.mayapy_exe()
         except FileNotFoundError:

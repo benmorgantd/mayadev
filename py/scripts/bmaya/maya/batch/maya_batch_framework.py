@@ -1,7 +1,9 @@
 import os
 
-import bmaya.core.mayalaunch_path  # noqa: F401  (puts mayalaunch on sys.path)
-import mayalaunch
+try:
+    import mayalaunch  # RigModules' python folder, put on PYTHONPATH by RigModules.mod
+except ImportError as import_error:
+    raise ImportError("mayalaunch comes from RigModules (its python folder): put it on PYTHONPATH.") from import_error
 from bmaya.core.batch.base_batch_framework import BaseBatchEnvironment, BaseBatchPackage
 
 
