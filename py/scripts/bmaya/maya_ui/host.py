@@ -11,6 +11,9 @@ from collections.abc import Callable
 from PySide6 import QtCore, QtWidgets
 
 
+RESTORE_RECHECK_MS = 300
+
+
 def parent_window() -> QtWidgets.QWidget | None:
     """Maya's main window, to parent a tool to so it stays above Maya's. None outside a GUI Maya."""
     try:
@@ -92,5 +95,21 @@ def _dock(widget: QtWidgets.QWidget, name: str, width: int, height: int) -> bool
     if container.layout() is None:
         QtWidgets.QVBoxLayout(container)
     container.layout().addWidget(widget)
-    defer(lambda: cmds.workspaceControl(control, edit=True, restore=True))
+    defer(lambda: _restore(control))
     return True
+
+
+def _restore(control: str) -> None:
+    """Shows a docked control. The first restore can run before Maya has finished laying the new tab out and leave
+    it hidden (reproduced in a GUI Maya 2026, tests/gui/rigpanel), so it looks again once the event loop has run."""
+    import maya.cmds as cmds
+    import maya.OpenMayaUI as omui
+    import shiboken6
+
+    def is_hidden() -> bool:
+        pointer = omui.MQtUtil.findControl(control)
+        return bool(pointer) and not shiboken6.wrapInstance(int(pointer), QtWidgets.QWidget).isVisible()
+
+    if cmds.workspaceControl(control, query=True, exists=True):
+        cmds.workspaceControl(control, edit=True, restore=True)
+        QtCore.QTimer.singleShot(RESTORE_RECHECK_MS, lambda: is_hidden() and cmds.workspaceControl(control, edit=True, restore=True))

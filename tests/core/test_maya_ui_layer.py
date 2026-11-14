@@ -299,6 +299,45 @@ class FieldWidgetTest(MayaUiTest):
             self.assertEqual(len(calls), before + 1, hint)
 
 
+class CollapsibleSectionTest(MayaUiTest):
+
+    def section(self, **kwargs):
+        from PySide6 import QtWidgets
+        import bmaya.maya_ui.widgets
+        section = bmaya.maya_ui.widgets.CollapsibleSection("Pose", **kwargs)
+        section.content_layout.addWidget(QtWidgets.QLabel("inside"))
+        self.addCleanup(section.deleteLater)
+        section.show()
+        return section
+
+    def test_it_starts_open_with_a_down_arrow_and_its_title(self):
+        from PySide6 import QtCore
+        section = self.section()
+        self.assertEqual(section.header.text(), "Pose")
+        self.assertTrue(section.is_expanded)
+        self.assertTrue(section.body.isVisible())
+        self.assertEqual(section.header.arrowType(), QtCore.Qt.ArrowType.DownArrow)
+
+    def test_pressing_the_title_folds_and_opens_it_and_turns_the_arrow(self):
+        from PySide6 import QtCore
+        section = self.section()
+        seen = []
+        section.toggled.connect(seen.append)
+        section.header.click()
+        self.assertFalse(section.is_expanded)
+        self.assertFalse(section.body.isVisible())
+        self.assertEqual(section.header.arrowType(), QtCore.Qt.ArrowType.RightArrow)
+        section.header.click()
+        self.assertTrue(section.body.isVisible())
+        self.assertEqual(seen, [False, True])
+
+    def test_it_can_start_folded_and_be_set_from_code(self):
+        section = self.section(expanded=False)
+        self.assertFalse(section.body.isVisible())
+        section.set_expanded(True)
+        self.assertTrue(section.body.isVisible())
+
+
 class HostTest(MayaUiTest):
 
     def tearDown(self):

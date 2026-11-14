@@ -225,9 +225,15 @@ The pose tools act on the selected rig controls, or on the whole active rig when
 
 ### The active rig panel
 
-`bmaya.maya_ui.rigpanel.show_window` (RigModules `design/active-rig-panel.md`, D50) opens a panel on the active rig. It shows the active rig, with a drop-down when the scene has more than one. Below it, a tree has one row per module and side with its controls under it, and a filter box. A click selects that row's controls in Maya and a ctrl-click adds them. The tree does not follow the viewport selection. Buttons select every control or the mirror controls, zero, mirror left to right or right to left, flip, key the rig and key the selected controls' modules. They act on the selected controls, or on the whole rig when none is selected, as the menu tools do. An error from a button goes to the log. With no rig in the scene the panel says so and only Refresh works. The space row and the out-of-date line are not built yet.
+`bmaya.maya_ui.rigpanel.show_window` (RigModules `design/active-rig-panel.md`, D50) opens a panel on the active rig, in three labelled sections that fold when you press their title (a down arrow open, a right arrow folded): **Rig**, **Select** and **Pose**.
 
-The window is widgets and connections only. `bmaya.maya.rigpanel.RigPanelSession` is the view-model, and has no Qt: `rigs`, `rig` and `groups` (a `ControlGroup` per module and side, read once per refresh), the `changed` event, and the commands the buttons call (`set_active`, `select_group`, `select_controls`, `select_all`, `select_mirrors`, `zero`, `mirror`, `flip`, `key_rig`, `key_modules`). It follows `ActiveRigTracker.changed`, so a script that changes the active rig updates an open panel. `close()` stops it following, and the window calls it when it is destroyed, which a docked panel is with its workspace control and often with no close event. The docked panel is checked in a GUI Maya by `tests/gui/rigpanel/run.bat` (manual).
+- **Rig** shows the active rig, with a drop-down when the scene has more than one, and Refresh. With no rig in the scene it says so, and the other sections are off.
+- **Select** has All and Mirror (the controls on the other side of the selected ones), then one button per module and side. A button selects that module's controls, and Ctrl or Shift adds them to the selection. The panel does not list controls: Maya's Outliner does that, and a copy would need the Outliner's own selection, icons and spacing to feel right.
+- **Pose** has Zero, Mirror L>R, Mirror R>L, Flip, Key and Key Module. They act on the selected controls, or on the whole rig when none is selected, as the menu tools do.
+
+An error from a button goes to the log. The space row and the out-of-date line are not built yet.
+
+The window is widgets and connections only. `bmaya.maya.rigpanel.RigPanelSession` is the view-model, and has no Qt: `rigs`, `rig` and `groups` (a `ControlGroup` per module and side, read once per refresh), the `changed` event, and the commands the buttons call (`set_active`, `select_group`, `select_all`, `select_mirrors`, `zero`, `mirror`, `flip`, `key_rig`, `key_modules`). It follows `ActiveRigTracker.changed`, so a script that changes the active rig updates an open panel. `close()` stops it following, and the window calls it when it is destroyed, which a docked panel is with its workspace control and often with no close event. The docked panel is checked in a GUI Maya by `tests/gui/rigpanel/run.bat` (manual).
 
 | Tool | Does |
 |---|---|

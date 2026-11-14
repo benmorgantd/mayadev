@@ -85,16 +85,12 @@ class RigPanelSession:
             raise RuntimeError(f"{rig_root} is not a rig in the scene. Refresh the panel.")
         bmaya.maya.activerig.ActiveRigTracker().set_rig_root(rig_root)
 
-    def select_controls(self, controls: list[str] | tuple[str, ...], add: bool = False) -> None:
-        """Selects the controls, or adds them to the selection."""
-        if add:
-            cmds.select(list(controls), add=True)
-        else:
-            cmds.select(list(controls), replace=True)
-
     def select_group(self, group: ControlGroup, add: bool = False) -> None:
         """Selects the group's controls, or adds them to the selection."""
-        self.select_controls(group.controls, add)
+        if add:
+            cmds.select(list(group.controls), add=True)
+        else:
+            cmds.select(list(group.controls), replace=True)
 
     def select_all(self) -> None:
         bmaya.maya.posetools.select_all_controls_interactive()

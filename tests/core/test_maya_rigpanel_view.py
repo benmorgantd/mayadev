@@ -59,11 +59,10 @@ class FakeSession:
             raise RuntimeError(self.error)
         self.calls.append(call)
 
-    def close(self): self._record("close")
+    def close(self): self.calls.append(("close",))   # a destroyed panel calls it, even when commands are set to fail
     def refresh(self): self._record("refresh")
     def set_active(self, rig_root): self._record("set_active", rig_root)
     def select_group(self, group, add=False): self._record("select_group", group.module, add)
-    def select_controls(self, controls, add=False): self._record("select_controls", list(controls), add)
     def select_all(self): self._record("select_all")
     def select_mirrors(self): self._record("select_mirrors")
     def zero(self): self._record("zero")
@@ -83,38 +82,48 @@ class RigPanelView(unittest.TestCase):
         panel.show()
         return panel
 
-    def top_rows(self, panel):
-        proxy = panel.proxy
-        return [proxy.index(row, 0).data() for row in range(proxy.rowCount())]
+    def labels(self, panel):
+        return [button.text() for button in panel.group_buttons]
 
-    def click(self, panel, index, ctrl=False):
+    def click(self, button, modifiers=None):
         from PySide6 import QtCore, QtTest
-        modifiers = QtCore.Qt.KeyboardModifier.ControlModifier if ctrl else QtCore.Qt.KeyboardModifier.NoModifier
-        QtTest.QTest.mouseClick(panel.tree.viewport(), QtCore.Qt.MouseButton.LeftButton, modifiers,
-                                panel.tree.visualRect(index).center())
+        QtTest.QTest.mouseClick(button, QtCore.Qt.MouseButton.LeftButton,
+                                modifiers or QtCore.Qt.KeyboardModifier.NoModifier)
 
-    def test_the_tree_has_a_row_per_group_with_its_controls_under_it(self):
+    def test_there_are_three_labelled_folding_sections_and_no_control_tree(self):
+        from PySide6 import QtWidgets
         panel = self.panel(FakeSession([make_rig("hero:rigRoot", "hero")]))
-        self.assertEqual(self.top_rows(panel), ["spine  Center  (FkChain)", "arm_l  Left  (FkChain)"])
-        spine = panel.proxy.index(0, 0)
-        self.assertEqual([panel.proxy.index(row, 0, spine).data() for row in range(panel.proxy.rowCount(spine))],
-                         ["spine1_ctrl_c", "spine2_ctrl_c"])
+        self.assertEqual([section.header.text() for section in (panel.rig_section, panel.select_section, panel.pose_section)],
+                         ["Rig", "Select", "Pose"])
+        self.assertEqual(panel.findChildren(QtWidgets.QTreeView), [])   # Maya's Outliner lists controls
+        panel.pose_section.header.click()
+        self.assertFalse(panel.buttons["zero"].isVisible())
+        self.assertTrue(panel.buttons["select_all"].isVisible())   # the other sections stay open
+        panel.pose_section.header.click()
+        self.assertTrue(panel.buttons["zero"].isVisible())
 
-    def test_the_filter_keeps_a_group_with_a_matching_control(self):
+    def test_there_is_one_button_per_group_labelled_by_module(self):
         panel = self.panel(FakeSession([make_rig("hero:rigRoot", "hero")]))
-        panel.filter.setText("ARM")
-        self.assertEqual(self.top_rows(panel), ["arm_l  Left  (FkChain)"])
-        panel.filter.setText("")
-        self.assertEqual(len(self.top_rows(panel)), 2)
+        self.assertEqual(self.labels(panel), ["spine", "arm_l"])
 
-    def test_a_click_selects_a_group_or_one_control_and_ctrl_adds(self):
+    def test_a_module_name_shared_by_two_groups_gets_its_side(self):
+        import bmaya.maya.rigpanel
+        import bmaya.maya_ui.rigpanel
+        group = bmaya.maya.rigpanel.ControlGroup
+        labels = bmaya.maya_ui.rigpanel.group_labels([
+            group("hero:face", "FkChain", "Left", ("a",)), group("hero:face", "FkChain", "Right", ("b",)),
+            group("hero:spine", "FkChain", "Center", ("c",))])
+        self.assertEqual(labels, ["face Left", "face Right", "spine"])
+
+    def test_a_group_button_selects_and_ctrl_or_shift_adds(self):
+        from PySide6 import QtCore
         session = FakeSession([make_rig("hero:rigRoot", "hero")])
         panel = self.panel(session)
-        spine = panel.proxy.index(0, 0)
-        self.click(panel, spine)
-        self.click(panel, panel.proxy.index(1, 0, spine), ctrl=True)
-        self.assertEqual(session.calls, [("select_group", "hero:spine", False),
-                                         ("select_controls", ["hero:spine2_ctrl_c"], True)])
+        self.click(panel.group_buttons[0])
+        self.click(panel.group_buttons[1], QtCore.Qt.KeyboardModifier.ControlModifier)
+        self.click(panel.group_buttons[1], QtCore.Qt.KeyboardModifier.ShiftModifier)
+        self.assertEqual(session.calls, [("select_group", "hero:spine", False), ("select_group", "hero:arm_l", True),
+                                         ("select_group", "hero:arm_l", True)])
 
     def test_each_button_calls_its_session_command(self):
         session = FakeSession([make_rig("hero:rigRoot", "hero")])
@@ -137,7 +146,7 @@ class RigPanelView(unittest.TestCase):
         panel = self.panel(FakeSession([]))
         self.assertTrue(panel.empty_label.isVisible())
         self.assertEqual([name for name, button in panel.buttons.items() if button.isEnabled()], ["refresh"])
-        self.assertFalse(panel.tree.isEnabled())
+        self.assertEqual(panel.group_buttons, [])
 
     def test_the_picker_shows_only_with_several_rigs_and_picking_sets_the_active_rig(self):
         one = self.panel(FakeSession([make_rig("hero:rigRoot", "hero")]))
@@ -167,7 +176,7 @@ class RigPanelView(unittest.TestCase):
         panel = self.panel(session)
         session.rig, session.groups = None, []
         session.changed.emit()
-        self.assertEqual(self.top_rows(panel), [])
+        self.assertEqual(self.labels(panel), [])
         self.assertTrue(panel.empty_label.isVisible())
         self.assertEqual(session.calls, [])
 
@@ -203,16 +212,14 @@ class PanelOverARealRig(unittest.TestCase):
         panel = bmaya.maya_ui.rigpanel.RigPanel(session)
         self.addCleanup(panel.deleteLater)
         panel.show()
-        self.assertEqual(panel.proxy.rowCount(), len(session.groups))
+        self.assertEqual(len(panel.group_buttons), len(session.groups))
         self.assertTrue(panel.rig_combo.isVisible())
 
         panel.rig_combo.setCurrentIndex(panel.rig_combo.findData(villain))   # the user picks the second rig
         self.assertEqual(session.rig.rig_root, villain)
-        first = panel.proxy.index(0, 0)
-        group = first.data(bmaya.maya_ui.rigpanel.ITEM_ROLE)
-        self.assertTrue(all(control.startswith("villain:") for control in group.controls))
+        self.assertTrue(all(control.startswith("villain:") for control in session.groups[0].controls))
 
-        panel.tree.clicked.emit(first)                                         # a click selects in Maya
+        panel.group_buttons[0].click()                                         # a click selects in Maya
         self.assertEqual(cmds.ls(selection=True), list(session.groups[0].controls))
 
 

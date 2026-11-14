@@ -73,14 +73,10 @@ def steps():
 
 
 def rest():
-    if not STATE["panel"].parent().isVisible():
-        STATE["waits"] = STATE.get("waits", 0) + 1
-        if STATE["waits"] < 200:
-            import time
-            time.sleep(0.05)
-            maya.utils.executeDeferred(rest)   # the dock's deferred restore hasn't run yet: go round again
-            return
-        log("the docked panel never became visible")
+    if not STATE.get("idle_passes"):
+        STATE["idle_passes"] = 1
+        maya.utils.executeDeferred(rest)   # one more idle pass: the dock's deferred restore has run by the next
+        return
     try:
         steps_rest()
     except Exception:
@@ -95,14 +91,17 @@ def steps_rest():
     import bmaya.maya_ui.host
     import bmaya.maya_ui.rigpanel
     name, base, listeners, panel = (STATE[key] for key in ("name", "base", "listeners", "panel"))
-    pump(500)
+    pump(1500)   # the recheck in host._restore fires inside this
     check(cmds.workspaceControl(name, query=True, exists=True), "workspaceControl exists after show_window")
     check(panel.isVisible(), "panel is visible in its workspace control")
+    panel.pose_section.header.click()
+    check(not panel.buttons["zero"].isVisible(), "pressing the Pose title folds it")
+    panel.pose_section.header.click()
+    check(panel.buttons["zero"].isVisible(), "pressing it again opens it")
     check(listeners() == base + 1, "one session listens (%d)" % listeners())
-    check(panel.proxy.rowCount() > 0, "tree has %d group rows" % panel.proxy.rowCount())
+    check(len(panel.group_buttons) > 0, "Select section has %d group buttons" % len(panel.group_buttons))
 
-    first = panel.proxy.index(0, 0)
-    panel.tree.clicked.emit(first)
+    panel.group_buttons[0].click()
     check(len(cmds.ls(selection=True)) > 0, "click selected %d nodes" % len(cmds.ls(selection=True)))
     panel.buttons["zero"].click()
     panel.buttons["key_rig"].click()

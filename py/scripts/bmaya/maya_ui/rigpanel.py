@@ -1,27 +1,36 @@
 """The active rig panel: widgets bound to a RigPanelSession (RigModules design/active-rig-panel.md, D50).
 
-The panel is a launcher and a state display. Every button is one call on the session, and a click in the tree
-selects in Maya, one way: the tree does not follow the viewport selection. Qt only, no Maya (host.py docks it).
+The panel is a launcher and a state display, in three folding sections: Rig, Select and Pose. Every button is one
+call on the session. It doesn't list controls: Maya's Outliner does that, so the Select section has one button
+per module and side instead. Qt only, no Maya (host.py docks it).
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtWidgets
 
 import bmaya.core.log
 import bmaya.maya.rigpanel
 from bmaya.maya_ui import host
+from bmaya.maya_ui.widgets import CollapsibleSection
 
 OBJECT_NAME = "bmayaRigPanel"
-ITEM_ROLE = QtCore.Qt.ItemDataRole.UserRole
 EMPTY_TEXT = "There is no RigModules rig in the scene."
+GROUP_COLUMNS = 3
+ADD_MODIFIERS = QtCore.Qt.KeyboardModifier.ControlModifier | QtCore.Qt.KeyboardModifier.ShiftModifier
 
 
 def leaf_name(name: str) -> str:
     """A node name without its namespace and path."""
     return name.rsplit("|", 1)[-1].rsplit(":", 1)[-1]
+
+
+def group_labels(groups: list[bmaya.maya.rigpanel.ControlGroup]) -> list[str]:
+    """A button label for each group: its module's name, plus its side when two groups share the module name."""
+    names = [leaf_name(group.module) for group in groups]
+    return [f"{name} {group.side}" if names.count(name) > 1 else name for name, group in zip(names, groups)]
 
 
 class RigPanel(QtWidgets.QWidget):
@@ -36,42 +45,33 @@ class RigPanel(QtWidgets.QWidget):
         # following the tracker, or the next active rig change would call a deleted widget.
         self.destroyed.connect(session.close)
         self.buttons: dict[str, QtWidgets.QPushButton] = {}
+        self.group_buttons: list[QtWidgets.QPushButton] = []
 
         layout = QtWidgets.QVBoxLayout(self)
+        self.rig_section = CollapsibleSection("Rig")
+        self.select_section = CollapsibleSection("Select")
+        self.pose_section = CollapsibleSection("Pose")
+        for section in (self.rig_section, self.select_section, self.pose_section):
+            layout.addWidget(section)
+        layout.addStretch(1)
 
         header = QtWidgets.QHBoxLayout()
         self.rig_label = QtWidgets.QLabel()
         self.rig_combo = QtWidgets.QComboBox()
-        refresh = self._button("refresh", "Refresh", self.session.refresh, "Read the scene's rigs again")
         header.addWidget(self.rig_label, 1)
         header.addWidget(self.rig_combo, 1)
-        header.addWidget(refresh)
-        layout.addLayout(header)
-
+        header.addWidget(self._button("refresh", "Refresh", self.session.refresh, "Read the scene's rigs again"))
+        self.rig_section.content_layout.addLayout(header)
         self.empty_label = QtWidgets.QLabel(EMPTY_TEXT)
-        layout.addWidget(self.empty_label)
-
-        self.filter = QtWidgets.QLineEdit()
-        self.filter.setPlaceholderText("Filter controls")
-        self.filter.setClearButtonEnabled(True)
-        layout.addWidget(self.filter)
-
-        self.model = QtGui.QStandardItemModel(self)
-        self.proxy = QtCore.QSortFilterProxyModel(self)
-        self.proxy.setSourceModel(self.model)
-        self.proxy.setRecursiveFilteringEnabled(True)
-        self.proxy.setFilterCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
-        self.tree = QtWidgets.QTreeView()
-        self.tree.setModel(self.proxy)
-        self.tree.setHeaderHidden(True)
-        self.tree.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
-        layout.addWidget(self.tree, 1)
+        self.rig_section.content_layout.addWidget(self.empty_label)
 
         select_row = QtWidgets.QHBoxLayout()
         select_row.addWidget(self._button("select_all", "All", self.session.select_all, "Select every control of the rig"))
         select_row.addWidget(self._button("select_mirrors", "Mirror", self.session.select_mirrors,
                                           "Select the controls on the other side of the selected ones"))
-        layout.addLayout(select_row)
+        self.select_section.content_layout.addLayout(select_row)
+        self.groups_layout = QtWidgets.QGridLayout()
+        self.select_section.content_layout.addLayout(self.groups_layout)
 
         pose = QtWidgets.QGridLayout()
         commands = (
@@ -84,10 +84,8 @@ class RigPanel(QtWidgets.QWidget):
         )
         for index, (name, text, command, tip) in enumerate(commands):
             pose.addWidget(self._button(name, text, command, tip), index // 3, index % 3)
-        layout.addLayout(pose)
+        self.pose_section.content_layout.addLayout(pose)
 
-        self.filter.textChanged.connect(self.proxy.setFilterFixedString)
-        self.tree.clicked.connect(self._on_clicked)
         self.rig_combo.currentIndexChanged.connect(self._on_rig_picked)
         self.session.changed.connect(self.reload)
         self.reload()
@@ -108,7 +106,7 @@ class RigPanel(QtWidgets.QWidget):
             bmaya.core.log.error(str(error))
 
     def reload(self) -> None:
-        """Fills the rig picker and the tree from the session."""
+        """Fills the rig picker and the group buttons from the session."""
         session = self.session
         self.rig_combo.blockSignals(True)   # filling it is not the user picking a rig
         self.rig_combo.clear()
@@ -122,30 +120,27 @@ class RigPanel(QtWidgets.QWidget):
         self.rig_label.setVisible(not many)
         self.rig_label.setText(f"{session.rig.namespace}  ({session.rig.variant})" if session.rig else "")
 
-        self.model.clear()
-        for group in session.groups:
-            parent = QtGui.QStandardItem(f"{leaf_name(group.module)}  {group.side}  ({group.module_type})")
-            parent.setData(group, ITEM_ROLE)
-            for control in group.controls:
-                child = QtGui.QStandardItem(leaf_name(control))
-                child.setData(control, ITEM_ROLE)
-                parent.appendRow(child)
-            self.model.appendRow(parent)
-        self.tree.expandAll()
+        for button in self.group_buttons:
+            self.groups_layout.removeWidget(button)
+            button.deleteLater()
+        self.group_buttons = []
+        for index, (group, label) in enumerate(zip(session.groups, group_labels(session.groups))):
+            button = QtWidgets.QPushButton(label)
+            button.setToolTip(f"{group.module_type}, {group.side}, {len(group.controls)} control(s). "
+                              "Ctrl or Shift adds to the selection.")
+            button.clicked.connect(lambda checked=False, group=group: self._on_group_clicked(group))
+            self.groups_layout.addWidget(button, index // GROUP_COLUMNS, index % GROUP_COLUMNS)
+            self.group_buttons.append(button)
 
         has_rig = session.rig is not None
         self.empty_label.setVisible(not has_rig)
-        for widget in (self.filter, self.tree, *self.buttons.values()):
-            widget.setEnabled(has_rig or widget is self.buttons["refresh"])
+        self.select_section.body.setEnabled(has_rig)
+        self.pose_section.body.setEnabled(has_rig)
 
-    def _on_clicked(self, index: QtCore.QModelIndex) -> None:
-        """A click selects the group's or the control's nodes in Maya, and a ctrl-click adds them."""
-        item = index.data(ITEM_ROLE)
-        add = bool(QtWidgets.QApplication.keyboardModifiers() & QtCore.Qt.KeyboardModifier.ControlModifier)
-        if isinstance(item, bmaya.maya.rigpanel.ControlGroup):
-            self.run(lambda: self.session.select_group(item, add))
-        elif isinstance(item, str):
-            self.run(lambda: self.session.select_controls([item], add))
+    def _on_group_clicked(self, group: bmaya.maya.rigpanel.ControlGroup) -> None:
+        """Selects the group's controls in Maya. Ctrl or Shift adds them to the selection."""
+        add = bool(QtWidgets.QApplication.keyboardModifiers() & ADD_MODIFIERS)
+        self.run(lambda: self.session.select_group(group, add))
 
     def _on_rig_picked(self, index: int) -> None:
         rig_root = self.rig_combo.itemData(index)

@@ -248,3 +248,48 @@ class SignatureForm(QtWidgets.QWidget):
         result = {row.name: row.value() for row in self.rows if row.is_set}
         result.update(self.stale)
         return result
+
+
+class CollapsibleSection(QtWidgets.QFrame):
+    """A framed section with a title that folds it: a down arrow when open, a right arrow when folded. Put the
+    section's widgets in content_layout. The whole title bar is the button."""
+
+    toggled = QtCore.Signal(bool)   # True when the section is now open
+
+    def __init__(self, title: str, expanded: bool = True, parent: QtWidgets.QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
+        self.header = QtWidgets.QToolButton()
+        self.header.setText(title)
+        self.header.setCheckable(True)
+        self.header.setAutoRaise(True)
+        self.header.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.header.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
+        font = self.header.font()
+        font.setBold(True)
+        self.header.setFont(font)
+        self.body = QtWidgets.QWidget()
+        self.content_layout = QtWidgets.QVBoxLayout(self.body)
+        self.content_layout.setContentsMargins(6, 0, 6, 6)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setSpacing(0)
+        layout.addWidget(self.header)
+        layout.addWidget(self.body)
+
+        self.header.toggled.connect(self._on_toggled)
+        self.header.setChecked(expanded)
+        self._on_toggled(expanded)
+
+    @property
+    def is_expanded(self) -> bool:
+        return self.header.isChecked()
+
+    def set_expanded(self, expanded: bool) -> None:
+        self.header.setChecked(expanded)
+
+    def _on_toggled(self, expanded: bool) -> None:
+        self.header.setArrowType(QtCore.Qt.ArrowType.DownArrow if expanded else QtCore.Qt.ArrowType.RightArrow)
+        self.body.setVisible(expanded)
+        self.toggled.emit(expanded)
