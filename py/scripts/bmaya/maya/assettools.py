@@ -357,6 +357,30 @@ def load_control_shapes_ui() -> None:
     load_control_shapes(bmaya.maya.activerig.get_active_rig().rig_root)
 
 
+def mirror_control_shapes_ui(left_to_right: bool = True) -> None:
+    """Copies the control shapes of one side of the active rig onto the other."""
+    cmds.mirrorRigControlShapes(bmaya.maya.activerig.get_active_rig().rig_root, leftToRight=left_to_right)
+
+
+def print_joint_markup_ui() -> None:
+    """Prints each selected joint's markup JSON."""
+    joints = _get_selected_joints()
+    for joint, markup in zip(joints, cmds.rigJointMarkup(*joints, query=True)):
+        print(f"{joint}: {markup}")
+
+
+def remove_joint_markup_ui() -> None:
+    """Removes the markup of the selected joints."""
+    cmds.rigJointMarkup(*_get_selected_joints(), remove=True)
+
+
+def _get_selected_joints() -> list[str]:
+    joints = cmds.ls(selection=True, type="joint")
+    if not joints:
+        raise RuntimeError("Select joints.")
+    return joints
+
+
 def save_pose_ui() -> str | None:
     """Saves the pose of the selected controls, or of the whole active rig, under a name typed in a dialog, in the
     asset's poses folder. Before the asset's folder exists, asks for a file instead. Returns the path, or None

@@ -56,6 +56,20 @@ def flip_pose_ui() -> None:
     bmaya.core.log.info(f"Flipped {len(changed)} control(s).")
 
 
+def select_all_controls_ui() -> None:
+    """Selects every control of the active rig."""
+    rig_root = bmaya.maya.activerig.get_active_rig().rig_root
+    cmds.select(cmds.getRigControls(rig_root), replace=True)
+
+
+def select_mirror_controls_ui() -> None:
+    """Selects the controls on the other side of the selected controls."""
+    controls = cmds.ls(selection=True, type=rigmodules.query.RIG_CONTROL_TYPE)
+    if not controls:
+        raise RuntimeError("Select rig controls.")
+    cmds.select([cmds.getRigMirrorControl(control) for control in controls], replace=True)
+
+
 def key_all_controls_ui() -> None:
     count = rigmodules.pose.key_rig(bmaya.maya.activerig.get_active_rig().rig_root)
     bmaya.core.log.info(f"Keyed {count} channel(s) on every control of the active rig.")

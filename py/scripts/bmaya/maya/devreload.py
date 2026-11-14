@@ -1,7 +1,7 @@
 """Dev reload and unload for the RigModules plugin: swaps in a fresh build, or removes it, without restarting Maya.
 
 A loaded .mll is locked, so the build output can't be rebuilt while Maya has it loaded. Reload tears down
-everything tied to the plugin (the active rig tracker, the RigModules menu), starts a new scene, unloads the
+everything tied to the plugin (the active rig tracker, the menus that need it), starts a new scene, unloads the
 plugin, loads a copy of the build from a temp folder, and puts the tracker and menu back. The build is
 RIGMODULES_PLUGIN from Maya.env, which must be a path to the .mll. Startup loads that path directly, so the file
 stays locked until the first reload. Development only: the scene is thrown away.
@@ -22,13 +22,7 @@ import bmaya.maya.activerig
 import bmaya.maya.constants
 
 PLUGIN_FILE = "RigModules.mll"
-MENU_ID = "rigmodules_menu"
 _COPY_ROOT = os.path.join(tempfile.gettempdir(), "rigmodules_dev")
-
-
-def _delete_menu() -> None:
-    if cmds.menu(MENU_ID, exists=True):
-        cmds.deleteUI(MENU_ID, menu=True)
 
 
 def _tear_down() -> None:
@@ -36,7 +30,7 @@ def _tear_down() -> None:
     tracker = bmaya.maya.activerig.ActiveRigTracker.current()
     if tracker is not None:
         tracker.stop()
-    _delete_menu()
+    _delete_plugin_menus()
 
     cmds.select(clear=True)
     cmds.file(new=True, force=True)
@@ -61,15 +55,19 @@ def _forget_python_package() -> None:
         del sys.modules[name]
 
 
-def _build_menu() -> None:
-    from bmaya.core.tool_registry import ToolRegistry
-    from bmaya.maya_ui.tool_views.tool_menu import ToolMenu
+def _delete_plugin_menus() -> None:
+    """Deletes the menus that need a plugin, before the plugin goes."""
+    import bmaya.maya_ui.tool_views.tool_menu
 
-    registry = ToolRegistry()
-    registry.load_registry(bmaya.maya.constants.TOOL_REGISTRY_PATH)
-    menu = ToolMenu(MENU_ID)
-    menu.load_layout(bmaya.maya.constants.RIGMODULES_MENU_PATH)
-    menu.build_ui(registry)
+    for spec in bmaya.maya.constants.MENUS:
+        if spec.plugin:
+            bmaya.maya_ui.tool_views.tool_menu.delete_menu(spec.menu_id)
+
+
+def _build_menus() -> None:
+    from bmaya.maya_ui.tool_views.tool_menu import build_menus
+
+    build_menus()
 
 
 def reload_rigmodules() -> None:
@@ -85,28 +83,27 @@ def reload_rigmodules() -> None:
 
 
 def unload_rigmodules() -> None:
-    """Unloads the plugin and leaves Maya without it, so the build output is unlocked for a rebuild. The menu is
-    rebuilt afterwards, so Reload is still there to bring the plugin back. Deferred for the same reason as the full
-    reload."""
+    """Unloads the plugin and leaves Maya without it, so the build output is unlocked for a rebuild. The RigModules
+    menu goes with the plugin, and Reload, in the bmaya menu, brings it back. Deferred for the same reason as the
+    full reload."""
     cmds.evalDeferred(_unload)
 
 
 def reload_menu() -> None:
-    """Deletes the RigModules menu and builds it again from the layout and registry files, so edits to them show
-    without a restart. The plugin and the scene are untouched. Deferred for the same reason as the full reload."""
+    """Builds every menu again from the layout and registry files, so edits to them show without a restart. The
+    plugin and the scene are untouched. Deferred for the same reason as the full reload."""
     cmds.evalDeferred(_reload_menu)
 
 
 def _reload_menu() -> None:
-    _delete_menu()
-    _build_menu()
-    bmaya.core.log.info("Reloaded the RigModules menu")
+    _build_menus()
+    bmaya.core.log.info("Reloaded the menus")
 
 
 def _unload() -> None:
     _tear_down()
     _forget_python_package()
-    _build_menu()
+    _build_menus()
     bmaya.core.log.info("Unloaded RigModules")
 
 
@@ -121,5 +118,5 @@ def _reload(build_path: str) -> None:
         return
 
     bmaya.maya.activerig.ActiveRigTracker()
-    _build_menu()
+    _build_menus()
     bmaya.core.log.info(f"Reloaded RigModules from {build_path}")

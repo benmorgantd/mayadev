@@ -53,22 +53,21 @@ MAYA_SCRIPT_PATH+:=py/scripts
 | 1 | `bmaya.core.log.init_logger()` | |
 | 2 | Starts the progress manager, and shows the progress window | The window |
 | 3 | `_load_rigmodules`: `cmds.loadPlugin(RIGMODULES_PLUGIN)`. On `RuntimeError` it logs a warning and carries on without the plugin | |
-| 4 | `_setup_tool_registry`: loads `toolsets/master_tool_registry.json` into a `ToolRegistry` | |
-| 5 | `_setup_tool_views`: builds the **bmaya tool menu** from `bmaya_menu.json`, and, when the plugin loaded, the **RigModules** menu from `rigmodules_menu.json` | Yes |
-| 6 | `_start_active_rig_tracker`: only when the plugin loaded | Yes |
+| 4 | `_setup_tool_menus`: `build_menus()` reads `toolsets/master_tool_registry.json` and every layout, checks them, and builds the **bmaya tool menu** (`bmaya_menu`) and, while the plugin is loaded, the **RigModules** menu (`rigmodules_menu`). A missing or invalid file is logged with every problem (`log.error`) and the menus are skipped, so steps 3 and 5 still run ([`tools.md`](tools.md#checks-and-errors)) | Yes |
+| 5 | `_start_active_rig_tracker`: only when the plugin loaded | Yes |
 
-The plugin loads before the menus because the RigModules menu is skipped without it. The tracker needs the plugin because it asks `rigmodules.query` which rig a node belongs to.
+The plugin loads before the menus because the RigModules menu is built only while it is loaded. The tracker needs the plugin because it asks `rigmodules.query` which rig a node belongs to.
 
 `init_logger()` is called without `is_batch`, so a batch session also gets the Maya log handler rather than the stdout handler. See [`framework.md`](framework.md#logger) and [`status.md`](status.md).
 
 ## Dev reload
 
-The **dev** submenu of the RigModules menu swaps a new RigModules build in without restarting Maya (`bmaya.maya.devreload`). All three run deferred, so a menu item can start them: the menu is deleted while the item's own callback would still be on the stack otherwise.
+The **dev** submenu of the bmaya tool menu swaps a new RigModules build in without restarting Maya (`bmaya.maya.devreload`). It is in the bmaya menu, which has no plugin, so it is still there after an unload. All three run deferred, so a menu item can start them: the menus are rebuilt while the item's own callback would still be on the stack otherwise.
 
 | Tool | Does | Scene |
 |---|---|---|
-| Reload RigModules (dev) | Tears down, then loads a copy of `RIGMODULES_PLUGIN` from `%TEMP%\rigmodules_dev\<timestamp>`, and puts the tracker and menu back | Thrown away |
-| Unload RigModules (dev) | Tears down and leaves Maya without the plugin, so the build is unlocked for a rebuild. The menu is rebuilt, so Reload is still there | Thrown away |
-| Reload Menu (dev) | Deletes the RigModules menu and builds it again from the layout and registry files, so edits to them show | Untouched |
+| Reload RigModules (dev) | Tears down, then loads a copy of `RIGMODULES_PLUGIN` from `%TEMP%\rigmodules_dev\<timestamp>`, and puts the tracker and the menus back (`build_menus()`) | Thrown away |
+| Unload RigModules (dev) | Tears down and leaves Maya without the plugin, so the build is unlocked for a rebuild. The RigModules menu goes with the plugin, and Reload, in the bmaya menu, brings it back | Thrown away |
+| Reload Menu (dev) | `build_menus()`: reads the layout and registry files again and rebuilds both menus, so edits to them show. A broken file is reported and the current menus stay | Untouched |
 
-Tear down is: stop the active rig tracker, delete the menu, clear the selection, `file -new`, flush undo (undo entries keep C++ node references alive), refresh (VP2 caches render items for the control nodes), unload the plugin. Reload and Unload also drop every `rigmodules` module from `sys.modules`, so the next import reads the package again. Reload needs `RIGMODULES_PLUGIN` to be a path to the `.mll` and raises `RuntimeError` when it isn't. These are development tools only.
+Tear down is: stop the active rig tracker, delete the menus that need the plugin, clear the selection, `file -new`, flush undo (undo entries keep C++ node references alive), refresh (VP2 caches render items for the control nodes), unload the plugin. Reload and Unload also drop every `rigmodules` module from `sys.modules`, so the next import reads the package again. Reload needs `RIGMODULES_PLUGIN` to be a path to the `.mll` and raises `RuntimeError` when it isn't. These are development tools only.

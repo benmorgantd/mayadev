@@ -36,12 +36,9 @@ def _run_deferred_setup():
     # Load required plugins before the menus, which skip the RigModules menu without it
     rigmodules_loaded = _load_rigmodules()
 
-    # Setup tools menus
-    tools_registry = _setup_tool_registry()
-
-    # Only setup tool views if we're not in batch mode
+    # Only setup the menus if we're not in batch mode
     if not _IS_BATCH:
-        _setup_tool_views(tools_registry, rigmodules_loaded)
+        _setup_tool_menus()
 
     # The RigModules menu tools act on the active rig, so they need the tracker's selection callbacks
     if rigmodules_loaded and not _IS_BATCH:
@@ -76,19 +73,6 @@ def _setup_log_streaming():
         log.error(f"[Pipeline Error] Failed to initialize early logging: {e}\n")
 
 
-def _setup_tool_registry():
-    """Setup the master tool registry that all tool views read from"""
-    from bmaya.core.tool_registry import ToolRegistry
-    from bmaya.maya import constants
-
-    pmanager.update(30, "Building tool registry")
-
-    registry = ToolRegistry()  # TODO: make this a singleton
-    registry.load_registry(constants.TOOL_REGISTRY_PATH)
-
-    return registry
-
-
 def _start_active_rig_tracker():
     """Follows the rig the RigModules menu tools act on, through selection and file new and open callbacks."""
     import bmaya.maya.activerig
@@ -111,20 +95,18 @@ def _load_rigmodules():
     return True
 
 
-def _setup_tool_views(registry, rigmodules_loaded):
-    from bmaya.maya_ui.tool_views.tool_menu import ToolMenu
-    from bmaya.maya import constants
+def _setup_tool_menus():
+    """Builds every menu from the tool registry and layout files. A broken file is logged and the menus are skipped,
+    so the plugin and the active rig tracker still start."""
+    from bmaya.core.tool_registry import ToolDataError
+    from bmaya.maya_ui.tool_views.tool_menu import build_menus
 
-    pmanager.update(50, "Building tool views")
+    pmanager.update(50, "Building tool menus")
 
-    main_menu = ToolMenu("test")
-    main_menu.load_layout(os.path.join(constants.TOOLS_PATH, "bmaya_menu.json"))
-    main_menu.build_ui(registry)
-
-    if rigmodules_loaded:
-        rig_menu = ToolMenu("rigmodules_menu")
-        rig_menu.load_layout(constants.RIGMODULES_MENU_PATH)
-        rig_menu.build_ui(registry)
+    try:
+        build_menus()
+    except (FileNotFoundError, ToolDataError) as e:
+        log.error(f"The tool menus were not built:\n{e}")
 
 
 def user_setup():

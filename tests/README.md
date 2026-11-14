@@ -8,7 +8,9 @@ The mayadev tests use `unittest`. Most of them need nothing but Python, and the 
 |---|---|---|
 | `bmaya.asset` model and `animproperties` | `python -m unittest discover -s tests/asset -p "test_asset_*.py"` | Python 3 |
 | Handlers, tools and active rig | `tests\asset\run.bat` (after the line above) | mayapy, a RigModules `.mll` in `RIGMODULES_PLUGIN` |
-| RigModules menu layout and scripts | `tests\rigging\rigmodules_menu\run.bat` | Layout checks: Python. Script checks: mayapy and `RIGMODULES_PLUGIN` |
+| Tool registry, checks and `run_tool` | `python -m unittest discover -s tests/core -p "test_core_*.py"` | Python 3 |
+| Editors and `build_menus` | `tests\core\run.bat` (after the line above) | mayapy (offscreen Qt, no plugin) |
+| RigModules menu layout and tools | `tests\rigging\rigmodules_menu\run.bat` | Layout checks: Python. `check_calls` over the registry: mayapy. Tool runs: mayapy and `RIGMODULES_PLUGIN` |
 | Startup smoke test | `tests\basic\startup_test\run.bat` | mayapy, `MAYADEV_ROOT` |
 
 - `tests\asset\run.bat` runs the plain Python tests first and stops if they fail, then the Maya ones.
@@ -27,10 +29,12 @@ The mayadev tests use `unittest`. Most of them need nothing but Python, and the 
 | `tests/asset/test_maya_asset_handlers.py` | 21 | Each Maya handler on real scenes: shapes, scenes, clips (with ControlAnim, bone map and properties), control poses and animations, sources, the skeleton export, argument checks |
 | `tests/asset/test_maya_asset_tools.py` | 51 | The `assettools` functions: variants, build, saves and loads, dialogs replaced by fakes |
 | `tests/asset/test_maya_active_rig.py` | 9 | `get_active_rig` and the tracker |
-| `tests/rigging/rigmodules_menu/test_maya_rigmodules_menu.py` | 37 | The layout (submenu order, 41 tools, every GUID in the registry, every script compiles), then each registry script run in Maya |
+| `tests/core/test_core_tool_registry.py` | 54 | The registry and layout files: round trip of the repo files, every check (unknown and missing keys, duplicate ids and names, bad ids, dangling and repeated layout references, call checks against fixture modules), versions and `upgrade`, atomic writes, `load_all`, `run_tool` |
+| `tests/core/test_maya_tool_editors.py` | 28 | Both editors offscreen: the tree and `Layout` round trip, the call picker and argument form, the status line, the checked save, `build_menus` with the drawing replaced |
+| `tests/rigging/rigmodules_menu/test_maya_rigmodules_menu.py` | 43 | The layout (eight submenus, 38 tools, the dev tools in the bmaya menu), `check_calls` over the repo registry, then each tool run through `run_tool` in Maya, including the joint tools |
 | `tests/basic/startup_test/main.py` | 1 | Maya starts through the batch framework and logs |
 
-Not covered: `core/` (logger, progress manager, tool registry), the events registry, dev reload, the Qt classes, skinning, joint tools and the generic utilities ([`../docs/status.md`](../docs/status.md#test-coverage) lists proposed tests).
+Not covered: `core/` (logger, progress manager), the events registry, the reload half of dev reload, the Qt classes other than the two tool editors, skinning, most joint tools and the generic utilities ([`../docs/status.md`](../docs/status.md#test-coverage) lists proposed tests).
 
 ## Writing a test
 
@@ -40,4 +44,6 @@ Not covered: `core/` (logger, progress manager, tool registry), the events regis
 - Use a temporary directory for every file a test writes, and remove it with `addCleanup`. Point `BMAYA_VERSIONS_DIR` and `RIGGING_PROJECT_DIR` at temporary folders so a test never touches real assets or the machine's version copies.
 - Replace dialogs with fakes. The tools ask through `cmds.fileDialog2`, `cmds.confirmDialog` and small helper functions (`_ask_text` and its siblings), which the existing tests patch with `mock.patch.object`.
 - Write expected values by hand, not by recording what the code produced.
-- A new menu tool changes the tool count in the layout test.
+- A new menu tool changes the tool count in the layout test, and needs its function tested. `check_calls` already checks that its call resolves.
+- A test of a Qt window in mayapy creates the `QApplication` **before** `maya.standalone.initialize`, as `test_maya_tool_editors.py` does. Standalone otherwise starts a `QCoreApplication`, and creating a widget aborts the process. Set `QT_QPA_PLATFORM=offscreen`, and make a `QMessageBox` a test failure unless the test expects it.
+- A change to a registry or layout format adds an update step and a test with a file of the old version.

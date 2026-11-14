@@ -1,8 +1,9 @@
-"""The RigModules menu: toolsets/rigmodules_menu.json and its scripts in master_tool_registry.json.
+"""The RigModules menu: toolsets/rigmodules_menu.json and its tools in master_tool_registry.json.
 
-The layout tests need only Python. The script tests exec each registry script the way ToolMenu does,
+The layout tests need only Python. The tool tests run each registry tool the way ToolMenu does (run_tool),
 in mayapy against RIGMODULES_PLUGIN, the path of a RigModules.mll (copy it first if a Maya session
-has the build loaded, because a loaded plugin locks the file). They skip without it. Run with run.bat.
+has the build loaded, because a loaded plugin locks the file). They skip without it. The call checks import
+every tool module, so they need mayapy but not the plugin. Run with run.bat.
 """
 
 import contextlib
@@ -10,9 +11,14 @@ import io
 import json
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest import mock
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "py", "scripts"))
+
+from bmaya.core import tool_registry  # noqa: E402
 
 try:
     import maya.standalone
@@ -35,49 +41,54 @@ TEMPLATE = {
 }
 
 
-def _load(name):
-    with open(os.path.join(TOOLS, name), encoding="utf-8") as handle:
-        return json.load(handle)
+def _registry():
+    return tool_registry.read_registry(os.path.join(TOOLS, "master_tool_registry.json"))
 
 
-def _walk(items):
-    """Every menu item, depth first, descending into submenus."""
-    for item in items:
-        yield item
-        if item["type"] == "submenu":
-            yield from _walk(item["items"])
+def _layout(name="rigmodules_menu.json"):
+    return tool_registry.read_layout(os.path.join(TOOLS, name), _registry().tools)
 
 
 def _menu_tools():
-    """The registry entries the menu lists, by name, in menu order."""
-    registry = {tool["guid"]: tool for tool in _load("master_tool_registry.json")["tools"]}
-    items = _walk(_load("rigmodules_menu.json")["items"])
-    return {registry[item["guid"]]["name"]: registry[item["guid"]] for item in items if item["type"] == "tool"}
+    """The registry's tools that the RigModules menu lists, by name, in menu order."""
+    registry = _registry()
+    return {registry.tools[item.tool].name: registry.tools[item.tool] for item in _layout().tool_items()}
 
 
 class MenuLayout(unittest.TestCase):
 
     def test_every_menu_tool_is_in_the_registry(self):
-        registry = {tool["guid"] for tool in _load("master_tool_registry.json")["tools"]}
-        for item in _walk(_load("rigmodules_menu.json")["items"]):
-            self.assertIn(item["type"], ("tool", "separator", "submenu"))
-            if item["type"] == "tool":
-                self.assertIn(item["guid"], registry)
+        # read_layout refuses a layout that names a tool the registry doesn't have
+        self.assertTrue(list(_layout().tool_items()))
 
     def test_top_level_is_submenus_in_order(self):
-        items = _load("rigmodules_menu.json")["items"]
-        self.assertEqual([i["type"] for i in items], ["submenu"] * len(items))
-        self.assertEqual([i["label"] for i in items], ["asset", "mesh", "joints", "weights", "shapes", "control", "pose", "clip", "dev"])
+        items = _layout().items
+        self.assertEqual([type(i) for i in items], [tool_registry.Submenu] * len(items))
+        self.assertEqual([i.label for i in items], ["asset", "mesh", "joints", "weights", "shapes", "control", "pose", "clip"])
 
-    def test_every_registry_tool_is_in_the_menu_once(self):
-        guids = [i["guid"] for i in _walk(_load("rigmodules_menu.json")["items"]) if i["type"] == "tool"]
-        self.assertEqual(len(guids), len(set(guids)))
-        self.assertEqual(len(guids), 41)
+    def test_every_tool_is_in_the_menu_once(self):
+        ids = [item.tool for item in _layout().tool_items()]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertEqual(len(ids), 38)
 
-    def test_every_script_compiles(self):
-        for name, tool in _menu_tools().items():
-            with self.subTest(name):
-                compile(tool["script"], name, "exec")
+    def test_the_dev_tools_are_in_the_bmaya_menu(self):
+        ids = [item.tool for item in _layout("bmaya_menu.json").tool_items()]
+        for tool_id in ("bmaya.dev.reload_rigmodules", "bmaya.dev.unload_rigmodules", "bmaya.dev.reload_menu"):
+            self.assertIn(tool_id, ids)
+
+
+class RegistryCalls(unittest.TestCase):
+    """Imports every tool module, so it needs mayapy and the rigmodules package, but not the plugin."""
+
+    @classmethod
+    def setUpClass(cls):
+        if maya is None:
+            raise unittest.SkipTest("needs mayapy")
+        maya.standalone.initialize(name="python")
+
+    def test_every_registry_call_resolves_and_binds_to_its_function(self):
+        issues = tool_registry.check_calls(_registry())
+        self.assertEqual([f"{i.where}: {i.message}" for i in issues], [])
 
 
 class MenuScripts(unittest.TestCase):
@@ -124,12 +135,12 @@ class MenuScripts(unittest.TestCase):
         return joints
 
     def run_tool(self, name, selection):
-        """Runs a registry script as the menu does: exec, with the selection set first."""
+        """Runs a registry tool as the menu does (run_tool), with the selection set first."""
         if selection:
             self.cmds.select(selection, replace=True)
         else:
             self.cmds.select(clear=True)
-        exec(self.tools[name]["script"], {})
+        tool_registry.run_tool(self.tools[name])
 
     def selected(self):
         return [node.lstrip(":") for node in self.cmds.ls(sl=True)]
@@ -421,6 +432,60 @@ class MenuScripts(unittest.TestCase):
             cmds.delete(cluster)
             self.run_tool("Load Skin Weights...", self.root)
         self.assertTrue(cmds.ls(cmds.listHistory(box), type="skinCluster"))
+
+    def run_bmaya_tool(self, tool_id, selection):
+        """Runs a tool of the bmaya menu, with the selection set first."""
+        self.cmds.select(selection, replace=True)
+        tool_registry.run_tool(_registry().tools[tool_id])
+
+    def test_zero_transforms_freezes_the_selection_without_moving_it(self):
+        cmds = self.cmds
+        cube = cmds.polyCube(constructionHistory=False)[0]
+        cmds.move(1, 2, 3, cube)
+        cmds.rotate(0, 30, 0, cube)
+        self.run_bmaya_tool("bmaya.joints.zero_transforms", [cube])
+        for channel in ("translate", "rotate"):
+            self.assertEqual(cmds.getAttr(f"{cube}.{channel}")[0], (0, 0, 0))
+        box = cmds.exactWorldBoundingBox(cube)
+        self.assertAlmostEqual((box[0] + box[3]) / 2, 1, places=4)
+        self.assertAlmostEqual((box[1] + box[4]) / 2, 2, places=4)
+
+    def test_orient_to_world_clears_the_joints_world_rotation(self):
+        cmds = self.cmds
+        cmds.select(clear=True)
+        joint = cmds.joint(name="orient_test_jnt", position=(0, 0, 0))
+        cmds.setAttr(joint + ".jointOrient", 30, 40, 50)
+        self.run_bmaya_tool("bmaya.joints.orient_to_world", [joint])
+        rotation = cmds.xform(joint, query=True, worldSpace=True, rotation=True)
+        for value in rotation:
+            self.assertAlmostEqual(value, 0, places=3)
+
+    def test_orient_to_mesh_passes_the_joints_and_the_last_selected_mesh(self):
+        import bmaya.maya.rigging.joint
+        cmds = self.cmds
+        plane = cmds.polyPlane(constructionHistory=False)[0]
+        cmds.select(clear=True)
+        first = cmds.joint(name="orient_mesh_a_jnt")
+        cmds.select(clear=True)
+        second = cmds.joint(name="orient_mesh_b_jnt")
+        with mock.patch.object(bmaya.maya.rigging.joint, "orient_to_mesh") as orient:
+            self.run_bmaya_tool("bmaya.joints.orient_to_mesh", [first, second, plane])
+        orient.assert_called_once_with([first, second], plane)
+
+    def test_orient_to_mesh_needs_a_joint_and_a_mesh(self):
+        cmds = self.cmds
+        cmds.select(clear=True)
+        joint = cmds.joint(name="orient_lone_jnt")
+        with self.assertRaisesRegex(RuntimeError, "Select the joints, then the mesh"):
+            self.run_bmaya_tool("bmaya.joints.orient_to_mesh", [joint])
+
+    def test_the_dev_tools_resolve_to_the_devreload_functions(self):
+        import bmaya.maya.devreload
+        registry = _registry()
+        for tool_id, name in (("bmaya.dev.reload_rigmodules", "reload_rigmodules"),
+                              ("bmaya.dev.unload_rigmodules", "unload_rigmodules"),
+                              ("bmaya.dev.reload_menu", "reload_menu")):
+            self.assertIs(tool_registry.resolve_call(registry.tools[tool_id].call), getattr(bmaya.maya.devreload, name))
 
     def test_cancelled_file_dialog_does_nothing(self):
         with mock.patch.object(self.cmds, "fileDialog2", return_value=None):

@@ -51,29 +51,29 @@ These rules describe the code today, and nothing checks them. The exception is `
 | `asset/animproperties.py` | `AnimProperties` and the `<name>.animproperties.json` file |
 | `core/log.py` | The `bmaya` logger and its Maya handler |
 | `core/progressmanager.py` | `ProgressManager` singleton |
-| `core/tool_registry.py` | `Tool`, `ToolRegistry` |
+| `core/tool_registry.py` | The tool registry and layout files, Maya-free: the dataclasses (`Tool`, `ToolCall`, `Registry`, `Layout` and its items), the check pass, version updates, atomic read and write, `run_tool` ([`tools.md`](tools.md)) |
 | `core/decorators.py` | `decorator_maker`, `log_fn_duration` |
 | `core/constants.py` | Naming constants of the older rig builder (see [`status.md`](status.md)) |
 | `core/util/` | `version_file` (a `.Versions` folder beside a file), `firstOrDefault` |
 | `core/batch/base_batch_framework.py` | `BaseBatchEnvironment`, `BaseBatchPackage` |
-| `maya/constants.py` | `MAYADEV_ROOT`, the toolset paths, `RIGMODULES_PLUGIN`, `IS_BATCH` |
+| `maya/constants.py` | `MAYADEV_ROOT`, the toolset paths, `MenuSpec` and `MENUS`, `RIGMODULES_PLUGIN`, `IS_BATCH` |
 | `maya/assethandlers.py` | The Maya handlers and `register()`, `AnimClip`, `save_control_file`, `save_anim_clip`, `save_skeleton_export` |
 | `maya/assettools.py` | The asset, pose, clip and weight tools: plain functions, then the `*_ui` menu entry points |
 | `maya/posetools.py` | Zero, mirror, flip and key tools on the selection or the active rig |
 | `maya/activerig.py` | `get_active_rig`, `ActiveRigTracker` |
-| `maya/devreload.py` | Reload and unload RigModules, reload the menu |
+| `maya/devreload.py` | Reload and unload RigModules, reload the menus |
 | `maya/eventsregistry.py` | `EventsRegistry`, `EventType`, `pause_callbacks` |
 | `maya/batch/` | `MayaBatchEnvironment`, `MayaStandaloneBatchPackage`, `run_batch_test` |
 | `maya/rigging/`, `maya/modeling/`, `maya/util/` | Skinning, joint authoring and generic Maya helpers, mostly older code ([`status.md`](status.md)) |
 | `maya_ui/qtbase.py` | Window, widget, tree, table, dialog and progress window base classes |
-| `maya_ui/tool_registry_editor.py`, `maya_ui/tool_views/tool_menu.py` | The two editors and `ToolMenu` |
+| `maya_ui/tool_registry_editor.py`, `maya_ui/tool_views/tool_menu.py` | The two editors, `ToolMenu` and `build_menus` |
 | `maya_ui/namingTool/` | A small naming window |
 
 ## A tool call, end to end
 
 Take **Save Control Shapes...** from the RigModules menu.
 
-1. The menu item runs the registry snippet `bmaya.maya.assettools.save_control_shapes_ui()` (`ToolMenu` runs a tool's script with `exec`, see [`tools.md`](tools.md)).
+1. The menu item runs the tool `rigmodules.shapes.save`, whose call is `bmaya.maya.assettools.save_control_shapes_ui()` (`run_tool` imports the module and calls the function, see [`tools.md`](tools.md)).
 2. The `*_ui` function gets the active rig from `bmaya.maya.activerig.get_active_rig()` and calls the plain function `save_control_shapes(node)`.
 3. That asks RigModules which asset and variant the rig belongs to: `rigmodules.query.get_rig_info(node)`. It does not read node names.
 4. It builds an `Asset` from the id and checks the asset folder exists. Without one it falls back to a file dialog and calls `cmds.saveRigControlShapes` directly.
@@ -109,8 +109,8 @@ Where a file lives is kept apart from how it is read and written.
 
 1. Write the function in the module that owns the topic. A tool for the active rig takes its scope from `bmaya.maya.activerig.get_active_rig()`, and a tool that works on controls falls back to the whole rig as `posetools.get_scope` does.
 2. If it reads or writes an asset file, write a plain function with arguments, then a `*_ui` wrapper. Don't walk rig nodes to find the asset: use `rigmodules.query`.
-3. Add a tool entry to `toolsets/master_tool_registry.json` (a new `guid`, `name` and `script`), and put its GUID in the right submenu of `toolsets/rigmodules_menu.json`. The editors do this without hand-editing JSON ([`tools.md`](tools.md)).
-4. Add a test to `tests/rigging/rigmodules_menu` for the tool's script, and one for the function itself. The layout test there pins the submenu order and the number of tools in the RigModules menu (41), so a new tool changes that count in the same change. It also checks that every GUID resolves and every script compiles.
+3. Add a tool entry to `toolsets/master_tool_registry.json` (a new `id` named `<area>.<topic>.<action>`, a `name`, a `short_name` and a `call` naming the function and any `kwargs`), and put its id in the right submenu of `toolsets/rigmodules_menu.json`. The Registry Editor and the Menu Editor do this without hand-editing JSON, and refuse a save that fails the checks ([`tools.md`](tools.md#checks-and-errors)). A tool is a call into a function and has no code of its own: write the function first.
+4. Add a test to `tests/rigging/rigmodules_menu` for the tool, run through `run_tool` by id, and one for the function itself. The layout test there pins the submenu order and the number of tools in the RigModules menu (38), so a new tool changes that count in the same change. `check_calls` runs over the whole registry there and fails when a call's module, function or kwargs don't resolve.
 5. Document it in the tool table in [`tools.md`](tools.md) and the README tool areas if it is a new area.
 
 ### Add a file type

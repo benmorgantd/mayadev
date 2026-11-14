@@ -22,10 +22,10 @@ Python `maya.cmds` calls, with the module that makes them.
 | Command | Called from | Used for |
 |---|---|---|
 | `cmds.createRigFromTemplate(*joints, template=, asset=, namespace=)` | `assettools.build_rig` | Build a variant on the imported skeleton |
-| `cmds.rigJointMarkup(*joints, query=True)` and `remove=True` | Registry scripts (Print and Remove Joint Markup) | Inspect and clear joint markup |
-| `cmds.getRigControls(rig_root)` | Registry script (Select All Controls) | Every control of the active rig |
-| `cmds.getRigMirrorControl(control)` | Registry script (Select Mirror Controls) | The control on the other side |
-| `cmds.mirrorRigControlShapes(rig_root, leftToRight=)` | Registry scripts (Mirror Shapes) | Copy shapes across sides |
+| `cmds.rigJointMarkup(*joints, query=True)` and `remove=True` | Registry tools (Print and Remove Joint Markup, in `assettools`) | Inspect and clear joint markup |
+| `cmds.getRigControls(rig_root)` | Registry tool (Select All Controls, in `posetools`) | Every control of the active rig |
+| `cmds.getRigMirrorControl(control)` | Registry tool (Select Mirror Controls, in `posetools`) | The control on the other side |
+| `cmds.mirrorRigControlShapes(rig_root, leftToRight=)` | Registry tools (Mirror Shapes, in `assettools`) | Copy shapes across sides |
 | `cmds.saveRigControlShapes(rig_root, file=)`, `cmds.loadRigControlShapes(...)` | `assethandlers.RigShapesHandler`, `assettools` (no-asset fallback) | The variant's `shapes.json` |
 | `cmds.setRigMeshId(newId=)` | `assettools.mark_meshes_for_skinning` | Give meshes the id weight files match on |
 | `cmds.saveRigSkinWeights(mesh, file=)`, `cmds.loadRigSkinWeights(...)` | `assethandlers.RigSkinWeightsHandler` | One weight file per mesh |
@@ -73,6 +73,6 @@ Nothing in RigModules imports `bmaya`. These are the places RigModules documenta
 
 ## When a RigModules name changes
 
-Search this repo for the old name, in code, in `toolsets/master_tool_registry.json` (the registry scripts call commands directly) and in `tests/`. The registry scripts are the easy ones to miss: they are strings in JSON, and `test_every_script_compiles` checks only that they parse, not that the commands they call exist.
+Search this repo for the old name, in code and in `tests/`. The registry calls only mayadev functions, so a command is named inside a function and a name search finds it there. A `rigmodules` function that a registry entry names directly is caught by `check_calls` (the Registry Editor's Save and `tests/rigging/rigmodules_menu`), but a command called inside a mayadev function is not: only the name search and that function's test find it.
 
 The Maya tests in `tests/asset` and `tests/rigging` run against a real plugin (`RIGMODULES_PLUGIN`) and are the check that every call here still exists. Without the variable they skip, so a green run with skips has not checked the boundary ([`../tests/README.md`](../tests/README.md)).

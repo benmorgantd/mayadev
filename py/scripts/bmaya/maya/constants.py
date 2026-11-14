@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import dataclasses
 import os
 import maya.cmds as cmds
 
@@ -11,8 +14,23 @@ MAYADEV_ROOT = os.environ["MAYADEV_ROOT"]
 
 TOOLS_PATH = os.path.join(MAYADEV_ROOT, "toolsets")
 TOOL_REGISTRY_PATH = os.path.join(TOOLS_PATH, "master_tool_registry.json")
-# Built only when RigModules loads, because every tool in it calls a RigModules command.
-RIGMODULES_MENU_PATH = os.path.join(TOOLS_PATH, "rigmodules_menu.json")
+
+
+@dataclasses.dataclass(frozen=True)
+class MenuSpec:
+    """A menu on Maya's menu bar: its Maya id, its layout file in TOOLS_PATH, and the plugin it needs, if any."""
+
+    menu_id: str
+    layout: str
+    plugin: str | None = None
+
+
+# build_menus builds a menu with a plugin only while that plugin is loaded, because every tool in it calls a
+# RigModules command. The dev tools are in the bmaya menu, so they stay reachable after an unload.
+MENUS = (
+    MenuSpec(menu_id="bmaya_menu", layout="bmaya_menu.json"),
+    MenuSpec(menu_id="rigmodules_menu", layout="rigmodules_menu.json", plugin="RigModules"),
+)
 
 # A RigModules.mll path, or the plugin name once RigModules.mod puts it on MAYA_PLUG_IN_PATH.
 # Point it at a copy of the build: a loaded plugin locks the file, so the next build would fail.

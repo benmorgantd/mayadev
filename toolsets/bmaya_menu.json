@@ -1,14 +1,15 @@
 {
+    "version": 2,
     "label": "bmaya tool menu",
     "items": [
         {
             "type": "tool",
-            "guid": "a18abe7d-6597-4b25-8661-8d5f984467d4",
+            "tool": "bmaya.tools.registry_editor",
             "enabled": true
         },
         {
             "type": "tool",
-            "guid": "b123de41-a6c4-4f79-8e43-d28b48038028",
+            "tool": "bmaya.tools.menu_editor",
             "enabled": true
         },
         {
@@ -17,22 +18,43 @@
             "items": [
                 {
                     "type": "tool",
-                    "guid": "7322e7c4-c219-49ad-9096-0997c241b42d",
+                    "tool": "bmaya.joints.create_joint_at_center",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "8fa176df-2041-4c74-88db-410a7114d567",
+                    "tool": "bmaya.joints.zero_transforms",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "4a277861-5be0-43fc-a817-b74e71c109c1",
+                    "tool": "bmaya.joints.orient_to_world",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "2f565b37-5095-4c6a-bce8-26a44d3b8db9",
+                    "tool": "bmaya.joints.orient_to_mesh",
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "type": "submenu",
+            "label": "dev",
+            "items": [
+                {
+                    "type": "tool",
+                    "tool": "bmaya.dev.reload_rigmodules",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "tool": "bmaya.dev.unload_rigmodules",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "tool": "bmaya.dev.reload_menu",
                     "enabled": true
                 }
             ]

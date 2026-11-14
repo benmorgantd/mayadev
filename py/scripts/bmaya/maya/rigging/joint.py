@@ -231,6 +231,24 @@ def orient_to_mesh(joints, mesh):
         cmds.makeIdentity(jnt, apply=True, rotate=True)
 
 
+def zero_transforms_ui():
+    """Freezes translate, rotate and scale on the selection."""
+    cmds.makeIdentity(apply=True, translate=True, rotate=True, scale=True)
+
+
+def orient_to_world_ui():
+    """Orients the selected joints to the world."""
+    orient_to_world(cmds.ls(selection=True, type="joint"))
+
+
+def orient_to_mesh_ui():
+    """Orients the selected joints to the surface of the last selected object, a mesh."""
+    selection = cmds.ls(selection=True)
+    if len(selection) < 2:
+        raise RuntimeError("Select the joints, then the mesh.")
+    orient_to_mesh(selection[:-1], selection[-1])
+
+
 def mirror_face_joints(joints):
 
     for jnt in joints:

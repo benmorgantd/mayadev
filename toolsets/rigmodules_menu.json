@@ -1,4 +1,5 @@
 {
+    "version": 2,
     "label": "RigModules",
     "items": [
         {
@@ -7,37 +8,37 @@
             "items": [
                 {
                     "type": "tool",
-                    "guid": "99e72b04-4a77-4492-962a-1a96e91991e1",
+                    "tool": "rigmodules.asset.new_project",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "9cc7546f-79e0-4db4-a3c3-e49b64ef096c",
+                    "tool": "rigmodules.asset.new_asset",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "9da8eca3-d819-485a-8b73-bceec1539620",
+                    "tool": "rigmodules.asset.new_variant",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "ce86f44b-ba73-4234-b0cd-7c48d17a5ff3",
+                    "tool": "rigmodules.asset.save_skeleton",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "0bb96eec-4232-4264-806e-2c51c04f44bd",
+                    "tool": "rigmodules.asset.save_model",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "e24e55e3-d81e-4cd1-9e8d-ceade1b2f67a",
+                    "tool": "rigmodules.asset.build_rig",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "f0eb6807-08a0-46fb-9289-f3b37d1c5ddf",
+                    "tool": "rigmodules.asset.save_rig",
                     "enabled": true
                 }
             ]
@@ -48,12 +49,12 @@
             "items": [
                 {
                     "type": "tool",
-                    "guid": "005d756b-2a9a-45f0-bd2f-cefed2ab29a8",
+                    "tool": "rigmodules.mesh.mark_for_skinning",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "d19679a5-4371-47b1-b5eb-d23368c7f724",
+                    "tool": "rigmodules.mesh.mark_with_new_ids",
                     "enabled": true
                 }
             ]
@@ -64,12 +65,12 @@
             "items": [
                 {
                     "type": "tool",
-                    "guid": "b2c664f6-76da-405d-960e-9846fa1a70c1",
+                    "tool": "rigmodules.joints.print_markup",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "e34dcbca-0f06-4406-93d1-afde0876f8dc",
+                    "tool": "rigmodules.joints.remove_markup",
                     "enabled": true
                 }
             ]
@@ -80,12 +81,12 @@
             "items": [
                 {
                     "type": "tool",
-                    "guid": "f89c9583-9ecf-4298-96b1-af40feddcc69",
+                    "tool": "rigmodules.weights.save",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "42df57b8-3882-4607-93c2-2f27a13265a1",
+                    "tool": "rigmodules.weights.load",
                     "enabled": true
                 }
             ]
@@ -96,22 +97,22 @@
             "items": [
                 {
                     "type": "tool",
-                    "guid": "ad7cd44b-5f64-45ab-bbd1-b78392ac63f4",
+                    "tool": "rigmodules.shapes.mirror_left_to_right",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "5807a01a-d836-4d13-84fb-e053df0a714e",
+                    "tool": "rigmodules.shapes.mirror_right_to_left",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "ed0172ee-18a9-4d5c-bb6e-c84526717cf1",
+                    "tool": "rigmodules.shapes.save",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "2e9d76c8-552a-4a48-ae96-b4c9a4d12627",
+                    "tool": "rigmodules.shapes.load",
                     "enabled": true
                 }
             ]
@@ -122,12 +123,12 @@
             "items": [
                 {
                     "type": "tool",
-                    "guid": "de84cb3f-aae6-4494-a163-25c6778855ad",
+                    "tool": "rigmodules.control.select_all",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "790149a8-eec2-46a7-ba8f-f52c58a4777e",
+                    "tool": "rigmodules.control.select_mirror",
                     "enabled": true
                 }
             ]
@@ -138,62 +139,62 @@
             "items": [
                 {
                     "type": "tool",
-                    "guid": "043e10f1-931c-450d-bef3-949a8ae40d8b",
+                    "tool": "rigmodules.pose.save",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "ef5d3e8f-0859-4c85-8b36-ab0d7a4f09fb",
+                    "tool": "rigmodules.pose.load",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "2d2b160a-9054-44ab-8664-150955ab187d",
+                    "tool": "rigmodules.pose.save_animation",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "e176f47e-df15-415c-933c-28048ef096e9",
+                    "tool": "rigmodules.pose.load_animation",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "eaf11b48-03ce-4f7e-837e-fdced3d3296f",
+                    "tool": "rigmodules.pose.load_animation_mirrored",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "63538cab-b582-4c79-bb27-7f2500cfc3be",
+                    "tool": "rigmodules.pose.mirror",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "19cab4b2-ab66-4090-bd19-b8df252d5204",
+                    "tool": "rigmodules.pose.mirror_left_to_right",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "72ef5dad-6d99-41cf-ac5a-b819e4a748c0",
+                    "tool": "rigmodules.pose.mirror_right_to_left",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "5911e291-473d-4e8f-a741-f3cce9c894f5",
+                    "tool": "rigmodules.pose.flip",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "151abfe7-5ede-4fdf-9970-3d1fd3fa5511",
+                    "tool": "rigmodules.pose.zero",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "bc56cf2b-94dc-4b53-8e70-f1838ded9ce7",
+                    "tool": "rigmodules.pose.key_all_controls",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "7ff7ad02-a833-4a97-9fdf-3e3575edc412",
+                    "tool": "rigmodules.pose.key_selected_modules",
                     "enabled": true
                 }
             ]
@@ -204,58 +205,37 @@
             "items": [
                 {
                     "type": "tool",
-                    "guid": "610bbb7f-1727-4dda-b692-8b9102febf45",
+                    "tool": "rigmodules.clip.capture_joint_clip",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "9bd83b8f-0eb8-4f7b-8206-130cda3cad87",
+                    "tool": "rigmodules.clip.capture_joint_pose",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "15bd1c98-45dc-48b6-9780-58f26d8f503d",
+                    "tool": "rigmodules.clip.pose_from_joint_pose",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "d4483e2f-8d55-4115-85e4-a5df87a152d3",
+                    "tool": "rigmodules.clip.animate_from_joint_clip",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "765e6320-113b-49a8-b24c-202d2d2ccb6f",
+                    "tool": "rigmodules.clip.save_skeleton_export",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "edadd701-fa68-4b54-9263-9ba9636b439c",
+                    "tool": "rigmodules.clip.check_against_skeleton",
                     "enabled": true
                 },
                 {
                     "type": "tool",
-                    "guid": "d8faae93-fd7e-404b-93d6-516d9bc5a242",
-                    "enabled": true
-                }
-            ]
-        },
-        {
-            "type": "submenu",
-            "label": "dev",
-            "items": [
-                {
-                    "type": "tool",
-                    "guid": "76c7c4b3-930d-4fcd-8bba-3283e19ff3da",
-                    "enabled": true
-                },
-                {
-                    "type": "tool",
-                    "guid": "c4e8a7d1-5b92-4f36-8a0d-6e3b9f1c2d84",
-                    "enabled": true
-                },
-                {
-                    "type": "tool",
-                    "guid": "3b1f6a52-8c0e-4d7a-9e45-1a2c7d5f9b30",
+                    "tool": "rigmodules.clip.edit_properties",
                     "enabled": true
                 }
             ]

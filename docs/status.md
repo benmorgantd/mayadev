@@ -11,15 +11,15 @@ Verdicts: **Keep** (current, in use), **Deprecated** (replaced, kept for now), *
 | Asset model | `asset/` | Keep | Current, Maya-free, tested in plain Python ([`assets.md`](assets.md)) |
 | Maya asset handlers and tools | `maya/assethandlers.py`, `assettools.py` | Keep | Current. The only code that crosses into RigModules besides `activerig` and `posetools` ([`rigmodules.md`](rigmodules.md)) |
 | Active rig, pose tools | `maya/activerig.py`, `posetools.py` | Keep | Current, tested |
-| Dev reload | `maya/devreload.py` | Keep | Current, no tests |
+| Dev reload | `maya/devreload.py` | Keep | Current. Its menu half (`build_menus`) is tested; the reload itself has no tests |
 | Startup | `userSetup.py` | Keep | Current ([`setup.md`](setup.md)) |
 | Core utilities | `core/log.py`, `progressmanager.py`, `decorators.py`, `util/` | Keep | In use. `core/log.py` imports Maya (below) |
-| Tool registry, menus, editors | `core/tool_registry.py`, `maya_ui/tool_views/`, `maya_ui/tool_registry_editor.py` | Keep | In use ([`tools.md`](tools.md)) |
+| Tool registry, menus, editors | `core/tool_registry.py`, `maya_ui/tool_views/`, `maya_ui/tool_registry_editor.py` | Keep | Format version 2, checked on every read and write, tested ([`tools.md`](tools.md)) |
 | Batch framework | `core/batch/`, `maya/batch/` | Keep | Used by one smoke test and the doc generator |
 | mkdocs site and doc generator | `py/scripts/docs`, `py/scripts/mkdocs.yml`, `batch/docgen/` | Deprecated | Replaced by the top-level `docs/` ([`README.md`](README.md#the-old-mkdocs-site-deprecated)). Kept only for the generated API pages |
 | Events registry | `maya/eventsregistry.py` | Keep | Used by the active rig tracker |
 | Qt base | `maya_ui/qtbase.py` | Keep | In use |
-| Joint authoring | `maya/rigging/joint.py` | Keep the tools | Two menu entries are broken, one function is hard-coded (below). `label_joints` is replaced by `cmds.rigJointMarkup` |
+| Joint authoring | `maya/rigging/joint.py` | Keep the tools | One function is hard-coded (below). `label_joints` is replaced by `cmds.rigJointMarkup` |
 | Skinning | `maya/rigging/weights/` | Adapt | Not in any menu. Nothing imports `weightio` or `weightutils`. Three files are Python 2 (below). Weight files for rigs are RigModules' (`saveRigSkinWeights`), so these are the editing tools, not the file format |
 | Generic Maya utils | `maya/util/` | Keep the generic ones | Nothing imports them except `nameUtils`, by `joint.py`. Libraries for scripts run by hand |
 | `matrixConstraint.py` | `maya/util/` | Unused | A Python matrix parent constraint. `rigConstraint` inside RigModules rigs replaces it. Nothing imports it |
@@ -36,7 +36,6 @@ Found reading the code and compiling it. None were fixed by the documentation ch
 
 **Broken today**
 
-- **Orient to World and Orient to Mesh** (bmaya tool menu): both registry scripts import `bmaya.maya.rigging.joints`, and the module is `bmaya.maya.rigging.joint`. They raise `ModuleNotFoundError`.
 - **Three files don't compile under Python 3**, so Maya 2026 can't import them and the doc generator can't document them: `maya/rigging/weights/skin/averageVertexSkinWeightCmd.py`, `bm_softCluster.py` and `cvshapeinverter.py` (`except Exception, e`, `print x` and `raise X, 'text'`). So does `py/plug-ins/cv_nodeTemplate.py`. The files beside them (`averageVertexSkinWeightBrush.py`, `cvshapeinverter_plugin.py`) don't import them, so those compile.
 - **`weightutils.py`** imports `maya.api.OpenMaya` as `om` and then calls API 1 names on it, such as `om.MScriptUtil`, which API 2 doesn't have. `get_skin_cluster_weights` is one that does, so it should fail as written. This was read, not run: it needs a Maya session to confirm.
 - **`joint.add_twist_joints`** hard-codes `skel:shoulder_00_L_JNT` and `skel:elbow_00_L_JNT`, so it works on one named skeleton only.
@@ -55,7 +54,7 @@ Found reading the code and compiling it. None were fixed by the documentation ch
 
 The two guides under `py/scripts/docs/guides/` predate this folder:
 
-- `Mayadev Env Setup.md` lists the RigModules submenus as asset, mesh, joints, weights, shapes, control and dev. The menu also has **pose** and **clip**, and the layout test pins nine submenus.
+- `Mayadev Env Setup.md` lists the RigModules submenus as asset, mesh, joints, weights, shapes, control and dev. The menu has **pose** and **clip** too, no **dev** (it is in the bmaya menu now), and the layout test pins eight submenus.
 - `Asset Layout.md` shows the rig file as `variants/Human/hero_Human.ma`. The default `rig` file type is `variants/{variant}/{name}_{variant}_rig.ma` (`hero_Human_rig.ma`).
 - Both are deprecated and superseded by [`setup.md`](setup.md), [`tools.md`](tools.md) and [`assets.md`](assets.md) ([`README.md`](README.md#the-old-mkdocs-site-deprecated)). They carry a banner saying so, and these two details are left as they were.
 
@@ -65,9 +64,11 @@ The two guides under `py/scripts/docs/guides/` predate this folder:
 |---|---|
 | `bmaya.asset` | `tests/asset/test_asset_model.py` (44 tests) and `test_asset_animproperties.py` (16): plain Python |
 | Handlers, tools, active rig | `tests/asset/test_maya_*.py` (21, 51 and 9 tests): mayapy with a plugin build, or skipped |
-| Menu layout and scripts | `tests/rigging/rigmodules_menu` (37 tests): the layout checks run in plain Python, the script checks need the plugin |
+| Tool registry, checks, `run_tool` | `tests/core/test_core_tool_registry.py` (54 tests): plain Python |
+| Editors, `build_menus` | `tests/core/test_maya_tool_editors.py` (28 tests): mayapy, offscreen, no plugin. `build_menus` runs with the menu drawing replaced, because standalone Maya has no `MayaWindow` |
+| Menu layout and tools | `tests/rigging/rigmodules_menu` (43 tests): the layout checks run in plain Python, `check_calls` over the repo registry needs mayapy, the tool runs need the plugin |
 | Startup | `tests/basic/startup_test`: one smoke test that Maya starts and logs |
-| Nothing | `core/` (logger, progress manager, tool registry), `eventsregistry`, `devreload`, `qtbase`, the editors, `rigging/`, `modeling/`, `util/`, `batch/` |
+| Nothing | `core/` (logger, progress manager), `eventsregistry`, the reload half of `devreload`, `qtbase`, `rigging/` apart from the joint menu tools, `modeling/`, `util/`, `batch/` |
 
 ## Proposed tests
 
@@ -75,9 +76,7 @@ For the author to accept. None are written.
 
 | Check | Tier | Why |
 |---|---|---|
-| The tool registry loads and saves a file unchanged (`ToolRegistry.load_registry` then `save_registry`) | Plain Python | The registry is the source of every menu and has no test |
-| Every registry script's `cmds.*Rig*` calls name a command RigModules registers | mayapy with the plugin | `test_every_script_compiles` doesn't catch a renamed command ([`rigmodules.md`](rigmodules.md#when-a-rigmodules-name-changes)) |
-| Every registry script's imports resolve to a module in the package | Plain Python (`importlib.util.find_spec` on the dotted path) | Would have caught the `joints` against `joint` typo |
+| Every `cmds.*Rig*` call inside the functions the registry names is a command RigModules registers | mayapy with the plugin | `check_calls` checks that a tool's function exists and binds, not that the commands inside it exist ([`rigmodules.md`](rigmodules.md#when-a-rigmodules-name-changes)) |
 | Every `.py` file under `py/scripts/bmaya` compiles under Python 3 (`py_compile`) | Plain Python | Pins the three Python 2 files as a known list, and fails on a new one |
 | The asset examples in [`assets.md`](assets.md) run against a temporary projects root | Plain Python | Docs examples as tests, like RigModules' README quick start |
 | The `animproperties` example in [`clips.md`](clips.md) round-trips through `read` and `write` | Plain Python | The same |

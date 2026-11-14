@@ -112,7 +112,7 @@ Run it with mayapy (`tests\basic\startup_test\run.bat` is the working example, w
 | `Table`, `List`, `Tree`, `TreeItem` | Convenience subclasses. `Tree` has `items()` and `topLevelItems()`, and `TreeItem` has `parents()`, `children()` and `name()` |
 | `Dialog`, `ConfirmDialog` | A dialog, and a modal confirm that returns a boolean |
 | `ProgressWindow` | The window the progress manager updates (`refresh_ui`) |
-| `PythonSyntaxHighlighter` | Python highlighting for the script editor in the registry editor |
+| `PythonSyntaxHighlighter` | Python highlighting for a `QTextDocument`. No window uses it now: the registry editor picks a function and no longer holds script text |
 
 `bmaya.maya_ui.namingTool` is a small window (a name, a side and a type) built on `SimpleWindow`. It reads its side and type names from `bmaya.core.constants`, the older rig builder's naming constants ([`status.md`](status.md)).
 

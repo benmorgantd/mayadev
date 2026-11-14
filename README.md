@@ -12,7 +12,7 @@ mayadev owns everything around the rigs: where an asset's files live and how the
 | Rig build | Build Rig from Asset imports the skeleton, builds the variant's template, then loads its shapes, model and skin weights | [docs/tools.md](docs/tools.md) |
 | Pose and animation | Save and load poses and animations as asset files, mirror, flip, zero and key a whole rig or a selection | [docs/tools.md](docs/tools.md) |
 | Clips | Capture a rig's joints to an FBX clip, restore a rig from an FBX clip, check a clip against the skeleton export, edit the engine's clip properties | [docs/clips.md](docs/clips.md) |
-| Menus | A tool is a GUID and a Python snippet in JSON. A layout file arranges tools into a menu. Both have editors | [docs/tools.md](docs/tools.md) |
+| Menus | A tool is an id and one function call in JSON. A layout file arranges tools into a menu. Both are checked on every read and write, and both have editors | [docs/tools.md](docs/tools.md) |
 | Framework | Logger, progress window, callback registry, mayapy batch runner, Qt base classes | [docs/framework.md](docs/framework.md) |
 | Skinning and joints | Weight tools, joint authoring and a set of generic Maya utilities, most of them older code | [docs/status.md](docs/status.md) |
 
@@ -60,7 +60,7 @@ py/scripts/
 py/plug-ins/            more Python API nodes, older code
 toolsets/               master_tool_registry.json and the two menu layouts
 batch/docgen/           the API doc generator (deprecated with the mkdocs site)
-tests/                  unittest suites: asset, rigmodules_menu, startup
+tests/                  unittest suites: asset, core (tool registry, editors), rigmodules_menu, startup
 docs/                   these pages
 ```
 
