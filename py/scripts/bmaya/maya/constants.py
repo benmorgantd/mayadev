@@ -32,6 +32,11 @@ MENUS = (
     MenuSpec(menu_id="rigmodules_menu", layout="rigmodules_menu.json", plugin="RigModules"),
 )
 
+
+def menu_layout_paths() -> dict[str, str]:
+    """Each menu's layout file, by menu id."""
+    return {spec.menu_id: os.path.join(TOOLS_PATH, spec.layout) for spec in MENUS}
+
 # A RigModules.mll path, or the plugin name once RigModules.mod puts it on MAYA_PLUG_IN_PATH.
 # Point it at a copy of the build: a loaded plugin locks the file, so the next build would fail.
 RIGMODULES_PLUGIN = os.environ.get("RIGMODULES_PLUGIN", "RigModules")

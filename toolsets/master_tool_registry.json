@@ -30,7 +30,7 @@
             "name": "Tool Menu Editor",
             "short_name": "Tool Menu Editor",
             "call": {
-                "module": "bmaya.maya_ui.tool_views.tool_menu",
+                "module": "bmaya.maya_ui.menus",
                 "function": "show_window",
                 "kwargs": {}
             },
@@ -336,7 +336,7 @@
             "name": "Reload Menu (dev)",
             "short_name": "Reload Menu",
             "call": {
-                "module": "bmaya.maya_ui.tool_views.tool_menu",
+                "module": "bmaya.maya_ui.menus",
                 "function": "reload_menus",
                 "kwargs": {}
             },

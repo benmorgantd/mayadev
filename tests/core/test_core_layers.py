@@ -29,6 +29,8 @@ CMDS_UI = CMDS_DIALOGS | {
 }
 SLOT_REGISTRATIONS = {"register_writers", "register_prompter", "register_hooks"}
 STARTUP_FILES = {"maya/startup.py", "maya_ui/startup.py"}
+# The only files in maya_ui that touch Maya: the host (main window, docking) and the menus on Maya's menu bar.
+MAYA_HOST_FILES = {"maya_ui/host.py", "maya_ui/menus.py"}
 
 
 def _sources():
@@ -112,6 +114,15 @@ class Layers(unittest.TestCase):
                  for name in sorted(_cmds_calls(tree) & CMDS_DIALOGS)]
         self.assertEqual(found, [])
 
+    def test_maya_ui_touches_maya_only_in_the_host_and_the_menus(self):
+        """A Qt view must stay runnable with only PySide6, in plain Python (it may use bmaya.maya modules)."""
+        found = []
+        for relative, tree in _layer_files("maya_ui").items():
+            if relative not in MAYA_HOST_FILES:
+                found += [f"{relative}: {name}" for name in _imports(relative, tree)
+                          if _starts_with(name, ("maya", "rigmodules"))]
+        self.assertEqual(found, [], "a view imports Maya outside host.py and menus.py")
+
     def test_slots_are_filled_only_by_a_startup_register(self):
         found = []
         for relative, tree in TREES.items():
@@ -126,7 +137,8 @@ class Layers(unittest.TestCase):
         """A guard on the checks above: they would pass on nothing if the walk found no files."""
         self.assertIn("bmaya.core.log", _imports("maya/startup.py", TREES["maya/startup.py"]))
         self.assertIn("bmaya.core.log", _imports("core/progressmanager.py", TREES["core/progressmanager.py"]))
-        self.assertIn("menu", _cmds_calls(TREES["maya_ui/tool_views/tool_menu.py"]))
+        self.assertIn("menu", _cmds_calls(TREES["maya_ui/menus.py"]))
+        self.assertIn("maya.OpenMayaUI", _imports("maya_ui/host.py", TREES["maya_ui/host.py"]))
         self.assertGreater(len(_layer_files("core")), 10)
         self.assertTrue(os.path.isdir(BMAYA))
 

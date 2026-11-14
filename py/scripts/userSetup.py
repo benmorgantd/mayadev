@@ -111,7 +111,7 @@ def _setup_tool_menus():
     """Builds every menu from the tool registry and layout files. A broken file is logged and the menus are skipped,
     so the plugin and the active rig tracker still start."""
     from bmaya.core.tool_registry import ToolDataError
-    from bmaya.maya_ui.tool_views.tool_menu import build_menus
+    from bmaya.maya_ui.menus import build_menus
 
     pmanager.update(50, "Building tool menus")
 

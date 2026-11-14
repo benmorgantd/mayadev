@@ -63,7 +63,7 @@ A batch session logs to stdout, which the batch framework captures ([`framework.
 
 ## Dev reload
 
-The **dev** submenu of the bmaya tool menu swaps a new RigModules build in without restarting Maya (`bmaya.maya.devreload`, and `bmaya.maya_ui.tool_views.tool_menu.reload_menus` for Reload Menu). It is in the bmaya menu, which has no plugin, so it is still there after an unload. All three run deferred, so a menu item can start them: the menus are rebuilt while the item's own callback would still be on the stack otherwise.
+The **dev** submenu of the bmaya tool menu swaps a new RigModules build in without restarting Maya (`bmaya.maya.devreload`, and `bmaya.maya_ui.menus.reload_menus` for Reload Menu). It is in the bmaya menu, which has no plugin, so it is still there after an unload. All three run deferred, so a menu item can start them: the menus are rebuilt while the item's own callback would still be on the stack otherwise.
 
 | Tool | Does | Scene |
 |---|---|---|

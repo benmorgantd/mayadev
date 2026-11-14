@@ -15,11 +15,11 @@ Verdicts: **Keep** (current, in use), **Deprecated** (replaced, kept for now), *
 | Startup | `userSetup.py` | Keep | Current ([`setup.md`](setup.md)) |
 | Core utilities | `core/log.py`, `progressmanager.py`, `observable.py`, `prompts.py`, `decorators.py`, `util/` | Keep | In use, plain Python, tested |
 | Registration pass | `maya/startup.py`, `maya_ui/startup.py` | Keep | Current, tested ([`architecture.md`](architecture.md#the-registration-pass)) |
-| Tool registry, menus, editors | `core/tool_registry.py`, `maya_ui/tool_views/`, `maya_ui/tool_registry_editor.py` | Keep | Format version 2, checked on every read and write, tested ([`tools.md`](tools.md)) |
+| Tool registry, menus, editors | `core/tool_registry.py`, `core/tool_registry_edit.py`, `maya_ui/menus.py`, `maya_ui/tool_registry_editor.py` | Keep | Format version 2, checked on every read and write, tested ([`tools.md`](tools.md)) |
 | Batch framework | `core/batch/`, `maya/batch/` | Keep | Used by one smoke test and the doc generator |
 | mkdocs site and doc generator | `py/scripts/docs`, `py/scripts/mkdocs.yml`, `batch/docgen/` | Deprecated | Replaced by the top-level `docs/` ([`README.md`](README.md#the-old-mkdocs-site-deprecated)). Kept only for the generated API pages |
 | Events registry | `maya/eventsregistry.py` | Keep | Used by the active rig tracker |
-| Qt layer | `maya_ui/qtbase.py`, `prompter.py`, `widgets.py` | Keep | In use. The prompter and forms are tested offscreen; `qtbase` apart from what the editors use is not. Phase 2 of RigModules D49 replaces `qtbase`'s Maya parts with a host module |
+| Qt layer | `maya_ui/host.py`, `qtbase.py`, `prompter.py`, `widgets.py` | Keep | In use. The host, prompter and forms are tested offscreen; `qtbase` apart from what the editors use is not. `Tree` and `TreeItem` stay for the Menu Editor |
 | Joint authoring | `maya/rigging/joint.py` | Keep the tools | One function is hard-coded (below). `label_joints` is replaced by `cmds.rigJointMarkup` |
 | Skinning | `maya/rigging/weights/` | Adapt | Not in any menu. Nothing imports `weightio` or `weightutils`. Three files are Python 2 (below). Weight files for rigs are RigModules' (`saveRigSkinWeights`), so these are the editing tools, not the file format |
 | Generic Maya utils | `maya/util/` | Keep the generic ones | Nothing imports them except `nameUtils`, by `joint.py`. Libraries for scripts run by hand |

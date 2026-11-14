@@ -1,203 +1,40 @@
-"""Tool management interface for the master tools registry.
+"""The Registry Editor window: widgets bound to a RegistryEditSession, which holds the state and every editing rule.
 
 A tool is an id, labels and one function call. The call is picked here: a module (typed, with a completer), a
-function (a drop-down of the module's public functions) and its arguments (a form built from the function's
-signature, where only the arguments that are ticked are saved).
+function (a drop-down of the module's public functions) and its arguments (a SignatureForm, where only the
+arguments that are ticked are saved).
 """
 
 from __future__ import annotations
 
-import enum
-import importlib
-import importlib.util
-import inspect
-import json
-import os
-import types
-import typing
-
 from PySide6 import QtWidgets, QtCore, QtGui
 
+import bmaya.maya.constants
 from bmaya.core import log
 from bmaya.core import tool_registry
-from bmaya.core.tool_registry import Registry, Tool, ToolCall
-import bmaya.maya.constants
-import bmaya.maya_ui.tool_views.tool_menu
-import bmaya.maya_ui.widgets
-from bmaya.maya_ui.qtbase import SimpleWindow, get_maya_main_window
+from bmaya.core.tool_registry_edit import RegistryEditSession, STATUS_OK
+from bmaya.maya_ui import host
+from bmaya.maya_ui.qtbase import SimpleWindow
+from bmaya.maya_ui.widgets import ERROR_STYLE, SignatureForm
 
-PACKAGES = ("bmaya", "rigmodules")
-STATUS_OK = "OK"
-
-
-def list_modules() -> list[str]:
-    """Every module under the tool packages, for the module completer. Reads the folders and imports nothing:
-    pkgutil skips folders without an __init__.py, and bmaya and bmaya.maya are namespace packages."""
-    names: list[str] = []
-    for package in PACKAGES:
-        spec = importlib.util.find_spec(package)
-        if spec is None or not spec.submodule_search_locations:
-            continue
-        names.append(package)
-        for location in spec.submodule_search_locations:
-            for folder, folders, files in os.walk(location):
-                folders[:] = [f for f in folders if not f.startswith(("_", "."))]
-                relative = os.path.relpath(folder, location)
-                prefix = package if relative == "." else f"{package}.{relative.replace(os.sep, '.')}"
-                if relative != ".":
-                    names.append(prefix)
-                names += [f"{prefix}.{f[:-3]}" for f in files if f.endswith(".py") and f != "__init__.py"]
-    return sorted(set(names))
-
-
-def list_functions(module: types.ModuleType) -> list[str]:
-    """The public functions defined in a module, in the order they are written."""
-    functions = [
-        (function.__code__.co_firstlineno, name)
-        for name, function in inspect.getmembers(module, inspect.isfunction)
-        if function.__module__ == module.__name__ and not name.startswith("_")
-    ]
-    return [name for _, name in sorted(functions)]
-
-
-class ArgumentRow(QtCore.QObject):
-    """One parameter: an editor chosen by annotation and a Set check box. An unset row shows the default greyed and
-    is not saved."""
-
-    changed = QtCore.Signal()
-
-    def __init__(self, name: str, parameter: inspect.Parameter, hint: object, parent: QtCore.QObject | None = None) -> None:
-        super().__init__(parent)
-        self.name = name
-        self.has_default = parameter.default is not inspect.Parameter.empty
-        self.default = None if not self.has_default else parameter.default
-        self.editor = bmaya.maya_ui.widgets.FieldEditor(hint, self)
-        self.editor.changed.connect(self.changed)
-        self.widget = self.editor.widget
-        self.set_check = QtWidgets.QCheckBox("Set")
-        self.set_check.setChecked(not self.has_default)
-        self.set_check.setEnabled(self.has_default)
-        self.set_check.toggled.connect(self._on_set_toggled)
-        self.editor.show_value(self.default)
-        self._on_set_toggled(self.set_check.isChecked())
-
-    def _on_set_toggled(self, checked: bool) -> None:
-        self.widget.setEnabled(checked)
-        self.changed.emit()
-
-    def load(self, value: object) -> None:
-        """Shows a saved kwarg: the row is set to it."""
-        self.set_check.setChecked(True)
-        self.editor.show_value(value)
-
-    @property
-    def is_set(self) -> bool:
-        return self.set_check.isChecked()
-
-    def value(self) -> object:
-        """The editor's value as the registry's JSON keeps it: an Enum member's value. Raises ValueError for JSON
-        text that isn't JSON."""
-        try:
-            value = self.editor.value()
-        except ValueError as err:
-            raise ValueError(f"argument '{self.name}' is {err}") from None
-        return value.value if isinstance(value, enum.Enum) else value
-
-
-class ArgumentForm(QtWidgets.QWidget):
-    """The arguments of the picked function, as one row per parameter."""
-
-    changed = QtCore.Signal()
-
-    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
-        super().__init__(parent)
-        self._layout = QtWidgets.QGridLayout(self)
-        self._layout.setContentsMargins(0, 0, 0, 0)
-        self._rows: list[ArgumentRow] = []
-        self._stale: dict[str, object] = {}
-
-    def clear(self) -> None:
-        self._rows = []
-        self._stale = {}
-        while self._layout.count():
-            item = self._layout.takeAt(0)
-            if item.widget() is not None:
-                item.widget().deleteLater()
-
-    def set_function(self, function: typing.Callable | None, kwargs: dict[str, object]) -> None:
-        """Builds the rows for a function and shows the saved kwargs. A kwarg the function no longer has gets a red
-        row with a Remove button."""
-        self.clear()
-        parameters = {}
-        hints: dict[str, object] = {}
-        if function is not None:
-            try:
-                parameters = dict(inspect.signature(function).parameters)
-            except (TypeError, ValueError):
-                parameters = {}
-            try:
-                hints = typing.get_type_hints(function)
-            except Exception:
-                hints = {}
-
-        row_index = 0
-        for name, parameter in parameters.items():
-            if parameter.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD, inspect.Parameter.POSITIONAL_ONLY):
-                continue
-            row = ArgumentRow(name, parameter, hints.get(name), self)
-            row.changed.connect(self.changed)
-            if name in kwargs:
-                row.load(kwargs[name])
-            self._rows.append(row)
-            default = "" if parameter.default is inspect.Parameter.empty else f"  (default {parameter.default!r})"
-            label = QtWidgets.QLabel(f"{name}{default}")
-            self._layout.addWidget(label, row_index, 0)
-            self._layout.addWidget(row.widget, row_index, 1)
-            self._layout.addWidget(row.set_check, row_index, 2)
-            row_index += 1
-
-        for name, value in kwargs.items():
-            if name not in parameters:
-                self._add_stale_row(row_index, name, value)
-                row_index += 1
-
-    def _add_stale_row(self, row_index: int, name: str, value: object) -> None:
-        self._stale[name] = value
-        label = QtWidgets.QLabel(f"{name} = {json.dumps(value)}  (not a parameter any more)")
-        label.setStyleSheet("color: #e05555;")
-        remove = QtWidgets.QPushButton("Remove")
-        remove.clicked.connect(lambda: self._remove_stale(name, label, remove))
-        self._layout.addWidget(label, row_index, 0, 1, 2)
-        self._layout.addWidget(remove, row_index, 2)
-
-    def _remove_stale(self, name: str, label: QtWidgets.QWidget, button: QtWidgets.QWidget) -> None:
-        self._stale.pop(name, None)
-        label.deleteLater()
-        button.deleteLater()
-        self.changed.emit()
-
-    def kwargs(self) -> dict[str, object]:
-        """Only what was chosen: the set rows, and the stale kwargs not yet removed. Raises ValueError for JSON text
-        that isn't JSON."""
-        result = {row.name: row.value() for row in self._rows if row.is_set}
-        result.update(self._stale)
-        return result
+OBJECT_NAME = "bmayaRegistryEditor"
+ID_ROLE = QtCore.Qt.ItemDataRole.UserRole
 
 
 class NewToolDialog(QtWidgets.QDialog):
     """Asks for a new tool's id, checked as it is typed, and its name."""
 
-    def __init__(self, existing_ids: typing.Collection[str], parent: QtWidgets.QWidget | None = None) -> None:
+    def __init__(self, session: RegistryEditSession, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("New Tool")
-        self._existing = set(existing_ids)
+        self._session = session
 
         layout = QtWidgets.QFormLayout(self)
         self.input_id = QtWidgets.QLineEdit()
         self.input_id.setPlaceholderText("area.topic.action, for example rigmodules.pose.flip")
         self.input_name = QtWidgets.QLineEdit()
         self.problem = QtWidgets.QLabel("")
-        self.problem.setStyleSheet("color: #e05555;")
+        self.problem.setStyleSheet(ERROR_STYLE)
         layout.addRow("Id:", self.input_id)
         layout.addRow("Name:", self.input_name)
         layout.addRow(self.problem)
@@ -212,15 +49,9 @@ class NewToolDialog(QtWidgets.QDialog):
 
     def _validate(self) -> None:
         tool_id = self.input_id.text()
-        well_formed = bool(tool_registry.ID_PATTERN.match(tool_id))
-        if tool_id and not well_formed:
-            message = "The id is dot-separated lowercase segments, such as rigmodules.pose.flip."
-        elif tool_id in self._existing:
-            message = f"The id '{tool_id}' is already used."
-        else:
-            message = ""
+        message = self._session.id_problem(tool_id) if tool_id else ""
         self.problem.setText(message)
-        valid = well_formed and not message and bool(self.input_name.text().strip())
+        valid = bool(tool_id) and not message and bool(self.input_name.text().strip())
         self.buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(valid)
 
     def values(self) -> tuple[str, str]:
@@ -228,25 +59,21 @@ class NewToolDialog(QtWidgets.QDialog):
 
 
 class ToolManagerWindow(SimpleWindow):
-    """UI controller providing creation, modification, and execution capabilities for tools."""
+    """Widgets over a RegistryEditSession: they show its state, and each edit is a call on it. The window keeps no
+    state of its own, except that it ignores its own widgets' signals while it fills them from the session."""
 
-    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
-        parent = parent or get_maya_main_window()
+    def __init__(self, session: RegistryEditSession, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent=parent, title="Master Tool Registry Manager")
 
-        self.registry = Registry()
-        self.current_filepath = None
-        self.active_tool_id = None
-        self.dirty = False
-        self._block_ui_updates = False
-        self._module_names: list[str] | None = None
+        self.session = session
+        self.argument_form = SignatureForm()
+        self._filling = False
 
         self.resize(950, 750)
         self._build_menu_bar()
         self._build_ui_layout()
         self._connect_signals()
-        self._set_view_state(enabled=False)
-        self._load_registry(bmaya.maya.constants.TOOL_REGISTRY_PATH)
+        self._show_tools()
 
     # --- UI --------------------------------------------------------------------------------------------------
 
@@ -326,11 +153,10 @@ class ToolManagerWindow(SimpleWindow):
         call_form.addRow("", self.label_doc)
         call_layout.addLayout(call_form)
 
-        self.argument_form = ArgumentForm()
-        scroll = QtWidgets.QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(self.argument_form)
-        call_layout.addWidget(scroll)
+        self.argument_scroll = QtWidgets.QScrollArea()
+        self.argument_scroll.setWidgetResizable(True)
+        self.argument_scroll.setWidget(self.argument_form)
+        call_layout.addWidget(self.argument_scroll)
 
         self.label_status = QtWidgets.QLabel("")
         self.label_status.setWordWrap(True)
@@ -347,247 +173,176 @@ class ToolManagerWindow(SimpleWindow):
         main_splitter.setSizes([300, 650])
 
     def _connect_signals(self) -> None:
-        """Wires up all functional event triggers to internal tracking logic."""
+        """Widgets call the session, and the session's events call the window."""
         self.action_open.triggered.connect(self._on_open_registry)
         self.action_save.triggered.connect(self._on_save_registry)
         self.action_save_as.triggered.connect(self._on_save_registry_as)
         self.action_exit.triggered.connect(self.close)
 
-        self.tool_list.currentItemChanged.connect(self._on_tool_selection_changed)
-        self.search_input.textChanged.connect(self._filter_list_items)
+        self.tool_list.currentItemChanged.connect(self._on_list_item_changed)
+        self.search_input.textChanged.connect(self._filter_list)
         self.btn_add_tool.clicked.connect(self._on_add_new_tool)
         self.btn_delete_tool.clicked.connect(self._on_delete_selected_tool)
         self.btn_execute.clicked.connect(self._on_execute_payload)
 
-        # Live Form Modifications
-        self.input_name.textChanged.connect(self._sync_form_to_memory)
-        self.input_short_name.textChanged.connect(self._sync_form_to_memory)
-        self.input_icon.textChanged.connect(self._sync_form_to_memory)
-        self.check_enabled.toggled.connect(self._sync_form_to_memory)
+        self.input_name.textChanged.connect(lambda text: self._edit_field("name", text))
+        self.input_short_name.textChanged.connect(lambda text: self._edit_field("short_name", text))
+        self.input_icon.textChanged.connect(lambda text: self._edit_field("icon", text))
+        self.check_enabled.toggled.connect(lambda checked: self._edit_field("enabled", checked))
         self.input_module.editingFinished.connect(self._on_module_changed)
         self.input_module.textEdited.connect(self._on_module_typing)
         self.combo_function.currentIndexChanged.connect(self._on_function_changed)
-        self.argument_form.changed.connect(self._sync_form_to_memory)
 
-    def _set_view_state(self, enabled: bool) -> None:
-        """Safely locks or opens the form editing side based on tracking state context."""
-        for widget in (self.input_name, self.input_short_name, self.input_icon, self.check_enabled, self.input_module,
-                       self.combo_function, self.argument_form, self.btn_delete_tool):
-            widget.setEnabled(enabled)
-        self.btn_execute.setEnabled(False)  # Run waits for a status of OK
+        # The session holds these listeners weakly, which is right for a window that can close
+        self.session.tools_changed.connect(self._show_tools)
+        self.session.selection_changed.connect(self._show_selection)
+        self.session.changed.connect(self._show_state)
 
-    # --- the list --------------------------------------------------------------------------------------------
+    # --- showing the session ---------------------------------------------------------------------------------
 
-    def _refresh_list_view(self, select: str | None = None) -> None:
-        """Flushes and rebuilds the tool column matching cached state changes."""
-        self._block_ui_updates = True
+    def _show_tools(self) -> None:
+        """Rebuilds the tool list from the session."""
+        self._filling = True
         self.tool_list.clear()
-
-        for tool_id, tool in self.registry.tools.items():
+        for tool_id, tool in self.session.registry.tools.items():
             item = QtWidgets.QListWidgetItem(tool.name)
-            item.setData(QtCore.Qt.ItemDataRole.UserRole, tool_id)
+            item.setData(ID_ROLE, tool_id)
             item.setToolTip(tool_id)
             self.tool_list.addItem(item)
+        self._filling = False
+        self._filter_list(self.search_input.text())
 
-        self._block_ui_updates = False
-        self._filter_list_items(self.search_input.text())
-        if select:
-            for i in range(self.tool_list.count()):
-                if self.tool_list.item(i).data(QtCore.Qt.ItemDataRole.UserRole) == select:
-                    self.tool_list.setCurrentItem(self.tool_list.item(i))
-                    break
-
-    def _filter_list_items(self, search_text: str) -> None:
-        """Hides items in the list layout which fail to match filter strings."""
-        search_text = search_text.lower()
+    def _filter_list(self, text: str) -> None:
+        shown = set(self.session.search(text))
         for i in range(self.tool_list.count()):
             item = self.tool_list.item(i)
-            tool = self.registry.tools.get(item.data(QtCore.Qt.ItemDataRole.UserRole))
-            if tool:
-                match = search_text in tool.name.lower() or search_text in tool.short_name.lower() or search_text in tool.id
-                item.setHidden(not match)
+            item.setHidden(item.data(ID_ROLE) not in shown)
 
-    def _on_tool_selection_changed(self, current: QtWidgets.QListWidgetItem, previous: QtWidgets.QListWidgetItem) -> None:
-        """Maps specific tool attributes downstream into the interface layout values."""
-        if not current or self._block_ui_updates:
-            return
+    def _list_item(self, tool_id: str | None) -> QtWidgets.QListWidgetItem | None:
+        for i in range(self.tool_list.count()):
+            if self.tool_list.item(i).data(ID_ROLE) == tool_id:
+                return self.tool_list.item(i)
+        return None
 
-        tool = self.registry.tools.get(current.data(QtCore.Qt.ItemDataRole.UserRole))
-        if not tool:
-            return
+    def _show_selection(self) -> None:
+        """Fills every widget from the picked tool, or clears them when there is none."""
+        tool = self.session.tool
+        self._filling = True
+        self.tool_list.setCurrentItem(self._list_item(self.session.active_tool_id))
+        self.input_id.setText(tool.id if tool else "")
+        self.input_name.setText(tool.name if tool else "")
+        self.input_short_name.setText(tool.short_name if tool else "")
+        self.input_icon.setText(tool.icon or "" if tool else "")
+        self.check_enabled.setChecked(tool.enabled if tool else False)
+        self.input_module.setText(tool.call.module if tool else "")
+        self._fill_functions(tool.call.function if tool else "")
+        self._show_arguments()
+        for widget in (self.input_name, self.input_short_name, self.input_icon, self.check_enabled, self.input_module,
+                       self.combo_function, self.argument_scroll, self.btn_delete_tool):
+            widget.setEnabled(tool is not None)
+        self._filling = False
+        self._show_state()
 
-        self.active_tool_id = tool.id
-        self._block_ui_updates = True
-        self.input_id.setText(tool.id)
-        self.input_name.setText(tool.name)
-        self.input_short_name.setText(tool.short_name)
-        self.input_icon.setText(tool.icon or "")
-        self.check_enabled.setChecked(tool.enabled)
-        self.input_module.setText(tool.call.module)
-        self._fill_functions(tool.call.module, tool.call.function)
-        self._set_view_state(enabled=True)
-        self._show_arguments(tool.call.kwargs)
-        self._block_ui_updates = False
-        self._update_status()
+    def _show_state(self) -> None:
+        """The status line and Run, which wait for a status of OK, and the picked tool's name in the list."""
+        status = self.session.status()
+        ok = status == STATUS_OK
+        self.label_status.setText(status)
+        self.label_status.setStyleSheet("" if ok else ERROR_STYLE)
+        self.btn_execute.setEnabled(ok)
+        tool = self.session.tool
+        item = self._list_item(tool.id) if tool else None
+        if item is not None and item.text() != tool.name:
+            item.setText(tool.name)
 
-    # --- the call picker -------------------------------------------------------------------------------------
-
-    def _on_module_typing(self, _text: str) -> None:
-        """The completer lists modules, found on first use because walking the packages imports each package."""
-        if self._module_names is None:
-            self._module_names = list_modules()
-            self.module_completer.setModel(QtCore.QStringListModel(self._module_names, self.module_completer))
-
-    def _import_module(self, name: str) -> tuple[types.ModuleType | None, str]:
-        """The module, or None and the reason."""
-        if not name:
-            return None, "no module"
-        try:
-            return importlib.import_module(name), ""
-        except Exception as err:  # a tool module can fail to import in any way
-            return None, f"cannot import module '{name}': {err}"
-
-    def _fill_functions(self, module_name: str, current: str) -> None:
-        """Fills the function drop-down from a module, keeping the saved function even when it isn't listed."""
+    def _fill_functions(self, current: str) -> None:
+        """Fills the function drop-down from the module field, keeping the saved function even when it isn't
+        listed."""
         self.combo_function.blockSignals(True)
         self.combo_function.clear()
-        module, _ = self._import_module(module_name)
-        names = list_functions(module) if module else []
-        if current and current not in names:
-            names.append(current)
-        for name in names:
-            self.combo_function.addItem(name)
-        self.combo_function.setCurrentIndex(self.combo_function.findText(current) if current else -1)
+        names = self.session.function_names(self.input_module.text(), current)
+        self.combo_function.addItems(names)
+        self.combo_function.setCurrentIndex(names.index(current) if current in names else -1)
         self.combo_function.blockSignals(False)
-        self._fit_function_width()
-        self._show_doc()
-
-    def _fit_function_width(self) -> None:
-        """Sets the drop-down's minimum width to its size hint, which AdjustToContents sizes to the longest function
-        name, so it follows the module as the call path changes."""
+        # AdjustToContents sizes the drop-down to the longest function name, so its minimum follows the module
         self.combo_function.setMinimumWidth(0)
         self.combo_function.setMinimumWidth(self.combo_function.sizeHint().width())
 
+    def _show_arguments(self) -> None:
+        """Builds the argument form for the picked tool's function and saved kwargs."""
+        tool = self.session.tool
+        form = SignatureForm(self.session.function(), tool.call.kwargs if tool else {})
+        form.changed.connect(self._on_arguments_edited)
+        self.argument_form = form
+        self.argument_scroll.setWidget(form)
+        self.label_doc.setText(self.session.doc())
+
+    # --- editing, through the session ------------------------------------------------------------------------
+
+    def _on_list_item_changed(self, current: QtWidgets.QListWidgetItem | None, _previous) -> None:
+        if not self._filling and current is not None:
+            self.session.select(current.data(ID_ROLE))
+
+    def _edit_field(self, name: str, value: object) -> None:
+        if not self._filling:
+            self.session.set_field(name, value)
+
+    def _on_module_typing(self, _text: str) -> None:
+        """The completer lists modules, found on first use."""
+        if self.module_completer.model().rowCount() == 0:
+            self.module_completer.setModel(QtCore.QStringListModel(self.session.module_names(), self.module_completer))
+
     def _on_module_changed(self) -> None:
-        if self._block_ui_updates or not self.active_tool_id:
+        """A new module has other functions, so the call starts again with none picked."""
+        if self._filling or self.session.tool is None:
             return
-        self._block_ui_updates = True
-        self._fill_functions(self.input_module.text().strip(), "")
-        self._block_ui_updates = False
-        self._on_function_changed()
+        self.session.set_call(self.input_module.text(), "")
+        self._filling = True
+        self._fill_functions("")
+        self._show_arguments()
+        self._filling = False
 
     def _on_function_changed(self, *_args) -> None:
-        if self._block_ui_updates or not self.active_tool_id:
+        if self._filling or self.session.tool is None:
             return
-        self._block_ui_updates = True
-        self._show_doc()
-        self._show_arguments({})
-        self._block_ui_updates = False
-        self._sync_form_to_memory()
+        self.session.set_call(self.input_module.text(), self.combo_function.currentText())
+        self._show_arguments()
 
-    def _current_function(self) -> typing.Callable | None:
-        module, _ = self._import_module(self.input_module.text().strip())
-        function = getattr(module, self.combo_function.currentText(), None) if module else None
-        return function if callable(function) else None
-
-    def _show_doc(self) -> None:
-        function = self._current_function()
-        doc = inspect.getdoc(function) if function else None
-        self.label_doc.setText(doc.splitlines()[0] if doc else "")
-
-    def _show_arguments(self, kwargs: dict[str, object]) -> None:
-        self.argument_form.set_function(self._current_function(), kwargs)
-
-    # --- editing ---------------------------------------------------------------------------------------------
-
-    def _sync_form_to_memory(self, *_args) -> None:
-        """Directly cascades interface modifications into the database record structures."""
-        if self._block_ui_updates or not self.active_tool_id:
-            return
-
-        tool = self.registry.tools.get(self.active_tool_id)
-        if not tool:
-            return
-
-        tool.name = self.input_name.text()
-        tool.short_name = self.input_short_name.text()
-        tool.icon = self.input_icon.text() if self.input_icon.text().strip() else None
-        tool.enabled = self.check_enabled.isChecked()
-        tool.call.module = self.input_module.text().strip()
-        tool.call.function = self.combo_function.currentText()
-        self.dirty = True
-
-        problem = ""
+    def _on_arguments_edited(self) -> None:
         try:
-            tool.call.kwargs = self.argument_form.kwargs()
+            kwargs = self.argument_form.kwargs()
         except ValueError as err:
-            problem = str(err)
-        self._update_status(problem)
-
-        current_item = self.tool_list.currentItem()
-        if current_item:
-            current_item.setText(tool.name)
-
-    def _update_status(self, problem: str = "") -> None:
-        """OK, or the first problem of the tool's call. Run is enabled only on OK."""
-        tool = self.registry.tools.get(self.active_tool_id)
-        if tool is None:
+            self.session.report_input_problem(str(err))
             return
-        message = problem or next(iter(tool_registry.check_call(tool.call)), "") or STATUS_OK
-        ok = message == STATUS_OK
-        self.label_status.setText(message)
-        self.label_status.setStyleSheet("" if ok else "color: #e05555;")
-        self.btn_execute.setEnabled(ok)
+        self.session.set_kwargs(kwargs)
 
     def _on_add_new_tool(self) -> None:
         """Adds a tool with an id and a name. Its call is empty, and Save refuses until one is picked."""
-        dialog = NewToolDialog(self.registry.tools, self)
-        if dialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
-            return
-        tool_id, name = dialog.values()
-        self.registry.tools[tool_id] = Tool(tool_id, name, name, ToolCall("", ""))
-        self.dirty = True
-        self._refresh_list_view(select=tool_id)
+        dialog = NewToolDialog(self.session, self)
+        if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+            self.session.add_tool(*dialog.values())
 
     def _on_delete_selected_tool(self) -> None:
-        """Removes the tool. A layout that still uses it is reported when the registry is saved."""
-        current_item = self.tool_list.currentItem()
-        if not self.active_tool_id or not current_item:
+        tool = self.session.tool
+        if tool is None:
             return
-
-        res = QtWidgets.QMessageBox.question(
+        answer = QtWidgets.QMessageBox.question(
             self,
             "Confirm Deletion",
-            f"Are you sure you want to remove '{current_item.text()}' from registration entries?",
+            f"Are you sure you want to remove '{tool.name}' from registration entries?",
             QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
         )
-        if res != QtWidgets.QMessageBox.StandardButton.Yes:
-            return
-
-        self.registry.tools.pop(self.active_tool_id, None)
-        self.active_tool_id = None
-        self.dirty = True
-        self._set_view_state(enabled=False)
-        self._refresh_list_view()
-
-        self._block_ui_updates = True
-        for field in (self.input_id, self.input_name, self.input_short_name, self.input_icon, self.input_module):
-            field.clear()
-        self.combo_function.clear()
-        self.argument_form.clear()
-        self.label_doc.setText("")
-        self.label_status.setText("")
-        self.check_enabled.setChecked(False)
-        self._block_ui_updates = False
+        if answer == QtWidgets.QMessageBox.StandardButton.Yes:
+            self.session.delete_tool()
 
     def _on_execute_payload(self) -> None:
         """Runs the tool as it is being edited, the way a menu item does."""
-        tool = self.registry.tools.get(self.active_tool_id)
+        tool = self.session.tool
         if tool is None:
             return
         log.info(f"Running {tool.id} from the registry editor")
         try:
-            tool_registry.run_tool(tool)
+            self.session.run()
         except Exception as err:
             QtWidgets.QMessageBox.warning(self, "Run Failed", f"{tool.id}: {err}")
 
@@ -595,7 +350,7 @@ class ToolManagerWindow(SimpleWindow):
 
     def _confirm_discard(self) -> bool:
         """True when there are no unsaved edits, or the user accepts losing them."""
-        if not self.dirty:
+        if not self.session.dirty:
             return True
         answer = QtWidgets.QMessageBox.question(
             self,
@@ -606,7 +361,6 @@ class ToolManagerWindow(SimpleWindow):
         return answer == QtWidgets.QMessageBox.StandardButton.Discard
 
     def _on_open_registry(self) -> None:
-        """Handles external system targeting to load and map tool collection configurations."""
         filepath, _ = QtWidgets.QFileDialog.getOpenFileName(
             self, "Open Tool Registry File", bmaya.maya.constants.TOOL_REGISTRY_PATH, "JSON Files (*.json)"
         )
@@ -616,64 +370,33 @@ class ToolManagerWindow(SimpleWindow):
     def _load_registry(self, filepath: str) -> None:
         """Replaces the registry with a file's. A file that fails its check is refused with every problem."""
         try:
-            registry = tool_registry.read_registry(filepath)
+            self.session.load(filepath)
         except (FileNotFoundError, tool_registry.ToolDataError) as err:
             QtWidgets.QMessageBox.warning(self, "Load Error", str(err))
-            return
-        self.registry = registry
-        self.current_filepath = filepath
-        self.active_tool_id = None
-        self.dirty = False
-        self._set_view_state(enabled=False)
-        self._refresh_list_view()
-
-    def check_everything(self) -> tool_registry.ToolDataError | None:
-        """The structure check and the calls check of the whole registry, and every menu layout against it when
-        this is the master registry. None when all pass."""
-        path = self.current_filepath or ""
-        errors = []
-        issues = tool_registry.check_registry(tool_registry.registry_to_dict(self.registry))
-        issues += tool_registry.check_calls(self.registry)
-        if issues:
-            errors.append(tool_registry.ToolDataError(issues, path))
-        if os.path.normcase(path) == os.path.normcase(bmaya.maya.constants.TOOL_REGISTRY_PATH):
-            for layout_path in bmaya.maya_ui.tool_views.tool_menu.menu_layout_paths().values():
-                try:
-                    tool_registry.read_layout(layout_path, self.registry.tools)
-                except FileNotFoundError as err:
-                    errors.append(tool_registry.ToolDataError([tool_registry.Issue("", str(err))], layout_path))
-                except tool_registry.ToolDataError as err:
-                    errors.append(err)
-        return tool_registry.ToolDataError.combine(errors) if errors else None
 
     def _on_save_registry(self) -> None:
-        """Checks the whole registry and the layouts, and refuses with the full report. Otherwise writes atomically."""
-        if not self.current_filepath:
+        """Saves to the file the registry came from, refusing with the full report when a check fails."""
+        if not self.session.path:
             self._on_save_registry_as()
-            return
-
-        report = self.check_everything()
-        if report is not None:
-            QtWidgets.QMessageBox.critical(self, "Save Refused", str(report))
-            return
-        try:
-            tool_registry.write_registry(self.registry, self.current_filepath)
-        except (OSError, tool_registry.ToolDataError) as err:
-            QtWidgets.QMessageBox.critical(self, "Save Error", str(err))
-            return
-        self.dirty = False
-        log.info(f"Successfully saved master tools file system to: {self.current_filepath}")
+        else:
+            self._save(None)
 
     def _on_save_registry_as(self) -> None:
-        """Prompts targets explicitly prior to serialization output functions."""
         filepath, _ = QtWidgets.QFileDialog.getSaveFileName(
             self, "Save Master Tool Registry As", "", "JSON Files (*.json)"
         )
-        if not filepath:
-            return
+        if filepath:
+            self._save(filepath)
 
-        self.current_filepath = filepath
-        self._on_save_registry()
+    def _save(self, path: str | None) -> None:
+        try:
+            self.session.save(path)
+        except tool_registry.ToolDataError as err:
+            QtWidgets.QMessageBox.critical(self, "Save Refused", str(err))
+        except OSError as err:
+            QtWidgets.QMessageBox.critical(self, "Save Error", str(err))
+        else:
+            log.info(f"Successfully saved master tools file system to: {self.session.path}")
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         if self._confirm_discard():
@@ -682,8 +405,17 @@ class ToolManagerWindow(SimpleWindow):
             event.ignore()
 
 
-def show_window() -> ToolManagerWindow:
+def master_session() -> RegistryEditSession:
+    """A session on the master registry, checked against every menu layout. A registry that fails its check is
+    reported, and the session is empty."""
+    paths = (bmaya.maya.constants.TOOL_REGISTRY_PATH, list(bmaya.maya.constants.menu_layout_paths().values()))
+    try:
+        return RegistryEditSession.open(paths[0], *paths)
+    except (FileNotFoundError, tool_registry.ToolDataError) as err:
+        QtWidgets.QMessageBox.warning(host.parent_window(), "Load Error", str(err))
+        return RegistryEditSession(master_path=paths[0], layout_paths=paths[1])
+
+
+def show_window() -> QtWidgets.QWidget:
     """Opens the Registry Editor."""
-    window = ToolManagerWindow()
-    window.show()
-    return window
+    return host.show(ToolManagerWindow(master_session(), parent=host.parent_window()), object_name=OBJECT_NAME)

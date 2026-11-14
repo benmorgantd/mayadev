@@ -114,7 +114,7 @@ Each format has its own version (`REGISTRY_VERSION`, `LAYOUT_VERSION`) and an up
 | `resolve_call(call)`, `run_tool(tool)` | Import the module **on each run** and call `function(**kwargs)`. A missing module or function raises `ToolError("Tool <id>: no function '<name>' in <module>")`. An exception from the function is raised unchanged, with its own traceback. Nothing calls `exec` |
 | `upgrade(data, current, updates)` | Runs update steps |
 
-`bmaya.maya_ui.tool_views.tool_menu` draws the menus: `ToolMenu(menu_id, layout, registry).build_ui()` deletes any menu with that id and builds it on Maya's main menu bar, and `build_menus()` does it for every menu in `bmaya.maya.constants.MENUS`:
+`bmaya.maya_ui.menus` draws the menus: `ToolMenu(menu_id, layout, registry).build_ui()` deletes any menu with that id and builds it on Maya's main menu bar, and `build_menus()` does it for every menu in `bmaya.maya.constants.MENUS`:
 
 | `MenuSpec` | Maya menu id | Layout | Plugin |
 |---|---|---|---|
@@ -127,7 +127,7 @@ Each format has its own version (`REGISTRY_VERSION`, `LAYOUT_VERSION`) and an up
 
 Both are Qt windows opened from the **bmaya tool menu**.
 
-**Tool Registry Editor** (`bmaya.maya_ui.tool_registry_editor.show_window`): create, edit, run and delete tools.
+**Tool Registry Editor** (`bmaya.maya_ui.tool_registry_editor.show_window`): create, edit, run and delete tools. The window is widgets over a `bmaya.core.tool_registry_edit.RegistryEditSession`, which holds the state and every rule below (the picked tool, the unsaved flag, the status, the checked save) and runs in plain Python. Its `tools_changed`, `selection_changed` and `changed` events tell a view what to redraw. The editors are opened once: a second **Registry Editor** menu item closes the open one first, and raises it instead when it holds unsaved edits you keep.
 
 | Part | Does |
 |---|---|
@@ -139,7 +139,7 @@ Both are Qt windows opened from the **bmaya tool menu**.
 | Open Registry | Replaces the loaded registry with the file's, and asks first when there are unsaved edits. A file that fails its check is refused with the full report |
 | Save Registry | Runs the structure check and the calls check on the whole registry, and, for the master registry, every menu layout against it. Deleting a tool a layout still uses is an error that names the layout. A refused save shows the full report and writes nothing |
 
-**Tool Menu Editor** (`bmaya.maya_ui.tool_views.tool_menu.show_window`): arrange registry tools into submenus, separators and order.
+**Tool Menu Editor** (`bmaya.maya_ui.menus.show_window`): arrange registry tools into submenus, separators and order.
 
 - A tool row has a check box, and the check box is the item's `enabled`. Its tooltip is the tool id.
 - Open Menu Layout uses `read_layout`, so a bad file is refused with its report and the tree is left as it was. Save uses `write_layout`, which checks against the loaded registry.

@@ -1,16 +1,11 @@
-"""Base classes for Qt windows and widgets (PySide6). Layouts are written in code: no Qt Designer files."""
+"""Base classes for Qt windows and widgets (PySide6). Layouts are written in code: no Qt Designer files. Showing a
+window once, docking it and finding Maya's main window are in host.py."""
 
-import maya.cmds as cmds
-import maya.OpenMayaUI as omui
 from bmaya.core import log, progressmanager
+from bmaya.maya_ui import host
 
 from PySide6 import QtWidgets, QtCore, QtGui
 import shiboken6
-
-
-def get_maya_main_window():
-    # Python 3: long() removed, use int()
-    return shiboken6.wrapInstance(int(omui.MQtUtil.mainWindow()), QtWidgets.QWidget)
 
 
 class SimpleWindow(QtWidgets.QMainWindow):
@@ -19,11 +14,6 @@ class SimpleWindow(QtWidgets.QMainWindow):
 
         assert isinstance(title, str)
         self.title = title
-
-        try:
-            cmds.deleteUI(self.title)
-        except RuntimeError:
-            pass
 
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
         self.setWindowTitle(self.title)
@@ -40,11 +30,6 @@ class SimpleWidget(QtWidgets.QWidget):
 
         assert isinstance(title, str)
         self.title = title
-
-        try:
-            cmds.deleteUI(self.title)
-        except RuntimeError:
-            pass
 
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
         self.setWindowTitle(self.title)
@@ -113,47 +98,9 @@ class TreeItem(QtWidgets.QTreeWidgetItem):
         return str(self.text(0))
 
 
-class DockableWidget(SimpleWidget):
-    def __init__(self, parent=None, title="rigManager"):
-        super(DockableWidget, self).__init__(parent, title)
-
-    def dock(self, width=385, height=735):
-        if cmds.workspaceControl(self.title, q=True, exists=True):
-            cmds.workspaceControl(self.title, e=True, close=True)
-            cmds.deleteUI(self.title, control=True)
-
-        dockControl = cmds.workspaceControl(
-            self.title,
-            tabToControl=["AttributeEditor", -1],
-            initialWidth=width,
-            minimumWidth=True,
-            initialHeight=height,
-            widthProperty="preferred",
-            label=self.title,
-        )
-
-        dockPtr = omui.MQtUtil.findControl(dockControl)
-        dockWidget = shiboken6.wrapInstance(int(dockPtr), QtWidgets.QWidget)
-
-        dockWidget.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
-
-        target_widget = self.widget if hasattr(self, "widget") else self
-
-        if dockWidget.layout():
-            dockWidget.layout().addWidget(target_widget)
-        else:
-            layout = QtWidgets.QVBoxLayout()
-            layout.addWidget(target_widget)
-            dockWidget.setLayout(layout)
-
-        cmds.evalDeferred(
-            lambda *args: cmds.workspaceControl(dockControl, edit=True, restore=True)
-        )
-
-
 class Dialog(QtWidgets.QDialog):
     def __init__(self, parent=None, windowTitle="Dialog"):
-        parent = parent or get_maya_main_window()
+        parent = parent or host.parent_window()
         super(Dialog, self).__init__(parent)
 
         self.setWindowFlags(

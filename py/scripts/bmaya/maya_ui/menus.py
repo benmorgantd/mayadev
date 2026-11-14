@@ -1,8 +1,7 @@
-"""Menus built from tool layout files, and the editor for the layouts."""
+"""The Maya menus built from the tool layout files, and the Menu Editor. With host.py, the only Maya UI code in
+maya_ui: menus on Maya's main menu bar are made with cmds.menu so they survive Maya's own menu rebuilds."""
 
 from __future__ import annotations
-
-import os
 
 import maya.cmds as cmds
 from PySide6 import QtWidgets, QtCore
@@ -10,11 +9,13 @@ from bmaya.core import log
 from bmaya.core import tool_registry
 from bmaya.core.tool_registry import Layout, LayoutItem, Registry, Separator, Submenu, ToolItem
 import bmaya.maya.constants
-from bmaya.maya_ui.qtbase import SimpleWindow, Tree, TreeItem, get_maya_main_window
+from bmaya.maya_ui import host
+from bmaya.maya_ui.qtbase import SimpleWindow, Tree, TreeItem
 
 ROLE_TYPE = QtCore.Qt.ItemDataRole.UserRole
 ROLE_TOOL_ID = QtCore.Qt.ItemDataRole.UserRole + 1
 SEPARATOR_TEXT = "-----------------------------"
+EDITOR_TITLE = "Menu Layout Configuration Editor"
 
 
 class ToolMenu(object):
@@ -92,17 +93,12 @@ def _plugin_loaded(plugin: str) -> bool:
         return False
 
 
-def menu_layout_paths() -> dict[str, str]:
-    """Each menu's layout file, by menu id."""
-    return {spec.menu_id: os.path.join(bmaya.maya.constants.TOOLS_PATH, spec.layout) for spec in bmaya.maya.constants.MENUS}
-
-
 def build_menus() -> None:
     """Reads the registry and every layout in bmaya.maya.constants.MENUS, checks them all, then deletes and
     rebuilds every menu. A menu whose plugin isn't loaded is deleted and not rebuilt. Raises FileNotFoundError or
     ToolDataError, with every problem of every file, before touching a menu, so a bad edit leaves the current
     menus in place."""
-    paths = menu_layout_paths()
+    paths = bmaya.maya.constants.menu_layout_paths()
     registry, layouts = tool_registry.load_all(bmaya.maya.constants.TOOL_REGISTRY_PATH, list(paths.values()))
     for spec in bmaya.maya.constants.MENUS:
         if spec.plugin and not _plugin_loaded(spec.plugin):
@@ -115,8 +111,7 @@ class ToolMenuEditorWindow(SimpleWindow):
     """UI controller for defining, organizing, and saving custom menu layouts."""
 
     def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
-        parent = parent or get_maya_main_window()
-        super().__init__(parent=parent, title="Menu Layout Configuration Editor")
+        super().__init__(parent=parent, title=EDITOR_TITLE)
 
         self.registry = Registry()
         self.current_layout_path = None
@@ -422,8 +417,6 @@ class ToolMenuEditorWindow(SimpleWindow):
         self._on_save_layout()
 
 
-def show_window() -> ToolMenuEditorWindow:
+def show_window() -> QtWidgets.QWidget:
     """Opens the Menu Editor."""
-    window = ToolMenuEditorWindow()
-    window.show()
-    return window
+    return host.show(ToolMenuEditorWindow(parent=host.parent_window()), object_name="bmayaMenuEditor")

@@ -1,5 +1,5 @@
 from PySide6 import QtWidgets
-from bmaya.maya_ui import qtbase
+from bmaya.maya_ui import host, qtbase
 
 
 class NamingTool(qtbase.SimpleWindow):
@@ -50,5 +50,4 @@ class NamingTool(qtbase.SimpleWindow):
 
 
 def run():
-    ui = NamingTool(parent=qtbase.get_maya_main_window())
-    ui.show()
+    host.show(NamingTool(parent=host.parent_window()), object_name="NamingTool")

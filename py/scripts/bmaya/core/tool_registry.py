@@ -387,6 +387,15 @@ def check_call(call: ToolCall) -> list[str]:
     return messages
 
 
+def unwrap_optional(hint: object) -> object:
+    """X | None -> X. Anything else, including a union of several types, is returned as it is."""
+    if typing.get_origin(hint) in (typing.Union, types.UnionType):
+        options = [a for a in typing.get_args(hint) if a is not type(None)]
+        if len(options) == 1:
+            return options[0]
+    return hint
+
+
 def matches_annotation(value: object, hint: object) -> bool:
     """Whether a JSON value fits a simple annotation: bool, int, float, str, None, unions and Literal of those.
     Anything else is not checked and matches."""

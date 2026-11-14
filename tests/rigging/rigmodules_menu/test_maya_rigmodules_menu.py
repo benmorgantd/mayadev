@@ -494,11 +494,11 @@ class MenuScripts(unittest.TestCase):
 
     def test_the_dev_tools_resolve_to_the_devreload_and_menu_functions(self):
         import bmaya.maya.devreload
-        import bmaya.maya_ui.tool_views.tool_menu
+        import bmaya.maya_ui.menus
         registry = _registry()
         for tool_id, function in (("bmaya.dev.reload_rigmodules", bmaya.maya.devreload.reload_rigmodules),
                                   ("bmaya.dev.unload_rigmodules", bmaya.maya.devreload.unload_rigmodules),
-                                  ("bmaya.dev.reload_menu", bmaya.maya_ui.tool_views.tool_menu.reload_menus)):
+                                  ("bmaya.dev.reload_menu", bmaya.maya_ui.menus.reload_menus)):
             self.assertIs(tool_registry.resolve_call(registry.tools[tool_id].call), function)
 
     def test_cancelled_file_dialog_does_nothing(self):

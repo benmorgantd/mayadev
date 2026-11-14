@@ -48,9 +48,8 @@ class EditorTest(unittest.TestCase):
 class MenuEditor(EditorTest):
 
     def editor(self):
-        import bmaya.maya_ui.tool_views.tool_menu as tool_menu
-        with mock.patch.object(tool_menu, "get_maya_main_window", return_value=None):
-            return tool_menu.ToolMenuEditorWindow(parent=None)
+        import bmaya.maya_ui.menus as tool_menu
+        return tool_menu.ToolMenuEditorWindow(parent=None)
 
     def test_a_layout_round_trips_through_the_tree(self):
         from bmaya.core import tool_registry as tr
@@ -149,14 +148,17 @@ class MenuEditor(EditorTest):
 
 
 class RegistryEditor(EditorTest):
+    """The Registry Editor window over its session: what the view shows, and that an edit reaches the session. The
+    editing rules themselves are tested without Qt in test_core_tool_registry_edit.py."""
 
     def editor(self, path=None):
+        import bmaya.maya.constants
         import bmaya.maya_ui.tool_registry_editor as editor
-        with mock.patch.object(editor, "get_maya_main_window", return_value=None):
-            window = editor.ToolManagerWindow(parent=None)
-        if path:
-            window._load_registry(path)
-        return window
+        from bmaya.core.tool_registry_edit import RegistryEditSession
+        session = RegistryEditSession.open(path or bmaya.maya.constants.TOOL_REGISTRY_PATH,
+                                           bmaya.maya.constants.TOOL_REGISTRY_PATH,
+                                           bmaya.maya.constants.menu_layout_paths().values())
+        return editor.ToolManagerWindow(session, parent=None)
 
     def select(self, window, tool_id):
         from PySide6 import QtCore
@@ -167,9 +169,15 @@ class RegistryEditor(EditorTest):
                 return
         self.fail(tool_id)
 
+    @staticmethod
+    def listed(window, hidden=False):
+        """The ids in the list, in order: the shown ones, or the hidden ones."""
+        items = [window.tool_list.item(i) for i in range(window.tool_list.count())]
+        return [item.data(0x100) for item in items if item.isHidden() == hidden]
+
     def test_every_repo_tool_shows_status_ok_and_can_run(self):
         window = self.editor()
-        for tool_id in list(window.registry.tools):
+        for tool_id in list(window.session.registry.tools):
             with self.subTest(tool_id):
                 self.select(window, tool_id)
                 self.assertEqual(window.label_status.text(), "OK", window.label_status.text())
@@ -199,83 +207,73 @@ class RegistryEditor(EditorTest):
         self.assertIn("flip_pose_interactive", functions)
         self.assertNotIn("get_scope_x", functions)
 
+    def test_the_list_picks_the_tool_in_the_session_and_the_session_drives_the_list(self):
+        window = self.editor()
+        self.select(window, "rigmodules.pose.flip")
+        self.assertEqual(window.session.active_tool_id, "rigmodules.pose.flip")
+        window.session.select("rigmodules.pose.mirror")
+        self.assertEqual(window.tool_list.currentItem().data(0x100), "rigmodules.pose.mirror")
+        self.assertEqual(window.input_id.text(), "rigmodules.pose.mirror")
+        window.session.select(None)
+        self.assertEqual((window.input_id.text(), window.label_status.text()), ("", ""))
+        self.assertFalse(window.input_name.isEnabled())
+        self.assertFalse(window.session.dirty)
+
+    def test_the_search_box_hides_the_tools_the_session_does_not_match(self):
+        window = self.editor()
+        window.search_input.setText("flip")
+        self.assertEqual(self.listed(window), window.session.search("flip"))
+        self.assertIn("rigmodules.pose.flip", self.listed(window))
+        self.assertIn("rigmodules.pose.mirror", self.listed(window, hidden=True))
+
+    def test_editing_a_field_reaches_the_session_and_the_list(self):
+        window = self.editor()
+        self.select(window, "rigmodules.pose.flip")
+        self.assertFalse(window.session.dirty)
+        window.input_name.setText("Flip It")
+        self.assertEqual(window.session.tool.name, "Flip It")
+        self.assertTrue(window.session.dirty)
+        self.assertEqual(window.tool_list.currentItem().text(), "Flip It")
+        window.check_enabled.setChecked(False)
+        window.input_icon.setText("flip.png")
+        self.assertEqual((window.session.tool.enabled, window.session.tool.icon), (False, "flip.png"))
+
+    def test_picking_a_tool_does_not_edit_it(self):
+        window = self.editor()
+        self.select(window, "rigmodules.pose.flip")
+        self.select(window, "rigmodules.pose.mirror")
+        self.assertFalse(window.session.dirty)
+
     def test_an_unset_argument_is_not_saved_and_a_set_one_is(self):
         window = self.editor()
         self.select(window, "rigmodules.pose.mirror")
         self.assertEqual(window.argument_form.kwargs(), {})
-        row = window.argument_form._rows[0]
+        row = window.argument_form.rows[0]
         self.assertEqual(row.name, "left_to_right")
         self.assertFalse(row.is_set)
         self.assertFalse(row.widget.isEnabled())   # greyed: the default shows, and it isn't saved
 
         row.set_check.setChecked(True)
         row.widget.setChecked(False)
-        self.assertEqual(window.registry.tools["rigmodules.pose.mirror"].call.kwargs, {"left_to_right": False})
-        self.assertTrue(window.dirty)
+        self.assertEqual(window.session.tool.call.kwargs, {"left_to_right": False})
+        self.assertTrue(window.session.dirty)
 
         row.set_check.setChecked(False)
-        self.assertEqual(window.registry.tools["rigmodules.pose.mirror"].call.kwargs, {})
+        self.assertEqual(window.session.tool.call.kwargs, {})
 
-    def test_a_required_argument_is_always_set(self):
-        import bmaya.maya_ui.tool_registry_editor as editor
-        form = editor.ArgumentForm()
-
-        def function(count: int, label: str = "x"):
-            return count, label
-
-        form.set_function(function, {})
-        rows = {row.name: row for row in form._rows}
-        self.assertTrue(rows["count"].is_set)
-        self.assertFalse(rows["count"].set_check.isEnabled())
-        self.assertFalse(rows["label"].is_set)
-        self.assertEqual(form.kwargs(), {"count": 0})
-
-    def test_widgets_follow_the_annotation(self):
-        from typing import Literal
-        from PySide6 import QtWidgets
-        import bmaya.maya_ui.tool_registry_editor as editor
-        form = editor.ArgumentForm()
-
-        def function(a: bool, b: int, c: float, d: str, e: Literal["x", "y"], f: int | None = None, g=None, h: list = None):
-            pass
-
-        form.set_function(function, {"e": "y", "f": 4, "h": [1, 2]})
-        widgets = {row.name: type(row.widget) for row in form._rows}
-        self.assertEqual(widgets, {
-            "a": QtWidgets.QCheckBox, "b": QtWidgets.QSpinBox, "c": QtWidgets.QDoubleSpinBox, "d": QtWidgets.QLineEdit,
-            "e": QtWidgets.QComboBox, "f": QtWidgets.QSpinBox, "g": QtWidgets.QLineEdit, "h": QtWidgets.QLineEdit,
-        })
-        values = form.kwargs()
-        self.assertEqual((values["e"], values["f"], values["h"]), ("y", 4, [1, 2]))
-
-    def test_json_text_that_is_not_json_is_reported_and_not_saved(self):
+    def test_json_text_that_is_not_json_is_the_status_and_the_call_keeps_its_last_good_kwargs(self):
         window = self.editor()
-        import bmaya.maya_ui.tool_registry_editor as editor
         self.select(window, "rigmodules.pose.mirror")
-        form = window.argument_form
-
-        def function(items=None):
-            pass
-
-        form.set_function(function, {})
-        row = form._rows[0]
-        row.set_check.setChecked(True)
+        window.session.set_call("json", "dumps", {"obj": 1})   # json.dumps(obj) has no annotation: JSON text
+        window._show_arguments()
+        row = next(r for r in window.argument_form.rows if r.name == "obj")
         row.widget.setText("[1,")
-        with self.assertRaisesRegex(ValueError, "not valid JSON"):
-            form.kwargs()
-
-    def test_a_saved_kwarg_the_function_no_longer_has_is_a_stale_row_that_can_be_removed(self):
-        import bmaya.maya_ui.tool_registry_editor as editor
-        form = editor.ArgumentForm()
-
-        def function(kept: bool = False):
-            pass
-
-        form.set_function(function, {"kept": True, "gone": 1})
-        self.assertEqual(form.kwargs(), {"kept": True, "gone": 1})
-        self.assertEqual(form._stale, {"gone": 1})
-        form._remove_stale("gone", form._layout.itemAt(3).widget(), form._layout.itemAt(4).widget())
-        self.assertEqual(form.kwargs(), {"kept": True})
+        self.assertIn("argument 'obj' is not valid JSON", window.label_status.text())
+        self.assertFalse(window.btn_execute.isEnabled())
+        self.assertEqual(window.session.tool.call.kwargs, {"obj": 1})
+        row.widget.setText("[1, 2]")
+        self.assertEqual(window.session.tool.call.kwargs, {"obj": [1, 2]})
+        self.assertEqual(window.label_status.text(), "OK")
 
     def test_the_status_shows_the_first_call_problem_and_run_waits_for_ok(self):
         window = self.editor()
@@ -291,42 +289,58 @@ class RegistryEditor(EditorTest):
         self.select(window, "rigmodules.pose.flip")
         with mock.patch.object(tr, "run_tool") as run:
             window._on_execute_payload()
-        run.assert_called_once_with(window.registry.tools["rigmodules.pose.flip"])
+        run.assert_called_once_with(window.session.registry.tools["rigmodules.pose.flip"])
 
     def test_new_tool_asks_for_a_checked_id_and_starts_with_an_empty_call(self):
         import bmaya.maya_ui.tool_registry_editor as editor
         from PySide6 import QtWidgets
-        dialog = editor.NewToolDialog(["a.b.c"])
+        window = self.editor()
+        dialog = editor.NewToolDialog(window.session)
         ok = dialog.buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
-        for text, valid in (("", False), ("Bad Id", False), ("a.b.c", False), ("a.b.d", False)):
+        for text, valid in (("", False), ("Bad Id", False), ("bmaya.joints.zero_transforms", False), ("a.b.d", False)):
             dialog.input_id.setText(text)
-            self.assertEqual(ok.isEnabled(), valid, text)
+            self.assertEqual(ok.isEnabled(), valid, text)  # a good id still needs a name
         self.assertIn("lowercase", self.problem_for(dialog, "Bad Id"))
-        self.assertIn("already used", self.problem_for(dialog, "a.b.c"))
+        self.assertIn("already used", self.problem_for(dialog, "bmaya.joints.zero_transforms"))
         dialog.input_id.setText("a.b.d")
         dialog.input_name.setText("New One")
         self.assertTrue(ok.isEnabled())
         self.assertEqual(dialog.values(), ("a.b.d", "New One"))
 
-        window = self.editor()
         with mock.patch.object(editor.NewToolDialog, "exec", return_value=QtWidgets.QDialog.DialogCode.Accepted), \
                 mock.patch.object(editor.NewToolDialog, "values", return_value=("a.b.d", "New One")):
             window._on_add_new_tool()
-        tool = window.registry.tools["a.b.d"]
+        tool = window.session.registry.tools["a.b.d"]
         self.assertEqual((tool.name, tool.short_name, tool.call.module, tool.call.function), ("New One", "New One", "", ""))
+        self.assertEqual(window.session.active_tool_id, "a.b.d")
+        self.assertEqual(window.tool_list.currentItem().data(0x100), "a.b.d")
 
     @staticmethod
     def problem_for(dialog, text):
         dialog.input_id.setText(text)
         return dialog.problem.text()
 
-    def test_save_refuses_an_unfinished_tool_with_the_full_report_and_writes_nothing(self):
+    def test_delete_asks_first_and_removes_the_tool_from_the_session_and_the_list(self):
+        from PySide6 import QtWidgets
+        window = self.editor()
+        self.select(window, "rigmodules.pose.flip")
+        count = window.tool_list.count()
+        with mock.patch.object(QtWidgets.QMessageBox, "question", return_value=QtWidgets.QMessageBox.StandardButton.No):
+            window._on_delete_selected_tool()
+        self.assertEqual(window.tool_list.count(), count)
+        with mock.patch.object(QtWidgets.QMessageBox, "question", return_value=QtWidgets.QMessageBox.StandardButton.Yes):
+            window._on_delete_selected_tool()
+        self.assertNotIn("rigmodules.pose.flip", window.session.registry.tools)
+        self.assertEqual(window.tool_list.count(), count - 1)
+        self.assertIsNone(window.session.active_tool_id)
+
+    def test_save_shows_a_refusal_with_the_full_report_and_writes_nothing(self):
         import bmaya.core.tool_registry as tr
         from PySide6 import QtWidgets
         path = os.path.join(self.temp, "r.json")
         shutil.copy(os.path.join(TOOLS, "master_tool_registry.json"), path)
         window = self.editor(path)
-        window.registry.tools["a.b.d"] = tr.Tool("a.b.d", "New", "New", tr.ToolCall("", ""))
+        window.session.registry.tools["a.b.d"] = tr.Tool("a.b.d", "New", "New", tr.ToolCall("", ""))
         with open(path, "rb") as handle:
             before = handle.read()
         with mock.patch.object(QtWidgets.QMessageBox, "critical") as critical:
@@ -336,22 +350,10 @@ class RegistryEditor(EditorTest):
         with open(path, "rb") as handle:
             self.assertEqual(handle.read(), before)
 
-    def test_save_reports_a_kwarg_that_does_not_bind_even_though_the_structure_is_valid(self):
-        from PySide6 import QtWidgets
-        path = os.path.join(self.temp, "r.json")
-        shutil.copy(os.path.join(TOOLS, "master_tool_registry.json"), path)
-        window = self.editor(path)
-        window.registry.tools["rigmodules.pose.flip"].call.kwargs = {"nope": 1}
-        with mock.patch.object(QtWidgets.QMessageBox, "critical") as critical:
-            window._on_save_registry()
-        self.assertIn("kwarg 'nope' is not a parameter", critical.call_args[0][2])
-
-    def test_save_of_the_master_registry_refuses_to_delete_a_tool_a_layout_uses(self):
-        import bmaya.maya.constants
+    def test_save_of_the_master_registry_shows_the_layouts_that_use_a_deleted_tool(self):
         from PySide6 import QtWidgets
         window = self.editor()
-        window.registry.tools.pop("bmaya.joints.zero_transforms")
-        window.current_filepath = bmaya.maya.constants.TOOL_REGISTRY_PATH
+        window.session.registry.tools.pop("bmaya.joints.zero_transforms")
         with mock.patch.object(QtWidgets.QMessageBox, "critical") as critical, \
                 mock.patch("bmaya.core.tool_registry.write_registry") as write:
             window._on_save_registry()
@@ -367,9 +369,9 @@ class RegistryEditor(EditorTest):
         window = self.editor(path)
         self.select(window, "rigmodules.pose.flip")
         window.input_name.setText("Flip It")
-        self.assertTrue(window.dirty)
+        self.assertTrue(window.session.dirty)
         window._on_save_registry()
-        self.assertFalse(window.dirty)
+        self.assertFalse(window.session.dirty)
         self.assertEqual(tr.read_registry(path).tools["rigmodules.pose.flip"].name, "Flip It")
         self.assertEqual(os.listdir(self.temp), ["r.json"])
 
@@ -379,12 +381,12 @@ class RegistryEditor(EditorTest):
         other = os.path.join(self.temp, "other.json")
         tr.write_registry(tr.Registry({"x.y.z": tr.Tool("x.y.z", "Only", "Only", tr.ToolCall("os.path", "join"))}), other)
         window = self.editor()
-        self.assertGreater(len(window.registry.tools), 1)
+        self.assertGreater(window.tool_list.count(), 1)
 
         window._load_registry(other)
-        self.assertEqual(list(window.registry.tools), ["x.y.z"])   # replaced, not merged with the 47 tools
+        self.assertEqual(window.tool_list.count(), 1)   # replaced, not merged with the 47 tools
 
-        window.dirty = True
+        window.session.dirty = True
         with mock.patch.object(QtWidgets.QFileDialog, "getOpenFileName", return_value=(other, "")), \
                 mock.patch.object(QtWidgets.QMessageBox, "question", return_value=QtWidgets.QMessageBox.StandardButton.Cancel) as ask, \
                 mock.patch.object(window, "_load_registry") as load:
@@ -395,21 +397,14 @@ class RegistryEditor(EditorTest):
     def test_a_registry_that_fails_its_check_is_refused_and_the_loaded_one_stays(self):
         from PySide6 import QtWidgets
         window = self.editor()
-        count = len(window.registry.tools)
+        count = window.tool_list.count()
         bad = os.path.join(self.temp, "bad.json")
         with open(bad, "w", encoding="utf-8") as handle:
             handle.write('{"version": 2, "tools": [{"id": "Bad Id"}]}')
         with mock.patch.object(QtWidgets.QMessageBox, "warning") as warning:
             window._load_registry(bad)
         warning.assert_called_once()
-        self.assertEqual(len(window.registry.tools), count)
-
-    def test_list_modules_finds_modules_without_importing_leaf_modules(self):
-        import bmaya.maya_ui.tool_registry_editor as editor
-        sys.modules.pop("bmaya.maya.posetools", None)
-        names = editor.list_modules()
-        self.assertIn("bmaya.maya.posetools", names)
-        self.assertNotIn("bmaya.maya.posetools", sys.modules)
+        self.assertEqual(window.tool_list.count(), count)
 
 
 class BuildMenus(EditorTest):
@@ -418,7 +413,7 @@ class BuildMenus(EditorTest):
     def setUp(self):
         super().setUp()
         import bmaya.maya.constants
-        import bmaya.maya_ui.tool_views.tool_menu as tool_menu
+        import bmaya.maya_ui.menus as tool_menu
         self.tool_menu = tool_menu
         shutil.copytree(TOOLS, os.path.join(self.temp, "toolsets"))
         patcher = mock.patch.object(bmaya.maya.constants, "TOOLS_PATH", os.path.join(self.temp, "toolsets"))

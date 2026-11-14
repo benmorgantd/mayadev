@@ -131,17 +131,28 @@ Layouts are written in Python: there are no Qt Designer files.
 
 | Name | Is |
 |---|---|
-| `get_maya_main_window()` | The main window as a Qt widget, to parent a tool to |
-| `SimpleWindow`, `SimpleWidget` | A main window (with a `mainLayout`) and a widget, with a title. Pass `get_maya_main_window()` as `parent` to keep a window above Maya's. Each tries to delete an existing UI of the same title first and deletes itself on close |
-| `DockableWidget` | A widget that docks into Maya's UI (`dock(width, height)`) |
+| `SimpleWindow`, `SimpleWidget` | A main window (with a `mainLayout`) and a widget, with a title. They delete themselves on close. Open one with `host.show`, which keeps one open per object name |
 | `Tree`, `TreeItem` | Convenience subclasses for the Menu Editor. `Tree` has `items` and `topLevelItems`, and `TreeItem` has `parents`, `children` and `name` |
 | `Dialog`, `ConfirmDialog` | A dialog, and a modal confirm that returns a boolean |
 | `ProgressWindow` | Shows the progress manager: listens to its `changed` `Event`, shows itself while a task is active and hides when it ends |
 | `PythonSyntaxHighlighter` | Python highlighting for a `QTextDocument`. No window uses it now: the registry editor picks a function and no longer holds script text |
 
+### Host
+
+`bmaya.maya_ui.host` is Maya as the host of a window. It and `menus.py` are the only files in `maya_ui` that import Maya, and a test checks that. Outside Maya every function still works.
+
+| Name | Does |
+|---|---|
+| `parent_window()` | Maya's main window as a Qt widget, to parent a tool to so it stays above Maya's. `None` in mayapy and in plain Python |
+| `show(widget, object_name=..., dock=False, width=385, height=735)` | Sets the widget's object name and shows it, **once**: a visible window with the same object name is closed first. When that window refuses to close (the Registry Editor with unsaved edits the user keeps), it is raised and the new widget is dropped. Returns the window on screen. `dock=True` puts the widget in a workspace control beside the Attribute Editor, and is a plain window outside a GUI Maya |
+| `find(object_name)` | The visible top-level widget with that object name |
+| `defer(function)` | Calls `function` when Maya is idle (`maya.utils.executeDeferred`), or from the Qt event loop outside Maya |
+
+Each window's `show_window()` is `host.show(Window(parent=host.parent_window()), object_name=...)`. A window's constructor takes its parent and never looks for Maya itself.
+
 ### Prompter and forms
 
-`bmaya.maya_ui.prompter.QtPrompter(parent_window)` is the `Prompter` of a GUI session: each question is a Qt dialog on the window `parent_window()` returns. `bmaya.maya_ui.startup` registers it with Maya's main window. It imports no Maya.
+`bmaya.maya_ui.prompter.QtPrompter(parent_window)` is the `Prompter` of a GUI session: each question is a Qt dialog on the window `parent_window()` returns. `bmaya.maya_ui.startup` registers it with `host.parent_window`. It imports no Maya.
 
 | Question | Dialog |
 |---|---|
@@ -156,10 +167,10 @@ Layouts are written in Python: there are no Qt Designer files.
 
 | Name | Is |
 |---|---|
-| `FieldEditor(hint)` | One value's widget: a check box for `bool`, spin boxes for `int` and `float`, a line edit for `str`, a drop-down for `Literal` and `Enum`, JSON text for anything else. `value()`, `show_value(value)` and a `changed` signal. An `Enum` field reads back its member |
-| `DataclassForm(value)` | A labelled `FieldEditor` per field of a dataclass instance. `value()` returns a copy with the edits, and raises `ValueError` naming a field whose JSON text isn't JSON |
-
-The Registry Editor's argument form builds its rows on `FieldEditor`, and keeps an `Enum` argument as its value, which is what the registry's JSON holds.
+| `field_widget(hint, on_change=None)` | One value's widget: a check box for `bool`, spin boxes for `int` and `float`, a line edit for `str`, a drop-down for `Literal` and `Enum`, JSON text for anything else. `X \| None` is `X`. `on_change()` is called when the user edits it |
+| `show_value(widget, hint, value)`, `read_value(widget, hint)` | Put a value in the widget and take it out. An `Enum` field takes a member or its value and reads back its member. `read_value` raises `ValueError` for JSON text that isn't JSON |
+| `DataclassForm(value)` | A labelled editor per field of a dataclass instance, with a `changed` signal. `value()` returns a copy with the edits, and raises `ValueError` naming a field whose JSON text isn't JSON |
+| `SignatureForm(function, kwargs)` | One row per parameter of a function, filled from saved `kwargs`: an editor and a **Set** check box. An unset row shows the default greyed and `kwargs()` leaves it out. A parameter with no default is always set. A saved kwarg the function no longer has is a red row with a Remove button (`stale`, `remove_stale(name)`). `kwargs()` keeps an `Enum` argument as its value, which is what the registry's JSON holds. Build a new form when the function changes |
 
 ```python
 @dataclasses.dataclass(frozen=True)

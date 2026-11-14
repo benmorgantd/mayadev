@@ -104,12 +104,13 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `core/prompts.py` | `Prompter`, `NoPrompter`, `ScriptedPrompter`, `Question`, `PromptError`, the prompter slot |
 | `core/progressmanager.py` | `ProgressManager` singleton, with its `changed` `Event` |
 | `core/tool_registry.py` | The tool registry and layout files, Maya-free: the dataclasses (`Tool`, `ToolCall`, `Registry`, `Layout` and its items), the check pass, version updates, atomic read and write, `run_tool` ([`tools.md`](tools.md)) |
+| `core/tool_registry_edit.py` | `RegistryEditSession`: the Registry Editor's state and commands with no Qt (picked tool, edits, unsaved flag, status, checked save), and the call picker's `list_modules`, `list_functions` and `import_module` ([`tools.md`](tools.md#editors)) |
 | `core/decorators.py` | `decorator_maker`, `log_fn_duration` |
 | `core/constants.py` | Naming constants of the older rig builder (see [`status.md`](status.md)) |
 | `core/util/` | `version_file` (a `.Versions` folder beside a file), `firstOrDefault` |
 | `core/batch/base_batch_framework.py` | `BaseBatchEnvironment`, `BaseBatchPackage` |
 | `maya/startup.py` | `register()`: the Maya layer's registration pass |
-| `maya/constants.py` | `MAYADEV_ROOT`, the toolset paths, `MenuSpec` and `MENUS`, `RIGMODULES_PLUGIN`, `IS_BATCH` |
+| `maya/constants.py` | `MAYADEV_ROOT`, the toolset paths, `MenuSpec`, `MENUS` and `menu_layout_paths`, `RIGMODULES_PLUGIN`, `IS_BATCH` |
 | `maya/assethandlers.py` | The Maya handlers and `register()`, `AnimClip`, `save_control_file`, `save_anim_clip`, `save_skeleton_export` |
 | `maya/assettools.py` | The asset, pose, clip and weight tools: plain functions, then the `*_interactive` menu entry points, which ask through a `Prompter`, and `ClipSettings` |
 | `maya/posetools.py` | Zero, mirror, flip and key tools on the selection or the active rig |
@@ -120,9 +121,11 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `maya/rigging/`, `maya/modeling/`, `maya/util/` | Skinning, joint authoring and generic Maya helpers, mostly older code ([`status.md`](status.md)) |
 | `maya_ui/startup.py` | `register()`: the UI layer's registration pass |
 | `maya_ui/prompter.py` | `QtPrompter`, `FormDialog` |
-| `maya_ui/widgets.py` | `FieldEditor` (an editor chosen by a type hint), `DataclassForm` |
+| `maya_ui/host.py` | Maya as the host of a window: `parent_window`, `show` (one window per object name, optionally docked), `defer`. With `menus.py`, the only file in `maya_ui` that imports Maya |
+| `maya_ui/menus.py` | The Maya menus (`ToolMenu`, `build_menus`, `delete_plugin_menus`, `reload_menus`) and the Menu Editor |
+| `maya_ui/widgets.py` | `field_widget`, `show_value` and `read_value` (an editor chosen by a type hint), `DataclassForm`, `SignatureForm` |
 | `maya_ui/qtbase.py` | Window, widget, tree, dialog and progress window base classes |
-| `maya_ui/tool_registry_editor.py`, `maya_ui/tool_views/tool_menu.py` | The two editors, `ToolMenu`, `build_menus`, `delete_plugin_menus`, `reload_menus` |
+| `maya_ui/tool_registry_editor.py` | The Registry Editor window, widgets over a `RegistryEditSession` |
 | `maya_ui/namingTool/` | A small naming window |
 
 ## A tool call, end to end

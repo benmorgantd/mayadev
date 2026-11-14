@@ -93,7 +93,7 @@ class Registration(MayaUiTest):
         import bmaya.maya.devreload
         import bmaya.maya_ui.prompter
         import bmaya.maya_ui.startup
-        import bmaya.maya_ui.tool_views.tool_menu as tool_menu
+        import bmaya.maya_ui.menus as tool_menu
         bmaya.maya_ui.startup.register()
         self.assertIsInstance(bmaya.core.prompts.current(), bmaya.maya_ui.prompter.QtPrompter)
         self.assertEqual(bmaya.maya.devreload._hooks,
@@ -119,7 +119,7 @@ class Registration(MayaUiTest):
 
     def test_without_hooks_an_unload_builds_no_menu(self):
         import bmaya.maya.devreload
-        import bmaya.maya_ui.tool_views.tool_menu as tool_menu
+        import bmaya.maya_ui.menus as tool_menu
         with self.no_scene_changes(), mock.patch.object(tool_menu, "build_menus") as build:
             bmaya.maya.devreload._unload()
         build.assert_not_called()
@@ -131,7 +131,7 @@ class Forms(MayaUiTest):
         from PySide6 import QtWidgets
         import bmaya.maya_ui.widgets
         form = bmaya.maya_ui.widgets.DataclassForm(Everything())
-        types = {name: type(editor.widget) for name, editor in form.editors.items()}
+        types = {name: type(widget) for name, widget in form.widgets.items()}
         self.assertEqual(types, {
             "flag": QtWidgets.QCheckBox, "count": QtWidgets.QSpinBox, "scale": QtWidgets.QDoubleSpinBox,
             "label": QtWidgets.QLineEdit, "mode": QtWidgets.QComboBox, "colour": QtWidgets.QComboBox,
@@ -147,10 +147,10 @@ class Forms(MayaUiTest):
     def test_edits_reach_the_value_and_bad_json_names_the_field(self):
         import bmaya.maya_ui.widgets
         form = bmaya.maya_ui.widgets.DataclassForm(Everything())
-        form.editors["flag"].widget.setChecked(True)
-        form.editors["mode"].widget.setCurrentIndex(2)
+        form.widgets["flag"].setChecked(True)
+        form.widgets["mode"].setCurrentIndex(2)
         self.assertEqual((form.value().flag, form.value().mode), (True, "mesh"))
-        form.editors["data"].widget.setText("[1,")
+        form.widgets["data"].setText("[1,")
         with self.assertRaisesRegex(ValueError, "^data: not valid JSON"):
             form.value()
 
@@ -164,10 +164,201 @@ class Forms(MayaUiTest):
         import bmaya.maya.assettools
         import bmaya.maya_ui.widgets
         form = bmaya.maya_ui.widgets.DataclassForm(bmaya.maya.assettools.ClipSettings(additive="local"))
-        combo = form.editors["additive"].widget
+        combo = form.widgets["additive"]
         self.assertEqual(tuple(combo.itemText(i) for i in range(combo.count())),
                          bmaya.core.asset.animproperties.ADDITIVE_TYPES)
         self.assertEqual(form.value(), bmaya.maya.assettools.ClipSettings(additive="local"))
+
+
+class SignatureFormTest(MayaUiTest):
+
+    def test_a_required_argument_is_always_set(self):
+        import bmaya.maya_ui.widgets
+
+        def function(count: int, label: str = "x"):
+            return count, label
+
+        form = bmaya.maya_ui.widgets.SignatureForm(function, {})
+        rows = {row.name: row for row in form.rows}
+        self.assertTrue(rows["count"].is_set)
+        self.assertFalse(rows["count"].set_check.isEnabled())
+        self.assertFalse(rows["label"].is_set)
+        self.assertEqual(form.kwargs(), {"count": 0})
+
+    def test_widgets_follow_the_annotation(self):
+        from PySide6 import QtWidgets
+        import bmaya.maya_ui.widgets
+
+        def function(a: bool, b: int, c: float, d: str, e: typing.Literal["x", "y"], f: int | None = None, g=None,
+                     h: list = None):
+            pass
+
+        form = bmaya.maya_ui.widgets.SignatureForm(function, {"e": "y", "f": 4, "h": [1, 2]})
+        widgets = {row.name: type(row.widget) for row in form.rows}
+        self.assertEqual(widgets, {
+            "a": QtWidgets.QCheckBox, "b": QtWidgets.QSpinBox, "c": QtWidgets.QDoubleSpinBox, "d": QtWidgets.QLineEdit,
+            "e": QtWidgets.QComboBox, "f": QtWidgets.QSpinBox, "g": QtWidgets.QLineEdit, "h": QtWidgets.QLineEdit,
+        })
+        values = form.kwargs()
+        self.assertEqual((values["e"], values["f"], values["h"]), ("y", 4, [1, 2]))
+
+    def test_a_saved_kwarg_sets_its_row_and_an_enum_argument_is_saved_as_its_value(self):
+        import bmaya.maya_ui.widgets
+
+        def function(colour: Colour = Colour.RED, flag: bool = False):
+            pass
+
+        form = bmaya.maya_ui.widgets.SignatureForm(function, {"colour": "blue"})
+        rows = {row.name: row for row in form.rows}
+        self.assertTrue(rows["colour"].is_set)
+        self.assertFalse(rows["flag"].is_set)
+        self.assertEqual(form.kwargs(), {"colour": "blue"})   # the value, not Colour.BLUE: the registry is JSON
+
+    def test_json_text_that_is_not_json_is_reported_and_not_saved(self):
+        import bmaya.maya_ui.widgets
+
+        def function(items=None):
+            pass
+
+        form = bmaya.maya_ui.widgets.SignatureForm(function, {})
+        row = form.rows[0]
+        row.set_check.setChecked(True)
+        row.widget.setText("[1,")
+        with self.assertRaisesRegex(ValueError, "argument 'items' is not valid JSON"):
+            form.kwargs()
+
+    def test_a_saved_kwarg_the_function_no_longer_has_is_a_stale_row_that_can_be_removed(self):
+        import bmaya.maya_ui.widgets
+
+        def function(kept: bool = False):
+            pass
+
+        form = bmaya.maya_ui.widgets.SignatureForm(function, {"kept": True, "gone": 1})
+        changes = []
+        form.changed.connect(lambda: changes.append(1))
+        self.assertEqual(form.kwargs(), {"kept": True, "gone": 1})
+        self.assertEqual(form.stale, {"gone": 1})
+        form.remove_stale("gone")
+        self.assertEqual((form.kwargs(), form.stale, len(changes)), ({"kept": True}, {}, 1))
+
+    def test_an_edit_and_a_set_toggle_emit_changed(self):
+        import bmaya.maya_ui.widgets
+
+        def function(flag: bool = False):
+            pass
+
+        form = bmaya.maya_ui.widgets.SignatureForm(function, {})
+        changes = []
+        form.changed.connect(lambda: changes.append(1))
+        form.rows[0].set_check.setChecked(True)
+        form.rows[0].widget.setChecked(True)
+        self.assertEqual(len(changes), 2)
+
+    def test_no_function_is_an_empty_form_and_variadic_parameters_get_no_row(self):
+        import bmaya.maya_ui.widgets
+
+        def function(*args, **kwargs):
+            pass
+
+        self.assertEqual(bmaya.maya_ui.widgets.SignatureForm().kwargs(), {})
+        self.assertEqual(bmaya.maya_ui.widgets.SignatureForm(function, {}).rows, [])
+
+
+class FieldWidgetTest(MayaUiTest):
+
+    def test_show_and_read_value_round_trip_for_every_kind_of_hint(self):
+        import bmaya.maya_ui.widgets as widgets
+        cases = [(bool, True), (int, -3), (float, 0.25), (str, "walk"), (typing.Literal["a", "b"], "b"),
+                 (Colour, Colour.BLUE), (dict, {"a": [1, 2]}), (int | None, 7)]
+        for hint, value in cases:
+            with self.subTest(hint=hint):
+                widget = widgets.field_widget(hint)
+                widgets.show_value(widget, hint, value)
+                self.assertEqual(widgets.read_value(widget, hint), value)
+
+    def test_an_enum_field_shows_a_member_or_its_value(self):
+        import bmaya.maya_ui.widgets as widgets
+        widget = widgets.field_widget(Colour)
+        widgets.show_value(widget, Colour, "blue")
+        self.assertIs(widgets.read_value(widget, Colour), Colour.BLUE)
+
+    def test_on_change_is_called_for_each_edit(self):
+        import bmaya.maya_ui.widgets as widgets
+        calls = []
+        for hint in (bool, int, float, str, typing.Literal["a", "b"], Colour, dict):
+            widget = widgets.field_widget(hint, lambda: calls.append(hint))
+            before = len(calls)
+            if hint is bool:
+                widget.setChecked(True)
+            elif hint in (int, float):
+                widget.setValue(5)
+            elif hint is str or hint is dict:
+                widget.setText("1")
+            else:
+                widget.setCurrentIndex(1)
+            self.assertEqual(len(calls), before + 1, hint)
+
+
+class HostTest(MayaUiTest):
+
+    def tearDown(self):
+        from PySide6 import QtWidgets
+        for widget in QtWidgets.QApplication.topLevelWidgets():
+            if widget.objectName().startswith("hosttest"):
+                widget.deleteLater()
+
+    def test_there_is_no_main_window_in_mayapy(self):
+        import bmaya.maya_ui.host
+        self.assertIsNone(bmaya.maya_ui.host.parent_window())
+
+    def test_show_opens_the_widget_by_its_object_name(self):
+        from PySide6 import QtWidgets
+        import bmaya.maya_ui.host
+        widget = QtWidgets.QWidget()
+        shown = bmaya.maya_ui.host.show(widget, object_name="hosttest_one")
+        self.assertIs(shown, widget)
+        self.assertTrue(widget.isVisible())
+        self.assertIs(bmaya.maya_ui.host.find("hosttest_one"), widget)
+        self.assertIsNone(bmaya.maya_ui.host.find("hosttest_other"))
+
+    def test_showing_again_closes_the_old_window_so_there_is_one(self):
+        from PySide6 import QtWidgets
+        import bmaya.maya_ui.host
+        first = bmaya.maya_ui.host.show(QtWidgets.QWidget(), object_name="hosttest_two")
+        second = bmaya.maya_ui.host.show(QtWidgets.QWidget(), object_name="hosttest_two")
+        self.assertIsNot(first, second)
+        self.assertFalse(first.isVisible())
+        self.assertIs(bmaya.maya_ui.host.find("hosttest_two"), second)
+
+    def test_an_open_window_that_refuses_to_close_is_kept_and_the_new_one_is_dropped(self):
+        from PySide6 import QtWidgets
+        import bmaya.maya_ui.host
+
+        class Stubborn(QtWidgets.QWidget):
+            def closeEvent(self, event):
+                event.ignore()
+
+        old = bmaya.maya_ui.host.show(Stubborn(), object_name="hosttest_three")
+        new = QtWidgets.QWidget()
+        self.assertIs(bmaya.maya_ui.host.show(new, object_name="hosttest_three"), old)
+        self.assertTrue(old.isVisible())
+        self.assertFalse(new.isVisible())
+
+    def test_dock_outside_a_gui_maya_shows_a_plain_window(self):
+        from PySide6 import QtWidgets
+        import bmaya.maya_ui.host
+        widget = bmaya.maya_ui.host.show(QtWidgets.QWidget(), object_name="hosttest_dock", dock=True)
+        self.assertTrue(widget.isVisible())
+
+    def test_defer_runs_the_function_from_the_event_loop_outside_maya(self):
+        from PySide6 import QtWidgets
+        import bmaya.maya_ui.host
+        calls = []
+        with mock.patch.dict(sys.modules, {"maya.utils": None}):   # an import of it raises ImportError, as in plain Python
+            bmaya.maya_ui.host.defer(lambda: calls.append(1))
+        self.assertEqual(calls, [])
+        QtWidgets.QApplication.processEvents()
+        self.assertEqual(calls, [1])
 
 
 class QtPrompterTest(MayaUiTest):
@@ -197,7 +388,7 @@ class QtPrompterTest(MayaUiTest):
         import bmaya.maya_ui.prompter
 
         def accept_with_flag(dialog):
-            dialog.form.editors["flag"].widget.setChecked(True)
+            dialog.form.widgets["flag"].setChecked(True)
             dialog.accept()
             return dialog.result()
 
@@ -211,7 +402,7 @@ class QtPrompterTest(MayaUiTest):
         from PySide6 import QtWidgets
         import bmaya.maya_ui.prompter
         dialog = bmaya.maya_ui.prompter.FormDialog("Settings", Everything())
-        dialog.form.editors["data"].widget.setText("{")
+        dialog.form.widgets["data"].setText("{")
         dialog.accept()
         self.assertNotEqual(dialog.result(), QtWidgets.QDialog.DialogCode.Accepted)
         self.assertIn("data: not valid JSON", dialog.problem.text())
