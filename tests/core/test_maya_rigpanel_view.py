@@ -59,6 +59,7 @@ class FakeSession:
             raise RuntimeError(self.error)
         self.calls.append(call)
 
+    def close(self): self._record("close")
     def refresh(self): self._record("refresh")
     def set_active(self, rig_root): self._record("set_active", rig_root)
     def select_group(self, group, add=False): self._record("select_group", group.module, add)
@@ -149,6 +150,17 @@ class RigPanelView(unittest.TestCase):
         self.assertEqual(session.calls, [])   # filling the picker is not the user picking
         two.rig_combo.setCurrentIndex(1)
         self.assertEqual(session.calls, [("set_active", "villain:rigRoot")])
+
+    def test_a_destroyed_panel_closes_its_session(self):
+        """A docked panel is destroyed with its workspace control, often with no closeEvent."""
+        from PySide6 import QtCore, QtWidgets
+        session = FakeSession([make_rig("hero:rigRoot", "hero")])
+        import bmaya.maya_ui.rigpanel
+        panel = bmaya.maya_ui.rigpanel.RigPanel(session)
+        panel.show()
+        panel.deleteLater()
+        QtWidgets.QApplication.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
+        self.assertEqual(session.calls, [("close",)])
 
     def test_the_panel_reloads_when_the_session_changes(self):
         session = FakeSession([make_rig("hero:rigRoot", "hero")])

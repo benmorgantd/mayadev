@@ -144,7 +144,7 @@ Layouts are written in Python: there are no Qt Designer files.
 | Name | Does |
 |---|---|
 | `parent_window()` | Maya's main window as a Qt widget, to parent a tool to so it stays above Maya's. `None` in mayapy and in plain Python |
-| `show(widget, object_name=..., dock=False, width=385, height=735)` | Sets the widget's object name and shows it, **once**: a visible window with the same object name is closed first. When that window refuses to close (the Registry Editor with unsaved edits the user keeps), it is raised and the new widget is dropped. Returns the window on screen. `dock=True` puts the widget in a workspace control beside the Attribute Editor, and is a plain window outside a GUI Maya |
+| `show(widget, object_name=..., dock=False, width=385, height=735)` | Sets the widget's object name and shows it, **once**: a visible window with the same object name is closed first. When that window refuses to close (the Registry Editor with unsaved edits the user keeps), it is raised and the new widget is dropped. Returns the window on screen. `dock=True` puts the widget in a workspace control beside the Attribute Editor, and is a plain window outside a GUI Maya. The control is named `<object name>WorkspaceControl` (`dock_control_name`), because Maya refuses a control whose name another object has, and the control and the widget are deleted when it closes. |
 | `find(object_name)` | The visible top-level widget with that object name |
 | `defer(function)` | Calls `function` when Maya is idle (`maya.utils.executeDeferred`), or from the Qt event loop outside Maya |
 

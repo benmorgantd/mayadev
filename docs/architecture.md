@@ -122,7 +122,7 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `maya/rigging/`, `maya/modeling/`, `maya/util/` | Skinning, joint authoring and generic Maya helpers, mostly older code ([`status.md`](status.md)) |
 | `maya_ui/startup.py` | `register()`: the UI layer's registration pass |
 | `maya_ui/prompter.py` | `QtPrompter`, `FormDialog` |
-| `maya_ui/host.py` | Maya as the host of a window: `parent_window`, `show` (one window per object name, optionally docked), `defer`. With `menus.py`, the only file in `maya_ui` that imports Maya |
+| `maya_ui/host.py` | Maya as the host of a window: `parent_window`, `show` (one window per object name, optionally docked), `dock_control_name`, `defer`. With `menus.py`, the only file in `maya_ui` that imports Maya |
 | `maya_ui/rigpanel.py` | `RigPanel`, the active rig panel's window over a `RigPanelSession`, and `show_window` (docked) |
 | `maya_ui/menus.py` | The Maya menus (`ToolMenu`, `build_menus`, `delete_plugin_menus`, `reload_menus`) and the Menu Editor |
 | `maya_ui/widgets.py` | `field_widget`, `show_value` and `read_value` (an editor chosen by a type hint), `DataclassForm`, `SignatureForm` |

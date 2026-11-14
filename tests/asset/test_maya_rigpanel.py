@@ -278,6 +278,15 @@ class Session(RigPanelBase):
         self.session.key_modules()
         self.assertTrue(self.cmds.keyframe(left, query=True, keyframeCount=True))
 
+    def test_a_closed_session_stops_following_the_tracker(self):
+        """A destroyed panel closes its session. A session left listening would refresh on every active rig change."""
+        villain = self.build("shooter\\villain")
+        self.session.close()
+        self.session.close()   # closing twice is harmless
+        self.activerig.ActiveRigTracker.current().set_rig_root(villain)
+        self.assertEqual(self.session.rig.rig_root, self.hero)   # not refreshed
+        self.assertEqual(self.changes, [])
+
     def test_a_dropped_session_is_not_called(self):
         calls = []
         session = self.rigpanel.RigPanelSession()

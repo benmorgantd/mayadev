@@ -63,8 +63,13 @@ def show(widget: QtWidgets.QWidget, *, object_name: str, dock: bool = False,
     return widget
 
 
+def dock_control_name(object_name: str) -> str:
+    """The name of the workspace control that docks the window with this object name."""
+    return object_name + "WorkspaceControl"
+
+
 def _dock(widget: QtWidgets.QWidget, name: str, width: int, height: int) -> bool:
-    """Puts widget in a workspace control named name. False outside a GUI Maya."""
+    """Puts widget in a workspace control for the window called name. False outside a GUI Maya."""
     try:
         import maya.cmds as cmds
         import maya.OpenMayaUI as omui
@@ -73,13 +78,17 @@ def _dock(widget: QtWidgets.QWidget, name: str, width: int, height: int) -> bool
         return False
     if not hasattr(cmds, "workspaceControl") or not omui.MQtUtil.mainWindow():
         return False
-    if cmds.workspaceControl(name, query=True, exists=True):
-        cmds.workspaceControl(name, edit=True, close=True)
-        cmds.deleteUI(name, control=True)
+    # The control needs a name of its own: Maya refuses one that another object already has, and the widget in it
+    # has the window's object name.
+    control_name = dock_control_name(name)
+    if cmds.workspaceControl(control_name, query=True, exists=True):
+        cmds.workspaceControl(control_name, edit=True, close=True)
+        cmds.deleteUI(control_name, control=True)
     control = cmds.workspaceControl(
-        name, tabToControl=["AttributeEditor", -1], initialWidth=width, minimumWidth=True, initialHeight=height,
+        control_name, tabToControl=["AttributeEditor", -1], initialWidth=width, minimumWidth=True, initialHeight=height,
         widthProperty="preferred", label=widget.windowTitle() or name)
     container = shiboken6.wrapInstance(int(omui.MQtUtil.findControl(control)), QtWidgets.QWidget)
+    container.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)   # as the older, working dock code did
     if container.layout() is None:
         QtWidgets.QVBoxLayout(container)
     container.layout().addWidget(widget)

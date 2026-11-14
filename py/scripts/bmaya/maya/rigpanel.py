@@ -56,6 +56,11 @@ class RigPanelSession:
         bmaya.maya.activerig.ActiveRigTracker.changed.connect(self._on_active_rig_changed)
         self.refresh()
 
+    def close(self) -> None:
+        """Stops following the tracker. A view calls it when its window is destroyed, so a closed panel isn't
+        refreshed on every active rig change."""
+        bmaya.maya.activerig.ActiveRigTracker.changed.disconnect(self._on_active_rig_changed)
+
     def refresh(self) -> None:
         """Reads the scene's rigs and the active rig's controls. A broken rig is logged and shown as no rig, so
         a Qt slot never raises."""

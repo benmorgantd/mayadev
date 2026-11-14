@@ -30,7 +30,11 @@ class RigPanel(QtWidgets.QWidget):
     def __init__(self, session: bmaya.maya.rigpanel.RigPanelSession, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Active Rig")
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
         self.session = session
+        # A docked panel is destroyed with its workspace control, often without a closeEvent. Its session then stops
+        # following the tracker, or the next active rig change would call a deleted widget.
+        self.destroyed.connect(session.close)
         self.buttons: dict[str, QtWidgets.QPushButton] = {}
 
         layout = QtWidgets.QVBoxLayout(self)
