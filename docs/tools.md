@@ -215,7 +215,9 @@ Mark meshes in the model scene, before **Save Model...**, so every build imports
 
 #### pose
 
-The pose tools act on the selected rig controls, or on the whole active rig when no control is selected, so an animator can work on a limb or on everything with the same tool (`bmaya.maya.posetools.get_scope`). The pose commands set values and key nothing, so keying is its own tool.
+The pose tools act on the selected rig controls, or on the whole active rig when no control is selected, so an animator can work on a limb or on everything with the same tool (`bmaya.maya.posetools.get_scope`). The pose commands set values and key nothing, so keying is its own tool. Each tool has a plain function with the scope as an argument (`zero_pose(scope)`, `mirror_pose(scope, left_to_right)`, `flip_pose(scope)`, each returning how many controls changed), and the `*_interactive` menu tool is that function on `get_scope()`.
+
+`bmaya.maya.rigpanel.RigPanelSession` is the view-model for the active rig panel (RigModules `design/active-rig-panel.md`, D50). It has no Qt: `rigs`, `rig` and `groups` (a `ControlGroup` per module and side, read once per refresh), the `changed` event, and the commands the panel's buttons will call (`set_active`, `select_group`, `select_all`, `select_mirrors`, `zero`, `mirror`, `flip`, `key_rig`, `key_modules`). It follows `ActiveRigTracker.changed`. The panel window itself is not built yet.
 
 | Tool | Does |
 |---|---|
@@ -270,10 +272,11 @@ bmaya.maya.assettools.save_rig(rig_root)                                        
 | `get_active_rig()` | The tracker's rig while it still exists, else the selection's rig, else the scene's first rig. Returns a `rigmodules.query.RigInfo`. Raises `RuntimeError("There is no RigModules rig in the scene.")` when there is none. Works without a tracker, so batch jobs and tests can call it |
 | `rig_from_selection()` | The rig of the most recently selected node that belongs to one, or `None`. Checks at most the last 32 selected nodes, because it runs on every selection change |
 | `first_rig_in_scene()` | The first rig `rigmodules.query.get_rigs()` returns, or `None` |
-| `ActiveRigTracker()` | Singleton that follows the active rig through `EventsRegistry` selection, new-scene and open-scene callbacks. `current()` returns the running one, `stop()` removes its callbacks, `update_from_scene()` recomputes |
+| `ActiveRigTracker()` | Singleton that follows the active rig through `EventsRegistry` selection, new-scene and open-scene callbacks. `current()` returns the running one, `stop()` removes its callbacks, `refresh()` recomputes the active rig |
+| `ActiveRigTracker.changed` | An `Event` that emits the rig root (or `None`) when the active rig changes, and once more on `refresh()` when it stays the same, because the scene's rigs may have changed. It belongs to the class, so a listener survives `stop()` and a new tracker. `build_rig` makes the rig it builds the active one |
 
 Nodes are matched to rigs by `rigmodules.query.find_rig_info`, which walks the rig's connections. A broken rig is skipped, because `getRigInfo` has already reported it. Startup starts the tracker once the plugin loads, and not in batch.
 
 ## Tests
 
-The registry, its checks and `run_tool` are tested in `tests/core`, with `build_menus` and both editors offscreen in mayapy. The RigModules menu layout, every registry call and each tool run in Maya are tested in `tests/rigging/rigmodules_menu`, the asset tools in `tests/asset/test_maya_asset_tools.py` and the tracker in `tests/asset/test_maya_active_rig.py` ([`../tests/README.md`](../tests/README.md)).
+The registry, its checks and `run_tool` are tested in `tests/core`, with `build_menus` and both editors offscreen in mayapy. The RigModules menu layout, every registry call and each tool run in Maya are tested in `tests/rigging/rigmodules_menu`, the asset tools in `tests/asset/test_maya_asset_tools.py` the tracker in `tests/asset/test_maya_active_rig.py` and the panel's session, the tracker event and the plain pose functions in `tests/asset/test_maya_rigpanel.py` ([`../tests/README.md`](../tests/README.md)).

@@ -38,22 +38,42 @@ def get_selected_modules(rig_root: str) -> list[str]:
     return modules
 
 
-def zero_pose_interactive() -> None:
-    changed = cmds.zeroRigControls(*get_scope()) or []
+def zero_pose(scope: list[str]) -> int:
+    """Sets the controls of scope (rig controls, or a rig root for the whole rig) to their rest. Returns how many
+    controls changed."""
+    changed = cmds.zeroRigControls(*scope) or []
     bmaya.core.log.info(f"Zeroed {len(changed)} control(s).")
+    return len(changed)
+
+
+def mirror_pose(scope: list[str], left_to_right: bool | None = None) -> int:
+    """Mirrors the pose of scope onto the other side. left_to_right None lets the command pick the source side:
+    the side of the controls when they share one, else Left. Returns how many controls changed."""
+    kwargs = {} if left_to_right is None else {"leftToRight": left_to_right}
+    changed = cmds.mirrorRigPose(*scope, **kwargs) or []
+    bmaya.core.log.info(f"Mirrored the pose onto {len(changed)} control(s).")
+    return len(changed)
+
+
+def flip_pose(scope: list[str]) -> int:
+    """Swaps the pose of each control in scope with its mirror. Returns how many controls changed."""
+    changed = cmds.flipRigPose(*scope) or []
+    bmaya.core.log.info(f"Flipped {len(changed)} control(s).")
+    return len(changed)
+
+
+def zero_pose_interactive() -> None:
+    zero_pose(get_scope())
 
 
 def mirror_pose_interactive(left_to_right: bool | None = None) -> None:
     """Mirrors the pose across the rig. left_to_right None lets the command pick the source side: the side of the
     selected controls when they share one, else Left."""
-    kwargs = {} if left_to_right is None else {"leftToRight": left_to_right}
-    changed = cmds.mirrorRigPose(*get_scope(), **kwargs) or []
-    bmaya.core.log.info(f"Mirrored the pose onto {len(changed)} control(s).")
+    mirror_pose(get_scope(), left_to_right)
 
 
 def flip_pose_interactive() -> None:
-    changed = cmds.flipRigPose(*get_scope()) or []
-    bmaya.core.log.info(f"Flipped {len(changed)} control(s).")
+    flip_pose(get_scope())
 
 
 def select_all_controls_interactive() -> None:

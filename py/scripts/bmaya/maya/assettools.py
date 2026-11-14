@@ -133,6 +133,10 @@ def build_rig(asset_id: str, variant: str, namespace: str | None = None) -> str:
             bmaya.core.asset.handlers.load(asset, "weights", variant, namespace=namespace)
     # The imports above leave their nodes selected. A finished build starts with nothing selected.
     cmds.select(clear=True)
+    # The build selects nothing, so the tracker would never see the new rig. It becomes the active rig.
+    tracker = bmaya.maya.activerig.ActiveRigTracker.current()
+    if tracker is not None:
+        tracker.set_rig_root(rig_root)
     bmaya.core.log.info(f"Built {asset.id} variant {variant!r} into namespace {namespace!r}.")
     return rig_root
 

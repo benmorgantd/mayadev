@@ -113,8 +113,9 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `maya/constants.py` | `MAYADEV_ROOT`, the toolset paths, `MenuSpec`, `MENUS` and `menu_layout_paths`, `RIGMODULES_PLUGIN`, `IS_BATCH` |
 | `maya/assethandlers.py` | The Maya handlers and `register()`, `AnimClip`, `save_control_file`, `save_anim_clip`, `save_skeleton_export` |
 | `maya/assettools.py` | The asset, pose, clip and weight tools: plain functions, then the `*_interactive` menu entry points, which ask through a `Prompter`, and `ClipSettings` |
-| `maya/posetools.py` | Zero, mirror, flip and key tools on the selection or the active rig |
-| `maya/activerig.py` | `get_active_rig`, `ActiveRigTracker` |
+| `maya/posetools.py` | Zero, mirror, flip and key tools on the selection or the active rig: plain functions with a scope, and the `*_interactive` entry points |
+| `maya/activerig.py` | `get_active_rig`, `ActiveRigTracker` and its `changed` event |
+| `maya/rigpanel.py` | `RigPanelSession` and `ControlGroup`: the active rig panel's view-model, no Qt (the window is not built yet) |
 | `maya/devreload.py` | Reload and unload RigModules, and the reload hooks slot |
 | `maya/eventsregistry.py` | `EventsRegistry`, `EventType`, `pause_callbacks` |
 | `maya/batch/` | `MayaBatchEnvironment`, `MayaStandaloneBatchPackage`, `run_batch_test` |

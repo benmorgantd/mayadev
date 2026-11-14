@@ -11,10 +11,13 @@ Without a tracker (batch jobs, tests), get_active_rig works from the selection, 
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import maya.cmds as cmds
 import rigmodules.query
 
 import bmaya.core.log
+import bmaya.core.observable
 import bmaya.maya.eventsregistry
 
 SELECTION_CALLBACK = "active_rig_selection_changed"
@@ -61,8 +64,15 @@ def get_active_rig() -> rigmodules.query.RigInfo:
 
 
 class ActiveRigTracker:
-    """Singleton that follows the active rig through selection, file new and file open callbacks."""
+    """Singleton that follows the active rig through selection, file new and file open callbacks.
 
+    changed emits the rig root (or None) whenever the active rig changes, and again on refresh() when the scene's
+    rigs may have changed under the same active rig. It belongs to the class, not the instance, so a view that
+    connected to it keeps listening across stop() and a new tracker (the dev reload restarts the tracker; RigModules
+    design/active-rig-panel.md, D50).
+    """
+
+    changed: ClassVar[bmaya.core.observable.Event] = bmaya.core.observable.Event()
     _instance: ActiveRigTracker | None = None
 
     def __new__(cls):
@@ -80,7 +90,7 @@ class ActiveRigTracker:
         registry.add_maya_new_scene_callback(SCENE_NEW_CALLBACK, self._on_scene_changed)
         registry.add_maya_open_scene_callback(SCENE_OPEN_CALLBACK, self._on_scene_changed)
         self._initialized = True
-        self.update_from_scene()
+        self.refresh()
 
     @classmethod
     def current(cls) -> ActiveRigTracker | None:
@@ -98,11 +108,16 @@ class ActiveRigTracker:
         if rig_root != self.rig_root:
             self.rig_root = rig_root
             bmaya.core.log.info(f"Active rig: {rig_root or 'none'}")
+            self.changed.emit(rig_root)
 
-    def update_from_scene(self) -> None:
-        """Makes the selection's rig active, else the scene's first rig, else none."""
+    def refresh(self) -> None:
+        """Makes the selection's rig active, else the scene's first rig, else none. Emits changed even when the
+        active rig stays the same, because the scene's rigs may not: a build or a deleted rig calls this."""
+        previous = self.rig_root
         info = rig_from_selection() or first_rig_in_scene()
         self.set_rig_root(info.rig_root if info else None)
+        if self.rig_root == previous:
+            self.changed.emit(self.rig_root)
 
     def _on_selection_changed(self, *args) -> None:
         info = rig_from_selection()
@@ -110,4 +125,4 @@ class ActiveRigTracker:
             self.set_rig_root(info.rig_root)
 
     def _on_scene_changed(self, *args) -> None:
-        self.update_from_scene()
+        self.refresh()
