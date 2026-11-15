@@ -178,7 +178,7 @@ Where a file lives is kept apart from how it is read and written.
 
 ### Add a file type
 
-1. Add its key and path pattern to `DEFAULT_PROJECT["fileTypes"]` in `core/asset/project.py`. Use `{name}` and `{variant}` only, and give a variant path the form `<folder>/{variant}/...`. Add `"folder": True` if it is a folder. Existing projects keep their own `project.json`, so a new key is not in them until their file is edited.
+1. Add its key and path pattern to `DEFAULT_PROJECT["fileTypes"]` in `core/asset/project.py`. Use `{name}` and `{variant}` only, and give a variant path the form `<folder>/{variant}/...`. Add `"folder": True` if it is a folder. Existing projects need a step in `PROJECT_UPDATES` that adds the key, with `FORMAT_VERSION` bumped, so their `project.json` picks it up on the next load ([`assets.md`](assets.md#projectjson)).
 2. Write the handler (below) if the format is one a tool writes or reads.
 3. Update the project and file tables in [`assets.md`](assets.md).
 

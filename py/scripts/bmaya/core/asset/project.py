@@ -10,13 +10,14 @@ import copy
 import json
 import os
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from . import assetid
 
 PROJECTS_ROOT_ENV = "RIGGING_PROJECT_DIR"
 PROJECT_FILE = "project.json"
-FORMAT_VERSION = 1
+FORMAT_VERSION = 2
 
 # A new project's project.json. Paths are relative to the asset folder. {name} is the asset id's last
 # token, {variant} a rig variant. Everything that can differ between variants lives under variants/.
@@ -142,10 +143,58 @@ class Project:
         return asset_type
 
 
+def _add_library_folders(data: dict) -> None:
+    """Version 1 to 2. A version 1 project made before the pose and animation library (RigModules D42, D51)
+    has none of its folders or vocabularies. Adds what is missing and never replaces what a studio edited.
+
+    A step is frozen: it spells out the values it adds and never reads DEFAULT_PROJECT, which moves on
+    with every version. A later default goes in a later step."""
+    file_types = data.setdefault("fileTypes", {})
+    if not isinstance(file_types, dict):
+        raise ProjectError("fileTypes must be an object.")
+    for key in ("controlposes", "controlanims", "exports", "sources"):
+        file_types.setdefault(key, {"path": key, "folder": True})
+    data.setdefault("rig", {"regions": ["lowerBody", "upperBody", "head", "hands"]})
+    data.setdefault("library", {"statuses": ["scratch", "review", "final"]})
+
+
+# Step n turns a version n file into a version n + 1 file, in place. Bump FORMAT_VERSION and add a step
+# together, and add the new keys to DEFAULT_PROJECT. A step is never edited after it ships.
+PROJECT_UPDATES: dict[int, Callable[[dict], None]] = {1: _add_library_folders}
+
+
+def update_project_data(data: dict) -> bool:
+    """Runs the steps from the file's formatVersion up to FORMAT_VERSION, in order, in place. Returns whether
+    anything changed. Raises ProjectError for a version that isn't a whole number from 1, one written by a
+    newer mayadev, or one with no step."""
+    start = data.get("formatVersion")
+    if isinstance(start, bool) or not isinstance(start, int) or start < 1:
+        raise ProjectError(f"formatVersion {start!r} must be a whole number from 1.")
+    if start > FORMAT_VERSION:
+        raise ProjectError(f"formatVersion {start} was written by a newer mayadev (this one reads up to {FORMAT_VERSION}).")
+    for version in range(start, FORMAT_VERSION):
+        step = PROJECT_UPDATES.get(version)
+        if step is None:
+            raise ProjectError(f"formatVersion {version} is no longer read.")
+        step(data)
+        data["formatVersion"] = version + 1
+    return start != FORMAT_VERSION
+
+
 def _read_project(path: str) -> dict:
+    """Reads a project.json at the current version. An older file is updated in memory, then written back so
+    the file itself is current. A file that can't be written (read-only in source control, no access) stays as
+    it is: this run uses the updated data and the next run updates it again."""
     data = read_json(path)
-    if data.get("formatVersion") != FORMAT_VERSION:
-        raise ProjectError(f"{path}: formatVersion {data.get('formatVersion')!r} is not {FORMAT_VERSION}.")
+    try:
+        updated = update_project_data(data)
+    except ProjectError as error:
+        raise ProjectError(f"{path}: {error}") from None
+    if updated:
+        try:
+            write_json(path, data)
+        except OSError:
+            pass
     return data
 
 
@@ -161,7 +210,14 @@ def write_json(path: str, data: dict) -> None:
     """Writes through a temporary file, so a failed write never leaves half a file. Sorted keys and one
     item per line keep diffs small and Perforce merges clean."""
     temp = path + ".tmp"
-    with open(temp, "w", encoding="utf-8", newline="\n") as handle:
-        json.dump(data, handle, indent=2, sort_keys=True)
-        handle.write("\n")
-    os.replace(temp, path)
+    try:
+        with open(temp, "w", encoding="utf-8", newline="\n") as handle:
+            json.dump(data, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+        os.replace(temp, path)
+    except BaseException:
+        try:
+            os.remove(temp)
+        except OSError:
+            pass
+        raise

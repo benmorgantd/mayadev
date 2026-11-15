@@ -64,11 +64,11 @@ All JSON is written with sorted keys and one item per line, so it diffs and merg
     "shapes": { "path": "variants/{variant}/shapes.json" },
     "weights": { "folder": true, "path": "variants/{variant}/weights" }
   },
-  "formatVersion": 1
+  "formatVersion": 2
 }
 ```
 
-`Project.create(folder)` writes the full default, which has every file type above. A file type's `path` is relative to the asset folder. `{name}` is the asset's name. A path with `{variant}` is per variant, and every other path belongs to the whole asset. An asset belongs to the nearest `project.json` above it.
+`Project.create(folder)` writes the full default, which has every file type above. A file type's `path` is relative to the asset folder. `{name}` is the asset's name. A path with `{variant}` is per variant, and every other path belongs to the whole asset. An asset belongs to the nearest `project.json` above it. An older `project.json` updates itself the next time it loads: missing file types are added and the file is written back at `formatVersion` 2.
 
 ### asset.json
 

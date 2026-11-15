@@ -82,7 +82,7 @@ class Sources(LibraryBase):
     def test_the_registry_skips_the_user_folder_and_an_id_cannot_start_with_user(self):
         # A project whose folder is the projects root would walk into the user folder, so a stray asset.json there
         # is what the skip is for.
-        top = Project.create(self.root, {"formatVersion": 1, "assetTypes": ["Other"], "fileTypes": {}})
+        top = Project.create(self.root, {"formatVersion": 2, "assetTypes": ["Other"], "fileTypes": {}})
         self.write(os.path.join(self.root, "user", "tester", "animlibrary", "asset.json"), "{}")
         registry = Registry(top, root=self.root)
         self.assertEqual(registry.errors, [])
@@ -95,10 +95,10 @@ class Sources(LibraryBase):
     def test_the_project_declares_the_vocabularies_and_a_studio_can_change_them(self):
         self.assertEqual(self.project.rig_regions, ["lowerBody", "upperBody", "head", "hands"])
         self.assertEqual(self.project.library_statuses, ["scratch", "review", "final"])
-        data = {"formatVersion": 1, "rig": {"regions": ["face"]}, "library": {"statuses": ["wip"]}}
+        data = {"formatVersion": 2, "rig": {"regions": ["face"]}, "library": {"statuses": ["wip"]}}
         project = Project.create(os.path.join(self.root, "other"), data)
         self.assertEqual((project.rig_regions, project.library_statuses), (["face"], ["wip"]))
-        bare = Project.create(os.path.join(self.root, "bare"), {"formatVersion": 1})
+        bare = Project.create(os.path.join(self.root, "bare"), {"formatVersion": 2})
         self.assertEqual((bare.rig_regions, bare.library_statuses), ([], []))
 
 

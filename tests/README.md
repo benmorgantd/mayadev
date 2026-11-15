@@ -23,7 +23,7 @@ The mayadev tests use `unittest`. Most of them need nothing but Python, and the 
 
 | Path | Tests | Covers |
 |---|---|---|
-| `tests/asset/test_asset_model.py` | 44 | Ids, projects, assets, nesting, the registry, publishes, local versions, source control calls, handler dispatch. A temporary projects root, local versions in a temp folder, source control calls recorded |
+| `tests/asset/test_asset_model.py` | 52 | Ids, projects, assets, nesting, the registry, publishes, local versions, source control calls, handler dispatch. A temporary projects root, local versions in a temp folder, source control calls recorded |
 | `tests/asset/test_asset_library.py` | 35 | `bmaya.core.asset.library` in plain Python: the sources, a legacy file listed, free names, rename and delete with a thumbnail, the index cache, query parsing and every search field, masks and their files, the reserved `user` folder, the project vocabularies |
 | `tests/asset/test_asset_animproperties.py` | 16 | The `animproperties` file: defaults, validation messages, read and write |
 | `tests/asset/test_maya_asset_handlers.py` | 21 | Each Maya handler on real scenes: shapes, scenes, clips (with ControlAnim, bone map and properties), control poses and animations, sources, the skeleton export, argument checks |

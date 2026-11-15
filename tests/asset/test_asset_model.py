@@ -17,7 +17,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 from bmaya.core.asset import Asset, AssetError, AssetIdError, Project, ProjectError, Registry  # noqa: E402
 from bmaya.core.asset import assetid, handlers, publishes, sourcecontrol, versions  # noqa: E402
-from bmaya.core.asset.project import DEFAULT_PROJECT, PROJECTS_ROOT_ENV, projects_root  # noqa: E402
+from bmaya.core.asset.project import (  # noqa: E402
+    DEFAULT_PROJECT, FORMAT_VERSION, PROJECTS_ROOT_ENV, projects_root, update_project_data, write_json)
 
 HERO = "shooter\\main\\characters\\hero"
 
@@ -125,6 +126,67 @@ class Projects(TempRoot):
         self.write(os.path.join(root, "project.json"), json.dumps({"formatVersion": 0}))
         with self.assertRaises(ProjectError):
             Project(root)
+
+    def old_project(self, data: dict) -> str:
+        """Writes a project.json by hand, as an older mayadev would have, and returns its folder."""
+        root = os.path.join(self.root, "old")
+        self.write(os.path.join(root, "project.json"), json.dumps(data))
+        return root
+
+    def test_a_version_1_project_without_the_library_folders_is_updated_and_written_back(self):
+        old = {"formatVersion": 1, "assetTypes": ["Prop"], "fileTypes": {
+            "poses": {"folder": True, "path": "poses"}, "shapes": {"path": "shapes.json"}}}
+        root = self.old_project(old)
+        project = Project(root)
+        for key in ("controlposes", "controlanims", "exports", "sources"):
+            self.assertEqual(project.file_type(key).relative_path("hero"), key)
+            self.assertTrue(project.file_type(key).folder)
+        self.assertEqual(project.rig_regions, ["lowerBody", "upperBody", "head", "hands"])
+        self.assertEqual(project.library_statuses, ["scratch", "review", "final"])
+        saved = json.loads(self.read(os.path.join(root, "project.json")))
+        self.assertEqual(saved["formatVersion"], FORMAT_VERSION)
+        self.assertIn("controlposes", saved["fileTypes"])
+        self.assertEqual(saved["fileTypes"]["poses"], old["fileTypes"]["poses"], "a file type that isn't a default stays")
+
+    def test_an_update_never_replaces_what_a_studio_edited(self):
+        root = self.old_project({
+            "formatVersion": 1, "assetTypes": ["Prop"], "rig": {"regions": ["face"]}, "library": {"statuses": ["wip"]},
+            "fileTypes": {"controlposes": {"folder": True, "path": "library/poses"}}})
+        project = Project(root)
+        self.assertEqual(project.file_type("controlposes").relative_path("hero"), os.path.join("library", "poses"))
+        self.assertEqual((project.rig_regions, project.library_statuses), (["face"], ["wip"]))
+
+    def test_a_current_project_is_not_rewritten(self):
+        path = os.path.join(self.project.root, "project.json")
+        os.utime(path, (1, 1))
+        Project(self.project.root)
+        self.assertEqual(os.path.getmtime(path), 1)
+
+    def test_a_project_that_cannot_be_written_back_still_loads_updated(self):
+        root = self.old_project({"formatVersion": 1, "assetTypes": ["Prop"], "fileTypes": {}})
+        with mock.patch("bmaya.core.asset.project.write_json", side_effect=PermissionError("read-only")):
+            project = Project(root)
+        self.assertIn("controlposes", project.file_types)
+        self.assertEqual(json.loads(self.read(os.path.join(root, "project.json")))["formatVersion"], 1)
+
+    def test_a_failed_write_leaves_no_temp_file(self):
+        path = os.path.join(self.root, "x.json")
+        with self.assertRaises(TypeError):
+            write_json(path, {"bad": object()})
+        self.assertEqual(os.listdir(self.root).count("x.json.tmp"), 0)
+
+    def test_bad_and_newer_versions_name_the_file(self):
+        for version in (0, "1", True, None, FORMAT_VERSION + 1):
+            root = self.old_project({"formatVersion": version})
+            with self.assertRaises(ProjectError, msg=repr(version)) as raised:
+                Project(root)
+            self.assertIn("project.json", str(raised.exception))
+        self.assertIn("newer mayadev", str(raised.exception))
+
+    def test_update_project_data_reports_whether_it_changed_anything(self):
+        data = {"formatVersion": FORMAT_VERSION}
+        self.assertFalse(update_project_data(data))
+        self.assertTrue(update_project_data({"formatVersion": 1}))
 
     def test_file_type_paths(self):
         shapes = self.project.file_type("shapes")

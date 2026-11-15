@@ -71,7 +71,7 @@ All JSON is written with sorted keys and one item per line, so it diffs and merg
   },
   "rig": { "regions": ["lowerBody", "upperBody", "head", "hands"] },
   "library": { "statuses": ["scratch", "review", "final"] },
-  "formatVersion": 1
+  "formatVersion": 2
 }
 ```
 
@@ -98,7 +98,9 @@ A file type's `path` is relative to the asset folder. `{name}` is the asset's na
 
 `controlposes`, `controlanims`, `exports` and `sources` belong to the asset, not a variant: control data binds to a rig's controls by markup, and a clip is skeleton data, so every variant on the asset's skeleton shares them ([`clips.md`](clips.md)).
 
-An existing project keeps the `project.json` it was created with. A file type added to `DEFAULT_PROJECT` later is not in it until its file is edited.
+An older `project.json` updates itself. `formatVersion` is 2. When a `Project` loads a file with an older version, it runs the steps in `PROJECT_UPDATES` in order, in memory, and then writes the file back at the current version (`update_project_data`). Version 1 to 2 adds the four library file types above and the `rig` and `library` vocabularies, only where they are missing, so a studio's own edits stay. A file that can't be written back (read-only in source control) still loads, updated in memory, and is tried again on the next load. A `formatVersion` that is not a whole number from 1, or is newer than this mayadev reads, raises `ProjectError` naming the file.
+
+To change the format, bump `FORMAT_VERSION`, add the step as `PROJECT_UPDATES[old_version]` and add the new keys to `DEFAULT_PROJECT`. A step spells out its values and never reads `DEFAULT_PROJECT`, and it is not edited after it ships.
 
 ### asset.json
 
