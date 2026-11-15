@@ -499,5 +499,95 @@ class Files(LibraryBase):
         self.assertFalse(self.session.rename(old, "old").file.legacy)
 
 
+class ForTheWindow(LibraryBase):
+    """What the library browser's window reads from the session that it can't compute itself (design 12e)."""
+
+    def setUp(self):
+        super().setUp()
+        self.root_node = self.build(HERO)
+        self.left, self.right = self.left_right(self.root_node)
+        self.session = self.browser.LibrarySession()
+
+    def set_file_meta(self, entry, **meta):
+        import rigmodules.library
+        rigmodules.library.set_data_file_meta(entry.path, meta)
+        self.session.refresh()
+        return self.entry(self.session, entry.name)
+
+    def test_facets_are_the_values_in_use_before_the_search_filters_them(self):
+        first = self.session.save("fist", tags=("hands", "Angry"))
+        self.set_file_meta(first, category="Expressions", status="review", rigRegions=["hands"])
+        self.session.save("idle", tags=("body",))
+        self.session.set_query("tag:body")
+        facets = self.session.facets()
+        self.assertEqual(facets["tag"], ["Angry", "body", "hands"], "sorted ignoring case, and fist is not hidden by the query")
+        self.assertEqual((facets["region"], facets["status"], facets["category"]), (["hands"], ["review"], ["Expressions"]))
+        self.assertEqual(facets["template"], ["game"])
+        self.assertEqual(list(facets), list(self.browser.FACET_FIELDS))
+
+    def test_facets_leave_out_a_source_that_is_switched_off(self):
+        os.makedirs(self.hero_asset.path("controlposes"))
+        self.cmds.saveRigPose(self.root_node, file=os.path.join(self.hero_asset.path("controlposes"), "a.controlpose.json").replace("\\", "/"),
+                              meta=json.dumps({"tags": ["approved_only"]}))
+        self.session.refresh()
+        self.assertIn("approved_only", self.session.facets()["tag"])
+        self.session.set_source_enabled("approved", False)
+        self.assertNotIn("approved_only", self.session.facets()["tag"])
+
+    def test_name_taken_looks_in_the_users_library_for_the_open_kind(self):
+        self.assertFalse(self.session.name_taken("wave"))
+        self.session.save("wave")
+        self.assertTrue(self.session.name_taken("wave"))
+        self.session.set_kind("animation")
+        self.assertFalse(self.session.name_taken("wave"), "poses and animations are different libraries")
+        with self.assertRaises(self.library.LibraryError):
+            self.session.name_taken("a/b")
+
+    def test_frames_come_from_the_scene(self):
+        self.cmds.playbackOptions(minTime=3, maxTime=17)
+        self.cmds.currentTime(8)
+        self.assertEqual((self.session.playback_range(), self.session.current_frame()), ((3, 17), 8.0))
+
+    def test_a_mask_is_made_of_the_selected_controls_by_side_and_usage(self):
+        with self.assertRaisesRegex(RuntimeError, "Select controls"):
+            self.session.mask_from_selection("Arm")
+        self.cmds.select(self.left, replace=True)
+        mask = self.session.mask_from_selection("  Left arm ")
+        self.assertEqual((mask.name, mask.source), ("Left arm", "user"))
+        self.assertEqual({(item.side, item.usage) for item in mask.items}, {("Left", "arm")})
+        with self.assertRaisesRegex(self.library.LibraryError, "needs a name"):
+            self.session.mask_from_selection(" ")
+
+        self.session.save_mask(mask)
+        self.session.set_scope("Left arm")
+        self.cmds.select(clear=True)
+        self.assertEqual(self.cmds.ls(self.session.scope_controls(), long=True), self.cmds.ls(self.left, long=True))
+
+    def test_a_status_or_region_outside_the_projects_lists_is_a_warning_in_the_details(self):
+        entry = self.session.save("odd")
+        self.assertEqual(len(self.session.details(entry)), 1)
+        entry = self.set_file_meta(entry, status="draft", rigRegions=["hands", "tail"])
+        lines = self.session.details(entry)
+        self.assertEqual(len(lines), 3)
+        self.assertRegex(lines[1], r"rig region 'tail' is not one this project lists \(lowerBody, upperBody, head, hands\)")
+        self.assertRegex(lines[2], r"status 'draft' is not one this project lists \(scratch, review, final\)")
+        entry = self.set_file_meta(entry, status="final", rigRegions=["hands"])
+        self.assertEqual(len(self.session.details(entry)), 1)
+
+    def test_a_project_that_lists_no_vocabulary_checks_nothing(self):
+        entry = self.session.save("odd")
+        entry = self.set_file_meta(entry, status="anything", rigRegions=["wherever"])
+        with mock.patch.object(self.session, "_vocabulary", return_value=([], [])):
+            self.assertEqual(len(self.session.details(entry)), 1)
+
+    def test_an_asset_whose_project_cannot_be_read_is_not_checked(self):
+        entry = self.set_file_meta(self.session.save("x"), status="draft")
+        self.assertEqual(len(self.session.details(entry)), 2)
+        with mock.patch.object(self.asset.Asset, "project", new_callable=mock.PropertyMock,
+                               side_effect=self.asset.ProjectError("no project.json")):
+            self.assertEqual(self.session._vocabulary(), ([], []))
+            self.assertEqual(len(self.session.details(entry)), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -198,7 +198,11 @@ settings = prompter.ask_form("Clip Properties", ClipSettings(loop=True))   # two
 
 ### ListModel
 
-`widgets.ListModel(roles, items, columns=None)` is a Qt item model over a Python list (RigModules D51). A view-model sets the items with `set_items` (a model reset), and a view shows them as a `QListView` (one column) or a `QTableView` (columns). `roles` maps a Qt role (`DisplayRole`, `ToolTipRole`, `DecorationRole`, `UserRole`) to a function of an item, and `columns` is a list of `(header, display function)`. A role other than the display one applies to every column. `row_of(matches)` finds an item's row again after a reset, which is how a view keeps its selection. It is a `QAbstractTableModel` and not the `QAbstractListModel` the design named, so one model serves the list and the details table. It holds none of its owner's logic. A `QSortFilterProxyModel` works over it.
+`widgets.ListModel(roles, items, columns=None)` is a Qt item model over a Python list (RigModules D51). A view-model sets the items with `set_items` (a model reset), and a view shows them as a `QListView` (one column) or a `QTableView` (columns). `roles` maps a Qt role (`DisplayRole`, `ToolTipRole`, `DecorationRole`, `UserRole`) to a function of an item, and `columns` is a list of `(header, display function)`. A role other than the display one applies to every column. `row_of(matches)` finds an item's row again after a reset, which is how a view keeps its selection. It is a `QAbstractTableModel` and not the `QAbstractListModel` the design named, so one model serves the list and the details table. It holds none of its owner's logic. A `QSortFilterProxyModel` works over it (the library browser sorts its table that way, by a column's sort key through a role). A subclass that overrides `data` can change a role per column: the browser's `EntryModel` puts the icon in the Name column only.
+
+### TagsEdit
+
+`widgets.TagsEdit` is a `QLineEdit` for tags separated by commas. `set_tags_in_use(tags)` gives it the tags a library already uses, and while the animator types a tag a pop-up offers those that start with it, ignoring case, so a library keeps one spelling of a tag. Picking one replaces only the word under the cursor. `tags()` returns the tags trimmed, with no empty ones and no repeats, and `set_tags(tags)` writes them back. The library browser uses it for Save and for Edit Tags.
 
 ### Naming tool
 

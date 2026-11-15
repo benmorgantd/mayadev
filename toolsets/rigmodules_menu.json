@@ -10,6 +10,11 @@
                     "type": "tool",
                     "tool": "rigmodules.panels.active_rig",
                     "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "tool": "rigmodules.panels.library_browser",
+                    "enabled": true
                 }
             ]
         },

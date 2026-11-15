@@ -36,6 +36,7 @@ import bmaya.maya.posetools
 LIBRARY = bmaya.core.asset.library
 SCOPE_SELECTION = "selection"
 SCOPE_RIG = "rig"
+FACET_FIELDS = ("tag", "template", "region", "status", "category")   # search terms a facet can set
 
 
 def read_file_infos(paths: list[str], rig_root: str) -> list[LIBRARY.FileInfo]:
@@ -237,7 +238,55 @@ class LibrarySession:
             lines.append("The rig has no control for " + ", ".join(f"{side} {usage}" for side, usage in info.unmatched_controls) + ".")
         if entry.kind == LIBRARY.ANIMATION and info.frame_rate and abs(info.frame_rate - _scene_frame_rate()) > 1e-3:
             lines.append(f"The animation is {info.frame_rate:g} fps and the scene is {_scene_frame_rate():g} fps: it can't be loaded.")
+        regions, statuses = self._vocabulary()
+        for label, values, allowed in (("rig region", entry.regions, regions),
+                                       ("status", [entry.meta("status")] if entry.meta("status") else [], statuses)):
+            unknown = [value for value in values if allowed and value not in allowed]
+            if unknown:
+                lines.append(f"The {label} {', '.join(repr(value) for value in unknown)} is not one this project lists "
+                             f"({', '.join(allowed)}).")
         return lines
+
+    def _vocabulary(self) -> tuple[list[str], list[str]]:
+        """The rig regions and the statuses the project declares in project.json. Both are empty for a project that
+        declares none, or an asset with no project on disk, and then nothing is checked."""
+        if self._asset is None:
+            return [], []
+        try:
+            project = self._asset.project
+            return list(project.rig_regions), list(project.library_statuses)
+        except (RuntimeError, ValueError, OSError):
+            return [], []
+
+    def facets(self) -> dict[str, list[str]]:
+        """The values in use for each facet of the search (a search term's field), across the enabled sources and
+        before the search filters them: tag, template, region, status and category, each sorted. The view's Filter menu
+        and the tag completer read it."""
+        enabled = [entry for entry in self._all if self.source_enabled.get(entry.source, True)]
+        found: dict[str, set[str]] = {field: set() for field in FACET_FIELDS}
+        for entry in enabled:
+            found["tag"].update(entry.tags)
+            found["region"].update(entry.regions)
+            for field, key in (("template", "template"), ("status", "status"), ("category", "category")):
+                if entry.meta(key):
+                    found[field].add(entry.meta(key))
+        return {field: sorted(values, key=str.casefold) for field, values in found.items()}
+
+    def name_taken(self, name: str) -> bool:
+        """Whether the user's own library already has a file of this kind called name. Raises LibraryError for a name
+        the rule refuses and RuntimeError with no rig."""
+        self._require_rig()
+        return LIBRARY.find_file(LIBRARY.user_source(self._asset).folders[self.kind], self.kind, LIBRARY.check_name(name)) is not None
+
+    @staticmethod
+    def current_frame() -> float:
+        """The scene's current frame: what the Start at field takes."""
+        return float(cmds.currentTime(query=True))
+
+    @staticmethod
+    def playback_range() -> tuple[int, int]:
+        """The playback range, which an animation is saved over unless the caller says otherwise."""
+        return int(cmds.playbackOptions(query=True, minTime=True)), int(cmds.playbackOptions(query=True, maxTime=True))
 
     # ---- commands -----------------------------------------------------------------------------------------
 
@@ -274,8 +323,9 @@ class LibrarySession:
         if self.kind == LIBRARY.POSE:
             path = bmaya.maya.assettools.save_pose(self.asset_id, name, scope, tags, description)
         else:
-            start = int(cmds.playbackOptions(query=True, minTime=True)) if start_frame is None else start_frame
-            end = int(cmds.playbackOptions(query=True, maxTime=True)) if end_frame is None else end_frame
+            range_start, range_end = self.playback_range()
+            start = range_start if start_frame is None else start_frame
+            end = range_end if end_frame is None else end_frame
             path = bmaya.maya.assettools.save_animation(self.asset_id, name, scope, start, end, tags, description)
         self._index.forget(path)
         self.refresh()
@@ -326,6 +376,21 @@ class LibrarySession:
             raise LIBRARY.LibraryError(f"{mask.name!r} is the name of a mask the rig gives. Choose another.")
         LIBRARY.save_mask(self._asset, mask)
         self.refresh()
+
+    def mask_from_selection(self, name: str) -> LIBRARY.Mask:
+        """A mask named name for the selected controls of the rig: one item per (side, usage), which is unique in a rig
+        (D25), so it picks the same controls on any rig of the template. Save it with save_mask. Raises RuntimeError
+        when no control of the rig is selected, and LibraryError for an empty name."""
+        rig_root = self._require_rig()
+        if not name.strip():
+            raise LIBRARY.LibraryError("A mask needs a name.")
+        selected = set(self._selected_controls(rig_root))
+        if not selected:
+            raise RuntimeError("Select controls of the active rig to make a mask of them.")
+        controls = [control for control in rigmodules.query.get_rig_controls(rig_root)
+                    if cmds.ls(control.node, long=True)[0] in selected]
+        items = dict.fromkeys(LIBRARY.MaskItem(side=control.side, usage=control.usage) for control in controls)
+        return LIBRARY.Mask(name.strip(), tuple(items), LIBRARY.USER)
 
     def delete_mask(self, name: str) -> None:
         self._require_rig()

@@ -110,6 +110,18 @@
             "enabled": true
         },
         {
+            "id": "rigmodules.panels.library_browser",
+            "name": "Library Browser",
+            "short_name": "Library",
+            "call": {
+                "module": "bmaya.maya_ui.librarybrowser",
+                "function": "show_window",
+                "kwargs": {}
+            },
+            "icon": null,
+            "enabled": true
+        },
+        {
             "id": "rigmodules.control.select_all",
             "name": "Select All Controls",
             "short_name": "Sel Ctrls",

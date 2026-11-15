@@ -297,6 +297,56 @@ class CollapsibleSection(QtWidgets.QFrame):
         self.toggled.emit(expanded)
 
 
+class TagsEdit(QtWidgets.QLineEdit):
+    """A line of comma-separated tags. While the animator types a tag, a pop-up offers the tags in use that start with
+    it (set_tags_in_use), and picking one replaces the word under the cursor, so a library keeps one spelling of a tag.
+
+        edit.set_tags_in_use(["hands", "fist"])
+        edit.tags()          # ["hands", "fist"] for the text "hands, fist,"
+    """
+
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._model = QtCore.QStringListModel(self)
+        self._completer = QtWidgets.QCompleter(self._model, self)
+        self._completer.setWidget(self)
+        self._completer.setCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
+        self._completer.setCompletionMode(QtWidgets.QCompleter.CompletionMode.PopupCompletion)
+        self._completer.activated[str].connect(self.complete_word)
+        self.textEdited.connect(self._offer)
+
+    def set_tags_in_use(self, tags: list[str]) -> None:
+        self._model.setStringList(list(tags))
+
+    def tags(self) -> list[str]:
+        """The tags in the text, trimmed, with no empty ones and no repeats, in order."""
+        return list(dict.fromkeys(tag.strip() for tag in self.text().split(",") if tag.strip()))
+
+    def set_tags(self, tags: list[str]) -> None:
+        self.setText(", ".join(tags))
+
+    def word_before_cursor(self) -> str:
+        """The part of the tag being typed that is left of the cursor."""
+        head = self.text()[:self.cursorPosition()]
+        return head[head.rfind(",") + 1:].lstrip()
+
+    def complete_word(self, completion: str) -> None:
+        """Replaces the tag under the cursor with completion."""
+        text, cursor = self.text(), self.cursorPosition()
+        start = text[:cursor].rfind(",") + 1
+        head = text[:start] + (" " if start else "") + completion
+        self.setText(head + text[cursor:])
+        self.setCursorPosition(len(head))
+
+    def _offer(self) -> None:
+        word = self.word_before_cursor()
+        if not word:
+            self._completer.popup().hide()
+            return
+        self._completer.setCompletionPrefix(word)
+        self._completer.complete()
+
+
 class ListModel(QtCore.QAbstractTableModel):
     """A Qt item model over a Python list: the rows are the items, and each role is a function of an item. It holds no
     logic of the list's owner, so a view-model sets the items and a view shows them, as a QListView (one column), or a

@@ -169,6 +169,7 @@ Most tools act on the **active rig**, so nobody selects a rig root ([below](#the
 | Tool | Does |
 |---|---|
 | Active Rig Panel | Opens the [active rig panel](#the-active-rig-panel), docked beside the Attribute Editor (`bmaya.maya_ui.rigpanel.show_window`) |
+| Library Browser | Opens the [library browser](#the-library-browser), docked the same way (`bmaya.maya_ui.librarybrowser.show_window`) |
 
 #### asset
 
@@ -235,6 +236,21 @@ The pose tools act on the selected rig controls, or on the whole active rig when
 An error from a button goes to the log. The out-of-date line is not built yet.
 
 The window is widgets and connections only. `bmaya.maya.rigpanel.RigPanelSession` is the view-model, and has no Qt: `rigs`, `rig` and `groups` (a `ControlGroup` per module and side, read once per refresh), the `changed` event, and `spaces_changed` and `space` (a `SpaceState`: the selected control, its constraint, the space labels and the current index), and the commands the buttons call (`set_active`, `select_group`, `select_all`, `select_mirrors`, `zero`, `mirror`, `flip`, `key_rig`, `key_modules`, `set_space(label, key=False)`, `refresh_space` and `watch_selection(bool)`). It follows `ActiveRigTracker.changed`, so a script that changes the active rig updates an open panel. `close()` stops it following, and the window calls it when it is destroyed, which a docked panel is with its workspace control and often with no close event. The docked panel is checked in a GUI Maya by `tests/gui/rigpanel/run.bat` (manual).
+
+### The library browser
+
+`bmaya.maya_ui.librarybrowser.show_window` (RigModules `design/library-browser.md`, D51) opens one docked window on the active rig's pose and animation library, and follows the active rig. It lists the files of three sources: **Approved** (the asset's own `controlposes` and `controlanims`), **Shared** (the skeleton asset's, when the rig uses another asset's skeleton) and **User** (your own, [`assets.md`](assets.md#library)). Each has a chip that shows or hides it.
+
+- **Poses and Animations** are two tabs, two libraries.
+- **Search** is the box under the tabs: free words match the name, tags and description, and `tag:fist`, `template:Human`, `by:bmorgan`, `region:hands`, `status:final`, `category:` and the other terms ([`assets.md`](assets.md#library)) match a field. **Filter** lists the tags, templates, regions, statuses and categories in use, and picking one writes its term in the box (a second pick takes it out), so nobody needs the syntax.
+- **List** shows a name (with a pose or keyframe icon) and the source. **Details** adds tags, template, author, date and frames, and a click on a header sorts. A file that can't be read is red, and one that has controls the rig lacks is amber.
+- **Under the list** are what the selected file holds (controls, channels, unmatched controls), its template, skeleton and author, its description, and warnings: controls the rig lacks, a frame rate the scene doesn't have (the load would be refused), and a status or rig region that the project's `project.json` doesn't list.
+- **Apply** loads the selected file onto the **scope**: *Auto* (the selected controls, else the whole rig), *Selection*, *Whole rig* or a **mask**, the rig's own (one per module type, side and module), the team's and your own, picked by control markup and never by name, and narrowed by the selection. **Mirror** puts the Left side on the Right and the Right on the Left in the file's data before it is written. **Start at** is for animations: empty means the frames it was saved on, and **Now** fills the current frame. Apply is one undo step. Only a double click, Return or the button applies: a click, a hover or an arrow key only selects. **Masks** saves the selected controls as a mask of yours (it becomes the scope), and deletes one of yours.
+- **Save** writes the scope into your own library: type a name (a free one, `pose_001`, is offered) and press Return, with comma-separated **Tags** if you like (the tags in use are offered as you type). A pose stores the scope's channels, and an animation its keys over the playback range, which the window shows. A name you already have asks before it replaces. The tags clear after a save.
+- **Right click** a file for Apply, Copy to My Library (Approved and Shared files), and Rename, Edit Tags and Description and Delete (your own files only: the others are disabled, not hidden). Delete keeps a local version.
+- The window reads the library again each time it opens and on Refresh, and nothing watches the disk. An error from any button goes to the log and to the line at the bottom.
+
+The window is widgets and connections only. `bmaya.maya.librarybrowser.LibrarySession` is the view-model, with no Qt ([`architecture.md`](architecture.md)); the window asks the questions a session must not (replace, rename, delete, a mask's name) through the `Prompter` and a small tags dialog. The docked window is checked in a GUI Maya by `tests/gui/librarybrowser/run.bat` (manual).
 
 | Tool | Does |
 |---|---|

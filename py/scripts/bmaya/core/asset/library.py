@@ -341,6 +341,21 @@ def format_term(field: str, value: str) -> str:
     return f'{field}:"{value}"' if " " in value else f"{field}:{value}"
 
 
+def has_term(text: str, field: str, value: str) -> bool:
+    """Whether the search text has the term field:value, the value compared ignoring case."""
+    return any(name == field and wanted.casefold() == value.casefold() for name, wanted in parse_query(text).terms)
+
+
+def toggle_term(text: str, field: str, value: str) -> str:
+    """The search text with the term field:value added, or taken out when it is there already. What picking a facet
+    does to the search box, so the box always shows what filters the list."""
+    tokens = _TOKEN.findall(text or "")
+    kept = [token for token in tokens if not has_term(token, field, value)]
+    if len(kept) == len(tokens):
+        kept.append(format_term(field, value))
+    return " ".join(kept)
+
+
 def matches(entry: LibraryEntry, query: Query) -> bool:
     """Every word is in the name, a tag or the description, and every term matches its field."""
     haystack = [entry.name, entry.description, *entry.tags]

@@ -9,6 +9,7 @@ property the sheet reads, instead of a style sheet of its own:
     button.setProperty("primary", True)    # the accent-coloured button of a dialog or a panel
     label.setProperty("muted", True)       # secondary text
     label.setProperty("error", True)       # a problem
+    label.setProperty("warning", True)     # something to know that doesn't stop the work
 """
 
 from __future__ import annotations
@@ -91,6 +92,11 @@ QLabel[muted="true"]
 QLabel[error="true"]
 {
     color: $error;
+}
+
+QLabel[warning="true"]
+{
+    color: $warning;
 }
 
 QToolTip
@@ -589,6 +595,9 @@ _ICONS = {
                                    ((12, 6), (14, 8), (12, 10)))),
     # a keyframe: the diamond of Maya's timeline
     "key": ("text", _strokes(((8, 2), (14, 8), (8, 14), (2, 8), (8, 2)))),
+    # a pose: a figure with its arms out
+    "pose": ("text", _strokes(((6.5, 2), (9.5, 2), (9.5, 5), (6.5, 5), (6.5, 2)), ((8, 5), (8, 9.5)),
+                              ((3, 7), (8, 6), (13, 7)), ((5, 14), (8, 9.5), (11, 14)))),
     # a module: a cube, three faces meeting at the centre
     "module": ("text", _strokes(((8, 2), (13.5, 5), (13.5, 11), (8, 14), (2.5, 11), (2.5, 5), (8, 2)),
                                 ((2.5, 5), (8, 8), (13.5, 5)), ((8, 8), (8, 14)))),
@@ -612,7 +621,7 @@ def icon_folder(palette: Palette = DARK) -> pathlib.Path:
 def icon(name: str, palette: Palette = DARK) -> QtGui.QIcon:
     """A theme icon for widgets that set one in code (button.setIcon(theme.icon("key"))). The names are the keys of
     _ICONS: chevron_down, chevron_right, chevron_up, check, dot (the last two are white, for the accent colour), and,
-    in the text colour, plus, minus, mirror, rotate, scale, translate, key and module."""
+    in the text colour, plus, minus, mirror, rotate, scale, translate, key, pose and module."""
     return QtGui.QIcon(str(icon_folder(palette) / f"{name}.png"))
 
 

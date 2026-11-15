@@ -286,6 +286,20 @@ class Search(unittest.TestCase):
         for field, value in (("tag", "fist"), ("tag", "hard hit")):
             self.assertEqual(library.parse_query(library.format_term(field, value)).terms, ((field, value),))
 
+    def test_toggle_term_adds_a_term_and_takes_it_out_again_keeping_the_rest(self):
+        added = library.toggle_term("hand", "tag", "hard hit")
+        self.assertEqual(added, 'hand tag:"hard hit"')
+        self.assertTrue(library.has_term(added, "tag", "HARD HIT"))
+        self.assertEqual(library.toggle_term(added, "tag", "hard hit"), "hand")
+        self.assertEqual(library.toggle_term("", "region", "hands"), "region:hands")
+        self.assertEqual(library.toggle_term("tag:Fist template:Human tag:fist", "tag", "fist"), "template:Human",
+                         "every spelling of the term goes, not other fields")
+
+    def test_has_term_matches_the_whole_value_and_the_field(self):
+        self.assertFalse(library.has_term("tag:fist", "tag", "fis"))
+        self.assertFalse(library.has_term("tag:fist", "region", "fist"))
+        self.assertFalse(library.has_term("fist", "tag", "fist"), "a free word is not a term")
+
     def test_free_words_match_the_name_tags_and_description_and_every_word_must(self):
         found = entry("fist_angry", tags=["hands", "Anger"], description="Clenched right hand")
         for text in ("fist", "ANGRY", "hands", "anger", "clenched", "fist clenched hands"):
