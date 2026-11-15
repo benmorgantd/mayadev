@@ -15,6 +15,10 @@ import re
 
 SEPARATOR = "\\"
 
+# A top-level folder of the projects root that holds each user's own files (the pose and animation library), not
+# assets. An id can't start with it, so no asset sits inside it.
+RESERVED_ROOT = "user"
+
 _TOKEN = re.compile(r"[A-Za-z0-9_]+")
 
 
@@ -30,14 +34,16 @@ def is_valid_token(token: str) -> bool:
 def is_valid(asset_id: str) -> bool:
     if not isinstance(asset_id, str) or not asset_id:
         return False
-    return all(is_valid_token(token) for token in asset_id.split(SEPARATOR))
+    tokens = asset_id.split(SEPARATOR)
+    return all(is_valid_token(token) for token in tokens) and tokens[0].casefold() != RESERVED_ROOT
 
 
 def check(asset_id: str) -> str:
     """Returns asset_id unchanged, or raises AssetIdError."""
     if not is_valid(asset_id):
         raise AssetIdError(
-            f"Asset id {asset_id!r} must be {SEPARATOR!r}-separated folder names of letters, digits and '_'."
+            f"Asset id {asset_id!r} must be {SEPARATOR!r}-separated folder names of letters, digits and '_', and not start with "
+            f"{RESERVED_ROOT!r}."
         )
     return asset_id
 

@@ -295,3 +295,66 @@ class CollapsibleSection(QtWidgets.QFrame):
         self.header.setIcon(theme.icon("chevron_down" if expanded else "chevron_right"))
         self.body.setVisible(expanded)
         self.toggled.emit(expanded)
+
+
+class ListModel(QtCore.QAbstractTableModel):
+    """A Qt item model over a Python list: the rows are the items, and each role is a function of an item. It holds no
+    logic of the list's owner, so a view-model sets the items and a view shows them, as a QListView (one column), or a
+    QTableView (columns). The search box is a QSortFilterProxyModel over it, or the view-model's own filtering.
+
+        model = ListModel({QtCore.Qt.ItemDataRole.DisplayRole: lambda entry: entry.name}, entries)
+        model.set_items(new_entries)          # a reset: a view keeps its selection by finding the row again
+
+    columns is a list of (header, display function). With none, there is one column whose text comes from roles.
+    A role other than the display one (decoration, tool tip, UserRole) applies to every column.
+    """
+
+    def __init__(
+        self,
+        roles: dict[int, Callable[[object], object]],
+        items: list | tuple = (),
+        columns: list[tuple[str, Callable[[object], object]]] | None = None,
+        parent: QtCore.QObject | None = None,
+    ):
+        super().__init__(parent)
+        self._roles = dict(roles)
+        self._columns = list(columns or [])
+        self._items = list(items)
+
+    @property
+    def items(self) -> list:
+        return list(self._items)
+
+    def set_items(self, items: list | tuple) -> None:
+        self.beginResetModel()
+        self._items = list(items)
+        self.endResetModel()
+
+    def item(self, row: int) -> object:
+        return self._items[row]
+
+    def row_of(self, matches: Callable[[object], bool]) -> int:
+        """The row of the first item for which matches is true, or -1. How a view finds its selection after a reset."""
+        return next((row for row, item in enumerate(self._items) if matches(item)), -1)
+
+    def rowCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> int:
+        return 0 if parent.isValid() else len(self._items)
+
+    def columnCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> int:
+        return 0 if parent.isValid() else max(1, len(self._columns))
+
+    def data(self, index: QtCore.QModelIndex, role: int = QtCore.Qt.ItemDataRole.DisplayRole) -> object:
+        if not index.isValid() or not 0 <= index.row() < len(self._items):
+            return None
+        item = self._items[index.row()]
+        if role == QtCore.Qt.ItemDataRole.DisplayRole and self._columns:
+            return self._columns[index.column()][1](item)
+        function = self._roles.get(role)
+        return function(item) if function else None
+
+    def headerData(self, section: int, orientation: QtCore.Qt.Orientation,
+                   role: int = QtCore.Qt.ItemDataRole.DisplayRole) -> object:
+        is_header_text = orientation == QtCore.Qt.Orientation.Horizontal and role == QtCore.Qt.ItemDataRole.DisplayRole
+        if is_header_text and 0 <= section < len(self._columns):
+            return self._columns[section][0]
+        return None

@@ -17,7 +17,7 @@ The test for where a piece of Python goes (RigModules' `design/mayadev-integrati
 userSetup.py                       startup only: the registration passes, then the menus and the active rig
   maya_ui/                         Qt: windows, the Qt prompter, form widgets, the menu builder
   maya/                            tools and handlers: import maya and rigmodules
-    assettools   posetools   activerig   devreload   assethandlers   startup
+    assettools   posetools   activerig   librarybrowser   devreload   assethandlers   startup
     eventsregistry   batch/   util/   rigging/   modeling/
   core/                            plain Python: logger, progress, prompts, Event, tool registry, batch base
     asset/                         the file model: no Maya, no rigmodules
@@ -98,6 +98,7 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `core/asset/versions.py` | Local version copies: `version`, `list_versions`, `versions_root` |
 | `core/asset/sourcecontrol.py` | `SourceControl` (does nothing), `current`, `set_current` |
 | `core/asset/handlers.py` | `FileHandler`, `register`, `save`, `load` |
+| `core/asset/library.py` | The pose and animation library on disk, no Maya: sources (Approved, Shared, User), listing, `Index`, search, masks, rename and delete ([`assets.md`](assets.md#library)) |
 | `core/asset/animproperties.py` | `AnimProperties` and the `<name>.animproperties.json` file |
 | `core/log.py` | The `bmaya` logger, `LogOutput` and its writers slot |
 | `core/observable.py` | `Event`: change notification without Qt |
@@ -113,8 +114,9 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `maya/constants.py` | `MAYADEV_ROOT`, the toolset paths, `MenuSpec`, `MENUS` and `menu_layout_paths`, `RIGMODULES_PLUGIN`, `IS_BATCH` |
 | `maya/assethandlers.py` | The Maya handlers and `register()`, `AnimClip`, `save_control_file`, `save_anim_clip`, `save_skeleton_export` |
 | `maya/assettools.py` | The asset, pose, clip and weight tools: plain functions, then the `*_interactive` menu entry points, which ask through a `Prompter`, and `ClipSettings` |
-| `maya/posetools.py` | Zero, mirror, flip and key tools on the selection or the active rig: plain functions with a scope, and the `*_interactive` entry points |
+| `maya/posetools.py` | Zero, mirror, flip, key, load pose and load animation tools on the selection or the active rig: plain functions with a scope, and the `*_interactive` entry points |
 | `maya/activerig.py` | `get_active_rig`, `ActiveRigTracker` and its `changed` event |
+| `maya/librarybrowser.py` | `LibrarySession`, the library browser's view-model with no Qt: the listing that follows the active rig, search, scope, apply, save, tags, rename, delete and masks. `read_file_infos` is its `Index` reader, `rig_masks` its masks from a rig |
 | `maya/rigpanel.py` | `RigPanelSession`, `ControlGroup` and `SpaceState`: the active rig panel's view-model, no Qt |
 | `maya/devreload.py` | Reload and unload RigModules, and the reload hooks slot |
 | `maya/eventsregistry.py` | `EventsRegistry`, `EventType`, `pause_callbacks` |
@@ -125,7 +127,7 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `maya_ui/host.py` | Maya as the host of a window: `parent_window`, `show` (one window per object name, optionally docked), `dock_control_name`, `defer`. With `menus.py`, the only file in `maya_ui` that imports Maya |
 | `maya_ui/rigpanel.py` | `RigPanel`, the active rig panel's window over a `RigPanelSession`, and `show_window` (docked) |
 | `maya_ui/menus.py` | The Maya menus (`ToolMenu`, `build_menus`, `delete_plugin_menus`, `reload_menus`) and the Menu Editor |
-| `maya_ui/widgets.py` | `field_widget`, `show_value` and `read_value` (an editor chosen by a type hint), `DataclassForm`, `SignatureForm` |
+| `maya_ui/widgets.py` | `field_widget`, `show_value` and `read_value` (an editor chosen by a type hint), `DataclassForm`, `SignatureForm`, `ListModel` (a Qt item model over a list) |
 | `maya_ui/qtbase.py` | Window, widget, tree, dialog and progress window base classes |
 | `maya_ui/tool_registry_editor.py` | The Registry Editor window, widgets over a `RegistryEditSession` |
 | `maya_ui/namingTool/` | A small naming window |

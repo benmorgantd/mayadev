@@ -192,9 +192,9 @@ class MayaHandlers(unittest.TestCase):
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=1, value=0)
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=3, value=4)
         fbx = self.assethandlers.save_anim_clip(self.hero, "rise", rig_root=rig_root, start_frame=1, end_frame=3)
-        control_anim = os.path.join(os.path.dirname(fbx), "rise.anim.json")
+        control_anim = os.path.join(os.path.dirname(fbx), "rise.controlanim.json")
         self.assertTrue(os.path.isfile(control_anim))
-        self.assertEqual(sorted(os.listdir(os.path.dirname(fbx))), ["rise.anim.json", "rise.animproperties.json", "rise.fbx"])
+        self.assertEqual(sorted(os.listdir(os.path.dirname(fbx))), ["rise.animproperties.json", "rise.controlanim.json", "rise.fbx"])
 
         clip = self.handlers.load(self.hero, "exports", name="rise")
         self.assertEqual(clip.sidecar, control_anim)
@@ -239,7 +239,7 @@ class MayaHandlers(unittest.TestCase):
         cmds.setAttr("hero:spine1_ctrl_c.translateY", 3)
         path = self.assethandlers.save_control_file(
             self.assethandlers.ControlPoseHandler(), self.hero, "controlposes", "idle", scope=[rig_root])
-        self.assertEqual(path, os.path.join(self.hero.path("controlposes"), "idle.json"))
+        self.assertEqual(path, os.path.join(self.hero.path("controlposes"), "idle.controlpose.json"))
         self.assertEqual(self.assethandlers.ControlPoseHandler.names(self.hero.path("controlposes")), ["idle"])
 
         cmds.setAttr("hero:spine1_ctrl_c.translateY", 0)
@@ -254,7 +254,7 @@ class MayaHandlers(unittest.TestCase):
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=3, value=4)
         path = self.assethandlers.save_control_file(
             self.assethandlers.ControlAnimHandler(), self.hero, "controlanims", "rise", scope=[rig_root], start_frame=1, end_frame=3)
-        self.assertEqual(path, os.path.join(self.hero.path("controlanims"), "rise.json"))
+        self.assertEqual(path, os.path.join(self.hero.path("controlanims"), "rise.controlanim.json"))
 
         cmds.cutKey("hero:spine1_ctrl_c", attribute="translateY", clear=True)
         self.handlers.load(self.hero, "controlanims", name="rise", scope=[rig_root], offset=10)
@@ -270,7 +270,7 @@ class MayaHandlers(unittest.TestCase):
             handler.save(self.hero, self.hero.path("controlposes"), name="idle")
         with self.assertRaisesRegex(ValueError, "start_frame"):
             self.assethandlers.ControlAnimHandler().save(self.hero, self.hero.path("controlanims"), name="x", scope=[rig_root])
-        self.assertFalse(os.path.exists(os.path.join(self.hero.path("controlposes"), "idle.json")))
+        self.assertFalse(os.path.exists(os.path.join(self.hero.path("controlposes"), "idle.controlpose.json")))
 
     def test_loading_control_data_that_is_not_there_names_the_files_that_are(self):
         rig_root = self.build_rig()

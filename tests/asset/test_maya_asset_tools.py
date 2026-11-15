@@ -216,7 +216,11 @@ class AssetTools(unittest.TestCase):
         self.assertTrue(os.path.isfile(path))
         self.assertFalse(os.path.exists(os.path.join(self.root, "shooter", "main", "characters", "nobody")))
 
-    def test_save_pose_names_a_file_in_the_assets_poses_folder(self):
+    def user_folder(self, kind):
+        import bmaya.core.asset.library
+        return bmaya.core.asset.library.user_source(self.hero).folders[kind]
+
+    def test_save_pose_names_a_file_in_the_users_own_library(self):
         cmds = self.cmds
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
@@ -224,8 +228,15 @@ class AssetTools(unittest.TestCase):
         answers = self.answers("idle")
         path = self.tools.save_pose_interactive(prompter=answers)
         self.assertEqual([q.kind for q in answers.asked], ["ask_text"], "a name, not a file")
-        self.assertEqual(path, os.path.join(self.hero.path("controlposes"), "idle.json"))
+        self.assertEqual(answers.asked[0].default, "pose_001", "a free name is offered")
+        self.assertEqual(path, os.path.join(self.user_folder("pose"), "idle.controlpose.json"))
         self.assertTrue(os.path.isfile(path))
+        self.assertFalse(os.path.exists(self.hero.path("controlposes")), "nothing goes to the Approved folder")
+        with open(path, encoding="utf-8") as handle:
+            meta = json.load(handle)["meta"]
+        import getpass
+        self.assertEqual((meta["assetId"], meta["author"], meta["template"], meta["skeletonId"]),
+                         (HERO, getpass.getuser(), "game", HERO))
 
     def test_save_pose_replace_keeps_a_version_and_cancel_keeps_the_file(self):
         cmds = self.cmds
@@ -257,7 +268,7 @@ class AssetTools(unittest.TestCase):
         self.assertEqual(path, os.path.join(self.hero.path("exports"), "walk", "walk.fbx"))
         self.assertTrue(os.path.isfile(path))
 
-    def test_load_pose_dialog_opens_in_the_controlposes_folder(self):
+    def test_load_pose_dialog_opens_in_the_users_own_library(self):
         cmds = self.cmds
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
@@ -265,8 +276,32 @@ class AssetTools(unittest.TestCase):
         cmds.setAttr("hero:spine1_ctrl_c.translateY", 5)
         answers = self.answers(path)
         self.assertEqual(self.tools.load_pose_interactive(prompter=answers), path)
-        self.assertEqual(answers.asked[0].default, self.hero.path("controlposes"))
+        self.assertEqual(answers.asked[0].default, self.user_folder("pose"))
         self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateY"), 0)
+
+    def test_load_pose_dialog_starts_in_the_approved_folder_before_the_user_has_a_library(self):
+        self.build_outside_the_asset(HERO)
+        self.cmds.select(clear=True)
+        os.makedirs(self.hero.path("controlposes"))
+        answers = self.answers(None)
+        self.assertIsNone(self.tools.load_pose_interactive(prompter=answers))
+        self.assertEqual(answers.asked[0].default, self.hero.path("controlposes"))
+
+    def test_a_legacy_pose_file_still_loads(self):
+        cmds = self.cmds
+        self.build_outside_the_asset(HERO)
+        cmds.select(clear=True)
+        cmds.setAttr("hero:spine1_ctrl_c.translateY", 3)
+        legacy = os.path.join(self.hero.path("controlposes"), "old.json")
+        os.makedirs(os.path.dirname(legacy))
+        cmds.saveRigPose(self.cmds.ls("hero:*", type="rigRootModule")[0], file=legacy.replace("\\", "/"))
+        cmds.setAttr("hero:spine1_ctrl_c.translateY", 0)
+        import bmaya.maya.assethandlers
+        names = bmaya.maya.assethandlers.ControlPoseHandler.names(self.hero.path("controlposes"))
+        self.assertEqual(names, ["old"])
+        bmaya.maya.assethandlers.ControlPoseHandler().load(
+            self.hero, self.hero.path("controlposes"), name="old", scope=cmds.ls("hero:*", type="rigRootModule"))
+        self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateY"), 3)
 
     def test_pose_tools_use_a_file_dialog_before_the_asset_exists(self):
         cmds = self.cmds
@@ -281,7 +316,7 @@ class AssetTools(unittest.TestCase):
         return mock.patch.object(self.tools.bmaya.maya.activerig, "get_active_rig",
                                  return_value=mock.Mock(rig_root=rig_root, asset_id=HERO))
 
-    def test_save_animation_names_a_file_in_the_assets_controlanims_folder_and_replace_keeps_a_version(self):
+    def test_save_animation_names_a_file_in_the_users_own_library_and_replace_keeps_a_version(self):
         cmds = self.cmds
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
@@ -289,7 +324,7 @@ class AssetTools(unittest.TestCase):
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=1, value=0)
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=3, value=4)
         path = self.tools.save_animation_interactive(prompter=self.answers("rise"))
-        self.assertEqual(path, os.path.join(self.hero.path("controlanims"), "rise.json"))
+        self.assertEqual(path, os.path.join(self.user_folder("animation"), "rise.controlanim.json"))
         with open(path, encoding="utf-8") as handle:
             self.assertEqual(json.load(handle)["endFrame"], 3)
         self.assertIsNone(self.tools.save_animation_interactive(prompter=self.answers("rise", False)))
@@ -297,7 +332,7 @@ class AssetTools(unittest.TestCase):
         from bmaya.core.asset import versions
         self.assertEqual(len(versions.list_versions(path, self.root)), 1)
 
-    def test_load_animation_dialog_opens_in_controlanims_and_mirror_flips_a_center_control(self):
+    def test_load_animation_dialog_opens_in_the_users_library_and_mirror_flips_a_center_control(self):
         cmds = self.cmds
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
@@ -307,7 +342,7 @@ class AssetTools(unittest.TestCase):
         cmds.setAttr("hero:spine1_ctrl_c.translateX", 0)
         answers = self.answers(path)
         self.assertEqual(self.tools.load_animation_interactive(prompter=answers), path)
-        self.assertEqual(answers.asked[0].default, self.hero.path("controlanims"))
+        self.assertEqual(answers.asked[0].default, self.user_folder("animation"))
         self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateX", time=1), 2)
         self.assertEqual(self.tools.load_animation_interactive(mirror=True, prompter=self.answers(path)), path)
         self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateX", time=1), -2)

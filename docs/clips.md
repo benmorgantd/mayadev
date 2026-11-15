@@ -6,14 +6,14 @@ How an asset holds animation that leaves the rig: FBX clips in `exports`, skelet
 
 | Kind | Folder | File | Written by |
 |---|---|---|---|
-| Control pose | `controlposes/` | `<name>.json` | `cmds.saveRigPose` |
-| Control animation | `controlanims/` | `<name>.json` | `cmds.saveRigAnimation` |
+| Control pose | `controlposes/` | `<name>.controlpose.json` | `cmds.saveRigPose` |
+| Control animation | `controlanims/` | `<name>.controlanim.json` | `cmds.saveRigAnimation` |
 | Skeleton clip | `exports/<name>/` | `<name>.fbx` and files beside it | `rigmodules.jointclip` |
 | Skeleton data from outside | `sources/` | `<name>.fbx` (and `<name>.bonemap.json`) | Copied in by hand |
 
 Control data binds to a rig's controls by markup, so it survives renames and rebuilds, and it keeps what joints can't (IK/FK blend, spaces, the animator's keys and tangents). Skeleton data is for another rig or skeleton, mocap and the engine. All four folders belong to the asset, so every variant on its skeleton shares them.
 
-> RigModules' `docs/library.md` lists the ControlAnim in `controlanims/` as `<name>.anim.json`. The mayadev handler writes `controlanims/<name>.json`. The `.anim.json` name is used only for the ControlAnim that sits beside an exported clip. RigModules' `design/control-library.md` has the same name. Either the handler or the two RigModules pages moves, and that is the author's call ([`status.md`](status.md#known-problems)).
+The ControlAnim file has one name everywhere: `<name>.controlanim.json`, in `controlanims/` and beside an exported clip. Files written before that (`<name>.json` in the control data folders, `<name>.anim.json` beside a clip) still load. Where control data is saved and listed is [`assets.md`](assets.md#library): saves go to the user's own library, not to `controlposes/` and `controlanims/` of the asset.
 
 ## An export bundle
 
@@ -23,7 +23,7 @@ An export is a folder, because it is a bundle:
 exports\
   walk\
     walk.fbx                  what the joints do
-    walk.anim.json            what the rig did: the ControlAnim the clip was captured from
+    walk.controlanim.json     what the rig did: the ControlAnim the clip was captured from
     walk.animproperties.json  what the engine importer reads
     walk.bonemap.json         optional: joint markup for an FBX from another tool
   hero_skeleton.fbx           the skeleton export, in the folder itself: not a clip
@@ -33,7 +33,7 @@ exports\
 | File | Written | Read | Purpose |
 |---|---|---|---|
 | `<name>.fbx` | `rigmodules.jointclip.write_fbx` | `rigmodules.jointclip.read_fbx` | The clip's joint animation |
-| `<name>.anim.json` | `cmds.saveRigAnimation`, when a clip is captured from a rig | Restore: the `sidecar` flag of `cmds.animateRigFromJointClip` | Gives back what joints can't, with the animator's own keys |
+| `<name>.controlanim.json` | `cmds.saveRigAnimation`, when a clip is captured from a rig | Restore: the `sidecar` flag of `cmds.animateRigFromJointClip` | Gives back what joints can't, with the animator's own keys |
 | `<name>.animproperties.json` | `bmaya.core.asset.animproperties.write` | `animproperties.read` | How the clip plays and what rides on it. Read only by the engine importer |
 | `<name>.bonemap.json` | The skeleton export, or by hand | `rigmodules.jointclip.read_fbx(..., bone_map)` | Joint markup, asset id and skeleton id for a file that carries none |
 

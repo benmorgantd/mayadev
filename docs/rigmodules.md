@@ -29,9 +29,9 @@ Python `maya.cmds` calls, with the module that makes them.
 | `cmds.saveRigControlShapes(rig_root, file=)`, `cmds.loadRigControlShapes(...)` | `assethandlers.RigShapesHandler`, `assettools` (no-asset fallback) | The variant's `shapes.json` |
 | `cmds.setRigMeshId(newId=)` | `assettools.mark_meshes_for_skinning` | Give meshes the id weight files match on |
 | `cmds.saveRigSkinWeights(mesh, file=)`, `cmds.loadRigSkinWeights(...)` | `assethandlers.RigSkinWeightsHandler` | One weight file per mesh |
-| `cmds.saveRigPose(*scope, file=)`, `cmds.loadRigPose(...)` | `assethandlers.ControlPoseHandler`, `assettools` | Poses |
-| `cmds.saveRigAnimation(*scope, file=, startFrame=, endFrame=)` | `assethandlers.ControlAnimHandler`, `AnimClipHandler`, `assettools` | Animations, and the ControlAnim beside a clip |
-| `cmds.loadRigAnimation(*scope, file=, offset=, mirror=)` | `assethandlers.ControlAnimHandler`, `assettools` | Load animation, optionally mirrored |
+| `cmds.saveRigPose(*scope, file=, meta=)`, `cmds.loadRigPose(*scope, file=, mirror=)` | `assethandlers.ControlPoseHandler`, `posetools.load_pose` | Poses, with the caller's part of the `meta` block, and a mirror applied to the file's data (D51) |
+| `cmds.saveRigAnimation(*scope, file=, startFrame=, endFrame=, meta=)` | `assethandlers.ControlAnimHandler`, `AnimClipHandler` | Animations, and the ControlAnim beside a clip |
+| `cmds.loadRigAnimation(*scope, file=, offset=, mirror=)` | `assethandlers.ControlAnimHandler`, `posetools.load_animation` | Load animation, offset and optionally mirrored |
 | `cmds.zeroRigControls`, `cmds.mirrorRigPose(leftToRight=)`, `cmds.flipRigPose` | `posetools` | The pose tools |
 | `cmds.setRigConstraintSpace(constraint, label=)` | `rigpanel.RigPanelSession.set_space` | Switch the selected control's space without moving it |
 | `cmds.poseRigFromJointPose(*scope, jointPose=)` | `assettools.pose_from_joint_pose_interactive` | Restore controls from a one-pose clip |
@@ -54,6 +54,9 @@ Python `maya.cmds` calls, with the module that makes them.
 | `pose.key_controls(controls, time=)` | `rigpanel.RigPanelSession.set_space` | Key the switched control on the previous frame and the current one |
 | `query.find_control_space(control)` | `rigpanel.RigPanelSession.refresh_space` | The selected control's constraint, space labels and current space (RigModules `getRigControlSpace`, D50) |
 | `query.get_rigs()`, `query.get_rig_controls(rig_root)` | `rigpanel.RigPanelSession.refresh` | The rigs in the scene and the active rig's controls, for the active rig panel |
+| `query.get_rig_controls(rig_root)`, `query.RigControl` (`node`, `module`, `module_type`, `side`, `usage`) | `librarybrowser.LibrarySession` | The rig's masks, and the controls a mask picks |
+| `library.get_data_file_info(rig_root, files)`, `library.DataFileInfo` | `librarybrowser.read_file_infos` | What each library file holds, and which of its controls the rig lacks, in one command call (`getRigDataFileInfo`, D51) |
+| `library.set_data_file_meta(file, meta)` | `librarybrowser.LibrarySession.set_meta` | Edit a file's tags and description without loading it |
 | `skinweights.get_mesh_id(mesh)`, `get_skinned_meshes(namespace)`, `get_meshes(namespace)`, `read_file_mesh_id(path)` | `assethandlers.RigSkinWeightsHandler`, `assettools.save_model` | Find skinned meshes and match weight files by `meshId` |
 | `displaylayers.add_meshes(rig_root, nodes)`, `groups.parent_meshes(rig_root, nodes)` | `assettools.build_rig` | Put an imported model into the rig's display layers and mesh group |
 | `jointclip.write_fbx`, `read_fbx`, `capture_joint_clip` | `assethandlers.AnimClipHandler` | Clip FBX in and out, and capture a rig's export joints |
@@ -63,8 +66,8 @@ Python `maya.cmds` calls, with the module that makes them.
 
 Nothing in RigModules imports `bmaya`. These are the places RigModules documentation names mayadev, and they must stay true:
 
-- The asset id format. `bmaya.core.asset.assetid` and RigModules' `core/AssetId` use the same rules, and a built rig stores its `assetId` in the rig root. A change to the rules is a change in both repos in one go.
-- The folder names `controlposes`, `controlanims`, `exports` and `sources`, which RigModules' `docs/library.md` describes ([`clips.md`](clips.md) lists a discrepancy).
+- The asset id format. `bmaya.core.asset.assetid` and RigModules' `core/AssetId` use the same rules, except that `assetid` also refuses an id that starts with `user` (the folder of each user's library: RigModules' `core/AssetId` does not yet), and a built rig stores its `assetId` in the rig root. A change to the rules is a change in both repos in one go.
+- The folder names `controlposes`, `controlanims`, `exports` and `sources`, and the file names `<name>.controlpose.json` and `<name>.controlanim.json`, which RigModules' `docs/library.md` describes ([`assets.md`](assets.md#library) covers the library).
 - The asset model, `design/asset-model.md`, which `bmaya.core.asset` implements (D29).
 
 ## Rules for crossing the boundary

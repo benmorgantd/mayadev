@@ -62,6 +62,31 @@ def flip_pose(scope: list[str]) -> int:
     return len(changed)
 
 
+def load_pose(scope: list[str], file: str, mirror: bool = False) -> list[str]:
+    """Loads a ControlPose file onto scope (a rig root, or controls of one rig) in one undo step. mirror puts the file's
+    Left side on the Right and its Right on the Left before it is written. Returns the controls it changed."""
+    cmds.undoInfo(openChunk=True, chunkName="Load pose")
+    try:
+        changed = cmds.loadRigPose(*scope, file=file.replace("\\", "/"), mirror=mirror) or []
+    finally:
+        cmds.undoInfo(closeChunk=True)
+    bmaya.core.log.info(f"Loaded the pose onto {len(changed)} control(s){' mirrored' if mirror else ''}: {file}")
+    return changed
+
+
+def load_animation(scope: list[str], file: str, offset: float = 0, mirror: bool = False) -> list[str]:
+    """Loads a ControlAnim file onto scope in one undo step. The keys land on the frames they were saved on, moved by
+    offset frames. mirror puts the file's Left side's keys on the Right and the Right's on the Left. Returns the
+    controls it changed."""
+    cmds.undoInfo(openChunk=True, chunkName="Load animation")
+    try:
+        changed = cmds.loadRigAnimation(*scope, file=file.replace("\\", "/"), offset=offset, mirror=mirror) or []
+    finally:
+        cmds.undoInfo(closeChunk=True)
+    bmaya.core.log.info(f"Loaded the animation onto {len(changed)} control(s){' mirrored' if mirror else ''}: {file}")
+    return changed
+
+
 def zero_pose_interactive() -> None:
     zero_pose(get_scope())
 

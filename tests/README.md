@@ -11,7 +11,6 @@ The mayadev tests use `unittest`. Most of them need nothing but Python, and the 
 | Tool registry, layer rules, slots, prompts, `Event` | `python -m unittest discover -s tests/core -p "test_core_*.py"` | Python 3 |
 | Editors, `build_menus`, registration passes, Qt prompter and forms | `tests\core\run.bat` (after the line above) | mayapy (offscreen Qt, no plugin) |
 | RigModules menu layout and tools | `tests\rigging\rigmodules_menu\run.bat` | Layout checks: Python. `check_calls` over the registry: mayapy. Tool runs: mayapy and `RIGMODULES_PLUGIN` |
-| Startup smoke test | `tests\basic\startup_test\run.bat` | mayapy, `MAYADEV_ROOT` |
 
 - `tests\asset\run.bat` runs the plain Python tests first and stops if they fail, then the Maya ones.
 - The Maya tests **skip** without `RIGMODULES_PLUGIN`, or without `maya`, so a run with skips has not checked the boundary with RigModules ([`../docs/rigmodules.md`](../docs/rigmodules.md)). Read the skip count.
@@ -25,13 +24,16 @@ The mayadev tests use `unittest`. Most of them need nothing but Python, and the 
 | Path | Tests | Covers |
 |---|---|---|
 | `tests/asset/test_asset_model.py` | 44 | Ids, projects, assets, nesting, the registry, publishes, local versions, source control calls, handler dispatch. A temporary projects root, local versions in a temp folder, source control calls recorded |
+| `tests/asset/test_asset_library.py` | 35 | `bmaya.core.asset.library` in plain Python: the sources, a legacy file listed, free names, rename and delete with a thumbnail, the index cache, query parsing and every search field, masks and their files, the reserved `user` folder, the project vocabularies |
 | `tests/asset/test_asset_animproperties.py` | 16 | The `animproperties` file: defaults, validation messages, read and write |
 | `tests/asset/test_maya_asset_handlers.py` | 21 | Each Maya handler on real scenes: shapes, scenes, clips (with ControlAnim, bone map and properties), control poses and animations, sources, the skeleton export, argument checks |
-| `tests/asset/test_maya_asset_tools.py` | 51 | The `assettools` functions: variants, build, saves and loads, the questions answered by a `ScriptedPrompter` |
+| `tests/asset/test_maya_asset_tools.py` | 53 | The `assettools` functions: variants, build, saves and loads, the questions answered by a `ScriptedPrompter` |
 | `tests/asset/test_maya_active_rig.py` | 9 | `get_active_rig` and the tracker |
+| `tests/asset/test_maya_library_session.py` | 30 | `LibrarySession` on built rigs: the listing following the active rig, the three sources, search, apply of a pose and an animation (one undo, own start, Start at, mirror, a frame rate mismatch), the scope (selection, rig, a mask, the selection narrowing a mask), save with tags and meta, set meta, rename, delete, copy to User, a broken file, legacy files, no rig and no projects root |
 | `tests/asset/test_maya_rigpanel.py` | 34 | The tracker's `changed` event, the plain pose functions, `RigPanelSession` (groups, following the active rig, selecting, the pose and key commands, a broken rig), `group_controls`, and the space switch on a real rig: the selected control's state, `set_space` with and without Key, one undo, errors, and the selection callback while watching |
 | `tests/core/test_maya_rigpanel_view.py` | 16 | The active rig panel's window offscreen over a fake session: the three folding sections and no tree, a button per group and its label, the button icons, click and ctrl or shift click, every button, a command error, the empty state, the rig picker, reload on change, a destroyed panel closing its session, the Space section (shown only for a control with a switch, a button switches, the Key box keys, a refused switch), and watching the selection only while shown. One test runs it on a real session and rig, and skips without `RIGMODULES_PLUGIN` |
 | `tests/gui/rigpanel/run.bat` | manual | The active rig panel docked in a GUI Maya (`mayalaunch.run_gui`): the dock shows, opens again after a close, the sections fold, a click selects, the Space section follows the selection and switches, with Key, a closed panel's session stops following the tracker. Opens Maya. Needs `RIGMODULES_PLUGIN` and `RIGMODULES_PYTHON` |
+| `tests/core/test_maya_list_model.py` | 7 | `ListModel` offscreen: rows and roles, a reset, columns and headers, `row_of`, a list view and a filter proxy over it. No plugin |
 | `tests/core/test_core_layers.py` | 8 | The layer rules, read from the source: `core` imports no Maya, Qt or higher layer, `maya` no `maya_ui` or Qt, no Maya dialog anywhere and no Maya UI command outside `maya_ui`, `maya_ui` imports Maya only in `host.py` and `menus.py`, slots filled only by a `startup.register()`, and the known Python 2 files |
 | `tests/core/test_core_tool_registry_edit.py` | 36 | `RegistryEditSession` with no Qt: picking, field and call edits and their events, the status line and an input problem, add and delete, the checked save (the full report, the master registry against its layouts, save as), load, the call picker's module and function lists |
 | `tests/core/test_core_slots.py` | 14 | The log writers slot, the prompter slot, `NoPrompter` and `ScriptedPrompter`, `Event`, the progress manager's `changed` |
@@ -40,7 +42,6 @@ The mayadev tests use `unittest`. Most of them need nothing but Python, and the 
 | `tests/core/test_maya_ui_layer.py` | 38 | Both registration passes (batch and GUI), the order of the dev reload hooks, `field_widget`, `DataclassForm` and `SignatureForm`, `QtPrompter` with its dialogs replaced, `FormDialog` refusing an invalid value, `CollapsibleSection`, the theme (sheet filled in, icons drawn, applied by the windows and `host.show`, never to the application), `host` (one window per object name, a window that refuses to close, `defer`) |
 | `tests/core/test_maya_tool_editors.py` | 29 | Both editors offscreen: the tree and `Layout` round trip, the Registry Editor's widgets bound to its session (list, search, fields, call picker, status line, save, open, delete), `build_menus` with the drawing replaced |
 | `tests/rigging/rigmodules_menu/test_maya_rigmodules_menu.py` | 43 | The layout (eight submenus, 38 tools, the dev tools in the bmaya menu), `check_calls` over the repo registry, then each tool run through `run_tool` in Maya, including the joint tools |
-| `tests/basic/startup_test/main.py` | 1 | Maya starts through the batch framework and logs |
 
 Not covered: the events registry, the reload half of dev reload, the Qt classes other than the two tool editors, skinning, most joint tools and the generic utilities ([`../docs/status.md`](../docs/status.md#test-coverage) lists proposed tests).
 

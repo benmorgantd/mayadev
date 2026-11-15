@@ -112,8 +112,12 @@ class Registry:
                 yield folder
                 continue
             for entry in entries:
-                if entry.is_dir() and not os.path.isfile(os.path.join(entry.path, PROJECT_FILE)):
+                if entry.is_dir() and not os.path.isfile(os.path.join(entry.path, PROJECT_FILE))                         and not self._is_user_folder(entry.path):
                     pending.append(entry.path)
+
+    def _is_user_folder(self, folder: str) -> bool:
+        """The projects root's top-level "user" folder: each user's own library files, never assets (assetid.RESERVED_ROOT)."""
+        return os.path.normcase(folder) == os.path.normcase(os.path.join(self.root, assetid.RESERVED_ROOT))
 
 
 def _entry(asset: Asset) -> dict:

@@ -46,7 +46,6 @@ Found reading the code and compiling it. None were fixed by the documentation ch
 - **`py/plug-ins/` and `py/scripts/plug-ins/`** hold different copies of the same plug-ins (`bmPruneWeights.py`, `bm_coneReader.py`, `bm_quatExtract.py`, `bm_rayIntersect.py`), and each has files the other lacks. Which is current is unknown.
 - **`mayadev.mod` is not in the repo**, though the setup guide and RigModules' integration plan describe it. A fresh clone has to write it by hand ([`setup.md`](setup.md#module-files)).
 - **Two install routes**: `py/easyInstall.py` writes a different `bm.mod`.
-- **`ControlAnim` file name**: RigModules' `docs/library.md` and `design/control-library.md` say `controlanims/<name>.anim.json`, and `ControlAnimHandler` writes `controlanims/<name>.json` ([`clips.md`](clips.md)). The `.anim.json` name is used only for the ControlAnim beside an exported clip. Undecided which side moves.
 - **Animation properties JSON** is written unsorted with `indent=4`, where every other asset file is sorted with `indent=2`.
 
 **Stale documentation**
@@ -69,7 +68,6 @@ The two guides under `py/scripts/docs/guides/` predate this folder:
 | Tool registry, checks, `run_tool` | `tests/core/test_core_tool_registry.py` (54 tests): plain Python |
 | Editors, `build_menus` | `tests/core/test_maya_tool_editors.py` (28 tests): mayapy, offscreen, no plugin. `build_menus` runs with the menu drawing replaced, because standalone Maya has no `MayaWindow` |
 | Menu layout and tools | `tests/rigging/rigmodules_menu` (43 tests): the layout checks run in plain Python, `check_calls` over the repo registry needs mayapy, the tool runs need the plugin |
-| Startup | `tests/basic/startup_test`: one smoke test that Maya starts and logs |
 | Nothing | `eventsregistry`, the reload half of `devreload`, `qtbase` apart from what the editors use, `rigging/` apart from the joint menu tools, `modeling/`, `util/`, `batch/` |
 
 ## Proposed tests

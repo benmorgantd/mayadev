@@ -39,6 +39,9 @@ DEFAULT_PROJECT = {
         "exports": {"path": "exports", "folder": True},
         "sources": {"path": "sources", "folder": True},
     },
+    # The pose and animation library's vocabularies (RigModules D51). A studio edits them in project.json.
+    "rig": {"regions": ["lowerBody", "upperBody", "head", "hands"]},
+    "library": {"statuses": ["scratch", "review", "final"]},
 }
 
 _FIELD = re.compile(r"{(\w+)}")
@@ -94,6 +97,9 @@ class Project:
         self.root = os.path.normpath(root)
         self._data = _read_project(os.path.join(self.root, PROJECT_FILE))
         self.asset_types: list[str] = list(self._data.get("assetTypes", []))
+        # The library's vocabularies. Files that use a value outside them are the browser's warning, not an error.
+        self.rig_regions: list[str] = list(self._data.get("rig", {}).get("regions", []))
+        self.library_statuses: list[str] = list(self._data.get("library", {}).get("statuses", []))
         self.file_types: dict[str, FileType] = {
             key: FileType(key, value["path"], bool(value.get("folder", False)))
             for key, value in self._data.get("fileTypes", {}).items()

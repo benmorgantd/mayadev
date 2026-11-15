@@ -69,11 +69,13 @@ All JSON is written with sorted keys and one item per line, so it diffs and merg
     "shapes": { "path": "variants/{variant}/shapes.json" },
     "weights": { "folder": true, "path": "variants/{variant}/weights" }
   },
+  "rig": { "regions": ["lowerBody", "upperBody", "head", "hands"] },
+  "library": { "statuses": ["scratch", "review", "final"] },
   "formatVersion": 1
 }
 ```
 
-`Project.create(folder)` writes the full default (`DEFAULT_PROJECT`), which has every file type in the table below. An asset belongs to the nearest `project.json` above it, found by walking up from the asset folder, so a folder with its own `project.json` is a separate project.
+`Project.create(folder)` writes the full default (`DEFAULT_PROJECT`), which has every file type in the table below. `rig.regions` and `library.statuses` are the vocabularies of the pose and animation library ([Library](#library)): `Project.rig_regions` and `Project.library_statuses` read them, and an absent key is an empty list. An asset belongs to the nearest `project.json` above it, found by walking up from the asset folder, so a folder with its own `project.json` is a separate project.
 
 A file type's `path` is relative to the asset folder. `{name}` is the asset's name and `{variant}` a rig variant. A path with `{variant}` is per variant, and every other path belongs to the whole asset. A per-variant path must have the form `<folder>/{variant}/...`, because the variants are found by listing that parent folder (`FileType.variant_parent`). Asking for a variant path without a variant, or an asset path with one, raises `ProjectError`.
 
@@ -221,12 +223,12 @@ The Maya handlers are registered by `bmaya.maya.assethandlers.register()`:
 | `template` | `RigTemplateHandler` | `source=` (save) | Save copies the template file passed as `source=`, and fails unless its `rigName` is the variant. Load returns the template's path |
 | `shapes` | `RigShapesHandler` | `rig_root=` | RigModules `saveRigControlShapes` and `loadRigControlShapes` |
 | `weights` | `RigSkinWeightsHandler` | `namespace=` | One RigModules weight file per skinned mesh in the namespace, named after the mesh (`box_geo.json`). Save fails on a skinned mesh without a `meshId`, and removes a file left from a mesh's old name. Load matches each file to a mesh by the `meshId` inside it, never by name, skips a file whose mesh isn't in the scene with a warning, fails if two files name one `meshId`, and is one undo step |
-| `controlposes` | `ControlPoseHandler` | `name=`, `scope=` | `<name>.json` in the folder. `cmds.saveRigPose` and `loadRigPose` |
-| `controlanims` | `ControlAnimHandler` | `name=`, `scope=`, `start_frame=`, `end_frame=` (save), `offset=`, `mirror=` (load) | `<name>.json` in the folder. `cmds.saveRigAnimation` and `loadRigAnimation` |
+| `controlposes` | `ControlPoseHandler` | `name=`, `scope=`, `meta=` (save), `mirror=` (load) | `<name>.controlpose.json` in the folder. `cmds.saveRigPose` and `loadRigPose`. A legacy `<name>.json` still loads |
+| `controlanims` | `ControlAnimHandler` | `name=`, `scope=`, `start_frame=`, `end_frame=`, `meta=` (save), `offset=`, `mirror=` (load) | `<name>.controlanim.json` in the folder. `cmds.saveRigAnimation` and `loadRigAnimation`. A legacy `<name>.json` still loads |
 | `exports` | `AnimClipHandler` | see [`clips.md`](clips.md) | One FBX clip per name, in a folder of its own |
 | `sources` | `SourceClipHandler` | see [`clips.md`](clips.md) | FBX files from other tools. Load only: save raises |
 
-`scope` is a rig root, or controls of one rig. A pose or animation name follows `CLIP_NAME`: it starts with a letter or digit and holds letters, digits, `_`, `-` and spaces, because it becomes a file name.
+`scope` is a rig root, or controls of one rig. A pose or animation name follows `library.NAME_RULE` (`CLIP_NAME` in `assethandlers`): it starts with a letter or digit and holds letters, digits, `_`, `-` and spaces, because it becomes a file name. `meta` is a dict for the file's `meta` block (`author`, `tags`, `description`, ...), and the rig fills the rest ([Library](#library)). `assethandlers.save_control_file(..., folder=)` saves to another folder than the asset's: it versions the old file there but never touches source control.
 
 ```python
 import maya.cmds as cmds
@@ -247,6 +249,48 @@ cmds.animateRigFromJointClip("hero:rigRootModule1", jointClip=clip.joint_clip)
 A pose, an animation or a clip should be saved through `assethandlers.save_control_file` or `assethandlers.save_anim_clip`, not `handlers.save`. `handlers.save` versions the path it is given, which for a folder type is the whole folder. The two helpers version only the one file (or the one clip's FBX), and tell source control about it.
 
 Textures, shaders and postops have no handler yet. The weight, shape and rig tools read and write through these handlers, and the tools that sit on top are in [`tools.md`](tools.md).
+
+## Library
+
+`bmaya.core.asset.library` is the pose and animation library on disk (RigModules D51, `design/library-browser.md`). It is plain Python: where the files live, how to find them, and what to do with them as files. What a file holds comes from a reader passed to `Index`, which in Maya is `rigmodules.library.get_data_file_info`.
+
+A **source** is a folder pair, `controlposes` and `controlanims`, with a write rule:
+
+| Source | Folder | Written by |
+|---|---|---|
+| `approved` | The asset's own `controlposes` and `controlanims`, in source control | The art director, through source control. Read only here |
+| `shared` | The folders of the skeleton asset, when `asset.skeleton` is another asset that exists | Whoever owns that asset. Read only here |
+| `user` | `<projects root>\user\<login>\animlibrary\<asset id>\controlposes` and `controlanims` | The animator, with no source control. **Where every save goes** |
+
+`library.sources(asset)` returns the ones that exist, in that order. An asset that is not on disk still has its `user` source. The login is the OS user. `user` at the top of the projects root is reserved: the registry does not scan it, and `assetid.check` refuses an id that starts with `user`. RigModules' `core/AssetId` does not check this yet, so an id of `user\x` passes `createRigFromTemplate` and fails in `Asset`.
+
+Files are `<name>.controlpose.json` and `<name>.controlanim.json`. A `<name>.json` written before the suffixes is listed as `legacy` and loads. A rename gives it the new suffix.
+
+```python
+from bmaya.core.asset import Asset, library
+
+hero = Asset("shooter\\main\\characters\\hero")
+user = library.user_source(hero)                         # pure: no folder is made
+files = library.list_files(user, library.POSE)           # LibraryFile(path, name, kind, source, writable, modified, legacy)
+library.free_name(user, library.POSE)                    # "pose_001"
+
+index = library.Index(reader)                            # reader(paths, context) -> one FileInfo per path
+entries = index.entries(files, context=rig_root)        # only new or changed files are read, in one call
+library.filter_entries(entries, library.parse_query("tag:fist hand"))
+```
+
+| Function | Does |
+|---|---|
+| `sources(asset)`, `user_source(asset)`, `user_root()` | The sources, and the signed-in user's folder |
+| `list_files(source, kind)`, `find_file(folder, kind, name)`, `free_name(source, kind, prefix)` | List a folder, find a name (suffixed, else legacy), the next free `pose_001` |
+| `rename_file(file, name)`, `delete_file(file, root)`, `copy_to_user(file, user)` | File operations. The first two work only in a writable source, take a thumbnail (`<name>.png`) with the file, and `delete_file` keeps a local version. `copy_to_user` never overwrites. They raise `LibraryError` |
+| `Index(reader).entries(files, context)`, `forget(path)` | What each file holds, cached by path, modified time and context (the rig root, because which controls a file matches depends on the rig) |
+| `parse_query(text)`, `matches`, `filter_entries`, `format_term` | The search box |
+| `read_masks`, `write_masks`, `saved_masks(asset)`, `save_mask`, `delete_mask` | Named masks, saved as `masks.json` beside the library folders: the team's next to the Approved folders, the user's next to the User ones. A user mask replaces a team mask of the same name |
+
+**Search.** Free words must all appear in the name, a tag or the description, ignoring case. A term is `field:value`, or `field:"two words"`. `tag`, `template`, `skeleton`, `by` (the author), `category` and `asset` match a part of the value. `source`, `kind`, `status` and `region` (the file's `rigRegions`) match the whole value. Every term must match, so two `tag:` terms narrow the result. A word before a colon that is not a field stays a free word.
+
+**Masks.** A `Mask` is a name and `MaskItem`s of `module_type`, `side` and `usage`, each optional. A control is in the mask when any item matches it, by its markup and never its name, so a mask works on any rig of the template. `LibrarySession` builds masks from the rig with no authoring: one per module type present, one per side, and one per module.
 
 ## Building a rig from an asset
 

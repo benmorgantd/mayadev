@@ -31,6 +31,7 @@ import rigmodules.template
 import bmaya.core.asset
 import bmaya.core.asset.animproperties
 import bmaya.core.asset.handlers
+import bmaya.core.asset.library
 import bmaya.core.log
 import bmaya.core.prompts
 import bmaya.maya.activerig
@@ -40,8 +41,8 @@ import bmaya.maya.posetools
 SCENE_FILTER = "Maya ASCII (*.ma)"
 SHAPES_FILTER = "Shape files (*.json)"
 TEMPLATE_FILTER = "Rig templates (*.json)"
-POSE_FILTER = "Pose files (*.json)"
-ANIMATION_FILTER = "Animation files (*.json)"
+POSE_FILTER = "Pose files (*.controlpose.json *.json)"
+ANIMATION_FILTER = "Animation files (*.controlanim.json *.json)"
 CLIP_FILTER = "FBX clips (*.fbx)"
 
 
@@ -194,25 +195,47 @@ def load_control_shapes(node: str, prompter: bmaya.core.prompts.Prompter | None 
     return asset.path("shapes", info.variant)
 
 
-def save_pose(asset_id: str, name: str, scope: list[str]) -> str:
-    """Saves the pose of scope (a rig root, or controls of one rig) as controlposes/<name>.json in the asset's
-    controlposes folder, which every variant of the asset shares. An existing file is versioned first. Returns the
-    path."""
-    asset = require_asset(asset_id)
+def library_meta(asset: bmaya.core.asset.Asset, scope: list[str], tags: typing.Sequence[str] = (),
+                 description: str = "") -> dict:
+    """The part of a library file's meta that the caller gives (RigModules D51): the author (the OS user), the rig's
+    variant as the template, the skeleton asset, and the tags and description when there are any. The rig fills the
+    asset id, variant, plugin version and date itself."""
+    meta = {
+        "author": bmaya.core.asset.library.login(),
+        "template": rigmodules.query.get_rig_info(scope[0]).variant,
+        "skeletonId": asset.skeleton if asset.exists() else asset.id,
+    }
+    if tags:
+        meta["tags"] = list(tags)
+    if description:
+        meta["description"] = description
+    return meta
+
+
+def save_pose(asset_id: str, name: str, scope: list[str], tags: typing.Sequence[str] = (), description: str = "") -> str:
+    """Saves the pose of scope (a rig root, or controls of one rig) to the own library of the current user for the
+    asset, as <name>.controlpose.json in its controlposes folder (RigModules D51). No source control and no
+    permission: a pose reaches the asset's Approved library by being published. An existing file is versioned first.
+    Returns the path."""
+    asset = bmaya.core.asset.Asset(asset_id)
+    folder = bmaya.core.asset.library.user_source(asset).folders[bmaya.core.asset.library.POSE]
     path = bmaya.maya.assethandlers.save_control_file(
-        bmaya.maya.assethandlers.ControlPoseHandler(), asset, "controlposes", name, scope=scope)
+        bmaya.maya.assethandlers.ControlPoseHandler(), asset, "controlposes", name, folder=folder,
+        scope=scope, meta=library_meta(asset, scope, tags, description))
     bmaya.core.log.info(f"Saved pose {name!r} of {asset.id}: {path}")
     return path
 
 
-def save_animation(asset_id: str, name: str, scope: list[str], start_frame: int, end_frame: int) -> str:
-    """Saves the keys of scope (a rig root, or controls of one rig) over start_frame to end_frame as
-    controlanims/<name>.json in the asset's controlanims folder (a ControlAnim, RigModules D42). An existing file is
-    versioned first. Returns the path."""
-    asset = require_asset(asset_id)
+def save_animation(asset_id: str, name: str, scope: list[str], start_frame: int, end_frame: int,
+                   tags: typing.Sequence[str] = (), description: str = "") -> str:
+    """Saves the keys of scope (a rig root, or controls of one rig) over start_frame to end_frame to the own library
+    of the current user for the asset, as <name>.controlanim.json in its controlanims folder (a ControlAnim,
+    RigModules D42, D51). An existing file is versioned first. Returns the path."""
+    asset = bmaya.core.asset.Asset(asset_id)
+    folder = bmaya.core.asset.library.user_source(asset).folders[bmaya.core.asset.library.ANIMATION]
     path = bmaya.maya.assethandlers.save_control_file(
-        bmaya.maya.assethandlers.ControlAnimHandler(), asset, "controlanims", name,
-        scope=scope, start_frame=start_frame, end_frame=end_frame)
+        bmaya.maya.assethandlers.ControlAnimHandler(), asset, "controlanims", name, folder=folder,
+        scope=scope, start_frame=start_frame, end_frame=end_frame, meta=library_meta(asset, scope, tags, description))
     bmaya.core.log.info(f"Saved animation {name!r} of {asset.id} on frames {start_frame} to {end_frame}: {path}")
     return path
 
@@ -398,8 +421,8 @@ def _get_selected_joints() -> list[str]:
 
 def save_pose_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
     """Saves the pose of the selected controls, or of the whole active rig, under a name the user gives, in the
-    asset's poses folder. Before the asset's folder exists, asks for a file instead. Returns the path, or None
-    when cancelled."""
+    own library of the user for the asset. Before the asset's folder exists, asks for a file instead. Returns the
+    path, or None when cancelled."""
     prompter = _prompter(prompter)
     scope = bmaya.maya.posetools.get_scope()
     info = rigmodules.query.get_rig_info(scope[0])
@@ -410,31 +433,33 @@ def save_pose_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -
             cmds.saveRigPose(*scope, file=path)
         return path
 
-    name = prompter.ask_text("Save Pose", f"Pose name, saved in the controlposes folder of {asset.id}:")
+    user = bmaya.core.asset.library.user_source(asset)
+    name = prompter.ask_text("Save Pose", f"Pose name, saved in your own library of {asset.id}:",
+                             bmaya.core.asset.library.free_name(user, bmaya.core.asset.library.POSE, "pose"))
     if not name:
         return None
-    path = os.path.join(asset.path("controlposes"), name + ".json")
-    if os.path.exists(path) and not _confirm_replace(prompter, "Save Pose", f"Pose {name!r}"):
+    taken = _library_file(user, bmaya.core.asset.library.POSE, name)
+    if taken and not _confirm_replace(prompter, "Save Pose", f"Pose {name!r}"):
         return None
     return save_pose(asset.id, name, scope)
 
 
 def load_pose_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
-    """Loads a pose file the user picks, starting in the asset's controlposes folder, onto the selected controls or
-    the whole active rig. Returns the path, or None when cancelled."""
+    """Loads a pose file the user picks, starting in their own library (the asset's Approved folder when they have
+    none), onto the selected controls or the whole active rig. Returns the path, or None when cancelled."""
     scope = bmaya.maya.posetools.get_scope()
     asset = find_asset(rigmodules.query.get_rig_info(scope[0]).asset_id)
-    path = _prompter(prompter).ask_file("Load Pose", POSE_FILTER, save=False, folder=_asset_folder(asset, "controlposes"))
+    path = _prompter(prompter).ask_file("Load Pose", POSE_FILTER, save=False,
+                                        folder=_library_folder(asset, bmaya.core.asset.library.POSE))
     if path:
-        changed = cmds.loadRigPose(*scope, file=path) or []
-        bmaya.core.log.info(f"Loaded the pose onto {len(changed)} control(s): {path}")
+        bmaya.maya.posetools.load_pose(scope, path)
     return path
 
 
 def save_animation_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
     """Saves the keys of the selected controls, or of the whole active rig, over the playback range, under a name
-    the user gives, in the asset's controlanims folder. Before the asset's folder exists, asks for a file instead.
-    Returns the path, or None when cancelled."""
+    the user gives, in the own library of the user for the asset. Before the asset's folder exists, asks for a file
+    instead. Returns the path, or None when cancelled."""
     prompter = _prompter(prompter)
     scope = bmaya.maya.posetools.get_scope()
     start, end = _playback_range()
@@ -445,26 +470,27 @@ def save_animation_interactive(prompter: bmaya.core.prompts.Prompter | None = No
             cmds.saveRigAnimation(*scope, file=_command_path(path), startFrame=start, endFrame=end)
         return path
 
-    name = prompter.ask_text("Save Animation", f"Animation name, saved in the controlanims folder of {asset.id}:")
+    user = bmaya.core.asset.library.user_source(asset)
+    name = prompter.ask_text("Save Animation", f"Animation name, saved in your own library of {asset.id}:",
+                             bmaya.core.asset.library.free_name(user, bmaya.core.asset.library.ANIMATION, "animation"))
     if not name:
         return None
-    existing = bmaya.maya.assethandlers.ControlAnimHandler.file_path(asset.path("controlanims"), name)
-    if os.path.exists(existing) and not _confirm_replace(prompter, "Save Animation", f"Animation {name!r}"):
+    taken = _library_file(user, bmaya.core.asset.library.ANIMATION, name)
+    if taken and not _confirm_replace(prompter, "Save Animation", f"Animation {name!r}"):
         return None
     return save_animation(asset.id, name, scope, start, end)
 
 
 def load_animation_interactive(mirror: bool = False, prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
-    """Loads an animation file the user picks, starting in the asset's controlanims folder, onto the selected
-    controls or the whole active rig, keyed at the frames they were saved on. mirror puts the Left side's keys on
-    the Right and the Right's on the Left. Returns the path, or None when cancelled."""
+    """Loads an animation file the user picks, starting in their own library (the asset's Approved folder when they
+    have none), onto the selected controls or the whole active rig, keyed at the frames they were saved on. mirror
+    puts the Left side's keys on the Right and the Right's on the Left. Returns the path, or None when cancelled."""
     scope = bmaya.maya.posetools.get_scope()
     asset = find_asset(rigmodules.query.get_rig_info(scope[0]).asset_id)
     path = _prompter(prompter).ask_file("Load Animation", ANIMATION_FILTER, save=False,
-                                        folder=_asset_folder(asset, "controlanims"))
+                                        folder=_library_folder(asset, bmaya.core.asset.library.ANIMATION))
     if path:
-        changed = cmds.loadRigAnimation(*scope, file=_command_path(path), mirror=mirror) or []
-        bmaya.core.log.info(f"Loaded the animation onto {len(changed)} control(s){' mirrored' if mirror else ''}: {path}")
+        bmaya.maya.posetools.load_animation(scope, path, mirror=mirror)
     return path
 
 
@@ -632,6 +658,20 @@ def _asset_folder(asset: bmaya.core.asset.Asset | None, file_type: str) -> str:
     """The folder a file dialog starts in: the asset's folder for file_type when it exists, else none."""
     folder = asset.path(file_type) if asset else ""
     return folder if os.path.isdir(folder) else ""
+
+
+def _library_file(source: bmaya.core.asset.library.LibrarySource, kind: str, name: str) -> str | None:
+    """The file of a name in a library source, or None."""
+    return bmaya.core.asset.library.find_file(source.folders[kind], kind, name)
+
+
+def _library_folder(asset: bmaya.core.asset.Asset | None, kind: str) -> str:
+    """The folder a pose or animation dialog starts in: the user's own library when it exists, else the asset's
+    Approved folder when that does, else none."""
+    if asset is None:
+        return ""
+    user = bmaya.core.asset.library.user_source(asset).folders[kind]
+    return user if os.path.isdir(user) else _asset_folder(asset, bmaya.core.asset.library.FOLDER_TYPE[kind])
 
 
 def _ask_asset_id(prompter: bmaya.core.prompts.Prompter, title: str,

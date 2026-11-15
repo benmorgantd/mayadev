@@ -238,10 +238,10 @@ The window is widgets and connections only. `bmaya.maya.rigpanel.RigPanelSession
 
 | Tool | Does |
 |---|---|
-| Save Pose... | Saves the pose under a name you type, in the asset's `controlposes` folder. Asks before replacing a file. Before the asset folder exists, a file dialog |
-| Load Pose... | Loads a pose file chosen in a dialog that opens in `controlposes` (`cmds.loadRigPose`) |
-| Save Animation... | Saves the keys over the playback range under a name, in `controlanims` (`cmds.saveRigAnimation`). Before the asset folder exists, a file dialog |
-| Load Animation... | Loads an animation file, keyed at the frames it was saved on (`cmds.loadRigAnimation`) |
+| Save Pose... | Saves the pose under a name you type (a free `pose_001` is offered), in your own library of the asset: `<projects root>\user\<login>\animlibrary\<asset id>\controlposes`, as `<name>.controlpose.json` with the author, template and skeleton in its `meta`. No source control. Asks before replacing a file. Before the asset folder exists, a file dialog |
+| Load Pose... | Loads a pose file chosen in a dialog that opens in your own library, else in the asset's `controlposes` (`posetools.load_pose`, one undo step) |
+| Save Animation... | Saves the keys over the playback range under a name, in your own library's `controlanims`, as `<name>.controlanim.json`. Before the asset folder exists, a file dialog |
+| Load Animation... | Loads an animation file, keyed at the frames it was saved on (`posetools.load_animation`, one undo step) |
 | Load Animation Mirrored... | The same, with the Left side's keys on the Right and the Right's on the Left |
 | Mirror Pose | `cmds.mirrorRigPose`. The command picks the source side: the side of the selected controls when they share one, else Left |
 | Mirror Pose Left to Right / Right to Left | The same, with the direction chosen |

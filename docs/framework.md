@@ -115,7 +115,7 @@ if __name__ == "__main__":
     run_batch_test(CheckJoints, file_list=[r"D:\scenes\hero.ma"])
 ```
 
-Run it with mayapy (`tests\basic\startup_test\run.bat` is the working example, with `PYTHONPATH` set to `%MAYADEV_ROOT%\py\scripts`).
+Run it with mayapy (`batch\docgen\run.bat` is the working example, with `PYTHONPATH` set to `%MAYADEV_ROOT%\py\scripts`).
 
 The framework runs in the process that hosts it, so it does not start mayapy and a crash ends the whole batch. To start a mayapy from a script, with a timeout and without a crash dialog, use `mayalaunch`, which this framework and RigModules share: `mayalaunch.run_mayapy(script, args, mayalaunch.child_environment(), timeout=...)`. It lives in RigModules (`python\mayalaunch`), which `RigModules.mod` puts on `PYTHONPATH`, so mayadev depends on it the same way it depends on `rigmodules`. A bare mayapy needs `%RIGMODULES_ROOT%\python` on `PYTHONPATH` (the batch files set it), and the framework raises an `ImportError` saying so when it is missing. `tests\core\test_maya_batch.py` runs a job through it end to end.
 
@@ -195,6 +195,10 @@ class ClipSettings:                  # bmaya.maya.assettools
 
 settings = prompter.ask_form("Clip Properties", ClipSettings(loop=True))   # two check boxes and a drop-down
 ```
+
+### ListModel
+
+`widgets.ListModel(roles, items, columns=None)` is a Qt item model over a Python list (RigModules D51). A view-model sets the items with `set_items` (a model reset), and a view shows them as a `QListView` (one column) or a `QTableView` (columns). `roles` maps a Qt role (`DisplayRole`, `ToolTipRole`, `DecorationRole`, `UserRole`) to a function of an item, and `columns` is a list of `(header, display function)`. A role other than the display one applies to every column. `row_of(matches)` finds an item's row again after a reset, which is how a view keeps its selection. It is a `QAbstractTableModel` and not the `QAbstractListModel` the design named, so one model serves the list and the details table. It holds none of its owner's logic. A `QSortFilterProxyModel` works over it.
 
 ### Naming tool
 

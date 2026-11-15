@@ -23,8 +23,8 @@ from __future__ import annotations
 
 import dataclasses
 import glob
+import json
 import os
-import re
 import shutil
 import tempfile
 
@@ -35,15 +35,17 @@ import rigmodules.template
 
 import bmaya.core.log
 
-from bmaya.core.asset import animproperties, handlers, sourcecontrol, versions
+from bmaya.core.asset import animproperties, handlers, library, sourcecontrol, versions
 from bmaya.core.asset.asset import Asset
 
 MAYA_FILE_TYPES = ("skeleton", "model", "rig")
 
 # The same rule as a pose name: it becomes a file name.
-CLIP_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_ -]*$")
+CLIP_NAME = library.NAME_RULE
 BONE_MAP_SUFFIX = ".bonemap.json"
-CONTROL_ANIM_SUFFIX = ".anim.json"
+# The ControlAnim beside an exported clip is named as one in a library. Clips captured before D51 have <name>.anim.json.
+CONTROL_ANIM_SUFFIX = library.SUFFIX[library.ANIMATION]
+LEGACY_CONTROL_ANIM_SUFFIX = ".anim.json"
 
 
 class MayaSceneHandler(handlers.FileHandler):
@@ -164,7 +166,7 @@ class AnimClip:
     name: str
     fbx: str                 # the clip's FBX file
     joint_clip: str          # the JointClip file read from it, a temporary: cmds.animateRigFromJointClip(jointClip=...)
-    sidecar: str | None      # the ControlAnim beside the FBX (<name>.anim.json), or None: animateRigFromJointClip(sidecar=...)
+    sidecar: str | None      # the ControlAnim beside the FBX (<name>.controlanim.json), or None: animateRigFromJointClip(sidecar=...)
     properties: animproperties.AnimProperties | None   # the engine properties beside the FBX, or None
 
 
@@ -172,7 +174,7 @@ class AnimClipHandler(handlers.FileHandler):
     """Animation clips in an asset's exports folder, which every variant of the asset shares (RigModules D42). A
     clip is an FBX file written through rigmodules.jointclip, in a folder of its own, exports/<name>/<name>.fbx,
     because an export is a bundle: the engine properties go beside it, and so does the control animation it was made
-    from, <name>.anim.json, written when a clip is captured from a rig. That ControlAnim is the sidecar of a restore:
+    from, <name>.controlanim.json, written when a clip is captured from a rig. That ControlAnim is the sidecar of a restore:
     it gives back what joints can't (spaces, blends, Layout controls) with the animator's own keys.
     The engine properties are <name>.animproperties.json (bmaya.core.asset.animproperties): a clip captured from a rig
     gets the defaults when it has none, and an existing file is never overwritten by a re-export.
@@ -273,6 +275,9 @@ class AnimClipHandler(handlers.FileHandler):
             bone_map = self.bone_map_path(fbx)
         rigmodules.jointclip.read_fbx(fbx, joint_clip, bone_map)
         control_anim = self.control_anim_path(fbx)
+        legacy = os.path.splitext(fbx)[0] + LEGACY_CONTROL_ANIM_SUFFIX
+        if not os.path.isfile(control_anim) and os.path.isfile(legacy):
+            control_anim = legacy
         properties = animproperties.get_path(fbx)
         return AnimClip(
             name, fbx, joint_clip, control_anim if os.path.isfile(control_anim) else None,
@@ -280,10 +285,11 @@ class AnimClipHandler(handlers.FileHandler):
 
 
 class ControlDataHandler(handlers.FileHandler):
-    """A folder of control data files, <name>.json (RigModules D42): ControlPoses in controlposes and ControlAnims in
-    controlanims. Control data is bound to a rig's controls by markup, so a file works on any rig of the asset's
+    """A folder of control data files (RigModules D42, D51): ControlPoses, <name>.controlpose.json, in controlposes and
+    ControlAnims, <name>.controlanim.json, in controlanims. A file written before the suffixes, <name>.json, still
+    loads and is listed. Control data is bound to a rig's controls by markup, so a file works on any rig of the asset's
     skeleton. A subclass names the commands and what its file is called (kind). The scope is a rig root, or controls
-    of one rig."""
+    of one rig. Save takes meta, a dict for the file's meta block (author, tags, ...), and the rig fills the rest."""
 
     kind = "control data"
 
@@ -293,17 +299,19 @@ class ControlDataHandler(handlers.FileHandler):
     def _read(self, scope: list[str], file: str, **context) -> list[str]:
         raise NotImplementedError
 
-    @staticmethod
-    def file_path(folder: str, name: str) -> str:
-        return os.path.join(folder, name + ".json")
+    @classmethod
+    def file_path(cls, folder: str, name: str) -> str:
+        """Where a file called name is written: <name>.controlpose.json or <name>.controlanim.json."""
+        return library.file_path(folder, cls.kind, name)
 
-    @staticmethod
-    def names(folder: str) -> list[str]:
+    @classmethod
+    def names(cls, folder: str) -> list[str]:
         """The files in a control data folder, sorted."""
-        return sorted(os.path.splitext(os.path.basename(path))[0] for path in glob.glob(os.path.join(folder, "*.json")))
+        return [item.name for item in library.list_files(
+            library.LibrarySource("", "", {cls.kind: folder}, False), cls.kind)]
 
     def save(self, asset: Asset | None, path: str, name: str | None = None, scope: list[str] | None = None, **context) -> str:
-        """Writes <path>/<name>.json from the controls in scope. Returns the file."""
+        """Writes <path>/<name>.controlpose.json (or .controlanim.json) from the controls in scope. Returns the file."""
         file = self.file_path(path, _require_clip_name(name, self.kind))
         if not scope:
             raise ValueError("Pass scope: a rig root, or controls of one rig.")
@@ -312,9 +320,10 @@ class ControlDataHandler(handlers.FileHandler):
         return file
 
     def load(self, asset: Asset | None, path: str, name: str | None = None, scope: list[str] | None = None, **context) -> list[str]:
-        """Loads <path>/<name>.json onto the controls in scope. Returns the controls the command changed."""
-        file = self.file_path(path, name or "")
-        if not name or not os.path.isfile(file):
+        """Loads <path>/<name>.controlpose.json (or a legacy <name>.json) onto the controls in scope. Returns the
+        controls the command changed."""
+        file = library.find_file(path, self.kind, name) if name else None
+        if file is None:
             raise FileNotFoundError(f"{path} has no file {name!r}. It has: {', '.join(self.names(path)) or 'none'}.")
         if not scope:
             raise ValueError("Pass scope: a rig root, or controls of one rig.")
@@ -324,25 +333,26 @@ class ControlDataHandler(handlers.FileHandler):
 class ControlPoseHandler(ControlDataHandler):
     """ControlPoses (cmds.saveRigPose, cmds.loadRigPose)."""
 
-    kind = "pose"
+    kind = library.POSE
 
-    def _write(self, scope: list[str], file: str, **context) -> None:
-        cmds.saveRigPose(*scope, file=file)
+    def _write(self, scope: list[str], file: str, meta: dict | None = None, **context) -> None:
+        cmds.saveRigPose(*scope, file=file, **_meta_flag(meta))
 
-    def _read(self, scope: list[str], file: str, **context) -> list[str]:
-        return cmds.loadRigPose(*scope, file=file)
+    def _read(self, scope: list[str], file: str, mirror: bool = False, **context) -> list[str]:
+        return cmds.loadRigPose(*scope, file=file, mirror=mirror)
 
 
 class ControlAnimHandler(ControlDataHandler):
     """ControlAnims (cmds.saveRigAnimation, cmds.loadRigAnimation). Save takes start_frame and end_frame, load takes
     offset and mirror."""
 
-    kind = "animation"
+    kind = library.ANIMATION
 
-    def _write(self, scope: list[str], file: str, start_frame: int | None = None, end_frame: int | None = None, **context) -> None:
+    def _write(self, scope: list[str], file: str, start_frame: int | None = None, end_frame: int | None = None,
+               meta: dict | None = None, **context) -> None:
         if start_frame is None or end_frame is None:
             raise ValueError("A ControlAnim needs start_frame and end_frame.")
-        cmds.saveRigAnimation(*scope, file=file, startFrame=start_frame, endFrame=end_frame)
+        cmds.saveRigAnimation(*scope, file=file, startFrame=start_frame, endFrame=end_frame, **_meta_flag(meta))
 
     def _read(self, scope: list[str], file: str, offset: int = 0, mirror: bool = False, **context) -> list[str]:
         return cmds.loadRigAnimation(*scope, file=file, offset=offset, mirror=mirror)
@@ -356,17 +366,27 @@ class SourceClipHandler(AnimClipHandler):
         raise NotImplementedError("Sources are brought in from other tools: copy the FBX (and its bone map) into the sources folder.")
 
 
-def save_control_file(handler: ControlDataHandler, asset: Asset, folder_type: str, name: str, **context) -> str:
+def _meta_flag(meta: dict | None) -> dict:
+    """The meta keyword of a save command, as the command takes it (a JSON object), or nothing."""
+    return {"meta": json.dumps(meta)} if meta else {}
+
+
+def save_control_file(handler: ControlDataHandler, asset: Asset, folder_type: str, name: str,
+                      folder: str | None = None, **context) -> str:
     """Saves a control data file of an asset through its handler, as save_anim_clip saves a clip: versions and checks
-    out only that file first, and adds a new one to source control. Returns the file."""
-    folder = asset.path(folder_type)
+    out only that file first, and adds a new one to source control. folder is where it goes, the asset's folder for
+    folder_type when left out. A file saved to another folder (the user's own library) is versioned but never goes to
+    source control, because nobody tracks it. Returns the file."""
+    tracked = folder is None
+    folder = folder or asset.path(folder_type)
     file = handler.file_path(folder, _require_clip_name(name, handler.kind))
     existing = os.path.exists(file)
     if existing:
         versions.version(file, asset.root)
-        sourcecontrol.current().checkout(file)
+        if tracked:
+            sourcecontrol.current().checkout(file)
     handler.save(asset, folder, name=name, **context)
-    if not existing:
+    if tracked and not existing:
         sourcecontrol.current().add(file)
     return file
 
