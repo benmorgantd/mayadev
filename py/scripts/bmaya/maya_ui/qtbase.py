@@ -2,7 +2,7 @@
 window once, docking it and finding Maya's main window are in host.py."""
 
 from bmaya.core import log, progressmanager
-from bmaya.maya_ui import host
+from bmaya.maya_ui import host, theme
 
 from PySide6 import QtWidgets, QtCore, QtGui
 import shiboken6
@@ -22,6 +22,7 @@ class SimpleWindow(QtWidgets.QMainWindow):
         self.mainLayout = QtWidgets.QVBoxLayout()
         self.widget.setLayout(self.mainLayout)
         self.setCentralWidget(self.widget)
+        theme.apply(self)
 
 
 class SimpleWidget(QtWidgets.QWidget):
@@ -109,6 +110,7 @@ class Dialog(QtWidgets.QDialog):
         self.mainLayout = QtWidgets.QVBoxLayout()
         self.setLayout(self.mainLayout)
         self.setWindowTitle(windowTitle)
+        theme.apply(self)
 
 
 class ConfirmDialog(Dialog):

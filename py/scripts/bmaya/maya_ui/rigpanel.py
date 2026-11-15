@@ -13,7 +13,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 import bmaya.core.log
 import bmaya.maya.rigpanel
-from bmaya.maya_ui import host
+from bmaya.maya_ui import host, theme
 from bmaya.maya_ui.widgets import CollapsibleSection
 
 OBJECT_NAME = "bmayaRigPanel"
@@ -69,22 +69,22 @@ class RigPanel(QtWidgets.QWidget):
         select_row = QtWidgets.QHBoxLayout()
         select_row.addWidget(self._button("select_all", "All", self.session.select_all, "Select every control of the rig"))
         select_row.addWidget(self._button("select_mirrors", "Mirror", self.session.select_mirrors,
-                                          "Select the controls on the other side of the selected ones"))
+                                          "Select the controls on the other side of the selected ones", "mirror"))
         self.select_section.content_layout.addLayout(select_row)
         self.groups_layout = QtWidgets.QGridLayout()
         self.select_section.content_layout.addLayout(self.groups_layout)
 
         pose = QtWidgets.QGridLayout()
         commands = (
-            ("zero", "Zero", self.session.zero, "Set the selected controls, or the whole rig, to rest"),
-            ("mirror_left_to_right", "Mirror L>R", lambda: self.session.mirror(True), "Copy the left pose to the right"),
-            ("mirror_right_to_left", "Mirror R>L", lambda: self.session.mirror(False), "Copy the right pose to the left"),
-            ("flip", "Flip", self.session.flip, "Swap the pose with the other side"),
-            ("key_rig", "Key", self.session.key_rig, "Key every control of the rig"),
-            ("key_modules", "Key Module", self.session.key_modules, "Key the modules of the selected controls"),
+            ("zero", "Zero", self.session.zero, "Set the selected controls, or the whole rig, to rest", ""),
+            ("mirror_left_to_right", "Mirror L>R", lambda: self.session.mirror(True), "Copy the left pose to the right", "mirror"),
+            ("mirror_right_to_left", "Mirror R>L", lambda: self.session.mirror(False), "Copy the right pose to the left", "mirror"),
+            ("flip", "Flip", self.session.flip, "Swap the pose with the other side", "mirror"),
+            ("key_rig", "Key", self.session.key_rig, "Key every control of the rig", "key"),
+            ("key_modules", "Key Module", self.session.key_modules, "Key the modules of the selected controls", "module"),
         )
-        for index, (name, text, command, tip) in enumerate(commands):
-            pose.addWidget(self._button(name, text, command, tip), index // 3, index % 3)
+        for index, (name, text, command, tip, icon) in enumerate(commands):
+            pose.addWidget(self._button(name, text, command, tip, icon), index // 3, index % 3)
         self.pose_section.content_layout.addLayout(pose)
 
         self.space_label = QtWidgets.QLabel()
@@ -103,8 +103,11 @@ class RigPanel(QtWidgets.QWidget):
         self.reload()
         self.reload_space()
 
-    def _button(self, name: str, text: str, command: Callable[[], None], tip: str) -> QtWidgets.QPushButton:
+    def _button(self, name: str, text: str, command: Callable[[], None], tip: str,
+                icon: str = "") -> QtWidgets.QPushButton:
         button = QtWidgets.QPushButton(text)
+        if icon:
+            button.setIcon(theme.icon(icon))
         button.setToolTip(tip)
         button.clicked.connect(lambda checked=False: self.run(command))
         self.buttons[name] = button
@@ -139,6 +142,7 @@ class RigPanel(QtWidgets.QWidget):
         self.group_buttons = []
         for index, (group, label) in enumerate(zip(session.groups, group_labels(session.groups))):
             button = QtWidgets.QPushButton(label)
+            button.setIcon(theme.icon("module"))
             button.setToolTip(f"{group.module_type}, {group.side}, {len(group.controls)} control(s). "
                               "Ctrl or Shift adds to the selection.")
             button.clicked.connect(lambda checked=False, group=group: self._on_group_clicked(group))

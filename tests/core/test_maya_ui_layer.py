@@ -310,32 +310,94 @@ class CollapsibleSectionTest(MayaUiTest):
         section.show()
         return section
 
-    def test_it_starts_open_with_a_down_arrow_and_its_title(self):
-        from PySide6 import QtCore
+    def test_it_starts_open_with_a_down_chevron_and_its_title(self):
         section = self.section()
         self.assertEqual(section.header.text(), "Pose")
         self.assertTrue(section.is_expanded)
         self.assertTrue(section.body.isVisible())
-        self.assertEqual(section.header.arrowType(), QtCore.Qt.ArrowType.DownArrow)
+        self.assertEqual(self.chevron(section), "chevron_down")
 
-    def test_pressing_the_title_folds_and_opens_it_and_turns_the_arrow(self):
-        from PySide6 import QtCore
+    def test_pressing_the_title_folds_and_opens_it_and_turns_the_chevron(self):
         section = self.section()
         seen = []
         section.toggled.connect(seen.append)
         section.header.click()
         self.assertFalse(section.is_expanded)
         self.assertFalse(section.body.isVisible())
-        self.assertEqual(section.header.arrowType(), QtCore.Qt.ArrowType.RightArrow)
+        self.assertEqual(self.chevron(section), "chevron_right")
         section.header.click()
         self.assertTrue(section.body.isVisible())
+        self.assertEqual(self.chevron(section), "chevron_down")
         self.assertEqual(seen, [False, True])
+
+    @staticmethod
+    def chevron(section):
+        """The name of the theme icon the title bar shows, by comparing its image with each chevron's."""
+        import bmaya.maya_ui.theme
+        shown = section.header.icon().pixmap(16, 16).toImage()
+        for name in ("chevron_down", "chevron_right"):
+            if bmaya.maya_ui.theme.icon(name).pixmap(16, 16).toImage() == shown:
+                return name
+        return None
 
     def test_it_can_start_folded_and_be_set_from_code(self):
         section = self.section(expanded=False)
         self.assertFalse(section.body.isVisible())
         section.set_expanded(True)
         self.assertTrue(section.body.isVisible())
+
+
+class ThemeTest(MayaUiTest):
+
+    def test_the_sheet_has_no_unfilled_name_and_names_only_icons_that_exist(self):
+        import re
+        import pathlib
+        import bmaya.maya_ui.theme as theme
+        sheet = theme.stylesheet()
+        self.assertNotIn("$", sheet)
+        paths = re.findall(r"url\(([^)]+)\)", sheet)
+        self.assertTrue(paths)
+        for path in paths:
+            self.assertTrue(pathlib.Path(path).is_file(), path)
+            self.assertTrue(pathlib.Path(path.replace(".png", "@2x.png")).is_file(), path)
+
+    def test_every_icon_draws_something(self):
+        import bmaya.maya_ui.theme as theme
+        for name in ("chevron_down", "chevron_right", "chevron_up", "check", "dot", "plus", "minus", "mirror",
+                     "rotate", "scale", "translate", "key", "module"):
+            image = theme.icon(name).pixmap(16, 16).toImage()
+            opaque = [image.pixelColor(x, y).alpha() for x in range(16) for y in range(16)]
+            self.assertTrue(any(opaque), name)
+            self.assertFalse(all(opaque), name)
+
+    def test_a_changed_palette_gets_its_own_icon_folder(self):
+        import dataclasses
+        import bmaya.maya_ui.theme as theme
+        other = dataclasses.replace(theme.DARK, accent="#ff0000")
+        self.assertNotEqual(theme.icon_folder(other), theme.icon_folder())
+
+    def test_apply_styles_the_widget_it_is_given_and_not_the_application(self):
+        from PySide6 import QtWidgets
+        import bmaya.maya_ui.theme as theme
+        widget = QtWidgets.QWidget()
+        self.addCleanup(widget.deleteLater)
+        before = QtWidgets.QApplication.instance().styleSheet()
+        theme.apply(widget)
+        self.assertEqual(widget.styleSheet(), theme.stylesheet())
+        self.assertEqual(QtWidgets.QApplication.instance().styleSheet(), before)
+
+    def test_the_windows_and_the_host_apply_it(self):
+        from PySide6 import QtWidgets
+        import bmaya.maya_ui.host
+        import bmaya.maya_ui.qtbase
+        import bmaya.maya_ui.theme as theme
+        sheet = theme.stylesheet()
+        window = bmaya.maya_ui.qtbase.SimpleWindow()
+        dialog = bmaya.maya_ui.qtbase.Dialog()
+        shown = bmaya.maya_ui.host.show(QtWidgets.QWidget(), object_name="themetest_host")
+        for widget in (window, dialog, shown):
+            self.addCleanup(widget.deleteLater)
+            self.assertEqual(widget.styleSheet(), sheet)
 
 
 class HostTest(MayaUiTest):

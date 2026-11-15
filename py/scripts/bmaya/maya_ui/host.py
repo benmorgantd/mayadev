@@ -10,6 +10,7 @@ from collections.abc import Callable
 
 from PySide6 import QtCore, QtWidgets
 
+from bmaya.maya_ui import theme
 
 RESTORE_RECHECK_MS = 300
 
@@ -60,6 +61,7 @@ def show(widget: QtWidgets.QWidget, *, object_name: str, dock: bool = False,
         existing.activateWindow()
         return existing
     widget.setObjectName(object_name)
+    theme.apply(widget)
     if dock and _dock(widget, object_name, width, height):
         return widget
     widget.show()

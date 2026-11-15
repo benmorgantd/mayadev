@@ -137,6 +137,19 @@ Layouts are written in Python: there are no Qt Designer files.
 | `ProgressWindow` | Shows the progress manager: listens to its `changed` `Event`, shows itself while a task is active and hides when it ends |
 | `PythonSyntaxHighlighter` | Python highlighting for a `QTextDocument`. No window uses it now: the registry editor picks a function and no longer holds script text |
 
+### Theme
+
+`bmaya.maya_ui.theme` is the one look every bmaya window shares: a dark, flat style modelled on Visual Studio Code's Dark+ (neutral greys, one blue accent, a chevron for every fold and drop-down). It replaces Maya's default grey, and in particular the bright blue a checked button gets. It is Qt only.
+
+| Name | Does |
+|---|---|
+| `apply(widget)` | Styles a top-level widget and everything in it: its font size, background and style sheet. It never touches the application, so Maya's own windows keep their look. `host.show`, `SimpleWindow`, `Dialog` (so `ConfirmDialog`), `FormDialog` and the prompter's confirm box call it. A window made another way calls it once on its top-level widget |
+| `Palette`, `DARK` | Every colour of the theme (`window`, `raised`, `header`, `input`, `border`, `text`, `accent`, `selection`, `error` ...). Change a colour here and nowhere else |
+| `stylesheet(palette=DARK)` | The Qt style sheet. It covers buttons, fields, drop-downs, spin boxes, check boxes, radio buttons, lists, trees, tables, tabs, menus, scroll bars, progress bars and tool tips |
+| `icon(name)`, `icon_folder()` | The icons the sheet needs (`chevron_down`, `chevron_right`, `chevron_up`, `check`, `dot`) and the ones for widgets to set with `button.setIcon(theme.icon("key"))` (`plus`, `minus`, `mirror`, `rotate`, `scale`, `translate`, `key` for a keyframe diamond, `module` for a cube), drawn in code into the temp folder `bmaya_theme/<palette hash>`, because a style sheet can only name an image by a file path |
+
+A widget that must differ sets a property the sheet reads and not a style sheet of its own: `button.setProperty("primary", True)` for the accent button, `setProperty("muted", True)` or `setProperty("error", True)` on a label. A checked `QPushButton` (the Space buttons) shows in the accent colour by design. `ERROR_STYLE` in `widgets.py` takes its colour from the palette. The Naming Tool's orange Rename button still sets its own colours, and `QtPrompter`'s text, choice and file dialogs are Qt's static dialogs, which have no instance to style, so they keep Maya's look.
+
 ### Host
 
 `bmaya.maya_ui.host` is Maya as the host of a window. It and `menus.py` are the only files in `maya_ui` that import Maya, and a test checks that. Outside Maya every function still works.
@@ -170,7 +183,7 @@ Each window's `show_window()` is `host.show(Window(parent=host.parent_window()),
 | `field_widget(hint, on_change=None)` | One value's widget: a check box for `bool`, spin boxes for `int` and `float`, a line edit for `str`, a drop-down for `Literal` and `Enum`, JSON text for anything else. `X \| None` is `X`. `on_change()` is called when the user edits it |
 | `show_value(widget, hint, value)`, `read_value(widget, hint)` | Put a value in the widget and take it out. An `Enum` field takes a member or its value and reads back its member. `read_value` raises `ValueError` for JSON text that isn't JSON |
 | `DataclassForm(value)` | A labelled editor per field of a dataclass instance, with a `changed` signal. `value()` returns a copy with the edits, and raises `ValueError` naming a field whose JSON text isn't JSON |
-| `CollapsibleSection(title, expanded=True)` | A framed section with a bold title bar that folds it: a down arrow when open, a right arrow when folded. Put widgets in `content_layout`. `set_expanded`, `is_expanded` and a `toggled(bool)` signal |
+| `CollapsibleSection(title, expanded=True)` | A framed section with a bold title bar that folds it: a down chevron when open, a right chevron when folded (`header` is a `QPushButton` named `sectionHeader`, which the theme styles). Put widgets in `content_layout`. `set_expanded`, `is_expanded` and a `toggled(bool)` signal |
 | `SignatureForm(function, kwargs)` | One row per parameter of a function, filled from saved `kwargs`: an editor and a **Set** check box. An unset row shows the default greyed and `kwargs()` leaves it out. A parameter with no default is always set. A saved kwarg the function no longer has is a red row with a Remove button (`stale`, `remove_stale(name)`). `kwargs()` keeps an `Enum` argument as its value, which is what the registry's JSON holds. Build a new form when the function changes |
 
 ```python

@@ -111,6 +111,13 @@ class RigPanelView(unittest.TestCase):
         panel = self.panel(FakeSession([make_rig("hero:rigRoot", "hero")]))
         self.assertEqual(self.labels(panel), ["spine", "arm_l"])
 
+    def test_the_buttons_have_icons_where_one_fits(self):
+        panel = self.panel(FakeSession([make_rig("hero:rigRoot", "hero")]))
+        with_icon = {"select_mirrors", "mirror_left_to_right", "mirror_right_to_left", "flip", "key_rig", "key_modules"}
+        for name, button in panel.buttons.items():
+            self.assertEqual(not button.icon().isNull(), name in with_icon, name)
+        self.assertTrue(all(not button.icon().isNull() for button in panel.group_buttons))
+
     def test_a_module_name_shared_by_two_groups_gets_its_side(self):
         import bmaya.maya.rigpanel
         import bmaya.maya_ui.rigpanel

@@ -18,9 +18,10 @@ from collections.abc import Callable
 from PySide6 import QtCore, QtWidgets
 
 from bmaya.core.tool_registry import unwrap_optional
+from bmaya.maya_ui import theme
 
 SPIN_LIMIT = 1_000_000_000
-ERROR_STYLE = "color: #e05555;"
+ERROR_STYLE = f"color: {theme.DARK.error};"
 
 
 def _is_enum(hint: object) -> bool:
@@ -251,29 +252,30 @@ class SignatureForm(QtWidgets.QWidget):
 
 
 class CollapsibleSection(QtWidgets.QFrame):
-    """A framed section with a title that folds it: a down arrow when open, a right arrow when folded. Put the
-    section's widgets in content_layout. The whole title bar is the button."""
+    """A framed section with a title bar that folds it: a down chevron when open, a right chevron when folded. Put
+    the section's widgets in content_layout. The whole title bar is the button. theme.py styles it by its object
+    names."""
 
     toggled = QtCore.Signal(bool)   # True when the section is now open
 
     def __init__(self, title: str, expanded: bool = True, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
-        self.header = QtWidgets.QToolButton()
+        self.setObjectName("collapsibleSection")
+        self.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)   # theme.py draws the frame
+        self.header = QtWidgets.QPushButton()
+        self.header.setObjectName("sectionHeader")
         self.header.setText(title)
         self.header.setCheckable(True)
-        self.header.setAutoRaise(True)
-        self.header.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.header.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        self.header.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
         self.header.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
-        font = self.header.font()
-        font.setBold(True)
-        self.header.setFont(font)
         self.body = QtWidgets.QWidget()
+        self.body.setObjectName("collapsibleBody")
         self.content_layout = QtWidgets.QVBoxLayout(self.body)
-        self.content_layout.setContentsMargins(6, 0, 6, 6)
+        self.content_layout.setContentsMargins(8, 8, 8, 8)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setContentsMargins(1, 1, 1, 1)
         layout.setSpacing(0)
         layout.addWidget(self.header)
         layout.addWidget(self.body)
@@ -290,6 +292,6 @@ class CollapsibleSection(QtWidgets.QFrame):
         self.header.setChecked(expanded)
 
     def _on_toggled(self, expanded: bool) -> None:
-        self.header.setArrowType(QtCore.Qt.ArrowType.DownArrow if expanded else QtCore.Qt.ArrowType.RightArrow)
+        self.header.setIcon(theme.icon("chevron_down" if expanded else "chevron_right"))
         self.body.setVisible(expanded)
         self.toggled.emit(expanded)

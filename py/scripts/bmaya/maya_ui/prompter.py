@@ -7,7 +7,8 @@ from collections.abc import Callable, Sequence
 
 from PySide6 import QtWidgets
 
-from bmaya.maya_ui.widgets import DataclassForm
+from bmaya.maya_ui import theme
+from bmaya.maya_ui.widgets import ERROR_STYLE, DataclassForm
 
 
 def _no_parent() -> QtWidgets.QWidget | None:
@@ -31,6 +32,7 @@ class QtPrompter:
 
     def confirm(self, title: str, message: str, accept: str = "OK") -> bool:
         box = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Icon.Question, title, message, parent=self._parent_window())
+        theme.apply(box)
         accept_button = box.addButton(accept, QtWidgets.QMessageBox.ButtonRole.AcceptRole)
         cancel_button = box.addButton(QtWidgets.QMessageBox.StandardButton.Cancel)
         box.setDefaultButton(cancel_button)
@@ -57,12 +59,13 @@ class FormDialog(QtWidgets.QDialog):
     def __init__(self, title: str, value: object, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle(title)
+        theme.apply(self)
         self.result_value = None
         layout = QtWidgets.QVBoxLayout(self)
         self.form = DataclassForm(value, self)
         layout.addWidget(self.form)
         self.problem = QtWidgets.QLabel("")
-        self.problem.setStyleSheet("color: #e05555;")
+        self.problem.setStyleSheet(ERROR_STYLE)
         layout.addWidget(self.problem)
         buttons = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
