@@ -37,8 +37,8 @@ class ControlGroup:
 
 @dataclasses.dataclass(frozen=True)
 class SpaceState:
-    """The space switch of the one selected control: the control, the constraint that setRigConstraintSpace takes,
-    the driver labels in order, and the index of the space the control is in."""
+    """The space switch of the one selected control: the control, its constraint ("" for a module-owned space such
+    as the TwoBoneIk pole's), the space labels in order, and the index of the space the control is in."""
 
     control: str
     constraint: str
@@ -112,7 +112,7 @@ class RigPanelSession:
 
     def set_space(self, label: str, key: bool = False) -> None:
         """Switches the selected control to the space labelled label. The control keeps its place in the world
-        (setRigConstraintSpace). With key, the control's channels are keyed on the previous frame first and on the
+        (setRigControlSpace). With key, the control's channels are keyed on the previous frame first and on the
         current frame after, so the animation holds the old space up to the cut. One undo reverts all of it."""
         space = self.space
         if space is None:
@@ -125,7 +125,7 @@ class RigPanelSession:
         try:
             if key:
                 rigmodules.pose.key_controls([space.control], time=cmds.currentTime(query=True) - 1)
-            cmds.setRigConstraintSpace(space.constraint, label=label)
+            cmds.setRigControlSpace(space.control, label=label)
             if key:
                 rigmodules.pose.key_controls([space.control])
         finally:
