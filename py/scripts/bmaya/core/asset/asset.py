@@ -33,10 +33,10 @@ class Asset:
         return f"Asset({self.id!r})"
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, Asset) and assetid.equals(self.id, other.id) and self.root == other.root
+        return isinstance(other, Asset) and self.id == other.id and self.root == other.root
 
     def __hash__(self) -> int:
-        return hash((assetid.key(self.id), self.root))
+        return hash((self.id, self.root))
 
     @property
     def name(self) -> str:
@@ -86,7 +86,7 @@ class Asset:
             entry.name for entry in os.scandir(parent)
             if entry.is_dir() and assetid.is_valid_token(entry.name) and self.file_exists("template", entry.name)
         ]
-        return sorted(found, key=str.casefold)
+        return sorted(found)
 
     def path(self, file_type: str, variant: str | None = None) -> str:
         """Where a file type lives for this asset. Pure: never checks or creates anything."""

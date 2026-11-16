@@ -87,7 +87,7 @@ class Sources(LibraryBase):
         registry = Registry(top, root=self.root)
         self.assertEqual(registry.errors, [])
         self.assertEqual(registry.ids(), [])
-        for bad in ("user\\hero", "User\\main\\hero"):
+        for bad in ("user\\hero", "user\\main\\hero"):
             with self.assertRaises(AssetIdError):
                 assetid.check(bad)
         assetid.check("shooter\\user\\hero")   # only a top-level folder is reserved

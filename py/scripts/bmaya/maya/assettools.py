@@ -79,7 +79,7 @@ def new_variant(asset_id: str, template_path: str) -> str:
 def save_skeleton(asset_id: str) -> str:
     """Saves the open scene as the asset's skeleton file. The scene is renamed to that file."""
     asset = require_asset(asset_id)
-    if not bmaya.core.asset.assetid.equals(asset.skeleton, asset.id):
+    if asset.skeleton != asset.id:
         raise bmaya.core.asset.AssetError(f"{asset.id} uses the skeleton of {asset.skeleton}. Save the skeleton there.")
     bmaya.maya.assethandlers.register()
     path = bmaya.core.asset.handlers.save(asset, "skeleton")

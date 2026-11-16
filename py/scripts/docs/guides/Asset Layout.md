@@ -18,8 +18,8 @@ An asset id is the asset folder's path below `RIGGING_PROJECT_DIR`, with `\` bet
 shooter\main\characters\hero   ->   <RIGGING_PROJECT_DIR>\shooter\main\characters\hero
 ```
 
-- Each folder name is letters, digits and `_`.
-- Ids compare without case and are stored as written.
+- Each folder name is lowercase letters, digits and `_`.
+- Uppercase is rejected, not converted, so two ids never differ only in case.
 - A folder is an asset when it holds an `asset.json`. Assets never nest.
 - The last token (`hero`) is the asset's name, and the default namespace its rigs are built into.
 - The id is relative to the projects root, so it means the same asset in every workspace and branch.

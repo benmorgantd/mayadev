@@ -83,7 +83,7 @@ class FileType:
             if not variant:
                 raise ProjectError(f"File type {self.key!r} is per variant: pass a variant.")
             if not assetid.is_valid_token(variant):
-                raise ProjectError(f"Variant {variant!r} must be letters, digits and '_'.")
+                raise ProjectError(f"Variant {variant!r} must be lowercase letters, digits and '_'.")
         elif variant:
             raise ProjectError(f"File type {self.key!r} belongs to the asset, not a variant.")
         fields = {"name": name, "variant": variant}

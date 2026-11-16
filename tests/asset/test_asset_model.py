@@ -76,11 +76,12 @@ class TempRoot(unittest.TestCase):
 class AssetIds(unittest.TestCase):
 
     def test_valid_ids_any_depth(self):
-        for asset_id in ["hero", "shooter\\hero", HERO, "a_1\\B2\\c"]:
+        for asset_id in ["hero", "shooter\\hero", HERO, "a_1\\b2\\c"]:
             self.assertTrue(assetid.is_valid(asset_id), asset_id)
 
     def test_invalid_ids(self):
-        for asset_id in ["", "\\hero", "hero\\", "a\\\\b", "shooter/hero", "shooter|hero", "main chars\\hero", "hero\n", "h-ero", None, 5]:
+        for asset_id in ["", "\\hero", "hero\\", "a\\\\b", "shooter/hero", "shooter|hero", "main chars\\hero", "hero\n", "h-ero", None, 5,
+                         "Hero", "shooter\\Main\\hero", HERO.upper()]:
             self.assertFalse(assetid.is_valid(asset_id), repr(asset_id))
         with self.assertRaises(AssetIdError):
             assetid.check("a\\\\b")
@@ -89,9 +90,15 @@ class AssetIds(unittest.TestCase):
         self.assertEqual(assetid.name(HERO), "hero")
         self.assertEqual(assetid.name("hero"), "hero")
 
-    def test_ids_compare_without_case(self):
-        self.assertTrue(assetid.equals(HERO, HERO.upper()))
-        self.assertFalse(assetid.equals(HERO, "shooter\\main\\characters\\villain"))
+    def test_uppercase_is_rejected_not_converted(self):
+        # Ids are lowercase only (RigModules D54), so two ids never differ only in case and == compares them.
+        for token in ("Hero", "HERO", "hEro"):
+            self.assertFalse(assetid.is_valid_token(token), token)
+        with self.assertRaises(AssetIdError) as raised:
+            assetid.check("shooter\\Main\\hero")
+        self.assertIn("lowercase", str(raised.exception))
+        self.assertFalse(hasattr(assetid, "equals"))
+        self.assertFalse(hasattr(assetid, "key"))
 
     def test_relative_path_round_trip(self):
         relative = assetid.to_relative_path(HERO)
@@ -353,7 +360,7 @@ class Registries(TempRoot):
     def test_entries(self):
         hero = self.create(variants=["game", "cine"])
         folder = publishes.create(hero, "game", user="bmorgan")
-        entry = self.registry().get(HERO.upper())
+        entry = self.registry().get(HERO)
         self.assertEqual(entry, {"assetType": "Character", "skeleton": HERO, "variants": ["cine", "game"],
                                  "latestPublish": {"game": os.path.basename(folder)}})
         self.assertEqual(self.registry().latest_publish(HERO, "game"), os.path.basename(folder))
@@ -367,7 +374,7 @@ class Registries(TempRoot):
         registry = self.registry()
         self.assertEqual(registry.find(asset_type="Character"),
                          ["shooter\\main\\characters\\dog", HERO, "shooter\\main\\characters\\villain"])
-        self.assertEqual(registry.find(skeleton="SHOOTER\\main\\skeletons\\biped"),
+        self.assertEqual(registry.find(skeleton="shooter\\main\\skeletons\\biped"),
                          [HERO, "shooter\\main\\characters\\villain", "shooter\\main\\skeletons\\biped"])
         self.assertEqual(registry.find(asset_type="Character", skeleton="shooter\\main\\characters\\dog"),
                          ["shooter\\main\\characters\\dog"])

@@ -14,8 +14,8 @@ An asset id is the asset folder's path below `RIGGING_PROJECT_DIR`, with `\` bet
 shooter\main\characters\hero   ->   <RIGGING_PROJECT_DIR>\shooter\main\characters\hero
 ```
 
-- Each folder name is letters, digits and `_` (`[A-Za-z0-9_]+`).
-- Ids compare without case (`assetid.key`, `assetid.equals`) and are stored as written.
+- Each folder name is lowercase letters, digits and `_` (`[a-z0-9_]+`).
+- Ids are lowercase only: uppercase is rejected, not converted, so two ids never differ only in case and they compare with `==` (RigModules D54).
 - A folder is an asset when it holds an `asset.json`. Assets never nest.
 - The last token (`hero`) is the asset's **name**. A rig is built into `{name}_{variant}` (`hero_game`) by default: a namespace holds one rig (RigModules D54).
 - The id is relative to the projects root, so it means the same asset in every workspace and branch.
@@ -151,7 +151,7 @@ Reading a path never makes a folder. `Asset.create` makes the asset folder and i
 | `info` | The parsed `asset.json`, read on every access so it never goes stale. Raises `AssetError` when missing or of another format version |
 | `asset_type`, `skeleton` | From `asset.json`. `skeleton` is the asset's own id unless the file names another |
 | `project` | The nearest `Project` above the folder |
-| `variants` | The folders under the variant parent that hold a template, sorted without case. Adding a variant adds files and edits nothing |
+| `variants` | The folders under the variant parent that hold a template, sorted. Adding a variant adds files and edits nothing |
 | `path(file_type, variant=None)` | Where a file type lives. Pure |
 | `file_exists(file_type, variant=None)` | Whether that path exists |
 | `Asset.create(id, asset_type, skeleton=None, root=None)` | Makes the folder and `asset.json`, and tells source control to add it. Raises when the asset exists, the type isn't in the project, or it would nest |
@@ -172,7 +172,7 @@ It is built by scanning the workspace and kept in memory, so nothing is ever wri
 | `ids()`, `get(id)` | Every id sorted, and one asset's entry (`assetType`, `skeleton`, `variants`, `latestPublish`) or `None` |
 | `find(asset_type=None, skeleton=None)` | Ids matching every filter given. A skeleton matches the asset that owns it and every asset that names it |
 | `latest_publish(id, variant)` | The latest publish id, or `None`. Raises `ProjectError` for an id not in the project |
-| `errors` | Problems the last scan found: ids that differ only in case, and unreadable `asset.json` files |
+| `errors` | Problems the last scan found: folders whose path is not a valid id, and unreadable `asset.json` files |
 
 ## Publishes
 

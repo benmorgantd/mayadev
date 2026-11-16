@@ -51,16 +51,16 @@ class Registry:
 
     @property
     def errors(self) -> list[str]:
-        """Problems the last scan found: ids that differ only in case, and unreadable asset.json files."""
+        """Problems the last scan found: folders whose path is not a valid id, and unreadable asset.json files."""
         self.assets
         return list(self._errors)
 
     def ids(self) -> list[str]:
-        return sorted(self.assets, key=str.casefold)
+        return sorted(self.assets)
 
     def get(self, asset_id: str) -> dict | None:
-        found = _find_key(self.assets, asset_id)
-        return dict(self.assets[found]) if found else None
+        entry = self.assets.get(assetid.check(asset_id))
+        return dict(entry) if entry is not None else None
 
     def find(self, asset_type: str | None = None, skeleton: str | None = None) -> list[str]:
         """Ids matching every filter given. skeleton matches the asset that owns it and every asset using it."""
@@ -68,10 +68,10 @@ class Registry:
         for asset_id, entry in self.assets.items():
             if asset_type is not None and entry["assetType"] != asset_type:
                 continue
-            if skeleton is not None and not assetid.equals(entry["skeleton"], skeleton):
+            if skeleton is not None and entry["skeleton"] != skeleton:
                 continue
             result.append(asset_id)
-        return sorted(result, key=str.casefold)
+        return sorted(result)
 
     def latest_publish(self, asset_id: str, variant: str) -> str | None:
         """The id of a variant's latest publish, or None when it was never published."""
@@ -89,10 +89,6 @@ class Registry:
         for folder in self._asset_folders():
             try:
                 asset = Asset(assetid.from_relative_path(os.path.relpath(folder, self.root)), self.root)
-                duplicate = _find_key(assets, asset.id)
-                if duplicate:
-                    errors.append(f"{asset.id}: differs from {duplicate} only in case.")
-                    continue
                 assets[asset.id] = _entry(asset)
             except (assetid.AssetIdError, ProjectError, RuntimeError, KeyError) as error:
                 errors.append(f"{folder}: {error}")
@@ -130,10 +126,3 @@ def _entry(asset: Asset) -> dict:
         "latestPublish": {v: p for v in variants if (p := publishes.latest(asset, v))},
     }
 
-
-def _find_key(assets: dict, asset_id: str) -> str | None:
-    wanted = assetid.key(asset_id)
-    for existing in assets:
-        if assetid.key(existing) == wanted:
-            return existing
-    return None

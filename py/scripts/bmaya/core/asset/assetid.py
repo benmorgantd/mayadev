@@ -1,8 +1,9 @@
 """Asset ids: the asset folder's path below RIGGING_PROJECT_DIR, with SEPARATOR between folders.
 
 "shooter\\main\\characters\\hero" is the folder <RIGGING_PROJECT_DIR>/shooter/main/characters/hero.
-Any depth. Each token is a folder name of letters, digits and "_". Ids compare without case and are
-stored as authored. The rules match RigModules' core/AssetId (D29 in RigModules' decisions.md).
+Any depth. Each token is a folder name of lowercase letters, digits and "_". Uppercase is rejected, not converted,
+so two ids never differ only in case and ids compare with ==. The rules match RigModules' core/AssetId (D29 and
+D54 in RigModules' decisions.md).
 
 Every place that splits or joins an id goes through this module, so a later change of separator
 is a change here.
@@ -19,7 +20,7 @@ SEPARATOR = "\\"
 # assets. An id can't start with it, so no asset sits inside it.
 RESERVED_ROOT = "user"
 
-_TOKEN = re.compile(r"[A-Za-z0-9_]+")
+_TOKEN = re.compile(r"[a-z0-9_]+")
 
 
 class AssetIdError(ValueError):
@@ -27,7 +28,7 @@ class AssetIdError(ValueError):
 
 
 def is_valid_token(token: str) -> bool:
-    """One folder name of an id. Rig variant names follow the same rule."""
+    """One folder name of an id: lowercase letters, digits and "_". Rig variant names follow the same rule."""
     return isinstance(token, str) and bool(_TOKEN.fullmatch(token))
 
 
@@ -35,14 +36,14 @@ def is_valid(asset_id: str) -> bool:
     if not isinstance(asset_id, str) or not asset_id:
         return False
     tokens = asset_id.split(SEPARATOR)
-    return all(is_valid_token(token) for token in tokens) and tokens[0].casefold() != RESERVED_ROOT
+    return all(is_valid_token(token) for token in tokens) and tokens[0] != RESERVED_ROOT
 
 
 def check(asset_id: str) -> str:
     """Returns asset_id unchanged, or raises AssetIdError."""
     if not is_valid(asset_id):
         raise AssetIdError(
-            f"Asset id {asset_id!r} must be {SEPARATOR!r}-separated folder names of letters, digits and '_', and not start with "
+            f"Asset id {asset_id!r} must be {SEPARATOR!r}-separated folder names of lowercase letters, digits and '_', and not start with "
             f"{RESERVED_ROOT!r}."
         )
     return asset_id
@@ -55,15 +56,6 @@ def tokens(asset_id: str) -> list[str]:
 def name(asset_id: str) -> str:
     """The last token: "hero". The default namespace of a rig built for the asset."""
     return tokens(asset_id)[-1]
-
-
-def key(asset_id: str) -> str:
-    """The form ids are compared and looked up by."""
-    return check(asset_id).casefold()
-
-
-def equals(a: str, b: str) -> bool:
-    return key(a) == key(b)
 
 
 def to_relative_path(asset_id: str) -> str:

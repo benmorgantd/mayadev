@@ -104,7 +104,7 @@ def sources(asset: Asset) -> list[LibrarySource]:
     if asset.exists():
         found.append(_asset_source(APPROVED, "Approved", asset))
         skeleton = asset.skeleton
-        if not assetid.equals(skeleton, asset.id):
+        if skeleton != asset.id:
             owner = Asset(skeleton, asset.root)
             if owner.exists():
                 found.append(_asset_source(SHARED, "Shared", owner))
