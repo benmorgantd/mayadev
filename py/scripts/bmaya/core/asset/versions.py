@@ -1,7 +1,7 @@
 """Local version copies: before a save overwrites a file, the old one is copied outside the workspace.
 
-    <projects root>\\shooter\\main\\characters\\hero\\variants\\game\\shapes.json
-    ->  <versions root>\\shooter\\main\\characters\\hero\\variants\\game\\shapes.v007.json
+    <projects root>\\shooter\\main\\characters\\hero\\rigs\\body\\shapes.json
+    ->  <versions root>\\shooter\\main\\characters\\hero\\rigs\\body\\shapes.v007.json
 
 This is the undo for a save between source control submits, and the only one without source control.
 The copies are private to the machine and never submitted, so they stay out of the depot.

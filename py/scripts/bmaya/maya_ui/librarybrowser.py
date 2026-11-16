@@ -357,7 +357,7 @@ class LibraryBrowser(QtWidgets.QWidget):
         self._syncing = True
         try:
             has_rig = session.rig_root is not None
-            self.rig_label.setText(session.asset_id or "")
+            self.rig_label.setText(f"{session.asset_id}  ({session.rig_name})" if session.asset_id else "")
             self.empty_label.setText(session.reason)
             self.empty_label.setVisible(not has_rig)
             self.body.setEnabled(has_rig)

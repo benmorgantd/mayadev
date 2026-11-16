@@ -69,7 +69,14 @@ class MenuLayout(unittest.TestCase):
     def test_every_tool_is_in_the_menu_once(self):
         ids = [item.tool for item in _layout().tool_items()]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(len(ids), 40)
+        self.assertEqual(len(ids), 42)
+
+    def test_the_asset_submenu_adds_rigs_looks_and_skeletons(self):
+        # A variant became a rig and a look (RigModules D54), and a skeleton is saved and loaded as its skeleton file.
+        asset = next(item for item in _layout().items if item.label == "asset")
+        self.assertEqual([item.tool.split(".")[-1] for item in asset.items if hasattr(item, "tool")],
+                         ["new_project", "new_asset", "new_rig", "new_look", "save_skeleton", "load_skeleton", "save_model",
+                          "build_rig", "save_rig"])
 
     def test_the_dev_tools_are_in_the_bmaya_menu(self):
         ids = [item.tool for item in _layout("bmaya_menu.json").tool_items()]

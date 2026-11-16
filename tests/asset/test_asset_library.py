@@ -14,16 +14,17 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "py", "scripts"))
 
-from bmaya.core.asset import Asset, AssetIdError, Project, Registry, assetid, library, versions  # noqa: E402
+from bmaya.core.asset import Asset, AssetIdError, Project, Registry, RigRef, SkeletonRef, assetid, library, versions  # noqa: E402
 from bmaya.core.asset.library import ANIMATION, POSE, FileInfo, LibraryError, Mask, MaskItem  # noqa: E402
 
 HERO = "shooter\\main\\characters\\hero"
 BIPED = "shooter\\main\\skeletons\\biped"
+RIG = "body"
 
 
 class LibraryBase(unittest.TestCase):
-    """A projects root with the project shooter\\main, a skeleton asset and a hero that uses its skeleton, and the
-    signed-in user fixed to "tester"."""
+    """A projects root with the project shooter\\main, a biped asset with the rig "body", and a hero whose rig "body"
+    is a copy of it (rig.json's source), and the signed-in user fixed to "tester". Every source is of a rig."""
 
     def setUp(self):
         temp = tempfile.mkdtemp(prefix="bmaya_library_")
@@ -35,7 +36,9 @@ class LibraryBase(unittest.TestCase):
             self.addCleanup(patcher.stop)
         self.project = Project.create(os.path.join(self.root, "shooter", "main"))
         self.biped = Asset.create(BIPED, "Skeleton", root=self.root)
-        self.hero = Asset.create(HERO, "Character", skeleton=BIPED, root=self.root)
+        self.biped.add_rig(RIG, SkeletonRef("default"))
+        self.hero = Asset.create(HERO, "Character", root=self.root)
+        self.hero.add_rig(RIG, SkeletonRef("default", asset=BIPED), source=RigRef(RIG, asset=BIPED))
 
     def write(self, path, text="{}"):
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -44,7 +47,7 @@ class LibraryBase(unittest.TestCase):
         return path
 
     def source(self, key):
-        return next(source for source in library.sources(self.hero) if source.key == key)
+        return next(source for source in library.sources(self.hero, RIG) if source.key == key)
 
     def put(self, key, kind, name, suffix=None):
         """A file in a source's folder: <name>.controlpose.json unless a suffix is given."""
@@ -60,24 +63,47 @@ def entry(name="fist", kind=POSE, source=library.USER, **meta):
 
 class Sources(LibraryBase):
 
-    def test_an_asset_has_approved_shared_and_user_sources_in_that_order(self):
-        sources = library.sources(self.hero)
+    def test_a_copied_rig_has_approved_shared_and_user_sources_in_that_order(self):
+        sources = library.sources(self.hero, RIG)
         self.assertEqual([source.key for source in sources], ["approved", "shared", "user"])
         self.assertEqual([source.writable for source in sources], [False, False, True])
-        self.assertEqual(sources[0].folders, {POSE: self.hero.path("controlposes"), ANIMATION: self.hero.path("controlanims")})
-        self.assertEqual(sources[1].folders, {POSE: self.biped.path("controlposes"), ANIMATION: self.biped.path("controlanims")})
+        hero_rig = os.path.join(self.hero.folder, "rigs", "body")
+        biped_rig = os.path.join(self.biped.folder, "rigs", "body")
+        self.assertEqual(sources[0].folders, {POSE: os.path.join(hero_rig, "controlposes"), ANIMATION: os.path.join(hero_rig, "controlanims")})
+        self.assertEqual(sources[1].folders, {POSE: os.path.join(biped_rig, "controlposes"), ANIMATION: os.path.join(biped_rig, "controlanims")})
 
-    def test_the_user_source_is_below_the_projects_root_with_the_login_and_asset_id(self):
-        user = library.user_source(self.hero)
-        base = os.path.join(self.root, "user", "tester", "animlibrary", "shooter", "main", "characters", "hero")
+    def test_the_user_source_is_below_the_projects_root_with_the_login_the_asset_id_and_the_rig(self):
+        user = library.user_source(self.hero, RIG)
+        base = os.path.join(self.root, "user", "tester", "animlibrary", "shooter", "main", "characters", "hero", "body")
         self.assertEqual(user.folders, {POSE: os.path.join(base, "controlposes"), ANIMATION: os.path.join(base, "controlanims")})
+        with self.assertRaises(LibraryError):
+            library.user_source(self.hero, "Body")
 
-    def test_an_asset_that_uses_its_own_skeleton_has_no_shared_source(self):
-        self.assertEqual([source.key for source in library.sources(self.biped)], ["approved", "user"])
+    def test_each_rig_of_an_asset_has_its_own_library(self):
+        # Poses are keyed by control markup, which is unique per rig, so a face rig never lists body poses.
+        self.hero.add_rig("face", SkeletonRef("face"))
+        body, face = library.sources(self.hero, RIG), library.sources(self.hero, "face")
+        self.assertEqual([source.key for source in face], ["approved", "user"])
+        self.assertTrue(set(body[0].folders.values()).isdisjoint(face[0].folders.values()))
+        self.assertTrue(set(body[-1].folders.values()).isdisjoint(face[-1].folders.values()))
 
-    def test_an_asset_that_is_not_on_disk_still_has_its_user_library(self):
+    def test_a_rig_that_is_not_a_copy_has_no_shared_source(self):
+        self.assertEqual([source.key for source in library.sources(self.biped, RIG)], ["approved", "user"])
+
+    def test_a_copy_in_the_same_asset_lists_its_source_rig(self):
+        self.biped.add_rig("body_cine", SkeletonRef("default"), source=RigRef(RIG))
+        sources = library.sources(self.biped, "body_cine")
+        self.assertEqual([source.key for source in sources], ["approved", "shared", "user"])
+        self.assertEqual(sources[1].folders[POSE], os.path.join(self.biped.folder, "rigs", "body", "controlposes"))
+
+    def test_a_source_rig_that_is_not_on_disk_is_left_out(self):
+        self.hero.add_rig("prop", SkeletonRef("default"), source=RigRef("gone", asset=BIPED))
+        self.assertEqual([source.key for source in library.sources(self.hero, "prop")], ["approved", "user"])
+
+    def test_a_rig_that_is_not_on_disk_still_has_its_user_library(self):
         ghost = Asset("shooter\\main\\characters\\ghost", self.root)
-        self.assertEqual([source.key for source in library.sources(ghost)], ["user"])
+        self.assertEqual([source.key for source in library.sources(ghost, RIG)], ["user"])
+        self.assertEqual([source.key for source in library.sources(self.hero, "unsaved")], ["user"])
 
     def test_the_registry_skips_the_user_folder_and_an_id_cannot_start_with_user(self):
         # A project whose folder is the projects root would walk into the user folder, so a stray asset.json there
@@ -361,27 +387,27 @@ class Masks(LibraryBase):
             library.write_masks(path, [Mask("a", ()), Mask("A", ())])
 
     def test_a_masks_file_sits_beside_the_library_folders(self):
-        self.assertEqual(library.masks_path(self.source("approved")), os.path.join(self.hero.folder, "masks.json"))
+        self.assertEqual(library.masks_path(self.source("approved")), os.path.join(self.hero.folder, "rigs", "body", "masks.json"))
         self.assertEqual(os.path.dirname(library.masks_path(self.source("user"))),
                          os.path.dirname(self.source("user").folders[POSE]))
 
     def test_saved_masks_are_the_teams_then_the_users_with_a_user_mask_replacing_a_team_one(self):
         library.write_masks(library.masks_path(self.source("approved")), [
             Mask("Hands", (MaskItem(usage="hand"),)), Mask("Legs", (MaskItem(usage="leg"),))])
-        library.save_mask(self.hero, Mask("hands", (MaskItem(side="Left"),)))
-        library.save_mask(self.hero, Mask("Face", (MaskItem(usage="jaw"),)))
-        saved = library.saved_masks(self.hero)
+        library.save_mask(self.hero, RIG, Mask("hands", (MaskItem(side="Left"),)))
+        library.save_mask(self.hero, RIG, Mask("Face", (MaskItem(usage="jaw"),)))
+        saved = library.saved_masks(self.hero, RIG)
         self.assertEqual([(mask.name, mask.source) for mask in saved],
                          [("Face", "user"), ("hands", "user"), ("Legs", "team")])
 
     def test_saving_a_mask_again_replaces_it_and_delete_removes_only_your_own(self):
-        library.save_mask(self.hero, Mask("Face", (MaskItem(usage="jaw"),)))
-        library.save_mask(self.hero, Mask("face", (MaskItem(usage="brow"),)))
-        self.assertEqual([mask.items for mask in library.saved_masks(self.hero)], [(MaskItem(usage="brow"),)])
-        library.delete_mask(self.hero, "FACE")
-        self.assertEqual(library.saved_masks(self.hero), [])
+        library.save_mask(self.hero, RIG, Mask("Face", (MaskItem(usage="jaw"),)))
+        library.save_mask(self.hero, RIG, Mask("face", (MaskItem(usage="brow"),)))
+        self.assertEqual([mask.items for mask in library.saved_masks(self.hero, RIG)], [(MaskItem(usage="brow"),)])
+        library.delete_mask(self.hero, RIG, "FACE")
+        self.assertEqual(library.saved_masks(self.hero, RIG), [])
         with self.assertRaisesRegex(LibraryError, "no saved mask"):
-            library.delete_mask(self.hero, "Face")
+            library.delete_mask(self.hero, RIG, "Face")
 
 
 def dataclass_with(mask, source):

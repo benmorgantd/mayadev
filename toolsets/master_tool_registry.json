@@ -272,12 +272,24 @@
             "enabled": true
         },
         {
-            "id": "rigmodules.asset.new_variant",
-            "name": "New Variant...",
-            "short_name": "New Variant",
+            "id": "rigmodules.asset.new_rig",
+            "name": "New Rig...",
+            "short_name": "New Rig",
             "call": {
                 "module": "bmaya.maya.assettools",
-                "function": "new_variant_interactive",
+                "function": "new_rig_interactive",
+                "kwargs": {}
+            },
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "id": "rigmodules.asset.new_look",
+            "name": "New Look...",
+            "short_name": "New Look",
+            "call": {
+                "module": "bmaya.maya.assettools",
+                "function": "new_look_interactive",
                 "kwargs": {}
             },
             "icon": null,
@@ -290,6 +302,18 @@
             "call": {
                 "module": "bmaya.maya.assettools",
                 "function": "save_skeleton_interactive",
+                "kwargs": {}
+            },
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "id": "rigmodules.asset.load_skeleton",
+            "name": "Load Skeleton...",
+            "short_name": "Load Skeleton",
+            "call": {
+                "module": "bmaya.maya.assettools",
+                "function": "load_skeleton_interactive",
                 "kwargs": {}
             },
             "icon": null,

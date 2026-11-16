@@ -1,8 +1,11 @@
 """Maya save and load handlers for asset file types (bmaya.core.asset.handlers).
 
-Only formats that exist get a handler: Maya scenes, RigModules templates, shape files, skin weights, control
-poses and animations (ControlPose and ControlAnim files) and animation clips (FBX, RigModules D42). Other file types
-(textures, shaders, postops) have none yet, so saving or loading them raises NotImplementedError until one is written.
+Only formats that exist get a handler: skeleton files, model files (meshes only), rig scenes, RigModules templates,
+shape files, skin weights, control poses and animations (ControlPose and ControlAnim files) and animation clips (FBX,
+RigModules D42). Other file types (textures, shaders, postops) have none yet, so saving or loading them raises
+NotImplementedError until one is written.
+
+A file belongs to a skeleton, a rig or a look of the asset (RigModules D54), named as the third argument.
 
 Call register() once per session before handlers.save / handlers.load.
 
@@ -11,12 +14,13 @@ Call register() once per session before handlers.save / handlers.load.
 
     assethandlers.register()
     hero = Asset("shooter\\main\\characters\\hero")
-    handlers.load(hero, "skeleton")                                  # imports into the hero namespace
-    handlers.save(hero, "shapes", variant="game", rig_root="hero:rigRootModule1")
-    handlers.save(hero, "weights", variant="game", namespace="hero")
-    assethandlers.save_anim_clip(hero, "walk", rig_root="hero:rigRootModule1", start_frame=1, end_frame=48)
-    clip = handlers.load(hero, "exports", name="walk")               # an AnimClip, read from exports/walk/walk.fbx
-    cmds.animateRigFromJointClip("hero:rigRootModule1", jointClip=clip.joint_clip)
+    handlers.load(hero, "skeleton", "default", namespace="hero_body")   # creates the joints from skeleton.json
+    handlers.save(hero, "shapes", "body", rig_root="hero_body:rigRootModule1")
+    handlers.save(hero, "model", "winter", meshes=["hero_body:body_geo"])    # meshes only: no skinning, no history
+    handlers.save(hero, "weights", "winter", namespace="hero_body")
+    assethandlers.save_anim_clip(hero, "body", "walk", rig_root="hero_body:rigRootModule1", start_frame=1, end_frame=48)
+    clip = handlers.load(hero, "exports", "default", name="walk")    # an AnimClip, read from exports/walk/walk.fbx
+    cmds.animateRigFromJointClip("hero_body:rigRootModule1", jointClip=clip.joint_clip)
 """
 
 from __future__ import annotations
@@ -25,20 +29,19 @@ import dataclasses
 import glob
 import json
 import os
-import shutil
 import tempfile
 
 import maya.cmds as cmds
 import rigmodules.jointclip
 import rigmodules.skinweights
-import rigmodules.template
 
 import bmaya.core.log
 
 from bmaya.core.asset import animproperties, handlers, library, sourcecontrol, versions
 from bmaya.core.asset.asset import Asset
 
-MAYA_FILE_TYPES = ("skeleton", "model", "rig")
+# The namespace a model's meshes are copied into while they are exported, so the file is written without it.
+MODEL_EXPORT_NAMESPACE = "bmaya_model_export"
 
 # The same rule as a pose name: it becomes a file name.
 CLIP_NAME = library.NAME_RULE
@@ -70,6 +73,129 @@ class MayaSceneHandler(handlers.FileHandler):
         ) or []
 
 
+class ModelHandler(MayaSceneHandler):
+    """A look's model file: meshes only, with no joints, no skinCluster and no history (RigModules D54). The skinning
+    is the look's weight files, loaded onto a rig's joints after the meshes are imported. Load imports it, as any
+    scene."""
+
+    def save(self, asset: Asset | None, path: str, meshes: list[str] | None = None, **context) -> None:
+        """Exports meshes (mesh transforms, or every visible mesh in the scene) to path. Each is exported from its
+        undeformed shape, so a posed rig doesn't matter, at the top level of the file under its own short name, with
+        its meshId and its shading. The scene is not saved, renamed or changed."""
+        meshes = list(meshes) if meshes else get_scene_meshes()
+        if not meshes:
+            raise RuntimeError("There are no meshes to save as a model.")
+        export_meshes(meshes, path)
+
+
+def get_scene_meshes() -> list[str]:
+    """Every visible mesh's transform in the scene, as long names, sorted."""
+    shapes = cmds.ls(type="mesh", noIntermediate=True, long=True) or []
+    return sorted({cmds.listRelatives(shape, parent=True, fullPath=True)[0] for shape in shapes})
+
+
+def export_meshes(meshes: list[str], path: str) -> None:
+    """Writes mesh transforms to a Maya ASCII file as meshes only. Each mesh is copied into a scratch namespace, the
+    copy takes the mesh's original (undeformed) geometry and loses its history, and the copies are exported at the
+    top level with that namespace left out of every name. Their materials are copied with them, so a material in a
+    rig's namespace doesn't drag that namespace into the file. The scratch namespace and everything in it is deleted
+    afterwards, and the current namespace and the selection are restored."""
+    names = [_short_name(mesh) for mesh in meshes]
+    repeated = sorted({name for name in names if names.count(name) > 1})
+    if repeated:
+        raise RuntimeError("A model file holds each mesh under its own name, and these are used twice: " + ", ".join(repeated))
+    scratch = ":" + MODEL_EXPORT_NAMESPACE
+    if cmds.namespace(exists=scratch):
+        raise RuntimeError(f"The namespace {MODEL_EXPORT_NAMESPACE!r} is in use. Remove it and save the model again.")
+
+    selection = cmds.ls(selection=True, long=True)
+    current = cmds.namespaceInfo(currentNamespace=True, absoluteName=True)
+    cmds.namespace(add=scratch)
+    try:
+        # A duplicate is made in the current namespace under its source's own name, which is what keeps the names.
+        cmds.namespace(setNamespace=scratch)
+        engines: dict[str, str] = {}
+        copies = [_copy_mesh_for_export(mesh, engines) for mesh in meshes]
+        cmds.select(copies, replace=True)
+        cmds.file(path, exportSelected=True, type="mayaAscii", force=True, relativeNamespace=scratch,
+                  constructionHistory=False, channels=False, constraints=False, expressions=False, shader=True,
+                  preserveReferences=False)
+    finally:
+        cmds.namespace(setNamespace=current)
+        cmds.namespace(removeNamespace=scratch, deleteNamespaceContent=True)
+        cmds.select(cmds.ls(selection, long=True), replace=True)
+
+
+def _copy_mesh_for_export(mesh: str, engines: dict[str, str]) -> str:
+    """A copy of a mesh transform at the top level of the current namespace, with the mesh's original geometry, no
+    history, and copies of its materials (engines maps a shading engine to its copy, shared by the meshes of one
+    export). Returns the copy."""
+    shapes = [shape for shape in cmds.listRelatives(mesh, shapes=True, fullPath=True) or []
+              if cmds.nodeType(shape) == "mesh" and not cmds.getAttr(shape + ".intermediateObject")]
+    if len(shapes) != 1:
+        raise RuntimeError(f"{mesh} is not a transform with one mesh shape.")
+    # The geometry before any deformer: the skinCluster's bind shape. "" for a mesh nothing deforms.
+    original = (cmds.deformableShape(shapes[0], originalGeometry=True) or [""])[0]
+
+    copy = cmds.ls(cmds.duplicate(mesh), long=True)[0]
+    if cmds.listRelatives(copy, parent=True):
+        copy = cmds.ls(cmds.parent(copy, world=True), long=True)[0]
+    copy_shape = None
+    for child in cmds.listRelatives(copy, children=True, fullPath=True) or []:
+        if cmds.nodeType(child) == "mesh" and not cmds.getAttr(child + ".intermediateObject"):
+            copy_shape = child
+        else:
+            cmds.delete(child)   # the duplicate's intermediate shapes, and anything parented under the mesh
+    if original:
+        cmds.connectAttr(original, copy_shape + ".inMesh", force=True)
+        cmds.polyEvaluate(copy_shape, vertex=True)   # pulls the geometry in, so it stays when the input goes
+        cmds.disconnectAttr(original, copy_shape + ".inMesh")
+
+    for engine in sorted(set(cmds.listConnections(copy_shape, type="shadingEngine") or [])):
+        if engine == "initialShadingGroup":
+            continue   # a default node: it is in every scene under this name
+        members = [member for member in cmds.sets(engine, query=True) or []
+                   if cmds.ls(member, objectsOnly=True, long=True) == [copy_shape]]
+        if engine not in engines:
+            engines[engine] = _copy_shading_engine(engine)
+        if members:
+            cmds.sets(members, edit=True, forceElement=engines[engine])
+    return copy
+
+
+def _copy_shading_engine(engine: str) -> str:
+    """A copy of a shading engine in the current namespace, under its own short name, with a copy of each shader it
+    reads and of what feeds that shader. The engine is made new, not duplicated: its upstream nodes include every
+    mesh assigned to it, and through them the rig."""
+    copy = cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=_short_name(engine))
+    for attribute in ("surfaceShader", "volumeShader", "displacementShader"):
+        for source in cmds.listConnections(f"{engine}.{attribute}", source=True, destination=False, plugs=True) or []:
+            node, _, plug = source.partition(".")
+            if node in (cmds.ls(defaultNodes=True) or []):
+                cmds.connectAttr(source, f"{copy}.{attribute}")   # lambert1 and its kind are in every scene
+            else:
+                cmds.connectAttr(f"{cmds.duplicate(node, upstreamNodes=True)[0]}.{plug}", f"{copy}.{attribute}")
+    return copy
+
+
+class RigSkeletonHandler(handlers.FileHandler):
+    """A skeleton file, skeleton.json: the only form a skeleton is stored in (RigModules D54). There is no skeleton
+    scene. Saving serializes joints and loading creates them, through RigModules' commands."""
+
+    def save(self, asset: Asset | None, path: str, joints: list[str] | None = None, **context) -> str:
+        """Writes the joints to path as they are now, so they should be at rest. Every one must carry joint markup.
+        Returns the skeleton hash."""
+        if not joints:
+            raise ValueError("Pass joints, the joints of the skeleton.")
+        return cmds.saveRigSkeleton(*joints, file=path.replace("\\", "/"))
+
+    def load(self, asset: Asset | None, path: str, namespace: str | None = None, **context) -> list[str]:
+        """Creates the file's joints, at rest and marked, in namespace (the current one when left out). Returns
+        them."""
+        flags = {"namespace": namespace} if namespace is not None else {}
+        return cmds.loadRigSkeleton(file=path.replace("\\", "/"), **flags) or []
+
+
 class RigShapesHandler(handlers.FileHandler):
     """A RigModules control shape file, through its own commands. Needs the rig root."""
 
@@ -81,18 +207,26 @@ class RigShapesHandler(handlers.FileHandler):
 
 
 class RigTemplateHandler(handlers.FileHandler):
-    """A RigModules rig template. Saving one is what makes a variant: the variant is the folder that holds it
-    (RigModules D29, D30)."""
+    """A RigModules rig template, the template.json in a rig's folder (RigModules D29, D54)."""
 
-    def save(self, asset: Asset, path: str, variant: str | None = None, source: str | None = None, **context) -> None:
-        """Copies the template file at source. Its rigName must be the variant, because rigs built from it
-        are found by rigName."""
+    def save(self, asset: Asset, path: str, owner: str | None = None, source: str | None = None, **context) -> None:
+        """Writes the template file at source into the rig's folder with its rigName set to the rig's name (owner),
+        because a rig built from it is found by rigName, and RigModules names its namespace by it. Templates are
+        shared between assets, so the source's own rigName is whatever the last asset called it. The file is written
+        again as JSON: the keys keep their order, hand formatting inside it does not survive."""
         if not source:
             raise ValueError("Pass source, the template file to copy into the asset.")
-        rig_name = rigmodules.template.get_rig_name(source)
-        if rig_name != variant:
-            raise ValueError(f"{source} has rigName {rig_name!r}, but the variant is {variant!r}.")
-        shutil.copyfile(source, path)
+        if not owner:
+            raise ValueError("A template belongs to a rig: pass the rig's name.")
+        with open(source, encoding="utf-8") as handle:
+            text = handle.read()
+        data = json.loads(text)
+        if not isinstance(data, dict):
+            raise ValueError(f"{source} is not a rig template: it is not a JSON object.")
+        data["rigName"] = owner
+        with open(path, "w", encoding="utf-8", newline="\n") as handle:
+            json.dump(data, handle, indent=_json_indent(text))
+            handle.write("\n")
 
     def load(self, asset: Asset, path: str, **context) -> str:
         """The template's path, for cmds.createRigFromTemplate(template=...)."""
@@ -100,7 +234,7 @@ class RigTemplateHandler(handlers.FileHandler):
 
 
 class RigSkinWeightsHandler(handlers.FileHandler):
-    """A variant's skin weights: a folder with one RigModules weight file per skinned mesh, named after the mesh.
+    """A look's skin weights: a folder with one RigModules weight file per skinned mesh, named after the mesh.
     Files are matched to meshes by the meshId inside them, never by name, so a renamed mesh still loads. Needs
     the namespace the meshes are in."""
 
@@ -171,7 +305,8 @@ class AnimClip:
 
 
 class AnimClipHandler(handlers.FileHandler):
-    """Animation clips in an asset's exports folder, which every variant of the asset shares (RigModules D42). A
+    """Animation clips in a skeleton's exports folder, skeletons/<skeleton>/exports, which every rig of the skeleton
+    shares (RigModules D42, D54): an animation FBX is skeleton data and targets one skeleton. A
     clip is an FBX file written through rigmodules.jointclip, in a folder of its own, exports/<name>/<name>.fbx,
     because an export is a bundle: the engine properties go beside it, and so does the control animation it was made
     from, <name>.controlanim.json, written when a clip is captured from a rig. That ControlAnim is the sidecar of a restore:
@@ -287,8 +422,8 @@ class AnimClipHandler(handlers.FileHandler):
 class ControlDataHandler(handlers.FileHandler):
     """A folder of control data files (RigModules D42, D51): ControlPoses, <name>.controlpose.json, in controlposes and
     ControlAnims, <name>.controlanim.json, in controlanims. A file written before the suffixes, <name>.json, still
-    loads and is listed. Control data is bound to a rig's controls by markup, so a file works on any rig of the asset's
-    skeleton. A subclass names the commands and what its file is called (kind). The scope is a rig root, or controls
+    loads and is listed. Control data is bound to a rig's controls by markup, which is unique per rig, so the folders
+    belong to a rig. A subclass names the commands and what its file is called (kind). The scope is a rig root, or controls
     of one rig. Save takes meta, a dict for the file's meta block (author, tags, ...), and the rig fills the rest."""
 
     kind = "control data"
@@ -371,14 +506,14 @@ def _meta_flag(meta: dict | None) -> dict:
     return {"meta": json.dumps(meta)} if meta else {}
 
 
-def save_control_file(handler: ControlDataHandler, asset: Asset, folder_type: str, name: str,
+def save_control_file(handler: ControlDataHandler, asset: Asset, rig: str, folder_type: str, name: str,
                       folder: str | None = None, **context) -> str:
-    """Saves a control data file of an asset through its handler, as save_anim_clip saves a clip: versions and checks
-    out only that file first, and adds a new one to source control. folder is where it goes, the asset's folder for
-    folder_type when left out. A file saved to another folder (the user's own library) is versioned but never goes to
-    source control, because nobody tracks it. Returns the file."""
+    """Saves a control data file of a rig of an asset through its handler, as save_anim_clip saves a clip: versions
+    and checks out only that file first, and adds a new one to source control. folder is where it goes, the rig's
+    folder for folder_type when left out. A file saved to another folder (the user's own library) is versioned but
+    never goes to source control, because nobody tracks it. Returns the file."""
     tracked = folder is None
-    folder = folder or asset.path(folder_type)
+    folder = folder or asset.path(folder_type, rig)
     file = handler.file_path(folder, _require_clip_name(name, handler.kind))
     existing = os.path.exists(file)
     if existing:
@@ -391,44 +526,64 @@ def save_control_file(handler: ControlDataHandler, asset: Asset, folder_type: st
     return file
 
 
-def save_skeleton_export(asset: Asset, rig_root: str) -> tuple[str, str]:
-    """Writes the engine's skeleton asset source into the asset's exports folder: <name>_skeleton.fbx, the rig's
-    export joints at rest, and <name>_skeleton.bonemap.json beside it, with the asset's id and its skeleton's id
-    (RigModules D42). Existing files are versioned first. Returns the FBX and the bone map."""
-    fbx = get_skeleton_export_path(asset)
+def get_exports_folder(asset: Asset, rig: str) -> str:
+    """The exports folder of the skeleton a rig is built on, skeletons/<skeleton>/exports. It is in the asset that
+    holds the skeleton, which may be another asset, so every rig of one skeleton shares one folder."""
+    skeleton_asset, skeleton = asset.skeleton_of(rig)
+    return skeleton_asset.path("exports", skeleton)
+
+
+def save_skeleton_export(asset: Asset, rig: str, rig_root: str) -> tuple[str, str]:
+    """Writes the engine's skeleton asset source into the exports folder of the rig's skeleton:
+    <name>_<skeleton>_skeleton.fbx, the rig's export joints at rest, and its .bonemap.json beside it, with the rig's
+    asset id and its skeleton's name (RigModules D42, D54). Existing files are versioned first. Returns the FBX and
+    the bone map."""
+    skeleton_asset, skeleton = asset.skeleton_of(rig)
+    fbx = get_skeleton_export_path(asset, rig)
     bone_map = AnimClipHandler.bone_map_path(fbx)
     existing = [path for path in (fbx, bone_map) if os.path.exists(path)]
     for path in existing:
-        versions.version(path, asset.root)
+        versions.version(path, skeleton_asset.root)
         sourcecontrol.current().checkout(path)
     os.makedirs(os.path.dirname(fbx), exist_ok=True)
-    rigmodules.jointclip.write_skeleton_fbx(rig_root, asset.skeleton, fbx, bone_map)
+    rigmodules.jointclip.write_skeleton_fbx(rig_root, skeleton, fbx, bone_map)
     for path in (fbx, bone_map):
         if path not in existing:
             sourcecontrol.current().add(path)
     return fbx, bone_map
 
 
-def get_skeleton_export_path(asset: Asset) -> str:
-    """Where the asset's skeleton export FBX is, or will be. It sits in the exports folder itself, so it is not a
-    clip (clips are folders)."""
-    return os.path.join(asset.path("exports"), f"{asset.name}_skeleton.fbx")
+def get_skeleton_export_path(asset: Asset, rig: str) -> str:
+    """Where the skeleton export FBX of a rig's skeleton is, or will be. It sits in the exports folder itself, so it
+    is not a clip (clips are folders)."""
+    skeleton_asset, skeleton = asset.skeleton_of(rig)
+    return os.path.join(get_exports_folder(asset, rig), f"{skeleton_asset.name}_{skeleton}_skeleton.fbx")
 
 
-def save_anim_clip(asset: Asset, name: str, **context) -> str:
-    """Saves a clip through AnimClipHandler.save (its arguments go in context). Versions and checks out only the
-    clip's own FBX first, where handlers.save would copy the whole exports folder, and adds a new file to source
-    control. Returns the FBX path."""
+def save_anim_clip(asset: Asset, rig: str, name: str, **context) -> str:
+    """Saves a clip of a rig through AnimClipHandler.save (its arguments go in context) into the exports folder of the
+    rig's skeleton. Versions and checks out only the clip's own FBX first, where handlers.save would copy the whole
+    exports folder, and adds a new file to source control. Returns the FBX path."""
     handler = AnimClipHandler()
-    fbx = handler.fbx_path(asset.path("exports"), _require_clip_name(name))
+    folder = get_exports_folder(asset, rig)
+    fbx = handler.fbx_path(folder, _require_clip_name(name))
     existing = os.path.exists(fbx)
     if existing:
         versions.version(fbx, asset.root)
         sourcecontrol.current().checkout(fbx)
-    fbx = handler.save(asset, asset.path("exports"), name=name, **context)
+    fbx = handler.save(asset, folder, name=name, **context)
     if not existing and os.path.exists(fbx):
         sourcecontrol.current().add(fbx)
     return fbx
+
+
+def _json_indent(text: str) -> int:
+    """The indent a JSON file was written with: the leading spaces of its first indented line, 4 when it has none."""
+    for line in text.splitlines():
+        stripped = line.lstrip(" ")
+        if stripped and len(stripped) != len(line):
+            return len(line) - len(stripped)
+    return 4
 
 
 def _short_name(node: str) -> str:
@@ -454,9 +609,9 @@ def _require_rig_root(rig_root: str | None) -> str:
 
 
 def register() -> None:
-    scene = MayaSceneHandler()
-    for file_type in MAYA_FILE_TYPES:
-        handlers.register(file_type, scene)
+    handlers.register("skeleton", RigSkeletonHandler())
+    handlers.register("model", ModelHandler())
+    handlers.register("rig", MayaSceneHandler())
     handlers.register("shapes", RigShapesHandler())
     handlers.register("weights", RigSkinWeightsHandler())
     handlers.register("template", RigTemplateHandler())

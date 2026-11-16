@@ -84,8 +84,13 @@ class LibraryBase(unittest.TestCase):
         self.addCleanup(login.stop)
 
         self.asset.Project.create(os.path.join(self.root, "shooter"))
+        # The library is a rig's (RigModules D54). The biped holds the rig "game", and the hero's rig "game" is a copy
+        # of it, so the hero's rig lists the biped rig's files as its Shared source.
+        default = self.asset.SkeletonRef("default")
         self.biped = self.asset.Asset.create(BIPED, "Skeleton")
-        self.hero_asset = self.asset.Asset.create(HERO, "Character", skeleton=BIPED)
+        self.biped.add_rig("game", default)
+        self.hero_asset = self.asset.Asset.create(HERO, "Character")
+        self.hero_asset.add_rig("game", default, source=self.asset.RigRef("game", asset=BIPED))
         self.template = os.path.join(temp, "template.json").replace("\\", "/")
         with open(self.template, "w", encoding="utf-8") as handle:
             json.dump(TEMPLATE, handle)
@@ -118,7 +123,7 @@ class LibraryBase(unittest.TestCase):
         return self.query.get_rigs(name)[0].rig_root
 
     def user_folder(self, kind, asset=None):
-        return self.library.user_source(asset or self.hero_asset).folders[kind]
+        return self.library.user_source(asset or self.hero_asset, "game").folders[kind]
 
     def entry(self, session, name):
         return next(entry for entry in session.entries if entry.name == name)
@@ -131,7 +136,7 @@ class Listing(LibraryBase):
 
     def test_with_no_rig_the_state_is_empty_with_a_reason_and_commands_say_so(self):
         session = self.browser.LibrarySession()
-        self.assertEqual((session.entries, session.masks, session.sources, session.asset_id), ([], [], [], None))
+        self.assertEqual((session.entries, session.masks, session.sources, session.asset_id, session.rig_name), ([], [], [], None, None))
         self.assertEqual(session.reason, "There is no active rig.")
         with self.assertRaisesRegex(RuntimeError, "no active rig"):
             session.save("x")
@@ -141,7 +146,7 @@ class Listing(LibraryBase):
     def test_the_session_lists_the_user_library_of_the_active_rigs_asset(self):
         root = self.build(HERO)
         session = self.browser.LibrarySession()
-        self.assertEqual((session.reason, session.asset_id, session.rig_root), ("", HERO, root))
+        self.assertEqual((session.reason, session.asset_id, session.rig_name, session.rig_root), ("", HERO, "game", root))
         self.assertEqual([source.key for source in session.sources], ["approved", "shared", "user"])
         self.assertEqual(session.entries, [])
 
@@ -153,16 +158,16 @@ class Listing(LibraryBase):
         self.assertEqual(saved.path, os.path.join(self.user_folder(self.library.POSE), "wave.controlpose.json"))
         self.assertEqual((saved.tags, saved.description, saved.source), (["arm", "friendly"], "Raised hand", "user"))
         self.assertEqual((saved.meta("assetId"), saved.meta("author"), saved.meta("template"), saved.meta("skeleton")),
-                         (HERO, "tester", "game", BIPED))
+                         (HERO, "tester", "game", "default"))
         self.assertEqual((saved.info.control_count, saved.info.unmatched_controls),
                          (len(self.cmds.getRigControls(root)), ()))
 
     def test_every_source_is_listed_with_its_own_files(self):
         root = self.build(HERO)
-        os.makedirs(self.hero_asset.path("controlposes"))
-        self.cmds.saveRigPose(root, file=os.path.join(self.hero_asset.path("controlposes"), "approved_pose.controlpose.json").replace("\\", "/"))
-        os.makedirs(self.biped.path("controlposes"))
-        self.cmds.saveRigPose(root, file=os.path.join(self.biped.path("controlposes"), "t_pose.json").replace("\\", "/"))
+        os.makedirs(self.hero_asset.path("controlposes", "game"))
+        self.cmds.saveRigPose(root, file=os.path.join(self.hero_asset.path("controlposes", "game"), "approved_pose.controlpose.json").replace("\\", "/"))
+        os.makedirs(self.biped.path("controlposes", "game"))
+        self.cmds.saveRigPose(root, file=os.path.join(self.biped.path("controlposes", "game"), "t_pose.json").replace("\\", "/"))
         session = self.browser.LibrarySession()
         session.save("mine")
         self.assertEqual([(entry.name, entry.source) for entry in session.entries],
@@ -254,7 +259,7 @@ class Listing(LibraryBase):
         session = self.browser.LibrarySession()
         self.assertEqual([source.key for source in session.sources], ["user"])
         saved = session.save("x")
-        self.assertIn(os.path.join("user", "tester", "animlibrary", "shooter", "ghost", "controlposes"), saved.path)
+        self.assertIn(os.path.join("user", "tester", "animlibrary", "shooter", "ghost", "game", "controlposes"), saved.path)
 
     def test_without_a_projects_root_the_listing_is_empty_with_the_reason(self):
         self.build(HERO)
@@ -424,7 +429,7 @@ class Files(LibraryBase):
         self.session = self.browser.LibrarySession()
 
     def put_approved(self, name):
-        folder = self.hero_asset.path("controlposes")
+        folder = self.hero_asset.path("controlposes", "game")
         os.makedirs(folder, exist_ok=True)
         self.cmds.saveRigPose(self.root_node, file=os.path.join(folder, name + ".controlpose.json").replace("\\", "/"))
         self.session.refresh()
@@ -511,6 +516,9 @@ class ForTheWindow(LibraryBase):
     def set_file_meta(self, entry, **meta):
         import rigmodules.library
         rigmodules.library.set_data_file_meta(entry.path, meta)
+        # The file is edited behind the session's back. The index caches by modified time, and two writes can land
+        # on one tick of the file system's clock, so the cached read is dropped as the session's own edits drop it.
+        self.session._index.forget(entry.path)
         self.session.refresh()
         return self.entry(self.session, entry.name)
 
@@ -526,8 +534,8 @@ class ForTheWindow(LibraryBase):
         self.assertEqual(list(facets), list(self.browser.FACET_FIELDS))
 
     def test_facets_leave_out_a_source_that_is_switched_off(self):
-        os.makedirs(self.hero_asset.path("controlposes"))
-        self.cmds.saveRigPose(self.root_node, file=os.path.join(self.hero_asset.path("controlposes"), "a.controlpose.json").replace("\\", "/"),
+        os.makedirs(self.hero_asset.path("controlposes", "game"))
+        self.cmds.saveRigPose(self.root_node, file=os.path.join(self.hero_asset.path("controlposes", "game"), "a.controlpose.json").replace("\\", "/"),
                               meta=json.dumps({"tags": ["approved_only"]}))
         self.session.refresh()
         self.assertIn("approved_only", self.session.facets()["tag"])

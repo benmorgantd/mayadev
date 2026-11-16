@@ -48,7 +48,7 @@ class MayaHandlers(unittest.TestCase):
 
     def setUp(self):
         from maya import cmds
-        from bmaya.core.asset import Asset, Project, handlers
+        from bmaya.core.asset import Asset, Project, SkeletonRef, handlers
         from bmaya.maya import assethandlers
 
         self.cmds = cmds
@@ -60,10 +60,13 @@ class MayaHandlers(unittest.TestCase):
         os.environ["BMAYA_VERSIONS_DIR"] = os.path.join(temp, "local_versions")
         self.addCleanup(os.environ.pop, "BMAYA_VERSIONS_DIR", None)
         Project.create(os.path.join(self.root, "shooter", "main"))
+        # The hero has the rig "game" on its skeleton "default", and the look "default" (RigModules D54).
         self.hero = Asset.create(HERO, "Character", root=self.root)
+        self.hero.add_rig("game", SkeletonRef("default"))
+        self.hero.add_look("default", [SkeletonRef("default")])
 
         assethandlers.register()
-        for file_type in assethandlers.MAYA_FILE_TYPES + ("shapes", "exports", "sources", "controlposes", "controlanims"):
+        for file_type in ("skeleton", "model", "rig", "template", "weights", "shapes", "exports", "sources", "controlposes", "controlanims"):
             self.addCleanup(handlers.unregister, file_type)
         cmds.file(new=True, force=True)
         cmds.currentUnit(time="ntsc")   # the clips here are 30 fps
@@ -95,41 +98,97 @@ class MayaHandlers(unittest.TestCase):
         control = "hero:spine1_ctrl_c"
         self.assertEqual(cmds.getAttr(control + ".shapeType", asString=True), "Box")
 
-        path = self.handlers.save(self.hero, "shapes", variant="game", rig_root=rig_root)
+        path = self.handlers.save(self.hero, "shapes", "game", rig_root=rig_root)
         self.assertEqual(path, self.hero.path("shapes", "game"))
         self.assertTrue(os.path.isfile(path))
 
         cmds.setAttr(control + ".shapeType", 1)  # Sphere
-        loaded = self.handlers.load(self.hero, "shapes", variant="game", rig_root=rig_root)
+        loaded = self.handlers.load(self.hero, "shapes", "game", rig_root=rig_root)
         self.assertIn(control, [c.lstrip(":") for c in loaded])
         self.assertEqual(cmds.getAttr(control + ".shapeType", asString=True), "Box")
 
-        self.handlers.save(self.hero, "shapes", variant="game", rig_root=rig_root)
+        self.handlers.save(self.hero, "shapes", "game", rig_root=rig_root)
         from bmaya.core.asset import versions
         self.assertEqual(len(versions.list_versions(path, self.root)), 1, "the second save keeps the first as a version")
 
     def test_shapes_need_a_rig_root(self):
         self.build_rig()
         with self.assertRaises(ValueError):
-            self.handlers.save(self.hero, "shapes", variant="game")
+            self.handlers.save(self.hero, "shapes", "game")
 
-    def test_scene_saves_and_imports_into_the_asset_namespace(self):
+    def test_a_skeleton_saves_as_its_skeleton_file_and_loads_as_joints(self):
         cmds = self.cmds
-        self.make_skeleton()
-        path = self.handlers.save(self.hero, "skeleton")
-        self.assertTrue(os.path.isfile(path))
+        joints = self.make_skeleton()
+        path = self.handlers.save(self.hero, "skeleton", "default", joints=joints)
+        self.assertEqual(path, os.path.join(self.hero.folder, "skeletons", "default", "skeleton.json"))
+        data = self.read_json(path)
+        self.assertEqual([joint["markup"] for joint in data["joints"]], [["Center", "spine1"], ["Center", "spine2"]])
+        self.assertEqual(self.hero.skeletons, ["default"])
 
         cmds.file(new=True, force=True)
-        nodes = self.handlers.load(self.hero, "skeleton")
+        loaded = self.handlers.load(self.hero, "skeleton", "default", namespace="hero_game")
+        self.assertEqual(loaded, ["hero_game:spine1_jnt", "hero_game:spine2_jnt"])
+        self.assertEqual(cmds.listRelatives("hero_game:spine2_jnt", parent=True), ["hero_game:spine1_jnt"])
+        self.assertEqual(cmds.xform("hero_game:spine2_jnt", query=True, worldSpace=True, translation=True), [0.0, 2.0, 0.0])
+
+        # A skeleton is not a scene: a second load into the same namespace is refused, where an import would merge.
+        with self.assertRaisesRegex(RuntimeError, "already exists in the namespace"):
+            self.handlers.load(self.hero, "skeleton", "default", namespace="hero_game")
+        self.assertEqual(self.handlers.load(self.hero, "skeleton", "default"), ["spine1_jnt", "spine2_jnt"])
+
+    def test_a_skeleton_needs_joints_and_a_second_save_keeps_a_version(self):
+        with self.assertRaisesRegex(ValueError, "Pass joints"):
+            self.handlers.save(self.hero, "skeleton", "default")
+        joints = self.make_skeleton()
+        path = self.handlers.save(self.hero, "skeleton", "default", joints=joints)
+        self.handlers.save(self.hero, "skeleton", "default", joints=joints)
+        from bmaya.core.asset import versions
+        self.assertEqual(len(versions.list_versions(path, self.root)), 1)
+
+    def test_a_rig_scene_saves_and_imports_into_a_namespace(self):
+        cmds = self.cmds
+        self.make_skeleton()
+        path = self.handlers.save(self.hero, "rig", "game")
+        self.assertEqual(path, os.path.join(self.hero.folder, "rigs", "game", "hero_game_rig.ma"))
+        self.assertEqual(os.path.normpath(cmds.file(query=True, sceneName=True)), path, "saving a rig saves the scene")
+
+        cmds.file(new=True, force=True)
+        nodes = self.handlers.load(self.hero, "rig", "game")
         self.assertIn("|hero:skel:spine1_jnt", nodes)
-        self.assertTrue(cmds.objExists("hero:skel:spine2_jnt"))
-
-        # A second load merges into the namespace the asset owns instead of making hero1.
-        self.handlers.load(self.hero, "skeleton")
+        # A second load merges into the namespace instead of making hero1.
+        self.handlers.load(self.hero, "rig", "game")
         self.assertFalse(cmds.namespace(exists=":hero1"))
-
-        self.handlers.load(self.hero, "skeleton", namespace="hero2")
+        self.handlers.load(self.hero, "rig", "game", namespace="hero2")
         self.assertTrue(cmds.objExists("hero2:skel:spine1_jnt"))
+
+    def test_a_model_saves_as_meshes_only_and_imports_into_a_namespace(self):
+        cmds = self.cmds
+        joints = self.make_skeleton()
+        box = cmds.polyCube(name="box_geo", height=2, constructionHistory=False)[0]
+        cmds.skinCluster(*joints, box, toSelectedBones=True)
+        scene = cmds.file(query=True, sceneName=True)
+        path = self.handlers.save(self.hero, "model", "default")       # no meshes named: every mesh in the scene
+        self.assertEqual(path, os.path.join(self.hero.folder, "looks", "default", "model", "hero_default_model.ma"))
+        self.assertEqual(cmds.file(query=True, sceneName=True), scene, "saving a model does not save the scene")
+        self.assertEqual(len(cmds.ls(type="skinCluster")), 1, "the scene keeps its skinning")
+
+        cmds.file(new=True, force=True)
+        nodes = self.handlers.load(self.hero, "model", "default", namespace="hero_game")
+        self.assertEqual(sorted(cmds.ls(nodes, long=True)), ["|hero_game:box_geo", "|hero_game:box_geo|hero_game:box_geoShape"])
+        self.assertEqual((cmds.ls(type="joint"), cmds.ls(type="skinCluster")), ([], []))
+
+    def test_a_template_is_written_with_the_rigs_name(self):
+        source = os.path.join(self.root, "shared_template.json")
+        with open(source, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(dict(TEMPLATE, rigName="human"), indent=2))
+        path = self.handlers.save(self.hero, "template", "body", source=source)
+        self.assertEqual(path, os.path.join(self.hero.folder, "rigs", "body", "template.json"))
+        self.assertEqual(self.read_json(path), dict(TEMPLATE, rigName="body"))
+        with open(path, encoding="utf-8") as handle:
+            self.assertIn('\n  "rigVersion"', handle.read(), "the copy keeps the source's indent")
+        self.assertEqual(self.handlers.load(self.hero, "template", "body"), path)
+        with self.assertRaisesRegex(ValueError, "Pass source"):
+            self.handlers.save(self.hero, "template", "other")
 
     # ---- animation clips ---------------------------------------------------------------------
 
@@ -160,12 +219,12 @@ class MayaHandlers(unittest.TestCase):
             return json.load(handle)
 
     def test_a_clip_saves_as_fbx_in_its_own_exports_folder_and_loads_back(self):
-        path = self.handlers.save(self.hero, "exports", name="walk", joint_clip=self.write_joint_clip())
-        self.assertEqual(path, self.hero.path("exports"))
+        path = self.handlers.save(self.hero, "exports", "default", name="walk", joint_clip=self.write_joint_clip())
+        self.assertEqual(path, os.path.join(self.hero.folder, "skeletons", "default", "exports"))
         fbx = os.path.join(path, "walk", "walk.fbx")
         self.assertTrue(os.path.isfile(fbx))
 
-        clip = self.handlers.load(self.hero, "exports", name="walk")
+        clip = self.handlers.load(self.hero, "exports", "default", name="walk")
         self.assertEqual((clip.name, clip.fbx, clip.sidecar), ("walk", fbx, None))
         data = self.read_json(clip.joint_clip)
         self.assertEqual(len(data["poses"]), 2)
@@ -177,10 +236,10 @@ class MayaHandlers(unittest.TestCase):
         rig_root = self.build_rig()
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=1, value=0)
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=3, value=4)
-        fbx = self.assethandlers.save_anim_clip(self.hero, "rise", rig_root=rig_root, start_frame=1, end_frame=3)
-        self.assertEqual(fbx, os.path.join(self.hero.path("exports"), "rise", "rise.fbx"))
+        fbx = self.assethandlers.save_anim_clip(self.hero, "game", "rise", rig_root=rig_root, start_frame=1, end_frame=3)
+        self.assertEqual(fbx, os.path.join(self.hero.path("exports", "default"), "rise", "rise.fbx"))
 
-        data = self.read_json(self.handlers.load(self.hero, "exports", name="rise").joint_clip)
+        data = self.read_json(self.handlers.load(self.hero, "exports", "default", name="rise").joint_clip)
         self.assertEqual(len(data["poses"]), 3)
         self.assertEqual({joint["path"] for joint in data["joints"]}, {"spine1_jnt", "spine1_jnt/spine2_jnt"})
         self.assertEqual([name for name in os.listdir(tempfile.gettempdir()) if name.endswith(".jointclip.json")], [])
@@ -191,12 +250,12 @@ class MayaHandlers(unittest.TestCase):
         cmds.currentUnit(time="film")
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=1, value=0)
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=3, value=4)
-        fbx = self.assethandlers.save_anim_clip(self.hero, "rise", rig_root=rig_root, start_frame=1, end_frame=3)
+        fbx = self.assethandlers.save_anim_clip(self.hero, "game", "rise", rig_root=rig_root, start_frame=1, end_frame=3)
         control_anim = os.path.join(os.path.dirname(fbx), "rise.controlanim.json")
         self.assertTrue(os.path.isfile(control_anim))
         self.assertEqual(sorted(os.listdir(os.path.dirname(fbx))), ["rise.animproperties.json", "rise.controlanim.json", "rise.fbx"])
 
-        clip = self.handlers.load(self.hero, "exports", name="rise")
+        clip = self.handlers.load(self.hero, "exports", "default", name="rise")
         self.assertEqual(clip.sidecar, control_anim)
         cmds.cutKey("hero:spine1_ctrl_c", attribute="translateY", clear=True)
         cmds.setAttr("hero:spine1_ctrl_c.translateY", 0)
@@ -204,32 +263,32 @@ class MayaHandlers(unittest.TestCase):
         self.assertAlmostEqual(cmds.getAttr("hero:spine1_ctrl_c.translateY", time=3), 4.0, places=3)
 
     def test_a_clip_without_a_control_anim_has_no_sidecar(self):
-        self.handlers.save(self.hero, "exports", name="walk", joint_clip=self.write_joint_clip())
-        self.assertIsNone(self.handlers.load(self.hero, "exports", name="walk").sidecar)
+        self.handlers.save(self.hero, "exports", "default", name="walk", joint_clip=self.write_joint_clip())
+        self.assertIsNone(self.handlers.load(self.hero, "exports", "default", name="walk").sidecar)
 
     def test_an_export_gets_default_properties_and_a_re_export_keeps_edited_ones(self):
         from bmaya.core.asset import animproperties
         joint_clip = self.write_joint_clip()
-        self.handlers.save(self.hero, "exports", name="walk", joint_clip=joint_clip)
-        self.assertEqual(self.handlers.load(self.hero, "exports", name="walk").properties, animproperties.AnimProperties())
+        self.handlers.save(self.hero, "exports", "default", name="walk", joint_clip=joint_clip)
+        self.assertEqual(self.handlers.load(self.hero, "exports", "default", name="walk").properties, animproperties.AnimProperties())
 
         edited = animproperties.AnimProperties(loop=True, events=(animproperties.AnimEvent("footstep", 12.0),))
-        self.handlers.save(self.hero, "exports", name="walk", joint_clip=joint_clip, properties=edited)
-        self.assertEqual(self.handlers.load(self.hero, "exports", name="walk").properties, edited)
+        self.handlers.save(self.hero, "exports", "default", name="walk", joint_clip=joint_clip, properties=edited)
+        self.assertEqual(self.handlers.load(self.hero, "exports", "default", name="walk").properties, edited)
 
-        self.handlers.save(self.hero, "exports", name="walk", joint_clip=joint_clip)
-        self.assertEqual(self.handlers.load(self.hero, "exports", name="walk").properties, edited)
+        self.handlers.save(self.hero, "exports", "default", name="walk", joint_clip=joint_clip)
+        self.assertEqual(self.handlers.load(self.hero, "exports", "default", name="walk").properties, edited)
 
     def test_a_clip_without_a_properties_file_has_none_and_a_bad_one_is_refused_on_load(self):
         from bmaya.core.asset import animproperties
-        self.handlers.save(self.hero, "exports", name="walk", joint_clip=self.write_joint_clip())
-        path = animproperties.get_path(os.path.join(self.hero.path("exports"), "walk", "walk.fbx"))
+        self.handlers.save(self.hero, "exports", "default", name="walk", joint_clip=self.write_joint_clip())
+        path = animproperties.get_path(os.path.join(self.hero.path("exports", "default"), "walk", "walk.fbx"))
         os.remove(path)
-        self.assertIsNone(self.handlers.load(self.hero, "exports", name="walk").properties)
+        self.assertIsNone(self.handlers.load(self.hero, "exports", "default", name="walk").properties)
         with open(path, "w", encoding="utf-8") as handle:
             handle.write('{"formatVersion": 1}')
         with self.assertRaises(animproperties.AnimPropertiesError):
-            self.handlers.load(self.hero, "exports", name="walk")
+            self.handlers.load(self.hero, "exports", "default", name="walk")
 
     # ---- control data, sources and the skeleton export ---------------------------------------
 
@@ -238,12 +297,12 @@ class MayaHandlers(unittest.TestCase):
         rig_root = self.build_rig()
         cmds.setAttr("hero:spine1_ctrl_c.translateY", 3)
         path = self.assethandlers.save_control_file(
-            self.assethandlers.ControlPoseHandler(), self.hero, "controlposes", "idle", scope=[rig_root])
-        self.assertEqual(path, os.path.join(self.hero.path("controlposes"), "idle.controlpose.json"))
-        self.assertEqual(self.assethandlers.ControlPoseHandler.names(self.hero.path("controlposes")), ["idle"])
+            self.assethandlers.ControlPoseHandler(), self.hero, "game", "controlposes", "idle", scope=[rig_root])
+        self.assertEqual(path, os.path.join(self.hero.folder, "rigs", "game", "controlposes", "idle.controlpose.json"))
+        self.assertEqual(self.assethandlers.ControlPoseHandler.names(self.hero.path("controlposes", "game")), ["idle"])
 
         cmds.setAttr("hero:spine1_ctrl_c.translateY", 0)
-        changed = self.handlers.load(self.hero, "controlposes", name="idle", scope=[rig_root])
+        changed = self.handlers.load(self.hero, "controlposes", "game", name="idle", scope=[rig_root])
         self.assertIn("hero:spine1_ctrl_c", [c.lstrip(":") for c in changed])
         self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateY"), 3)
 
@@ -253,11 +312,11 @@ class MayaHandlers(unittest.TestCase):
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=1, value=0)
         cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=3, value=4)
         path = self.assethandlers.save_control_file(
-            self.assethandlers.ControlAnimHandler(), self.hero, "controlanims", "rise", scope=[rig_root], start_frame=1, end_frame=3)
-        self.assertEqual(path, os.path.join(self.hero.path("controlanims"), "rise.controlanim.json"))
+            self.assethandlers.ControlAnimHandler(), self.hero, "game", "controlanims", "rise", scope=[rig_root], start_frame=1, end_frame=3)
+        self.assertEqual(path, os.path.join(self.hero.path("controlanims", "game"), "rise.controlanim.json"))
 
         cmds.cutKey("hero:spine1_ctrl_c", attribute="translateY", clear=True)
-        self.handlers.load(self.hero, "controlanims", name="rise", scope=[rig_root], offset=10)
+        self.handlers.load(self.hero, "controlanims", "game", name="rise", scope=[rig_root], offset=10)
         self.assertEqual(cmds.keyframe("hero:spine1_ctrl_c.translateY", query=True, timeChange=True), [11, 13])
         self.assertEqual(cmds.keyframe("hero:spine1_ctrl_c.translateY", query=True, valueChange=True), [0, 4])
 
@@ -265,19 +324,19 @@ class MayaHandlers(unittest.TestCase):
         rig_root = self.build_rig()
         handler = self.assethandlers.ControlPoseHandler()
         with self.assertRaisesRegex(ValueError, "not a pose name"):
-            self.assethandlers.save_control_file(handler, self.hero, "controlposes", "a/b", scope=[rig_root])
+            self.assethandlers.save_control_file(handler, self.hero, "game", "controlposes", "a/b", scope=[rig_root])
         with self.assertRaisesRegex(ValueError, "scope"):
-            handler.save(self.hero, self.hero.path("controlposes"), name="idle")
+            handler.save(self.hero, self.hero.path("controlposes", "game"), name="idle")
         with self.assertRaisesRegex(ValueError, "start_frame"):
-            self.assethandlers.ControlAnimHandler().save(self.hero, self.hero.path("controlanims"), name="x", scope=[rig_root])
-        self.assertFalse(os.path.exists(os.path.join(self.hero.path("controlposes"), "idle.controlpose.json")))
+            self.assethandlers.ControlAnimHandler().save(self.hero, self.hero.path("controlanims", "game"), name="x", scope=[rig_root])
+        self.assertFalse(os.path.exists(os.path.join(self.hero.path("controlposes", "game"), "idle.controlpose.json")))
 
     def test_loading_control_data_that_is_not_there_names_the_files_that_are(self):
         rig_root = self.build_rig()
         self.assethandlers.save_control_file(
-            self.assethandlers.ControlPoseHandler(), self.hero, "controlposes", "idle", scope=[rig_root])
+            self.assethandlers.ControlPoseHandler(), self.hero, "game", "controlposes", "idle", scope=[rig_root])
         with self.assertRaisesRegex(FileNotFoundError, "idle"):
-            self.handlers.load(self.hero, "controlposes", name="walk", scope=[rig_root])
+            self.handlers.load(self.hero, "controlposes", "game", name="walk", scope=[rig_root])
 
     def test_the_new_file_types_are_in_a_new_projects_project_json(self):
         for file_type in ("controlposes", "controlanims", "exports", "sources"):
@@ -296,16 +355,17 @@ class MayaHandlers(unittest.TestCase):
 
     def test_the_skeleton_export_is_an_fbx_and_a_bone_map_in_the_exports_folder_and_is_not_a_clip(self):
         rig_root = self.build_rig()
-        fbx, bone_map = self.assethandlers.save_skeleton_export(self.hero, rig_root)
-        self.assertEqual(fbx, os.path.join(self.hero.path("exports"), "hero_skeleton.fbx"))
-        self.assertEqual(bone_map, os.path.join(self.hero.path("exports"), "hero_skeleton.bonemap.json"))
+        fbx, bone_map = self.assethandlers.save_skeleton_export(self.hero, "game", rig_root)
+        exports = os.path.join(self.hero.folder, "skeletons", "default", "exports")
+        self.assertEqual(fbx, os.path.join(exports, "hero_default_skeleton.fbx"))
+        self.assertEqual(bone_map, os.path.join(exports, "hero_default_skeleton.bonemap.json"))
         data = self.read_json(bone_map)
-        self.assertEqual((data["assetId"], data["skeletonId"]), (HERO, HERO))
+        self.assertEqual((data["assetId"], data["skeletonId"]), (HERO, "default"))
         self.assertEqual(sorted(data["joints"]), ["spine1_jnt", "spine2_jnt"])
-        self.assertEqual(self.assethandlers.AnimClipHandler.names(self.hero.path("exports")), [])
+        self.assertEqual(self.assethandlers.AnimClipHandler.names(self.hero.path("exports", "default")), [])
 
         from bmaya.core.asset import versions
-        self.assethandlers.save_skeleton_export(self.hero, rig_root)
+        self.assethandlers.save_skeleton_export(self.hero, "game", rig_root)
         self.assertEqual(len(versions.list_versions(fbx, self.root)), 1, "a second export keeps the first as a version")
         self.assertEqual(len(versions.list_versions(bone_map, self.root)), 1)
 
@@ -338,16 +398,16 @@ class MayaHandlers(unittest.TestCase):
         from bmaya.core.asset import versions
         module = self.assethandlers
         source = self.write_joint_clip()
-        module.save_anim_clip(self.hero, "walk", joint_clip=source)
-        module.save_anim_clip(self.hero, "run", joint_clip=source)
-        fbx = os.path.join(self.hero.path("exports"), "walk", "walk.fbx")
+        module.save_anim_clip(self.hero, "game", "walk", joint_clip=source)
+        module.save_anim_clip(self.hero, "game", "run", joint_clip=source)
+        fbx = os.path.join(self.hero.path("exports", "default"), "walk", "walk.fbx")
         self.assertEqual(versions.list_versions(fbx, self.root), [], "a first save has nothing to version")
 
-        module.save_anim_clip(self.hero, "walk", joint_clip=self.write_joint_clip(poses=3))
+        module.save_anim_clip(self.hero, "game", "walk", joint_clip=self.write_joint_clip(poses=3))
         self.assertEqual(len(versions.list_versions(fbx, self.root)), 1)
-        self.assertEqual(versions.list_versions(os.path.join(self.hero.path("exports"), "run", "run.fbx"), self.root), [])
-        self.assertEqual(len(self.read_json(self.handlers.load(self.hero, "exports", name="walk").joint_clip)["poses"]), 3)
-        self.assertEqual(module.AnimClipHandler.names(self.hero.path("exports")), ["run", "walk"])
+        self.assertEqual(versions.list_versions(os.path.join(self.hero.path("exports", "default"), "run", "run.fbx"), self.root), [])
+        self.assertEqual(len(self.read_json(self.handlers.load(self.hero, "exports", "default", name="walk").joint_clip)["poses"]), 3)
+        self.assertEqual(module.AnimClipHandler.names(self.hero.path("exports", "default")), ["run", "walk"])
 
     def test_clip_arguments_are_checked_before_anything_is_written(self):
         source = self.write_joint_clip()
@@ -359,13 +419,13 @@ class MayaHandlers(unittest.TestCase):
             {"name": "walk", "rig_root": "hero:rigRootModule1"},
         ):
             with self.subTest(kwargs=kwargs), self.assertRaises((ValueError, FileNotFoundError)):
-                self.handlers.save(self.hero, "exports", **kwargs)
-        self.assertFalse(os.path.exists(os.path.join(self.hero.path("exports"), "walk")))
+                self.handlers.save(self.hero, "exports", "default", **kwargs)
+        self.assertFalse(os.path.exists(os.path.join(self.hero.path("exports", "default"), "walk")))
 
     def test_loading_a_clip_that_is_not_there_names_the_clips_that_are(self):
-        self.handlers.save(self.hero, "exports", name="walk", joint_clip=self.write_joint_clip())
+        self.handlers.save(self.hero, "exports", "default", name="walk", joint_clip=self.write_joint_clip())
         with self.assertRaisesRegex(FileNotFoundError, "no clip 'run'.*walk"):
-            self.handlers.load(self.hero, "exports", name="run")
+            self.handlers.load(self.hero, "exports", "default", name="run")
 
 
 if __name__ == "__main__":

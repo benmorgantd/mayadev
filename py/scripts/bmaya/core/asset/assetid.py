@@ -28,7 +28,7 @@ class AssetIdError(ValueError):
 
 
 def is_valid_token(token: str) -> bool:
-    """One folder name of an id: lowercase letters, digits and "_". Rig variant names follow the same rule."""
+    """One folder name of an id: lowercase letters, digits and "_". Skeleton, rig and look names follow the same rule."""
     return isinstance(token, str) and bool(_TOKEN.fullmatch(token))
 
 

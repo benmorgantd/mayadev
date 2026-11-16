@@ -50,7 +50,7 @@ class FakeSession:
         import bmaya.core.asset.library as library
         import bmaya.core.observable
         self.changed = bmaya.core.observable.Event()
-        self.rig_root, self.asset_id, self.reason = "hero:rigRoot", "shooter\\hero", ""
+        self.rig_root, self.asset_id, self.rig_name, self.reason = "hero:rigRoot", "shooter\\hero", "game", ""
         self.kind, self.query, self.scope = kind, "", None
         self.sources = [library.LibrarySource(key, key.capitalize(), {}, key == "user") for key in sources]
         self.source_enabled = {}
@@ -253,7 +253,7 @@ class Listing(BrowserTest):
         session.changed.emit()
         self.assertFalse(browser.empty_label.isVisible())
         self.assertTrue(browser.body.isEnabled())
-        self.assertEqual(browser.rig_label.text(), "shooter\\hero")
+        self.assertEqual(browser.rig_label.text(), "shooter\\hero  (game)", "the library is the rig's, so the rig is named")
 
     def test_the_tabs_set_the_kind_and_follow_the_session(self):
         session = FakeSession(self.entries())

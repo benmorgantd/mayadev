@@ -1,5 +1,5 @@
-"""bmaya.core.asset in plain Python: ids, projects, assets, the registry, publishes, local versions, source
-control calls and handler dispatch.
+"""bmaya.core.asset in plain Python: ids, projects, assets with their skeletons, rigs and looks, rig.json and
+look.json, the registry, publishes, local versions, source control calls and handler dispatch.
 
 Run with tests/asset/run.bat, or: python -m unittest discover -s tests/asset -p "test_asset_*.py"
 """
@@ -16,11 +16,32 @@ from unittest import mock
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "py", "scripts"))
 
 from bmaya.core.asset import Asset, AssetError, AssetIdError, Project, ProjectError, Registry  # noqa: E402
-from bmaya.core.asset import assetid, handlers, publishes, sourcecontrol, versions  # noqa: E402
+from bmaya.core.asset import LookRecord, RecordError, RigRecord, RigRef, SkeletonRef  # noqa: E402
+from bmaya.core.asset import assetid, handlers, publishes, records, sourcecontrol, versions  # noqa: E402
 from bmaya.core.asset.project import (  # noqa: E402
     DEFAULT_PROJECT, FORMAT_VERSION, PROJECTS_ROOT_ENV, projects_root, update_project_data, write_json)
 
 HERO = "shooter\\main\\characters\\hero"
+VILLAIN = "shooter\\main\\characters\\villain"
+DEFAULT = SkeletonRef("default")
+
+# project.json as mayadev wrote it at format version 2, when a variant was a rig with its own model and weights.
+VERSION_2_FILE_TYPES = {
+    "skeleton": {"path": "skeleton/{name}_skeleton.ma"},
+    "model": {"path": "variants/{variant}/model/{name}_{variant}_model.ma"},
+    "textures": {"path": "variants/{variant}/textures", "folder": True},
+    "shaders": {"path": "variants/{variant}/shaders", "folder": True},
+    "template": {"path": "variants/{variant}/template.json"},
+    "shapes": {"path": "variants/{variant}/shapes.json"},
+    "weights": {"path": "variants/{variant}/weights", "folder": True},
+    "postops": {"path": "variants/{variant}/postops.py"},
+    "rig": {"path": "variants/{variant}/{name}_{variant}_rig.ma"},
+    "publish": {"path": "variants/{variant}/publish", "folder": True},
+    "controlposes": {"path": "controlposes", "folder": True},
+    "controlanims": {"path": "controlanims", "folder": True},
+    "exports": {"path": "exports", "folder": True},
+    "sources": {"path": "sources", "folder": True},
+}
 
 
 class RecordingSourceControl(sourcecontrol.SourceControl):
@@ -51,14 +72,16 @@ class TempRoot(unittest.TestCase):
         self.addCleanup(sourcecontrol.set_current, sourcecontrol.SourceControl())
         self.project = Project.create(os.path.join(self.root, "shooter", "main"))
 
-    def create(self, asset_id=HERO, asset_type="Character", variants=(), **kwargs):
-        asset = Asset.create(asset_id, asset_type, root=self.root, **kwargs)
-        for variant in variants:
-            self.add_variant(asset, variant)
+    def create(self, asset_id=HERO, asset_type="Character", skeletons=(), rigs=(), looks=()):
+        """An asset with skeletons (an empty skeleton.json each), and rigs and looks on its "default" skeleton."""
+        asset = Asset.create(asset_id, asset_type, root=self.root)
+        for name in skeletons:
+            self.write(asset.path("skeleton", name), "{}")
+        for name in rigs:
+            asset.add_rig(name, DEFAULT)
+        for name in looks:
+            asset.add_look(name, [DEFAULT])
         return asset
-
-    def add_variant(self, asset, variant):
-        self.write(asset.path("template", variant), "{}")
 
     def registry(self):
         return Registry(self.project, root=self.root)
@@ -119,7 +142,7 @@ class Projects(TempRoot):
             Project.create(self.project.root)
 
     def test_find_walks_up_from_a_path_that_need_not_exist(self):
-        found = Project.find(os.path.join(self.project.root, "characters", "hero", "variants", "game"))
+        found = Project.find(os.path.join(self.project.root, "characters", "hero", "rigs", "body"))
         self.assertEqual(found.root, self.project.root)
         with self.assertRaises(ProjectError):
             Project.find(os.path.join(self.root, "elsewhere"))
@@ -145,8 +168,12 @@ class Projects(TempRoot):
             "poses": {"folder": True, "path": "poses"}, "shapes": {"path": "shapes.json"}}}
         root = self.old_project(old)
         project = Project(root)
+        # Step 1 adds the library folders at the asset's top level, and step 2 moves them to where they now belong.
+        self.assertEqual(project.file_type("controlposes").relative_path("hero", "body"), os.path.join("rigs", "body", "controlposes"))
+        self.assertEqual(project.file_type("controlanims").relative_path("hero", "body"), os.path.join("rigs", "body", "controlanims"))
+        self.assertEqual(project.file_type("exports").relative_path("hero", "default"), os.path.join("skeletons", "default", "exports"))
+        self.assertEqual(project.file_type("sources").relative_path("hero"), "sources")
         for key in ("controlposes", "controlanims", "exports", "sources"):
-            self.assertEqual(project.file_type(key).relative_path("hero"), key)
             self.assertTrue(project.file_type(key).folder)
         self.assertEqual(project.rig_regions, ["lowerBody", "upperBody", "head", "hands"])
         self.assertEqual(project.library_statuses, ["scratch", "review", "final"])
@@ -162,6 +189,38 @@ class Projects(TempRoot):
         project = Project(root)
         self.assertEqual(project.file_type("controlposes").relative_path("hero"), os.path.join("library", "poses"))
         self.assertEqual((project.rig_regions, project.library_statuses), (["face"], ["wip"]))
+
+    def test_a_version_2_project_moves_to_skeletons_rigs_and_looks(self):
+        old = {"formatVersion": 2, "assetTypes": ["Prop"], "fileTypes": json.loads(json.dumps(VERSION_2_FILE_TYPES)),
+               "rig": {"regions": ["face"]}, "library": {"statuses": ["wip"]}}
+        old["fileTypes"]["anims"] = {"folder": True, "path": "anims"}       # never a default: a studio's own
+        root = self.old_project(old)
+        project = Project(root)
+        expected = dict(DEFAULT_PROJECT["fileTypes"], anims={"folder": True, "path": "anims"})
+        saved = json.loads(self.read(os.path.join(root, "project.json")))
+        self.assertEqual(saved["formatVersion"], 3)
+        self.assertEqual(saved["fileTypes"], expected)
+        self.assertNotIn("publish", project.file_types, "publishes are per rig and per look now")
+        self.assertEqual(saved["rig"], {"regions": ["face"]})
+        self.assertEqual(project.file_type("skeleton").relative_path("hero", "default"),
+                         os.path.join("skeletons", "default", "skeleton.json"))
+        self.assertEqual(project.file_type("model").relative_path("hero", "winter"),
+                         os.path.join("looks", "winter", "model", "hero_winter_model.ma"))
+
+    def test_a_version_2_path_a_studio_edited_is_kept_and_one_with_variant_fails_by_name(self):
+        kept = {"formatVersion": 2, "assetTypes": ["Prop"], "fileTypes": {
+            "shapes": {"path": "rigging/shapes.json"}, "template": {"path": "variants/{variant}/template.json"}}}
+        project = Project(self.old_project(kept))
+        self.assertEqual(project.file_type("shapes").relative_path("hero"), os.path.join("rigging", "shapes.json"))
+        self.assertEqual(project.file_type("template").relative_path("hero", "body"), os.path.join("rigs", "body", "template.json"))
+
+        edited = {"formatVersion": 2, "assetTypes": ["Prop"], "fileTypes": {
+            "shapes": {"path": "variants/{variant}/control_shapes.json"}}}
+        with self.assertRaises(ProjectError) as raised:
+            Project(self.old_project(edited))
+        message = str(raised.exception)
+        for text in ("project.json", "'shapes'", "variants/{variant}/control_shapes.json", "{rig}"):
+            self.assertIn(text, message)
 
     def test_a_current_project_is_not_rewritten(self):
         path = os.path.join(self.project.root, "project.json")
@@ -196,26 +255,58 @@ class Projects(TempRoot):
         self.assertTrue(update_project_data({"formatVersion": 1}))
 
     def test_file_type_paths(self):
-        shapes = self.project.file_type("shapes")
-        self.assertTrue(shapes.per_variant)
-        self.assertEqual(shapes.relative_path("hero", "game"), os.path.join("variants", "game", "shapes.json"))
-        self.assertEqual(self.project.file_type("skeleton").relative_path("hero"),
-                         os.path.join("skeleton", "hero_skeleton.ma"))
-        self.assertEqual(self.project.file_type("rig").relative_path("hero", "game"),
-                         os.path.join("variants", "game", "hero_game_rig.ma"))
-        self.assertEqual(self.project.file_type("template").variant_parent(), "variants")
-        with self.assertRaises(ProjectError):
-            self.project.file_type("skeleton").variant_parent()
+        # Written by hand from the layout in RigModules' design/rigs-and-looks.md, section 3.
+        expected = {
+            ("skeleton", "default"): ("skeletons", "default", "skeleton.json"),
+            ("exports", "default"): ("skeletons", "default", "exports"),
+            ("riginfo", "body"): ("rigs", "body", "rig.json"),
+            ("template", "body"): ("rigs", "body", "template.json"),
+            ("shapes", "body"): ("rigs", "body", "shapes.json"),
+            ("postops", "body"): ("rigs", "body", "postops.py"),
+            ("rig", "body"): ("rigs", "body", "hero_body_rig.ma"),
+            ("rigpublish", "body"): ("rigs", "body", "publish"),
+            ("controlposes", "body"): ("rigs", "body", "controlposes"),
+            ("controlanims", "body"): ("rigs", "body", "controlanims"),
+            ("lookinfo", "winter"): ("looks", "winter", "look.json"),
+            ("model", "winter"): ("looks", "winter", "model", "hero_winter_model.ma"),
+            ("textures", "winter"): ("looks", "winter", "textures"),
+            ("shaders", "winter"): ("looks", "winter", "shaders"),
+            ("weights", "winter"): ("looks", "winter", "weights"),
+            ("lookpublish", "winter"): ("looks", "winter", "publish"),
+            ("sources", None): ("sources",),
+        }
+        self.assertEqual({key for key, _ in expected}, set(self.project.file_types))
+        for (key, owner), parts in expected.items():
+            self.assertEqual(self.project.file_type(key).relative_path("hero", owner), os.path.join(*parts), key)
 
-    def test_variant_rules(self):
+    def test_a_file_type_belongs_to_a_skeleton_a_rig_a_look_or_the_asset(self):
+        owners = {key: self.project.file_type(key).owner for key in ("skeleton", "exports", "shapes", "weights", "sources")}
+        self.assertEqual(owners, {"skeleton": "skeleton", "exports": "skeleton", "shapes": "rig", "weights": "look", "sources": None})
+        self.assertEqual(self.project.file_type("template").owner_parent(), "rigs")
+        self.assertEqual(self.project.file_type("model").owner_parent(), "looks")
+        self.assertEqual(self.project.file_type("skeleton").owner_parent(), "skeletons")
         with self.assertRaises(ProjectError):
-            self.project.file_type("shapes").relative_path("hero")            # per variant, none given
+            self.project.file_type("sources").owner_parent()
+
+    def test_owner_rules(self):
+        with self.assertRaises(ProjectError) as raised:
+            self.project.file_type("shapes").relative_path("hero")            # belongs to a rig, none given
+        self.assertIn("belongs to a rig", str(raised.exception))
         with self.assertRaises(ProjectError):
-            self.project.file_type("skeleton").relative_path("hero", "game")  # asset level, variant given
-        with self.assertRaises(ProjectError):
-            self.project.file_type("shapes").relative_path("hero", "bad/variant")
+            self.project.file_type("sources").relative_path("hero", "body")   # asset level, an owner given
+        for bad in ("bad/name", "Body", ""):
+            with self.assertRaises(ProjectError):
+                self.project.file_type("shapes").relative_path("hero", bad)
         with self.assertRaises(ProjectError):
             self.project.file_type("nope")
+
+    def test_a_path_with_two_owners_or_an_unknown_field_fails_the_load(self):
+        for path, text in (("rigs/{rig}/looks/{look}/x.json", "look and rig"), ("rigs/{rig}/{shot}.json", "shot")):
+            root = self.old_project({"formatVersion": FORMAT_VERSION, "assetTypes": ["Prop"], "fileTypes": {"odd": {"path": path}}})
+            with self.assertRaises(ProjectError) as raised:
+                Project(root)
+            self.assertIn(text, str(raised.exception))
+            self.assertIn("'odd'", str(raised.exception))
 
     def test_asset_type_check(self):
         self.assertEqual(self.project.check_asset_type("Prop"), "Prop")
@@ -234,10 +325,9 @@ class Projects(TempRoot):
 class Assets(TempRoot):
 
     def test_create_writes_only_identity(self):
-        hero = self.create(skeleton="shooter\\main\\skeletons\\biped")
+        hero = self.create()
         self.assertTrue(hero.exists())
-        self.assertEqual(json.loads(self.read(hero.info_path)),
-                         {"formatVersion": 1, "assetType": "Character", "skeleton": "shooter\\main\\skeletons\\biped"})
+        self.assertEqual(json.loads(self.read(hero.info_path)), {"formatVersion": 2, "assetType": "Character"})
         self.assertEqual(hero.project.root, self.project.root)
         self.assertEqual(self.source_control.calls, [("add", hero.info_path)])
 
@@ -249,8 +339,8 @@ class Assets(TempRoot):
             self.create("shooter\\main\\props\\crate", asset_type="Crate")      # not a project asset type
         with self.assertRaises(ProjectError):
             Asset.create("loose\\crate", "Prop", root=self.root)              # no project.json above
-        with self.assertRaises(AssetIdError):
-            self.create("shooter\\main\\props\\crate", skeleton="bad\\\\id")
+        with self.assertRaises(TypeError):
+            Asset.create("shooter\\main\\props\\crate", "Prop", skeleton=HERO, root=self.root)   # asset.json names no skeleton now
 
     def test_assets_never_nest(self):
         self.create()
@@ -264,10 +354,11 @@ class Assets(TempRoot):
 
     def test_paths_never_touch_the_disk(self):
         hero = Asset(HERO, root=self.root)
-        path = hero.path("shapes", variant="game")
-        self.assertEqual(path, os.path.join(hero.folder, "variants", "game", "shapes.json"))
+        path = hero.path("shapes", "body")
+        self.assertEqual(path, os.path.join(hero.folder, "rigs", "body", "shapes.json"))
+        self.assertEqual(hero.path("weights", owner="winter"), os.path.join(hero.folder, "looks", "winter", "weights"))
         self.assertFalse(os.path.exists(hero.folder))
-        self.assertFalse(hero.file_exists("shapes", "game"))
+        self.assertFalse(hero.file_exists("shapes", "body"))
 
     def test_info_of_a_missing_asset_fails(self):
         with self.assertRaises(AssetError):
@@ -275,31 +366,169 @@ class Assets(TempRoot):
 
     def test_from_path_finds_the_enclosing_asset(self):
         hero = self.create()
-        inside = os.path.join(hero.folder, "variants", "game", "weights", "body.json")
+        inside = os.path.join(hero.folder, "looks", "default", "weights", "body.json")
         self.assertEqual(Asset.from_path(inside, root=self.root), hero)
         with self.assertRaises(AssetError):
             Asset.from_path(os.path.join(self.project.root, "props"), root=self.root)
 
-    def test_skeleton_defaults_to_the_asset_itself(self):
-        self.assertEqual(self.create().skeleton, HERO)
-        villain = self.create("shooter\\main\\characters\\villain", skeleton=HERO)
-        self.assertEqual(villain.skeleton, HERO)
+    def test_a_version_1_asset_json_drops_its_skeleton_and_is_written_back(self):
+        hero = Asset(HERO, root=self.root)
+        self.write(hero.info_path, json.dumps({"formatVersion": 1, "assetType": "Character", "skeleton": VILLAIN}))
+        self.assertEqual(hero.info, {"formatVersion": 2, "assetType": "Character"})
+        self.assertEqual(json.loads(self.read(hero.info_path)), {"formatVersion": 2, "assetType": "Character"})
+        self.assertFalse(hasattr(hero, "skeleton"))
 
-    def test_variants_are_folders_with_a_template(self):
+    def test_a_version_1_asset_json_that_cannot_be_written_back_still_reads_updated(self):
+        hero = Asset(HERO, root=self.root)
+        self.write(hero.info_path, json.dumps({"formatVersion": 1, "assetType": "Character"}))
+        with mock.patch("bmaya.core.asset.asset.write_json", side_effect=PermissionError("read-only")):
+            self.assertEqual(hero.info["formatVersion"], 2)
+        self.assertEqual(json.loads(self.read(hero.info_path))["formatVersion"], 1)
+
+    def test_an_unknown_asset_json_version_fails(self):
+        hero = Asset(HERO, root=self.root)
+        self.write(hero.info_path, json.dumps({"formatVersion": 3, "assetType": "Character"}))
+        with self.assertRaises(AssetError):
+            hero.info
+
+    def test_skeletons_rigs_and_looks_are_folders_with_their_file(self):
         hero = self.create()
-        self.assertEqual(hero.variants, [])
-        self.add_variant(hero, "game")
-        self.add_variant(hero, "cine")
-        os.makedirs(os.path.join(hero.folder, "variants", "scratch"))     # no template: not a variant
-        self.assertEqual(hero.variants, ["cine", "game"])
-        self.assertNotIn("rigs", hero.info, "adding a variant edits nothing")
+        self.assertEqual((hero.skeletons, hero.rigs, hero.looks), ([], [], []))
+        before = self.read(hero.info_path)
+        self.write(hero.path("skeleton", "face"), "{}")
+        self.write(hero.path("skeleton", "default"), "{}")
+        hero.add_rig("body", DEFAULT)
+        hero.add_rig("body_cine", DEFAULT, source=RigRef("body"))
+        hero.add_look("winter", [DEFAULT])
+        hero.add_look("default", [DEFAULT, SkeletonRef("face")])
+        for folder in ("skeletons", "rigs", "looks"):
+            os.makedirs(os.path.join(hero.folder, folder, "scratch"))        # no file inside: not one of them
+        os.makedirs(os.path.join(hero.folder, "rigs", "Bad"))
+        self.write(os.path.join(hero.folder, "rigs", "Bad", "rig.json"), "{}")   # not a valid name: not listed
+        self.assertEqual(hero.skeletons, ["default", "face"])
+        self.assertEqual(hero.rigs, ["body", "body_cine"])
+        self.assertEqual(hero.looks, ["default", "winter"])
+        self.assertEqual(self.read(hero.info_path), before, "adding a skeleton, a rig or a look edits nothing shared")
+
+    def test_add_rig_and_add_look_write_their_file_and_tell_source_control(self):
+        hero = self.create()
+        self.source_control.calls.clear()
+        record = hero.add_rig("body", DEFAULT)
+        self.assertEqual(record, RigRecord(DEFAULT, None))
+        self.assertEqual(json.loads(self.read(os.path.join(hero.folder, "rigs", "body", "rig.json"))),
+                         {"formatVersion": 1, "skeleton": "default"})
+        hero.add_look("default", [DEFAULT])
+        self.assertEqual(json.loads(self.read(os.path.join(hero.folder, "looks", "default", "look.json"))),
+                         {"formatVersion": 1, "skeletons": ["default"]})
+        self.assertEqual(self.source_control.calls, [("add", hero.path("riginfo", "body")), ("add", hero.path("lookinfo", "default"))])
+        self.assertEqual(hero.rig("body"), RigRecord(DEFAULT, None))
+        self.assertEqual(hero.look("default"), LookRecord((DEFAULT,)))
+
+    def test_add_checks(self):
+        hero = self.create(rigs=["body"], looks=["default"])
+        with self.assertRaises(AssetError):
+            hero.add_rig("body", DEFAULT)                    # exists
+        with self.assertRaises(AssetError):
+            hero.add_look("default", [DEFAULT])              # exists
+        with self.assertRaises(ProjectError):
+            hero.add_rig("Body", DEFAULT)                    # uppercase
+        with self.assertRaises(RecordError):
+            hero.add_look("empty", [])                       # a look names a skeleton
+        with self.assertRaises(AssetError):
+            Asset(VILLAIN, root=self.root).add_rig("body", DEFAULT)   # no asset.json
+        with self.assertRaises(AssetError) as raised:
+            hero.rig("face")
+        self.assertIn("body", str(raised.exception))
+        with self.assertRaises(AssetError):
+            hero.look("winter")
+
+    def test_a_rig_and_a_look_can_name_another_assets_skeleton(self):
+        # NPCs share one skeleton with no copied skeleton file. A look-only asset has looks and nothing else.
+        hero = self.create(skeletons=["default"], rigs=["body"])
+        shared = SkeletonRef("default", asset=HERO)
+        guards = self.create("shooter\\main\\npc\\guards", asset_type="Character")
+        guards.add_look("captain", [shared])
+        guards.add_rig("body", shared)
+        self.assertEqual(json.loads(self.read(guards.path("lookinfo", "captain"))),
+                         {"formatVersion": 1, "skeletons": [{"asset": HERO, "name": "default"}]})
+        self.assertEqual(guards.resolve_skeleton(shared), (hero, "default"))
+        self.assertEqual(guards.skeleton_of("body"), (hero, "default"))
+        self.assertEqual(hero.skeleton_of("body"), (hero, "default"))
+        self.assertEqual((guards.skeletons, guards.looks), ([], ["captain"]))
+
+    def test_a_rig_wears_a_look_of_its_own_skeleton(self):
+        hero = self.create(rigs=["body"], looks=["default"])
+        hero.add_rig("face", SkeletonRef("face"))
+        hero.add_look("head", [SkeletonRef("face")])
+        hero.add_look("own_by_id", [SkeletonRef("default", asset=HERO)])      # the same skeleton, named in full
+        hero.add_look("both", [SkeletonRef("face"), DEFAULT])
+        self.assertTrue(hero.look_fits("default", "body"))
+        self.assertTrue(hero.look_fits("own_by_id", "body"))
+        self.assertTrue(hero.look_fits("both", "body"))
+        self.assertFalse(hero.look_fits("head", "body"))
+        self.assertTrue(hero.look_fits("head", "face"))
+
+
+class Records(TempRoot):
+
+    def path(self, name="rig.json"):
+        return os.path.join(self.root, name)
+
+    def test_rig_round_trip_in_both_reference_forms(self):
+        for record, data in (
+            (RigRecord(DEFAULT), {"formatVersion": 1, "skeleton": "default"}),
+            (RigRecord(DEFAULT, RigRef("body")), {"formatVersion": 1, "skeleton": "default", "source": "body"}),
+            (RigRecord(SkeletonRef("default", HERO), RigRef("body", HERO)),
+             {"formatVersion": 1, "skeleton": {"asset": HERO, "name": "default"}, "source": {"asset": HERO, "rig": "body"}}),
+        ):
+            records.write_rig(self.path(), record)
+            self.assertEqual(json.loads(self.read(self.path())), data)
+            self.assertEqual(records.read_rig(self.path()), record)
+
+    def test_look_round_trip(self):
+        record = LookRecord((DEFAULT, SkeletonRef("face", HERO)))
+        records.write_look(self.path("look.json"), record)
+        self.assertEqual(json.loads(self.read(self.path("look.json"))),
+                         {"formatVersion": 1, "skeletons": ["default", {"asset": HERO, "name": "face"}]})
+        self.assertEqual(records.read_look(self.path("look.json")), record)
+
+    def test_bad_rig_files_name_the_file(self):
+        bad = {
+            "not json": "{nope",
+            "wrong version": {"formatVersion": 2, "skeleton": "default"},
+            "no skeleton": {"formatVersion": 1},
+            "unknown key": {"formatVersion": 1, "skeleton": "default", "parent": "body"},
+            "joined string": {"formatVersion": 1, "skeleton": HERO + "\\default"},
+            "uppercase name": {"formatVersion": 1, "skeleton": "Default"},
+            "half a reference": {"formatVersion": 1, "skeleton": {"asset": HERO}},
+            "bad asset id": {"formatVersion": 1, "skeleton": {"asset": "Shooter\\hero", "name": "default"}},
+            "source by the wrong key": {"formatVersion": 1, "skeleton": "default", "source": {"asset": HERO, "name": "body"}},
+        }
+        for label, data in bad.items():
+            with self.subTest(label):
+                self.write(self.path(), data if isinstance(data, str) else json.dumps(data))
+                with self.assertRaises(RecordError) as raised:
+                    records.read_rig(self.path())
+                self.assertIn("rig.json", str(raised.exception))
+
+    def test_bad_look_files(self):
+        for data in ({"formatVersion": 1, "skeletons": "default"}, {"formatVersion": 1, "skeletons": []},
+                     {"formatVersion": 1, "skeletons": [5]}, {"formatVersion": 1}):
+            self.write(self.path("look.json"), json.dumps(data))
+            with self.assertRaises(RecordError):
+                records.read_look(self.path("look.json"))
+
+    def test_references_check_their_names(self):
+        for make in (lambda: SkeletonRef("Body"), lambda: SkeletonRef("body", "Bad\\id"), lambda: RigRef(""), lambda: RigRef("a b")):
+            with self.assertRaises((RecordError, AssetIdError)):
+                make()
 
 
 class Publishes(TempRoot):
 
     def setUp(self):
         super().setUp()
-        self.hero = self.create(variants=["game"])
+        self.hero = self.create(rigs=["body"], looks=["winter"])
 
     def test_ids_sort_in_time_order(self):
         early = publishes.make_id("bmorgan", datetime.datetime(2026, 11, 8, 9, 5, 1, tzinfo=datetime.timezone.utc))
@@ -311,42 +540,55 @@ class Publishes(TempRoot):
 
     def test_create_adds_a_folder_and_edits_nothing(self):
         before = self.read(self.hero.info_path)
-        folder = publishes.create(self.hero, "game", {"pluginVersion": "0.1"}, user="bmorgan")
+        folder = publishes.create(self.hero, "rig", "body", {"pluginVersion": "0.1"}, user="bmorgan")
         publish_id = os.path.basename(folder)
+        self.assertEqual(os.path.dirname(folder), os.path.join(self.hero.folder, "rigs", "body", "publish"))
         self.assertEqual(self.read(self.hero.info_path), before)
-        self.assertEqual(publishes.latest(self.hero, "game"), publish_id)
-        record = publishes.info(self.hero, "game", publish_id)
+        self.assertEqual(publishes.latest(self.hero, "rig", "body"), publish_id)
+        record = publishes.info(self.hero, "rig", "body", publish_id)
         self.assertEqual(record, {"formatVersion": 1, "id": publish_id, "user": "bmorgan", "pluginVersion": "0.1"})
         self.assertIn(("add", os.path.join(folder, "publish.json")), self.source_control.calls)
 
+    def test_a_rig_and_a_look_publish_separately(self):
+        rig_folder = publishes.create(self.hero, "rig", "body", user="bmorgan")
+        self.assertIsNone(publishes.latest(self.hero, "look", "winter"))
+        look_folder = publishes.create(self.hero, "look", "winter", user="alice")
+        self.assertEqual(os.path.dirname(look_folder), os.path.join(self.hero.folder, "looks", "winter", "publish"))
+        self.assertEqual(publishes.list_ids(self.hero, "look", "winter"), [os.path.basename(look_folder)])
+        self.assertEqual(publishes.list_ids(self.hero, "rig", "body"), [os.path.basename(rig_folder)])
+
     def test_latest_is_the_newest_id(self):
-        base = self.hero.path("publish", "game")
+        base = self.hero.path("rigpublish", "body")
         for publish_id in ("20261108T090000Z_bmorgan", "20261109T080000Z_alice", "20261108T120000Z_alice"):
             self.write(os.path.join(base, publish_id, "publish.json"), "{}")
         os.makedirs(os.path.join(base, "not_a_publish"))
         os.makedirs(os.path.join(base, "20261110T000000Z_halfwritten"))   # no publish.json yet
-        self.assertEqual(publishes.list_ids(self.hero, "game"),
+        self.assertEqual(publishes.list_ids(self.hero, "rig", "body"),
                          ["20261108T090000Z_bmorgan", "20261108T120000Z_alice", "20261109T080000Z_alice"])
-        self.assertEqual(publishes.latest(self.hero, "game"), "20261109T080000Z_alice")
+        self.assertEqual(publishes.latest(self.hero, "rig", "body"), "20261109T080000Z_alice")
 
     def test_create_checks(self):
-        self.assertIsNone(publishes.latest(self.hero, "game"))
+        self.assertIsNone(publishes.latest(self.hero, "rig", "body"))
         with self.assertRaises(AssetError):
-            publishes.create(self.hero, "cine")        # not a variant
+            publishes.create(self.hero, "rig", "cine")       # not a rig
+        with self.assertRaises(AssetError):
+            publishes.create(self.hero, "look", "body")      # a rig's name is not a look
+        with self.assertRaises(AssetError):
+            publishes.create(self.hero, "variant", "body")   # not a kind
         fixed = datetime.datetime(2026, 11, 8, tzinfo=datetime.timezone.utc)
         with mock.patch.object(publishes, "make_id", return_value=publishes.make_id("bmorgan", fixed)):
-            publishes.create(self.hero, "game")
+            publishes.create(self.hero, "rig", "body")
             with self.assertRaises(AssetError):
-                publishes.create(self.hero, "game")    # same second, same user
+                publishes.create(self.hero, "rig", "body")   # same second, same user
 
 
 class Registries(TempRoot):
 
     def test_writes_nothing(self):
-        self.create(variants=["game"])
+        self.create(rigs=["body"])
         self.registry().refresh()
         written = [name for _, _, files in os.walk(self.root) for name in files]
-        self.assertEqual(sorted(written), ["asset.json", "project.json", "template.json"])
+        self.assertEqual(sorted(written), ["asset.json", "project.json", "rig.json"])
 
     def test_scan_finds_assets_at_any_depth(self):
         self.create()
@@ -358,26 +600,40 @@ class Registries(TempRoot):
         self.assertEqual(registry.errors, [])
 
     def test_entries(self):
-        hero = self.create(variants=["game", "cine"])
-        folder = publishes.create(hero, "game", user="bmorgan")
+        hero = self.create(skeletons=["default"], rigs=["body"], looks=["winter"])
+        hero.add_rig("body_cine", DEFAULT, source=RigRef("body"))
+        rig_folder = publishes.create(hero, "rig", "body", user="bmorgan")
+        look_folder = publishes.create(hero, "look", "winter", user="bmorgan")
         entry = self.registry().get(HERO)
-        self.assertEqual(entry, {"assetType": "Character", "skeleton": HERO, "variants": ["cine", "game"],
-                                 "latestPublish": {"game": os.path.basename(folder)}})
-        self.assertEqual(self.registry().latest_publish(HERO, "game"), os.path.basename(folder))
-        self.assertIsNone(self.registry().latest_publish(HERO, "cine"))
+        self.assertEqual(entry, {
+            "assetType": "Character",
+            "skeletons": ["default"],
+            "rigs": {"body": {"skeleton": DEFAULT, "source": None, "latestPublish": os.path.basename(rig_folder)},
+                     "body_cine": {"skeleton": DEFAULT, "source": RigRef("body"), "latestPublish": None}},
+            "looks": {"winter": {"skeletons": (DEFAULT,), "latestPublish": os.path.basename(look_folder)}},
+        })
+        self.assertEqual(self.registry().latest_publish(HERO, "rig", "body"), os.path.basename(rig_folder))
+        self.assertEqual(self.registry().latest_publish(HERO, "look", "winter"), os.path.basename(look_folder))
+        self.assertIsNone(self.registry().latest_publish(HERO, "rig", "body_cine"))
+        self.assertIsNone(self.registry().latest_publish(HERO, "look", "body"), "a rig's name is not a look")
+        with self.assertRaises(ProjectError):
+            self.registry().latest_publish(HERO, "variant", "body")
 
     def test_find_by_type_and_skeleton(self):
-        self.create("shooter\\main\\skeletons\\biped", asset_type="Skeleton")
-        self.create(skeleton="shooter\\main\\skeletons\\biped")
-        self.create("shooter\\main\\characters\\villain", skeleton="shooter\\main\\skeletons\\biped")
-        self.create("shooter\\main\\characters\\dog")
+        # biped holds the skeleton. hero has a rig on it, guards only looks on it, and dog has its own skeleton.
+        biped = "shooter\\main\\skeletons\\biped"
+        guards = "shooter\\main\\npc\\guards"
+        dog = "shooter\\main\\characters\\dog"
+        shared = SkeletonRef("default", asset=biped)
+        self.create(biped, asset_type="Skeleton", skeletons=["default"])
+        self.create().add_rig("body", shared)
+        self.create(guards).add_look("captain", [shared])
+        self.create(dog, skeletons=["default"], rigs=["body"])
         registry = self.registry()
-        self.assertEqual(registry.find(asset_type="Character"),
-                         ["shooter\\main\\characters\\dog", HERO, "shooter\\main\\characters\\villain"])
-        self.assertEqual(registry.find(skeleton="shooter\\main\\skeletons\\biped"),
-                         [HERO, "shooter\\main\\characters\\villain", "shooter\\main\\skeletons\\biped"])
-        self.assertEqual(registry.find(asset_type="Character", skeleton="shooter\\main\\characters\\dog"),
-                         ["shooter\\main\\characters\\dog"])
+        self.assertEqual(registry.find(asset_type="Character"), [dog, HERO, guards])
+        self.assertEqual(registry.find(skeleton=(biped, "default")), [HERO, guards, biped])
+        self.assertEqual(registry.find(asset_type="Character", skeleton=(dog, "default")), [dog])
+        self.assertEqual(registry.find(skeleton=(biped, "face")), [])
 
     def test_refresh_sees_changes_on_disk(self):
         registry = Registry.of(self.project, root=self.root)
@@ -406,7 +662,7 @@ class Registries(TempRoot):
     def test_unknown_asset(self):
         self.assertIsNone(self.registry().get(HERO))
         with self.assertRaises(ProjectError):
-            self.registry().latest_publish(HERO, "game")
+            self.registry().latest_publish(HERO, "rig", "body")
 
 
 class Versions(TempRoot):
@@ -480,36 +736,36 @@ class Handlers(TempRoot):
         self.handler = RecordingHandler()
         handlers.register("shapes", self.handler)
         self.addCleanup(handlers.unregister, "shapes")
-        self.hero = self.create(variants=["game"])
+        self.hero = self.create(rigs=["body"])
         self.source_control.calls.clear()
 
     def test_save_makes_folders_versions_and_tells_source_control(self):
-        path = handlers.save(self.hero, "shapes", variant="game", text="first", rig_root="hero:rigRootModule1")
-        self.assertEqual(path, self.hero.path("shapes", "game"))
+        path = handlers.save(self.hero, "shapes", "body", text="first", rig_root="hero:rigRootModule1")
+        self.assertEqual(path, self.hero.path("shapes", "body"))
         self.assertEqual(versions.list_versions(path, self.root), [])
         self.assertEqual(self.source_control.calls, [("add", path)])
 
-        handlers.save(self.hero, "shapes", variant="game", text="second")
+        handlers.save(self.hero, "shapes", owner="body", text="second")
         self.assertEqual(self.read(path), "second")
         self.assertEqual(self.read(versions.list_versions(path, self.root)[0][1]), "first")
         self.assertEqual(self.source_control.calls, [("add", path), ("checkout", path)])
-        self.assertEqual(self.handler.calls[0][2], {"variant": "game", "text": "first", "rig_root": "hero:rigRootModule1"})
+        self.assertEqual(self.handler.calls[0][2], {"owner": "body", "text": "first", "rig_root": "hero:rigRootModule1"})
 
     def test_load_returns_the_handler_result(self):
-        handlers.save(self.hero, "shapes", variant="game", text="data")
-        self.assertEqual(handlers.load(self.hero, "shapes", variant="game"), "data")
+        handlers.save(self.hero, "shapes", "body", text="data")
+        self.assertEqual(handlers.load(self.hero, "shapes", "body"), "data")
 
     def test_load_of_a_missing_file_fails(self):
         with self.assertRaises(FileNotFoundError):
-            handlers.load(self.hero, "shapes", variant="game")
+            handlers.load(self.hero, "shapes", "body")
 
     def test_unregistered_and_base_handlers_raise(self):
         with self.assertRaises(NotImplementedError):
-            handlers.save(self.hero, "weights", variant="game")
+            handlers.save(self.hero, "weights", "default")
         handlers.register("postops", handlers.FileHandler())
         self.addCleanup(handlers.unregister, "postops")
         with self.assertRaises(NotImplementedError):
-            handlers.save(self.hero, "postops", variant="game")
+            handlers.save(self.hero, "postops", "body")
 
 
 if __name__ == "__main__":

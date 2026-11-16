@@ -17,27 +17,35 @@ from . import assetid
 
 PROJECTS_ROOT_ENV = "RIGGING_PROJECT_DIR"
 PROJECT_FILE = "project.json"
-FORMAT_VERSION = 2
+FORMAT_VERSION = 3
 
-# A new project's project.json. Paths are relative to the asset folder. {name} is the asset id's last
-# token, {variant} a rig variant. Everything that can differ between variants lives under variants/.
+# The parts of an asset a file can belong to (RigModules D54). A file type's path names at most one of them as a
+# field: "rigs/{rig}/shapes.json" belongs to a rig. A path with none belongs to the asset.
+OWNER_KINDS = ("skeleton", "rig", "look")
+
+# A new project's project.json. Paths are relative to the asset folder. {name} is the asset id's last token.
+# An asset holds skeletons, rigs and looks: a skeleton is its skeleton.json (the only form a skeleton is stored in),
+# a rig is a template built on one skeleton, and a look is the meshes and weights a rig of that skeleton wears.
 DEFAULT_PROJECT = {
     "formatVersion": FORMAT_VERSION,
     "assetTypes": ["Prop", "Character", "Vehicle", "Head", "Weapon", "VFX", "Light", "Environment", "Skeleton", "Other"],
     "fileTypes": {
-        "skeleton": {"path": "skeleton/{name}_skeleton.ma"},
-        "model": {"path": "variants/{variant}/model/{name}_{variant}_model.ma"},
-        "textures": {"path": "variants/{variant}/textures", "folder": True},
-        "shaders": {"path": "variants/{variant}/shaders", "folder": True},
-        "template": {"path": "variants/{variant}/template.json"},
-        "shapes": {"path": "variants/{variant}/shapes.json"},
-        "weights": {"path": "variants/{variant}/weights", "folder": True},
-        "postops": {"path": "variants/{variant}/postops.py"},
-        "rig": {"path": "variants/{variant}/{name}_{variant}_rig.ma"},
-        "publish": {"path": "variants/{variant}/publish", "folder": True},
-        "controlposes": {"path": "controlposes", "folder": True},
-        "controlanims": {"path": "controlanims", "folder": True},
-        "exports": {"path": "exports", "folder": True},
+        "skeleton": {"path": "skeletons/{skeleton}/skeleton.json"},
+        "exports": {"path": "skeletons/{skeleton}/exports", "folder": True},
+        "riginfo": {"path": "rigs/{rig}/rig.json"},
+        "template": {"path": "rigs/{rig}/template.json"},
+        "shapes": {"path": "rigs/{rig}/shapes.json"},
+        "postops": {"path": "rigs/{rig}/postops.py"},
+        "rig": {"path": "rigs/{rig}/{name}_{rig}_rig.ma"},
+        "rigpublish": {"path": "rigs/{rig}/publish", "folder": True},
+        "controlposes": {"path": "rigs/{rig}/controlposes", "folder": True},
+        "controlanims": {"path": "rigs/{rig}/controlanims", "folder": True},
+        "lookinfo": {"path": "looks/{look}/look.json"},
+        "model": {"path": "looks/{look}/model/{name}_{look}_model.ma"},
+        "textures": {"path": "looks/{look}/textures", "folder": True},
+        "shaders": {"path": "looks/{look}/shaders", "folder": True},
+        "weights": {"path": "looks/{look}/weights", "folder": True},
+        "lookpublish": {"path": "looks/{look}/publish", "folder": True},
         "sources": {"path": "sources", "folder": True},
     },
     # The pose and animation library's vocabularies (RigModules D51). A studio edits them in project.json.
@@ -66,30 +74,45 @@ class FileType:
     folder: bool = False
 
     @property
-    def per_variant(self) -> bool:
-        return "variant" in _FIELD.findall(self.pattern)
+    def owner(self) -> str | None:
+        """What the file belongs to: "skeleton", "rig" or "look", or None for the asset itself."""
+        kinds = sorted(set(_FIELD.findall(self.pattern)) & set(OWNER_KINDS))
+        if len(kinds) > 1:
+            raise ProjectError(f"File type {self.key!r} names {' and '.join(kinds)} in its path {self.pattern!r}: a file belongs to one.")
+        return kinds[0] if kinds else None
 
-    def variant_parent(self) -> str:
-        """The folder below the asset that holds one folder per variant: "variants" for
-        "variants/{variant}/template.json"."""
-        head, marker, _tail = self.pattern.partition("{variant}")
+    def check(self) -> None:
+        """Raises ProjectError for a path that can't be used: an unknown field, or more than one owner."""
+        unknown = set(_FIELD.findall(self.pattern)) - {"name", *OWNER_KINDS}
+        if "variant" in unknown:
+            raise ProjectError(
+                f"File type {self.key!r} still uses {{variant}} in its path {self.pattern!r}. Variants became rigs and looks: "
+                f"edit the path in {PROJECT_FILE} to use {{skeleton}}, {{rig}} or {{look}}.")
+        if unknown:
+            raise ProjectError(f"File type {self.key!r} uses unknown fields {sorted(unknown)} in its path {self.pattern!r}.")
+        self.owner
+
+    def owner_parent(self) -> str:
+        """The folder below the asset that holds one folder per owner: "rigs" for "rigs/{rig}/template.json"."""
+        owner = self.owner
+        head, marker, _tail = self.pattern.partition("{%s}" % owner)
         if not marker or not head.endswith("/") or "{" in head:
-            raise ProjectError(f"File type {self.key!r} needs a path of the form '<folder>/{{variant}}/...'.")
+            raise ProjectError(f"File type {self.key!r} needs a path of the form '<folder>/{{skeleton, rig or look}}/...'.")
         return os.path.normpath(head)
 
-    def relative_path(self, name: str, variant: str | None = None) -> str:
-        """The path below the asset folder."""
-        if self.per_variant:
-            if not variant:
-                raise ProjectError(f"File type {self.key!r} is per variant: pass a variant.")
-            if not assetid.is_valid_token(variant):
-                raise ProjectError(f"Variant {variant!r} must be lowercase letters, digits and '_'.")
-        elif variant:
-            raise ProjectError(f"File type {self.key!r} belongs to the asset, not a variant.")
-        fields = {"name": name, "variant": variant}
-        unknown = set(_FIELD.findall(self.pattern)) - set(fields)
-        if unknown:
-            raise ProjectError(f"File type {self.key!r} uses unknown fields {sorted(unknown)}.")
+    def relative_path(self, name: str, owner: str | None = None) -> str:
+        """The path below the asset folder. owner is the name of the skeleton, rig or look the file belongs to."""
+        self.check()
+        kind = self.owner
+        fields = {"name": name}
+        if kind:
+            if not owner:
+                raise ProjectError(f"File type {self.key!r} belongs to a {kind}: pass its name.")
+            if not assetid.is_valid_token(owner):
+                raise ProjectError(f"The {kind} name {owner!r} must be lowercase letters, digits and '_'.")
+            fields[kind] = owner
+        elif owner:
+            raise ProjectError(f"File type {self.key!r} belongs to the asset, not to {owner!r}.")
         return os.path.normpath(self.pattern.format(**fields))
 
 
@@ -105,6 +128,11 @@ class Project:
             key: FileType(key, value["path"], bool(value.get("folder", False)))
             for key, value in self._data.get("fileTypes", {}).items()
         }
+        for file_type in self.file_types.values():
+            try:
+                file_type.check()
+            except ProjectError as error:
+                raise ProjectError(f"{os.path.join(self.root, PROJECT_FILE)}: {error}") from None
 
     def __repr__(self) -> str:
         return f"Project({self.root!r})"
@@ -158,9 +186,49 @@ def _add_library_folders(data: dict) -> None:
     data.setdefault("library", {"statuses": ["scratch", "review", "final"]})
 
 
+def _split_variants_into_rigs_and_looks(data: dict) -> None:
+    """Version 2 to 3 (RigModules D54). A variant was a rig with its own model and weights. An asset now holds
+    skeletons, rigs and looks, so every path that was per variant moves under rigs/{rig} or looks/{look}, the skeleton
+    becomes skeletons/{skeleton}/skeleton.json (there is no skeleton .ma), exports move under their skeleton, and
+    the pose and animation folders move under their rig.
+
+    Only a path that still equals its version 2 default is replaced. A path a studio edited is left alone: one that
+    still uses {variant} then fails the project's load by name, because a guess at where it should go would be wrong
+    silently. File types the defaults never had are untouched. Frozen, like every step."""
+    file_types = data.setdefault("fileTypes", {})
+    if not isinstance(file_types, dict):
+        raise ProjectError("fileTypes must be an object.")
+    moved = {
+        "skeleton": ("skeleton/{name}_skeleton.ma", "skeletons/{skeleton}/skeleton.json"),
+        "exports": ("exports", "skeletons/{skeleton}/exports"),
+        "template": ("variants/{variant}/template.json", "rigs/{rig}/template.json"),
+        "shapes": ("variants/{variant}/shapes.json", "rigs/{rig}/shapes.json"),
+        "postops": ("variants/{variant}/postops.py", "rigs/{rig}/postops.py"),
+        "rig": ("variants/{variant}/{name}_{variant}_rig.ma", "rigs/{rig}/{name}_{rig}_rig.ma"),
+        "controlposes": ("controlposes", "rigs/{rig}/controlposes"),
+        "controlanims": ("controlanims", "rigs/{rig}/controlanims"),
+        "model": ("variants/{variant}/model/{name}_{variant}_model.ma", "looks/{look}/model/{name}_{look}_model.ma"),
+        "textures": ("variants/{variant}/textures", "looks/{look}/textures"),
+        "shaders": ("variants/{variant}/shaders", "looks/{look}/shaders"),
+        "weights": ("variants/{variant}/weights", "looks/{look}/weights"),
+    }
+    for key, (old, new) in moved.items():
+        entry = file_types.get(key)
+        if isinstance(entry, dict) and entry.get("path") == old:
+            entry["path"] = new
+    # Publishes are per rig and per look, and a file type has one path, so the one type becomes two.
+    publish = file_types.get("publish")
+    if isinstance(publish, dict) and publish.get("path") == "variants/{variant}/publish":
+        del file_types["publish"]
+    file_types.setdefault("rigpublish", {"path": "rigs/{rig}/publish", "folder": True})
+    file_types.setdefault("lookpublish", {"path": "looks/{look}/publish", "folder": True})
+    file_types.setdefault("riginfo", {"path": "rigs/{rig}/rig.json"})
+    file_types.setdefault("lookinfo", {"path": "looks/{look}/look.json"})
+
+
 # Step n turns a version n file into a version n + 1 file, in place. Bump FORMAT_VERSION and add a step
 # together, and add the new keys to DEFAULT_PROJECT. A step is never edited after it ships.
-PROJECT_UPDATES: dict[int, Callable[[dict], None]] = {1: _add_library_folders}
+PROJECT_UPDATES: dict[int, Callable[[dict], None]] = {1: _add_library_folders, 2: _split_variants_into_rigs_and_looks}
 
 
 def update_project_data(data: dict) -> bool:

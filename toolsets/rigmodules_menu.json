@@ -34,12 +34,22 @@
                 },
                 {
                     "type": "tool",
-                    "tool": "rigmodules.asset.new_variant",
+                    "tool": "rigmodules.asset.new_rig",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "tool": "rigmodules.asset.new_look",
                     "enabled": true
                 },
                 {
                     "type": "tool",
                     "tool": "rigmodules.asset.save_skeleton",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "tool": "rigmodules.asset.load_skeleton",
                     "enabled": true
                 },
                 {

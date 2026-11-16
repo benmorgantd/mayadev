@@ -84,6 +84,7 @@ class LibrarySession:
         self.scope: str | None = None
         self.reason = ""
         self.asset_id: str | None = None
+        self.rig_name: str | None = None      # the library is the rig's: poses are keyed by a rig's control markup
         self.rig_root: str | None = None
         self.sources: list[LIBRARY.LibrarySource] = []
         self.source_enabled: dict[str, bool] = {}
@@ -118,9 +119,9 @@ class LibrarySession:
             info = rigmodules.query.find_rig_info(rig_root)
             if info is None:
                 return
-            self.rig_root, self.asset_id = rig_root, info.asset_id
+            self.rig_root, self.asset_id, self.rig_name = rig_root, info.asset_id, info.rig_name
             self._asset = bmaya.core.asset.Asset(info.asset_id)
-            self.sources = LIBRARY.sources(self._asset)
+            self.sources = LIBRARY.sources(self._asset, info.rig_name)
             self.source_enabled = {source.key: self.source_enabled.get(source.key, True) for source in self.sources}
             files = [item for source in self.sources for item in LIBRARY.list_files(source, self.kind)]
             self._all = self._index.entries(files, rig_root)
@@ -135,13 +136,13 @@ class LibrarySession:
 
     def _empty(self, reason: str) -> None:
         self.reason = reason
-        self.asset_id = self.rig_root = self._asset = None
+        self.asset_id = self.rig_name = self.rig_root = self._asset = None
         self.sources, self._all, self.entries, self.masks, self.selected = [], [], [], [], None
 
     def _read_masks(self, rig_root: str) -> list[LIBRARY.Mask]:
         masks = rig_masks(rigmodules.query.get_rig_controls(rig_root))
         try:
-            saved = LIBRARY.saved_masks(self._asset)
+            saved = LIBRARY.saved_masks(self._asset, self.rig_name)
         except LIBRARY.LibraryError as error:
             bmaya.core.log.warning(f"The saved masks could not be read: {error}")
             saved = []
@@ -272,11 +273,15 @@ class LibrarySession:
                     found[field].add(entry.meta(key))
         return {field: sorted(values, key=str.casefold) for field, values in found.items()}
 
+    def _user_source(self) -> LIBRARY.LibrarySource:
+        """The signed-in user's own library of the active rig, where saves go."""
+        return LIBRARY.user_source(self._asset, self.rig_name)
+
     def name_taken(self, name: str) -> bool:
         """Whether the user's own library already has a file of this kind called name. Raises LibraryError for a name
         the rule refuses and RuntimeError with no rig."""
         self._require_rig()
-        return LIBRARY.find_file(LIBRARY.user_source(self._asset).folders[self.kind], self.kind, LIBRARY.check_name(name)) is not None
+        return LIBRARY.find_file(self._user_source().folders[self.kind], self.kind, LIBRARY.check_name(name)) is not None
 
     @staticmethod
     def current_frame() -> float:
@@ -308,7 +313,7 @@ class LibrarySession:
     def suggest_name(self) -> str:
         """A free name for the next save: pose_001, animation_001, ..."""
         self._require_rig()
-        return LIBRARY.free_name(LIBRARY.user_source(self._asset), self.kind)
+        return LIBRARY.free_name(self._user_source(), self.kind)
 
     def save(self, name: str, tags: tuple[str, ...] = (), description: str = "", replace: bool = False,
              start_frame: int | None = None, end_frame: int | None = None) -> LIBRARY.LibraryEntry | None:
@@ -316,7 +321,7 @@ class LibrarySession:
         channels at their values, an animation its keys over the playback range (or start_frame to end_frame). An
         existing name is refused unless replace is set. Raises RuntimeError and LibraryError."""
         self._require_rig()
-        user = LIBRARY.user_source(self._asset)
+        user = self._user_source()
         if LIBRARY.find_file(user.folders[self.kind], self.kind, LIBRARY.check_name(name)) and not replace:
             raise LIBRARY.LibraryError(f"You already have a {self.kind} called {name!r}.")
         scope = self.scope_controls()
@@ -365,7 +370,7 @@ class LibrarySession:
     def copy_to_user(self, entry: LIBRARY.LibraryEntry) -> LIBRARY.LibraryEntry:
         """Copies an entry of Approved or Shared into the user's own library. Raises LibraryError when the name is taken."""
         self._require_rig()
-        path = LIBRARY.copy_to_user(entry.file, LIBRARY.user_source(self._asset))
+        path = LIBRARY.copy_to_user(entry.file, self._user_source())
         self.refresh()
         return self._select_path(path)
 
@@ -374,7 +379,7 @@ class LibrarySession:
         self._require_rig()
         if any(existing.source == LIBRARY.RIG and existing.name.casefold() == mask.name.casefold() for existing in self.masks):
             raise LIBRARY.LibraryError(f"{mask.name!r} is the name of a mask the rig gives. Choose another.")
-        LIBRARY.save_mask(self._asset, mask)
+        LIBRARY.save_mask(self._asset, self.rig_name, mask)
         self.refresh()
 
     def mask_from_selection(self, name: str) -> LIBRARY.Mask:
@@ -394,7 +399,7 @@ class LibrarySession:
 
     def delete_mask(self, name: str) -> None:
         self._require_rig()
-        LIBRARY.delete_mask(self._asset, name)
+        LIBRARY.delete_mask(self._asset, self.rig_name, name)
         if self.scope == name:
             self.scope = None
         self.refresh()

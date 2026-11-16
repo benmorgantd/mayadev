@@ -5,13 +5,19 @@ bmaya.maya code. What this module knows is where they live, how to find them, an
 rename, delete, search. What a file holds comes from a reader the caller passes to Index (RigModules'
 getRigDataFileInfo, through bmaya.maya.librarybrowser), so this module runs in plain Python and in tests.
 
+Poses and animations belong to a rig, not to an asset: they are keyed by control markup, which is unique per rig
+(RigModules D25, D54). So every source is of one rig of one asset.
+
 A source is a folder pair, controlposes and controlanims, with a label and a write rule:
 
-    Approved   the asset's own folders, in source control. Read only here.
-    Shared     the skeleton asset's folders, when the asset uses another asset's skeleton. Read only here.
-    User       <projects root>\\user\\<login>\\animlibrary\\<asset id>\\controlposes and controlanims. Where saves go.
+    Approved   the rig's own folders in the asset, rigs\\<rig>\\controlposes and controlanims, in source control.
+               Read only here.
+    Shared     the folders of the rig this one was copied from (rig.json's "source"), when it has one. Read only here.
+               Control markup survives a copy, so the source's files load on the copy.
+    User       <projects root>\\user\\<login>\\animlibrary\\<asset id>\\<rig>\\controlposes and controlanims.
+               Where saves go.
 
-    sources = library.sources(asset)
+    sources = library.sources(asset, "body")
     files = library.list_files(sources[-1], library.POSE)
     entries = library.Index(reader).entries(files, context=rig_root)
     shown = library.filter_entries(entries, library.parse_query("tag:fist hand"))
@@ -91,29 +97,33 @@ def user_root(root: str | None = None) -> str:
     return os.path.join(os.path.normpath(root) if root else projects_root(), assetid.RESERVED_ROOT, login())
 
 
-def user_source(asset: Asset) -> LibrarySource:
-    """The user's own library of an asset. Pure: the folders needn't exist, and the asset needn't be on disk."""
-    base = os.path.join(user_root(asset.root), USER_FOLDER, *assetid.tokens(asset.id))
+def user_source(asset: Asset, rig: str) -> LibrarySource:
+    """The user's own library of a rig of an asset. Pure: the folders needn't exist, and neither the asset nor the
+    rig need be on disk."""
+    if not assetid.is_valid_token(rig):
+        raise LibraryError(f"The rig name {rig!r} must be lowercase letters, digits and '_'.")
+    base = os.path.join(user_root(asset.root), USER_FOLDER, *assetid.tokens(asset.id), rig)
     return LibrarySource(USER, "User", {kind: os.path.join(base, FOLDER_TYPE[kind]) for kind in KINDS}, True)
 
 
-def sources(asset: Asset) -> list[LibrarySource]:
-    """Approved, Shared (when the asset uses another asset's skeleton) and User, in that order. Approved and Shared
-    are left out while their asset isn't on disk, so an asset that was never created still has its User library."""
+def sources(asset: Asset, rig: str) -> list[LibrarySource]:
+    """Approved, Shared (when the rig is a copy that names its source rig) and User, in that order. Approved and
+    Shared are left out while their rig isn't on disk, so a rig whose asset was never created still has its User
+    library."""
     found = []
-    if asset.exists():
-        found.append(_asset_source(APPROVED, "Approved", asset))
-        skeleton = asset.skeleton
-        if skeleton != asset.id:
-            owner = Asset(skeleton, asset.root)
-            if owner.exists():
-                found.append(_asset_source(SHARED, "Shared", owner))
-    found.append(user_source(asset))
+    if asset.exists() and rig in asset.rigs:
+        found.append(_rig_source(APPROVED, "Approved", asset, rig))
+        source = asset.rig(rig).source
+        if source is not None:
+            source_asset, source_rig = asset.resolve_rig(source)
+            if source_asset.exists() and source_rig in source_asset.rigs:
+                found.append(_rig_source(SHARED, "Shared", source_asset, source_rig))
+    found.append(user_source(asset, rig))
     return found
 
 
-def _asset_source(key: str, label: str, asset: Asset) -> LibrarySource:
-    return LibrarySource(key, label, {kind: asset.path(FOLDER_TYPE[kind]) for kind in KINDS}, False)
+def _rig_source(key: str, label: str, asset: Asset, rig: str) -> LibrarySource:
+    return LibrarySource(key, label, {kind: asset.path(FOLDER_TYPE[kind], rig) for kind in KINDS}, False)
 
 
 def file_path(folder: str, kind: str, name: str) -> str:
@@ -464,28 +474,28 @@ def write_masks(path: str, masks: list[Mask]) -> None:
     })
 
 
-def saved_masks(asset: Asset) -> list[Mask]:
-    """The masks saved for an asset: the team's (beside the Approved folders) then the user's, with a user mask
-    replacing a team mask of the same name."""
+def saved_masks(asset: Asset, rig: str) -> list[Mask]:
+    """The masks saved for a rig: the team's (beside the Approved folders) then the user's, with a user mask
+    replacing a team mask of the same name. A mask names controls, so it belongs to a rig like a pose does."""
     found: dict[str, Mask] = {}
-    for source in sources(asset):
+    for source in sources(asset, rig):
         if source.key in (APPROVED, USER):
             for mask in read_masks(masks_path(source), TEAM if source.key == APPROVED else USER):
                 found[mask.name.casefold()] = mask
     return sorted(found.values(), key=lambda mask: mask.name.casefold())
 
 
-def save_mask(asset: Asset, mask: Mask) -> str:
-    """Saves a mask in the user's own masks file, replacing one of the same name. Returns the file."""
-    path = masks_path(user_source(asset))
+def save_mask(asset: Asset, rig: str, mask: Mask) -> str:
+    """Saves a mask in the user's own masks file of a rig, replacing one of the same name. Returns the file."""
+    path = masks_path(user_source(asset, rig))
     kept = [existing for existing in read_masks(path, USER) if existing.name.casefold() != mask.name.casefold()]
     write_masks(path, [*kept, dataclasses.replace(mask, source=USER)])
     return path
 
 
-def delete_mask(asset: Asset, name: str) -> None:
-    """Removes a mask from the user's own masks file. A team mask can't be removed here."""
-    path = masks_path(user_source(asset))
+def delete_mask(asset: Asset, rig: str, name: str) -> None:
+    """Removes a mask from the user's own masks file of a rig. A team mask can't be removed here."""
+    path = masks_path(user_source(asset, rig))
     masks = read_masks(path, USER)
     kept = [mask for mask in masks if mask.name.casefold() != name.casefold()]
     if len(kept) == len(masks):

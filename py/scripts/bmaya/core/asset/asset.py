@@ -1,21 +1,30 @@
 """Assets: a folder below the projects root that holds an asset.json.
 
-asset.json holds only what a person decides about the asset: its type and the skeleton it uses. It
-changes rarely, so under Perforce it is rarely checked out. Everything else is found on disk:
-variants are the folders that hold a template, and publishes are folders that are only ever added.
+asset.json holds only what a person decides about the asset: its type. It changes rarely, so under Perforce
+it is rarely checked out. Everything else is found on disk (RigModules D54): skeletons are the folders that hold
+a skeleton.json, rigs the folders that hold a rig.json, looks the folders that hold a look.json, and publishes are
+folders that are only ever added. Adding any of them adds files and edits nothing shared.
 The id is not stored either: it is the folder's path, so a copied or moved folder can't carry a stale
 id. Reading paths never touches the disk. Folders are made only when something is written.
+
+    hero = Asset("shooter\\main\\characters\\hero")
+    hero.skeletons, hero.rigs, hero.looks        # ["default"], ["body", "body_cine"], ["default", "winter"]
+    hero.path("shapes", "body")                  # rigs/body/shapes.json
+    hero.path("weights", "winter")               # looks/winter/weights
+    hero.skeleton_of("body")                     # (the asset that holds the rig's skeleton, "default")
 """
 
 from __future__ import annotations
 
 import os
+import typing
 
-from . import assetid, sourcecontrol
+from . import assetid, records, sourcecontrol
 from .project import Project, ProjectError, projects_root, read_json, write_json
+from .records import LookRecord, RigRecord, RigRef, SkeletonRef
 
 ASSET_FILE = "asset.json"
-FORMAT_VERSION = 1
+FORMAT_VERSION = 2
 
 
 class AssetError(RuntimeError):
@@ -60,46 +69,80 @@ class Asset:
         """The parsed asset.json. Read each time, so it never goes stale."""
         if not self.exists():
             raise AssetError(f"{self.id} has no {ASSET_FILE} at {self.folder}.")
-        data = read_json(self.info_path)
-        if data.get("formatVersion") != FORMAT_VERSION:
-            raise AssetError(f"{self.info_path}: formatVersion {data.get('formatVersion')!r} is not {FORMAT_VERSION}.")
-        return data
+        return _read_info(self.info_path)
 
     @property
     def asset_type(self) -> str:
         return self.info["assetType"]
 
     @property
-    def skeleton(self) -> str:
-        """The id of the asset whose skeleton this asset uses: its own id unless asset.json names another.
-        Assets with the same skeleton can share poses and animations."""
-        return self.info.get("skeleton") or self.id
+    def skeletons(self) -> list[str]:
+        """The skeletons: folders that hold a skeleton.json, the only form a skeleton is stored in."""
+        return self._owners("skeleton")
 
     @property
-    def variants(self) -> list[str]:
-        """The rig variants: folders that hold a template file. Adding a variant adds files and edits nothing."""
-        template = self.project.file_type("template")
-        parent = os.path.join(self.folder, template.variant_parent())
+    def rigs(self) -> list[str]:
+        """The rigs: folders that hold a rig.json. Adding a rig adds files and edits nothing."""
+        return self._owners("riginfo")
+
+    @property
+    def looks(self) -> list[str]:
+        """The looks: folders that hold a look.json. A look-only asset has looks and no skeletons or rigs."""
+        return self._owners("lookinfo")
+
+    def _owners(self, file_type: str) -> list[str]:
+        parent = os.path.join(self.folder, self.project.file_type(file_type).owner_parent())
         if not os.path.isdir(parent):
             return []
-        found = [
+        return sorted(
             entry.name for entry in os.scandir(parent)
-            if entry.is_dir() and assetid.is_valid_token(entry.name) and self.file_exists("template", entry.name)
-        ]
-        return sorted(found)
+            if entry.is_dir() and assetid.is_valid_token(entry.name) and self.file_exists(file_type, entry.name))
 
-    def path(self, file_type: str, variant: str | None = None) -> str:
-        """Where a file type lives for this asset. Pure: never checks or creates anything."""
-        relative = self.project.file_type(file_type).relative_path(self.name, variant)
+    def path(self, file_type: str, owner: str | None = None) -> str:
+        """Where a file type lives for this asset. owner is the skeleton, rig or look the file belongs to, for a
+        file type that belongs to one. Pure: never checks or creates anything."""
+        relative = self.project.file_type(file_type).relative_path(self.name, owner)
         return os.path.join(self.folder, relative)
 
-    def file_exists(self, file_type: str, variant: str | None = None) -> bool:
-        return os.path.exists(self.path(file_type, variant))
+    def file_exists(self, file_type: str, owner: str | None = None) -> bool:
+        return os.path.exists(self.path(file_type, owner))
+
+    def rig(self, name: str) -> RigRecord:
+        """A rig's rig.json: the skeleton it is built on, and the rig it was copied from."""
+        if not self.file_exists("riginfo", name):
+            raise AssetError(f"{self.id} has no rig {name!r}. It has: {', '.join(self.rigs) or 'none'}.")
+        return records.read_rig(self.path("riginfo", name))
+
+    def look(self, name: str) -> LookRecord:
+        """A look's look.json: the skeletons its meshes bind to."""
+        if not self.file_exists("lookinfo", name):
+            raise AssetError(f"{self.id} has no look {name!r}. It has: {', '.join(self.looks) or 'none'}.")
+        return records.read_look(self.path("lookinfo", name))
+
+    def resolve_skeleton(self, reference: SkeletonRef) -> tuple["Asset", str]:
+        """The asset that holds a skeleton this asset names, and the skeleton's name. Pure: nothing is checked."""
+        return (Asset(reference.asset, self.root) if reference.asset else self), reference.name
+
+    def resolve_rig(self, reference: RigRef) -> tuple["Asset", str]:
+        """The asset that holds a rig this asset names, and the rig's name. Pure: nothing is checked."""
+        return (Asset(reference.asset, self.root) if reference.asset else self), reference.rig
+
+    def skeleton_of(self, rig: str) -> tuple["Asset", str]:
+        """The skeleton a rig is built on: the asset that holds it and its name."""
+        return self.resolve_skeleton(self.rig(rig).skeleton)
+
+    def look_fits(self, look: str, rig: str) -> bool:
+        """Whether a rig can wear a look: the look names the rig's skeleton."""
+        wanted = self._skeleton_key(self.rig(rig).skeleton)
+        return any(self._skeleton_key(reference) == wanted for reference in self.look(look).skeletons)
+
+    def _skeleton_key(self, reference: SkeletonRef) -> tuple[str, str]:
+        return reference.asset or self.id, reference.name
 
     # ---- writes ----------------------------------------------------------------------------
 
     @classmethod
-    def create(cls, asset_id: str, asset_type: str, skeleton: str | None = None, root: str | None = None) -> "Asset":
+    def create(cls, asset_id: str, asset_type: str, root: str | None = None) -> "Asset":
         """Makes the asset folder and its asset.json, and marks the file for add in source control."""
         asset = cls(asset_id, root)
         if asset.exists():
@@ -108,14 +151,33 @@ class Asset:
         project.check_asset_type(asset_type)
         _check_not_nested(asset, project)
 
-        data = {"formatVersion": FORMAT_VERSION, "assetType": asset_type}
-        if skeleton is not None:
-            data["skeleton"] = assetid.check(skeleton)
-
         os.makedirs(asset.folder, exist_ok=True)
-        write_json(asset.info_path, data)
+        write_json(asset.info_path, {"formatVersion": FORMAT_VERSION, "assetType": asset_type})
         sourcecontrol.current().add(asset.info_path)
         return asset
+
+    def add_rig(self, name: str, skeleton: SkeletonRef, source: RigRef | None = None) -> RigRecord:
+        """Writes a new rig's rig.json. The skeleton needn't exist yet: a rig can be set up before its skeleton is
+        saved, and the build reports a missing one."""
+        record = RigRecord(skeleton, source)
+        self._add_record("riginfo", name, "rig", lambda path: records.write_rig(path, record))
+        return record
+
+    def add_look(self, name: str, skeletons: typing.Sequence[SkeletonRef]) -> LookRecord:
+        """Writes a new look's look.json."""
+        record = LookRecord(tuple(skeletons))
+        self._add_record("lookinfo", name, "look", lambda path: records.write_look(path, record))
+        return record
+
+    def _add_record(self, file_type: str, name: str, kind: str, write: typing.Callable[[str], None]) -> None:
+        if not self.exists():
+            raise AssetError(f"{self.id} has no {ASSET_FILE} at {self.folder}.")
+        path = self.path(file_type, name)
+        if os.path.exists(path):
+            raise AssetError(f"{self.id} already has a {kind} {name!r}: {path}")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        write(path)
+        sourcecontrol.current().add(path)
 
     @classmethod
     def from_path(cls, path: str, root: str | None = None) -> "Asset":
@@ -129,6 +191,24 @@ class Asset:
             if parent == folder or os.path.normcase(folder) == os.path.normcase(root):
                 raise AssetError(f"{path} is not inside an asset below {root}.")
             folder = parent
+
+
+def _read_info(path: str) -> dict:
+    """asset.json at the current version. A version 1 file is updated in memory and written back, as project.json is:
+    a file that can't be written (read-only in source control) stays as it is and is updated again next time."""
+    data = read_json(path)
+    version = data.get("formatVersion")
+    if version == 1:
+        # Version 1 named a whole asset as "skeleton". A rig and a look now name their own skeleton (RigModules D54).
+        data.pop("skeleton", None)
+        data["formatVersion"] = FORMAT_VERSION
+        try:
+            write_json(path, data)
+        except OSError:
+            pass
+    elif version != FORMAT_VERSION:
+        raise AssetError(f"{path}: formatVersion {version!r} is not {FORMAT_VERSION}.")
+    return data
 
 
 def _check_not_nested(asset: Asset, project: Project) -> None:

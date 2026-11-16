@@ -1,8 +1,11 @@
 """Asset tools for RigModules rigs, behind the RigModules menu (RigModules D30).
 
 A rig can be built anywhere, before its asset exists. Once the asset's folder exists, these tools read and
-write the asset's files. A built rig names its own asset id and rig name (the rig root's rigName, which is the variant's name), read
-through rigmodules.query. Nothing here walks rig nodes or parses names (RigModules D24).
+write the asset's files. An asset holds skeletons, rigs and looks (RigModules D54): a rig is a template built on one
+skeleton, and a look is the meshes and skin weights a rig of that skeleton wears. A built rig names its own asset id
+and rig name (the rig root's rigName, which is the rig's folder name), read through rigmodules.query. It does not
+record its look yet, so the tools that write a look's files take the look. Nothing here walks rig nodes or parses
+names (RigModules D24).
 
 The shape, weight and rig tools ask for a file or folder for a rig whose asset folder doesn't exist yet.
 Once it exists, they always use the asset's paths, so a file never lands in two places.
@@ -18,6 +21,7 @@ from __future__ import annotations
 
 import dataclasses
 import os
+import tempfile
 import typing
 
 import maya.cmds as cmds
@@ -41,6 +45,7 @@ import bmaya.maya.posetools
 SCENE_FILTER = "Maya ASCII (*.ma)"
 SHAPES_FILTER = "Shape files (*.json)"
 TEMPLATE_FILTER = "Rig templates (*.json)"
+DEFAULT_NAME = "default"   # the name offered for an asset's first skeleton and first look (RigModules D54)
 POSE_FILTER = "Pose files (*.controlpose.json *.json)"
 ANIMATION_FILTER = "Animation files (*.controlanim.json *.json)"
 CLIP_FILTER = "FBX clips (*.fbx)"
@@ -64,90 +69,145 @@ def require_asset(asset_id: str) -> bmaya.core.asset.Asset:
     return asset
 
 
-def new_variant(asset_id: str, template_path: str) -> str:
-    """Copies a template into the asset as a new variant, named by the template's rigName. Returns the variant."""
+def new_rig(asset_id: str, template_path: str, rig: str | None = None, skeleton: str = DEFAULT_NAME,
+            skeleton_asset: str | None = None, source: bmaya.core.asset.RigRef | None = None) -> str:
+    """Adds a rig to the asset: copies a template into rigs/<rig>, with its rigName set to the rig's name, and writes
+    the rig's rig.json. rig is the template's own rigName when left out. skeleton is the skeleton the rig is built on,
+    in this asset unless skeleton_asset names another. It needn't be saved yet. source is the rig this one is a copy
+    of, whose poses and animations the library then lists beside its own. Returns the rig's name."""
     asset = require_asset(asset_id)
-    variant = rigmodules.template.get_rig_name(template_path)
-    if asset.file_exists("template", variant):
-        raise bmaya.core.asset.AssetError(f"{asset.id} already has variant {variant!r}: {asset.path('template', variant)}")
+    rig = rig or rigmodules.template.get_rig_name(template_path)
+    reference = bmaya.core.asset.SkeletonRef(skeleton, skeleton_asset)
+    if asset.file_exists("riginfo", rig) or asset.file_exists("template", rig):
+        raise bmaya.core.asset.AssetError(f"{asset.id} already has a rig {rig!r}: {os.path.dirname(asset.path('riginfo', rig))}")
     bmaya.maya.assethandlers.register()
-    path = bmaya.core.asset.handlers.save(asset, "template", variant, source=template_path)
-    bmaya.core.log.info(f"Added variant {variant!r} to {asset.id}: {path}")
-    return variant
+    path = bmaya.core.asset.handlers.save(asset, "template", rig, source=template_path)
+    asset.add_rig(rig, reference, source)
+    bmaya.core.log.info(f"Added the rig {rig!r} to {asset.id}, on the skeleton {skeleton!r}: {path}")
+    return rig
 
 
-def save_skeleton(asset_id: str) -> str:
-    """Saves the open scene as the asset's skeleton file. The scene is renamed to that file."""
+def new_look(asset_id: str, look: str = DEFAULT_NAME, skeleton: str = DEFAULT_NAME, skeleton_asset: str | None = None) -> str:
+    """Adds a look to the asset: writes looks/<look>/look.json, naming the skeleton its meshes bind to (in this asset
+    unless skeleton_asset names another). Any rig of that skeleton can wear the look. Returns the look's name."""
     asset = require_asset(asset_id)
-    if asset.skeleton != asset.id:
-        raise bmaya.core.asset.AssetError(f"{asset.id} uses the skeleton of {asset.skeleton}. Save the skeleton there.")
+    asset.add_look(look, [bmaya.core.asset.SkeletonRef(skeleton, skeleton_asset)])
+    bmaya.core.log.info(f"Added the look {look!r} to {asset.id}, for the skeleton {skeleton!r}: {asset.path('lookinfo', look)}")
+    return look
+
+
+def save_skeleton(asset_id: str, skeleton: str = DEFAULT_NAME, joints: list[str] | None = None) -> str:
+    """Saves joints (every joint in the scene when left out) as a skeleton of the asset: skeletons/<skeleton>/
+    skeleton.json, the only form a skeleton is stored in (RigModules D54). The scene is not saved or renamed.
+    Every joint must carry joint markup, since the file holds marked joints only, and none may be driven by a rig,
+    since the file records the joints as they are. Nothing is written when a joint fails. Returns the file."""
+    asset = require_asset(asset_id)
+    joints = list(joints) if joints else cmds.ls(type="joint", long=True)
+    if not joints:
+        raise RuntimeError("There are no joints to save as a skeleton.")
+    driven = [joint for joint in joints if rigmodules.query.find_rig_info(joint) is not None]
+    if driven:
+        raise RuntimeError("These joints are driven by a rig, so they may not be at rest. Save the skeleton from a "
+                           "scene without the rig: " + ", ".join(driven))
+    # A first write to a scratch file: a joint without markup fails here, before the asset's file is versioned,
+    # checked out or its folder made.
+    handle, scratch = tempfile.mkstemp(suffix=".skeleton.json")
+    os.close(handle)
+    try:
+        cmds.saveRigSkeleton(*joints, file=scratch.replace("\\", "/"))
+    finally:
+        os.remove(scratch)
     bmaya.maya.assethandlers.register()
-    path = bmaya.core.asset.handlers.save(asset, "skeleton")
-    bmaya.core.log.info(f"Saved the skeleton of {asset.id}: {path}")
+    path = bmaya.core.asset.handlers.save(asset, "skeleton", skeleton, joints=joints)
+    bmaya.core.log.info(f"Saved the skeleton {skeleton!r} of {asset.id}: {path}")
     return path
 
 
-def save_model(asset_id: str, variant: str) -> str:
-    """Saves the open scene as the variant's model file, the meshes the variant skins. The scene is renamed to
-    that file. Warns about meshes without a meshId, because their weights can't be saved or loaded."""
+def load_skeleton(asset_id: str, skeleton: str = DEFAULT_NAME, namespace: str | None = None) -> list[str]:
+    """Creates the joints of a skeleton of the asset in the scene, at rest and marked, to look at or edit it. They
+    go into namespace, the current one when left out. Returns the joints."""
     asset = require_asset(asset_id)
-    if variant not in asset.variants:
-        raise bmaya.core.asset.AssetError(f"{asset.id} has no variant {variant!r}. Add its template with New Variant first.")
-    unmarked = [mesh for mesh in _scene_meshes() if not rigmodules.skinweights.get_mesh_id(mesh)]
+    bmaya.maya.assethandlers.register()
+    joints = bmaya.core.asset.handlers.load(asset, "skeleton", skeleton, namespace=namespace)
+    bmaya.core.log.info(f"Loaded the skeleton {skeleton!r} of {asset.id}: {len(joints)} joint(s).")
+    return joints
+
+
+def save_model(asset_id: str, look: str, meshes: list[str] | None = None) -> str:
+    """Saves meshes (every visible mesh in the scene when left out) as the look's model file. A model file is only
+    meshes (RigModules D54): each is exported from its undeformed shape with no skinning, no history and no joints,
+    under its own name, with its meshId and its shading. The scene is not saved, renamed or changed. Warns about
+    meshes without a meshId, because their weights can't be saved or loaded."""
+    asset = require_asset(asset_id)
+    if look not in asset.looks:
+        raise bmaya.core.asset.AssetError(f"{asset.id} has no look {look!r}. Add it with New Look first.")
+    meshes = list(meshes) if meshes else bmaya.maya.assethandlers.get_scene_meshes()
+    unmarked = [mesh for mesh in meshes if not rigmodules.skinweights.get_mesh_id(mesh)]
     if unmarked:
         bmaya.core.log.warning("These meshes have no meshId, so their weights can't be saved. Mark them with "
                                "Mark Meshes for Skinning: " + ", ".join(unmarked))
     bmaya.maya.assethandlers.register()
-    path = bmaya.core.asset.handlers.save(asset, "model", variant)
-    bmaya.core.log.info(f"Saved the model of {asset.id} variant {variant!r}: {path}")
+    path = bmaya.core.asset.handlers.save(asset, "model", look, meshes=meshes)
+    bmaya.core.log.info(f"Saved the model of {asset.id} look {look!r}: {path}")
     return path
 
 
-def build_rig(asset_id: str, variant: str, namespace: str | None = None) -> str:
-    """Imports the asset's skeleton, builds the variant's template on it, then loads the variant's files that
-    exist: its shape file, its model (imported into the same namespace) and its skin weights. Builds into the
-    open scene, into "{asset name}_{variant}" unless namespace is given, the namespace RigModules gives a rig
-    (D54). Returns the rig root."""
+def build_rig(asset_id: str, rig: str, look: str | None = None, namespace: str | None = None) -> str:
+    """Builds a rig of the asset in the open scene: creates its skeleton's joints from the skeleton file (the
+    skeleton may be another asset's), builds the rig's template on them, and loads the rig's shape file. Then it puts
+    a look on the rig: the look's model is imported into the same namespace and its skin weights are loaded onto the
+    rig's joints. look is the asset's "default" look when left out and it has one, else none. A look that is named and
+    missing, or whose look.json doesn't name the rig's skeleton, fails before anything is created. Builds into
+    "{asset name}_{rig}" unless namespace is given, the namespace RigModules gives a rig (D54). Returns the rig root."""
     asset = require_asset(asset_id)
     bmaya.maya.assethandlers.register()
-    template = bmaya.core.asset.handlers.load(asset, "template", variant)
-    skeleton_asset = require_asset(asset.skeleton)
-    # The skeleton is imported into the namespace before the build, so the namespace is decided here. The variant
-    # is the template's rigName, so this is RigModules' own default.
-    namespace = namespace or f"{asset.name}_{variant}"
+    template = bmaya.core.asset.handlers.load(asset, "template", rig)
+    skeleton_asset, skeleton = asset.skeleton_of(rig)
+    if not skeleton_asset.exists() or skeleton not in skeleton_asset.skeletons:
+        raise bmaya.core.asset.AssetError(
+            f"The rig {rig!r} of {asset.id} is built on the skeleton {skeleton!r} of {skeleton_asset.id}, which has no "
+            f"skeleton file. Save it with Save Skeleton first.")
+    if look is None and DEFAULT_NAME in asset.looks:
+        look = DEFAULT_NAME
+    if look is not None and not asset.look_fits(look, rig):   # raises for a look the asset doesn't have
+        raise bmaya.core.asset.AssetError(
+            f"The look {look!r} of {asset.id} is not for the skeleton {skeleton!r} that the rig {rig!r} is built on.")
+    # The skeleton goes into the namespace before the build, so the namespace is decided here. The rig's name is
+    # the template's rigName, so this is RigModules' own default.
+    namespace = namespace or f"{asset.name}_{rig}"
     # A namespace holds one rig (RigModules D54), and createRigFromTemplate refuses a second. Failing here keeps
-    # the skeleton import out of a namespace that can't take the build.
+    # the skeleton out of a namespace that can't take the build.
     if rigmodules.query.get_rigs(namespace):
         raise RuntimeError(f"Namespace {namespace!r} already holds a rig. Build into a new scene or another namespace.")
 
-    nodes = bmaya.core.asset.handlers.load(skeleton_asset, "skeleton", namespace=namespace)
-    joints = cmds.ls(nodes, type="joint")
+    joints = bmaya.core.asset.handlers.load(skeleton_asset, "skeleton", skeleton, namespace=namespace)
     if not joints:
-        raise RuntimeError(f"The skeleton file of {skeleton_asset.id} has no joints.")
+        raise RuntimeError(f"The skeleton {skeleton!r} of {skeleton_asset.id} has no joints.")
     cmds.createRigFromTemplate(*joints, template=template.replace("\\", "/"), asset=asset.id, namespace=namespace)
 
     (rig_info,) = rigmodules.query.get_rigs(namespace)
     rig_root = rig_info.rig_root
-    if asset.file_exists("shapes", variant):
-        bmaya.core.asset.handlers.load(asset, "shapes", variant, rig_root=rig_root)
-    if asset.file_exists("model", variant):
-        model_nodes = bmaya.core.asset.handlers.load(asset, "model", variant, namespace=namespace)
+    if asset.file_exists("shapes", rig):
+        bmaya.core.asset.handlers.load(asset, "shapes", rig, rig_root=rig_root)
+    if look is not None and asset.file_exists("model", look):
+        model_nodes = bmaya.core.asset.handlers.load(asset, "model", look, namespace=namespace)
         rigmodules.displaylayers.add_meshes(rig_root, model_nodes)
         rigmodules.groups.parent_meshes(rig_root, model_nodes)
-        if asset.file_exists("weights", variant):
-            bmaya.core.asset.handlers.load(asset, "weights", variant, namespace=namespace)
+        if asset.file_exists("weights", look):
+            bmaya.core.asset.handlers.load(asset, "weights", look, namespace=namespace)
     # The imports above leave their nodes selected. A finished build starts with nothing selected.
     cmds.select(clear=True)
     # The build selects nothing, so the tracker would never see the new rig. It becomes the active rig.
     tracker = bmaya.maya.activerig.ActiveRigTracker.current()
     if tracker is not None:
         tracker.set_rig_root(rig_root)
-    bmaya.core.log.info(f"Built {asset.id} variant {variant!r} into namespace {namespace!r}.")
+    wearing = f" wearing the look {look!r}" if look is not None else " with no look"
+    bmaya.core.log.info(f"Built the rig {rig!r} of {asset.id} into namespace {namespace!r},{wearing}.")
     return rig_root
 
 
 def save_rig(node: str, prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
-    """Saves the open scene as the rig file of the rig node's asset and variant. Without an asset folder, asks
+    """Saves the open scene as the rig file of the rig node's asset and rig. Without an asset folder, asks
     for a file. Returns the path, or None when cancelled."""
     info = rigmodules.query.get_rig_info(node)
     asset = find_asset(info.asset_id)
@@ -158,11 +218,11 @@ def save_rig(node: str, prompter: bmaya.core.prompts.Prompter | None = None) -> 
             cmds.file(save=True, type="mayaAscii", force=True)
         return path
 
-    if info.rig_name not in asset.variants:
-        raise bmaya.core.asset.AssetError(f"{asset.id} has no variant {info.rig_name!r}. Add its template with New Variant first.")
+    if info.rig_name not in asset.rigs:
+        raise bmaya.core.asset.AssetError(f"{asset.id} has no rig {info.rig_name!r}. Add it with New Rig first.")
     bmaya.maya.assethandlers.register()
     path = bmaya.core.asset.handlers.save(asset, "rig", info.rig_name)
-    bmaya.core.log.info(f"Saved {asset.id} variant {info.rig_name!r}: {path}")
+    bmaya.core.log.info(f"Saved the rig {info.rig_name!r} of {asset.id}: {path}")
     return path
 
 
@@ -179,7 +239,7 @@ def save_control_shapes(node: str, prompter: bmaya.core.prompts.Prompter | None 
 
     bmaya.maya.assethandlers.register()
     path = bmaya.core.asset.handlers.save(asset, "shapes", info.rig_name, rig_root=info.rig_root)
-    bmaya.core.log.info(f"Saved the control shapes of {asset.id} variant {info.rig_name!r}: {path}")
+    bmaya.core.log.info(f"Saved the control shapes of the rig {info.rig_name!r} of {asset.id}: {path}")
     return path
 
 
@@ -202,13 +262,13 @@ def load_control_shapes(node: str, prompter: bmaya.core.prompts.Prompter | None 
 def library_meta(asset: bmaya.core.asset.Asset, scope: list[str], tags: typing.Sequence[str] = (),
                  description: str = "") -> dict:
     """The part of a library file's meta that the caller gives (RigModules D51): the author (the OS user), the rig's
-    name as the template, the skeleton asset, and the tags and description when there are any. The rig fills the
-    asset id, rig name, skeleton hash, plugin version and date itself (RigModules D54)."""
-    meta = {
-        "author": bmaya.core.asset.library.login(),
-        "template": rigmodules.query.get_rig_info(scope[0]).rig_name,
-        "skeleton": asset.skeleton if asset.exists() else asset.id,
-    }
+    name as the template, the name of the skeleton the rig is built on when the asset says, and the tags and
+    description when there are any. The rig fills the asset id, rig name, skeleton hash, plugin version and date
+    itself (RigModules D54): the hash, not the skeleton's name, is what says two files are for one skeleton."""
+    rig = rigmodules.query.get_rig_info(scope[0]).rig_name
+    meta = {"author": bmaya.core.asset.library.login(), "template": rig}
+    if asset.exists() and rig in asset.rigs:
+        meta["skeleton"] = asset.rig(rig).skeleton.name
     if tags:
         meta["tags"] = list(tags)
     if description:
@@ -218,13 +278,14 @@ def library_meta(asset: bmaya.core.asset.Asset, scope: list[str], tags: typing.S
 
 def save_pose(asset_id: str, name: str, scope: list[str], tags: typing.Sequence[str] = (), description: str = "") -> str:
     """Saves the pose of scope (a rig root, or controls of one rig) to the own library of the current user for the
-    asset, as <name>.controlpose.json in its controlposes folder (RigModules D51). No source control and no
-    permission: a pose reaches the asset's Approved library by being published. An existing file is versioned first.
-    Returns the path."""
+    scope's rig of the asset, as <name>.controlpose.json in its controlposes folder (RigModules D51, D54). No source
+    control and no permission: a pose reaches the rig's Approved library by being published. An existing file is
+    versioned first. Returns the path."""
     asset = bmaya.core.asset.Asset(asset_id)
-    folder = bmaya.core.asset.library.user_source(asset).folders[bmaya.core.asset.library.POSE]
+    rig = rigmodules.query.get_rig_info(scope[0]).rig_name
+    folder = bmaya.core.asset.library.user_source(asset, rig).folders[bmaya.core.asset.library.POSE]
     path = bmaya.maya.assethandlers.save_control_file(
-        bmaya.maya.assethandlers.ControlPoseHandler(), asset, "controlposes", name, folder=folder,
+        bmaya.maya.assethandlers.ControlPoseHandler(), asset, rig, "controlposes", name, folder=folder,
         scope=scope, meta=library_meta(asset, scope, tags, description))
     bmaya.core.log.info(f"Saved pose {name!r} of {asset.id}: {path}")
     return path
@@ -233,35 +294,39 @@ def save_pose(asset_id: str, name: str, scope: list[str], tags: typing.Sequence[
 def save_animation(asset_id: str, name: str, scope: list[str], start_frame: int, end_frame: int,
                    tags: typing.Sequence[str] = (), description: str = "") -> str:
     """Saves the keys of scope (a rig root, or controls of one rig) over start_frame to end_frame to the own library
-    of the current user for the asset, as <name>.controlanim.json in its controlanims folder (a ControlAnim,
-    RigModules D42, D51). An existing file is versioned first. Returns the path."""
+    of the current user for the scope's rig of the asset, as <name>.controlanim.json in its controlanims folder (a
+    ControlAnim, RigModules D42, D51). An existing file is versioned first. Returns the path."""
     asset = bmaya.core.asset.Asset(asset_id)
-    folder = bmaya.core.asset.library.user_source(asset).folders[bmaya.core.asset.library.ANIMATION]
+    rig = rigmodules.query.get_rig_info(scope[0]).rig_name
+    folder = bmaya.core.asset.library.user_source(asset, rig).folders[bmaya.core.asset.library.ANIMATION]
     path = bmaya.maya.assethandlers.save_control_file(
-        bmaya.maya.assethandlers.ControlAnimHandler(), asset, "controlanims", name, folder=folder,
+        bmaya.maya.assethandlers.ControlAnimHandler(), asset, rig, "controlanims", name, folder=folder,
         scope=scope, start_frame=start_frame, end_frame=end_frame, meta=library_meta(asset, scope, tags, description))
     bmaya.core.log.info(f"Saved animation {name!r} of {asset.id} on frames {start_frame} to {end_frame}: {path}")
     return path
 
 
 def save_skeleton_export(asset_id: str, rig_root: str) -> tuple[str, str]:
-    """Writes the asset's skeleton export, the skeleton asset source for the engine, and its bone map into the
-    asset's exports folder. Returns the FBX and the bone map."""
+    """Writes the skeleton export of the rig's skeleton, the skeleton asset source for the engine, and its bone map
+    into that skeleton's exports folder (skeletons/<skeleton>/exports, in the asset that holds the skeleton). Returns
+    the FBX and the bone map."""
     asset = require_asset(asset_id)
-    fbx, bone_map = bmaya.maya.assethandlers.save_skeleton_export(asset, rig_root)
-    bmaya.core.log.info(f"Saved the skeleton export of {asset.id}: {fbx}")
+    rig = rigmodules.query.get_rig_info(rig_root).rig_name
+    fbx, bone_map = bmaya.maya.assethandlers.save_skeleton_export(asset, rig, rig_root)
+    bmaya.core.log.info(f"Saved the skeleton export of the rig {rig!r} of {asset.id}: {fbx}")
     return fbx, bone_map
 
 
-def check_clip_skeleton(asset_id: str, fbx: str) -> None:
-    """Checks that the animation FBX has the joint names and parents of the asset's skeleton export. Raises
-    FileNotFoundError when the asset has no skeleton export, and ValueError naming every joint that differs."""
+def check_clip_skeleton(asset_id: str, rig: str, fbx: str) -> None:
+    """Checks that the animation FBX has the joint names and parents of the skeleton export of the rig's skeleton.
+    Raises FileNotFoundError when there is no skeleton export, and ValueError naming every joint that differs."""
     asset = require_asset(asset_id)
-    skeleton = bmaya.maya.assethandlers.get_skeleton_export_path(asset)
+    skeleton = bmaya.maya.assethandlers.get_skeleton_export_path(asset, rig)
     if not os.path.isfile(skeleton):
-        raise FileNotFoundError(f"{asset.id} has no skeleton export at {skeleton}. Save it with Save Skeleton Export first.")
+        raise FileNotFoundError(f"The rig {rig!r} of {asset.id} has no skeleton export at {skeleton}. Save it with "
+                                f"Save Skeleton Export first.")
     rigmodules.jointclip.check_skeleton_match(fbx, skeleton)
-    bmaya.core.log.info(f"{fbx} matches the skeleton of {asset.id}.")
+    bmaya.core.log.info(f"{fbx} matches the skeleton of the rig {rig!r} of {asset.id}.")
 
 
 def set_clip_properties(fbx: str, **changes) -> bmaya.core.asset.animproperties.AnimProperties:
@@ -275,10 +340,12 @@ def set_clip_properties(fbx: str, **changes) -> bmaya.core.asset.animproperties.
     return properties
 
 
-def save_skin_weights(node: str, prompter: bmaya.core.prompts.Prompter | None = None) -> list[str] | None:
-    """Saves the weights of every skinned mesh in the rig's namespace to its asset's weights folder, or to a
-    folder the user picks when the asset folder doesn't exist. Returns the files written, or None when
-    cancelled."""
+def save_skin_weights(node: str, look: str | None = None,
+                      prompter: bmaya.core.prompts.Prompter | None = None) -> list[str] | None:
+    """Saves the weights of every skinned mesh in the rig's namespace to a look's weights folder in its asset, or to
+    a folder the user picks when the asset folder doesn't exist. Skin weights belong to a look, and a built rig
+    doesn't record the look it wears yet, so look says which: the asset's only look for the rig's skeleton when left
+    out, and an error when it has several. Returns the files written, or None when cancelled."""
     info = rigmodules.query.get_rig_info(node)
     asset = find_asset(info.asset_id)
     handler = bmaya.maya.assethandlers.RigSkinWeightsHandler()
@@ -286,16 +353,18 @@ def save_skin_weights(node: str, prompter: bmaya.core.prompts.Prompter | None = 
         folder = _ask_folder(_prompter(prompter), "Save Skin Weights: pick the weights folder")
         return handler.save(None, folder, namespace=info.namespace) if folder else None
 
+    look = _require_look(asset, info.rig_name, look)
     bmaya.maya.assethandlers.register()
-    path = bmaya.core.asset.handlers.save(asset, "weights", info.rig_name, namespace=info.namespace)
-    bmaya.core.log.info(f"Saved the skin weights of {asset.id} variant {info.rig_name!r}: {path}")
+    path = bmaya.core.asset.handlers.save(asset, "weights", look, namespace=info.namespace)
+    bmaya.core.log.info(f"Saved the skin weights of {asset.id} look {look!r}: {path}")
     return handler.files(path)
 
 
-def load_skin_weights(node: str, prompter: bmaya.core.prompts.Prompter | None = None) -> list[str] | None:
-    """Loads the weights in its asset's weights folder onto the meshes in the rig's namespace, matched by meshId,
-    or from a folder the user picks when the asset folder doesn't exist. Returns the meshes loaded, or None
-    when cancelled."""
+def load_skin_weights(node: str, look: str | None = None,
+                      prompter: bmaya.core.prompts.Prompter | None = None) -> list[str] | None:
+    """Loads the weights in a look's weights folder onto the meshes in the rig's namespace, matched by meshId, or
+    from a folder the user picks when the asset folder doesn't exist. look is as in save_skin_weights. Returns the
+    meshes loaded, or None when cancelled."""
     info = rigmodules.query.get_rig_info(node)
     asset = find_asset(info.asset_id)
     if asset is None:
@@ -303,8 +372,30 @@ def load_skin_weights(node: str, prompter: bmaya.core.prompts.Prompter | None = 
         handler = bmaya.maya.assethandlers.RigSkinWeightsHandler()
         return handler.load(None, folder, namespace=info.namespace) if folder else None
 
+    look = _require_look(asset, info.rig_name, look)
     bmaya.maya.assethandlers.register()
-    return bmaya.core.asset.handlers.load(asset, "weights", info.rig_name, namespace=info.namespace)
+    return bmaya.core.asset.handlers.load(asset, "weights", look, namespace=info.namespace)
+
+
+def get_rig_looks(asset: bmaya.core.asset.Asset, rig: str) -> list[str]:
+    """The looks of the asset that a rig can wear: those whose look.json names the rig's skeleton. Every look when
+    the asset has no such rig (a rig built from a template that was never added to the asset)."""
+    if rig not in asset.rigs:
+        return asset.looks
+    return [look for look in asset.looks if asset.look_fits(look, rig)]
+
+
+def _require_look(asset: bmaya.core.asset.Asset, rig: str, look: str | None) -> str:
+    """look when given and the asset has it, else the one look the rig can wear. Raises AssetError otherwise."""
+    if look is not None:
+        asset.look(look)   # raises for a look the asset doesn't have
+        return look
+    looks = get_rig_looks(asset, rig)
+    if len(looks) != 1:
+        raise bmaya.core.asset.AssetError(
+            f"{asset.id} has {len(looks)} looks for the rig {rig!r} ({', '.join(looks) or 'none'}): say which look. "
+            f"Add one with New Look when it has none.")
+    return looks[0]
 
 
 def mark_meshes_for_skinning(new_ids: bool = False) -> list[str]:
@@ -320,12 +411,6 @@ def mark_meshes_for_skinning(new_ids: bool = False) -> list[str]:
         bmaya.core.log.info(f"{len(ids)} mesh(es) marked for skinning: {len(ids) - kept} new id(s), "
                             f"{kept} already had one and kept it.")
     return ids
-
-
-def _scene_meshes() -> list[str]:
-    """Every visible mesh's transform in the scene, sorted."""
-    shapes = cmds.ls(type="mesh", noIntermediate=True, long=True) or []
-    return sorted({cmds.listRelatives(shape, parent=True, fullPath=True)[0] for shape in shapes})
 
 
 # ---- menu entry points ---------------------------------------------------------------------
@@ -352,39 +437,99 @@ def new_asset_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -
         bmaya.core.log.info(f"Created {asset.id}: {asset.info_path}")
 
 
-def new_variant_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
+def new_rig_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
+    """Asks for the asset, the template to copy, the rig's name (the template's rigName offered) and the skeleton
+    the rig is built on, then adds the rig."""
     prompter = _prompter(prompter)
-    asset_id = _ask_asset_id(prompter, "New Variant")
-    if asset_id:
-        template = prompter.ask_file("New Variant: pick the template", TEMPLATE_FILTER, save=False)
-        if template:
-            new_variant(asset_id, template)
+    asset_id = _ask_asset_id(prompter, "New Rig")
+    if not asset_id:
+        return
+    asset = require_asset(asset_id)
+    template = prompter.ask_file("New Rig: pick the template", TEMPLATE_FILTER, save=False)
+    if not template:
+        return
+    rig = prompter.ask_text("New Rig", f"Rig name, its folder in {asset_id} and the template's rigName:",
+                            rigmodules.template.get_rig_name(template))
+    if not rig:
+        return
+    skeleton = _ask_skeleton(prompter, "New Rig", asset, f"Skeleton the rig {rig!r} is built on:")
+    if skeleton:
+        new_rig(asset_id, template, rig, skeleton)
+
+
+def new_look_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
+    """Asks for the asset, the look's name ("default" offered for its first look) and the skeleton its meshes bind
+    to, then adds the look."""
+    prompter = _prompter(prompter)
+    asset_id = _ask_asset_id(prompter, "New Look")
+    if not asset_id:
+        return
+    asset = require_asset(asset_id)
+    look = prompter.ask_text("New Look", f"Look name, its folder in {asset_id}:", "" if asset.looks else DEFAULT_NAME)
+    if not look:
+        return
+    skeleton = _ask_skeleton(prompter, "New Look", asset, f"Skeleton the meshes of the look {look!r} bind to:")
+    if skeleton:
+        new_look(asset_id, look, skeleton)
 
 
 def save_skeleton_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
-    asset_id = _ask_asset_id(_prompter(prompter), "Save Skeleton")
-    if asset_id:
-        save_skeleton(asset_id)
+    """Asks for the asset and the skeleton's name (its only skeleton, or "default", offered), then saves the scene's
+    joints as that skeleton."""
+    prompter = _prompter(prompter)
+    asset_id = _ask_asset_id(prompter, "Save Skeleton")
+    if not asset_id:
+        return
+    skeletons = require_asset(asset_id).skeletons
+    offered = skeletons[0] if len(skeletons) == 1 else ("" if skeletons else DEFAULT_NAME)
+    known = f" It has: {', '.join(skeletons)}." if skeletons else ""
+    skeleton = prompter.ask_text("Save Skeleton", f"Skeleton name, its folder in {asset_id}.{known}", offered)
+    if skeleton:
+        save_skeleton(asset_id, skeleton)
+
+
+def load_skeleton_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
+    """Asks for the asset and which of its skeletons, then creates its joints in the scene and selects them."""
+    prompter = _prompter(prompter)
+    asset_id = _ask_asset_id(prompter, "Load Skeleton")
+    if not asset_id:
+        return
+    skeleton = _choose_owner(prompter, "Load Skeleton", asset_id, "skeleton")
+    if skeleton:
+        cmds.select(load_skeleton(asset_id, skeleton), replace=True)
 
 
 def save_model_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
+    """Asks for the asset and which of its looks, then saves the selected meshes, or every mesh in the scene when
+    none is selected, as that look's model."""
     prompter = _prompter(prompter)
     asset_id = _ask_asset_id(prompter, "Save Model")
     if not asset_id:
         return
-    variant = _choose_variant(prompter, "Save Model", asset_id)
-    if variant:
-        save_model(asset_id, variant)
+    look = _choose_owner(prompter, "Save Model", asset_id, "look")
+    if look:
+        selected = [mesh for mesh in cmds.ls(selection=True, long=True) or []
+                    if cmds.listRelatives(mesh, shapes=True, type="mesh", noIntermediate=True)]
+        save_model(asset_id, look, selected or None)
 
 
 def build_rig_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
+    """Asks for the asset and which of its rigs, and for the look only when the rig can wear more than one, then
+    builds the rig and selects its rig root."""
     prompter = _prompter(prompter)
     asset_id = _ask_asset_id(prompter, "Build Rig")
     if not asset_id:
         return
-    variant = _choose_variant(prompter, "Build Rig", asset_id)
-    if variant:
-        cmds.select(build_rig(asset_id, variant), replace=True)
+    rig = _choose_owner(prompter, "Build Rig", asset_id, "rig")
+    if not rig:
+        return
+    looks = get_rig_looks(require_asset(asset_id), rig)
+    look = looks[0] if len(looks) == 1 else None
+    if len(looks) > 1:
+        look = prompter.choose("Build Rig", f"Look the rig {rig!r} of {asset_id} wears:", looks)
+        if not look:
+            return
+    cmds.select(build_rig(asset_id, rig, look), replace=True)
 
 
 def save_rig_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
@@ -437,8 +582,8 @@ def save_pose_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -
             cmds.saveRigPose(*scope, file=path)
         return path
 
-    user = bmaya.core.asset.library.user_source(asset)
-    name = prompter.ask_text("Save Pose", f"Pose name, saved in your own library of {asset.id}:",
+    user = bmaya.core.asset.library.user_source(asset, info.rig_name)
+    name = prompter.ask_text("Save Pose", f"Pose name, saved in your own library of the rig {info.rig_name!r} of {asset.id}:",
                              bmaya.core.asset.library.free_name(user, bmaya.core.asset.library.POSE, "pose"))
     if not name:
         return None
@@ -452,9 +597,10 @@ def load_pose_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -
     """Loads a pose file the user picks, starting in their own library (the asset's Approved folder when they have
     none), onto the selected controls or the whole active rig. Returns the path, or None when cancelled."""
     scope = bmaya.maya.posetools.get_scope()
-    asset = find_asset(rigmodules.query.get_rig_info(scope[0]).asset_id)
+    info = rigmodules.query.get_rig_info(scope[0])
+    asset = find_asset(info.asset_id)
     path = _prompter(prompter).ask_file("Load Pose", POSE_FILTER, save=False,
-                                        folder=_library_folder(asset, bmaya.core.asset.library.POSE))
+                                        folder=_library_folder(asset, info.rig_name, bmaya.core.asset.library.POSE))
     if path:
         bmaya.maya.posetools.load_pose(scope, path)
     return path
@@ -467,15 +613,16 @@ def save_animation_interactive(prompter: bmaya.core.prompts.Prompter | None = No
     prompter = _prompter(prompter)
     scope = bmaya.maya.posetools.get_scope()
     start, end = _playback_range()
-    asset = find_asset(rigmodules.query.get_rig_info(scope[0]).asset_id)
+    info = rigmodules.query.get_rig_info(scope[0])
+    asset = find_asset(info.asset_id)
     if asset is None:
         path = prompter.ask_file("Save Animation", ANIMATION_FILTER, save=True)
         if path:
             cmds.saveRigAnimation(*scope, file=_command_path(path), startFrame=start, endFrame=end)
         return path
 
-    user = bmaya.core.asset.library.user_source(asset)
-    name = prompter.ask_text("Save Animation", f"Animation name, saved in your own library of {asset.id}:",
+    user = bmaya.core.asset.library.user_source(asset, info.rig_name)
+    name = prompter.ask_text("Save Animation", f"Animation name, saved in your own library of the rig {info.rig_name!r} of {asset.id}:",
                              bmaya.core.asset.library.free_name(user, bmaya.core.asset.library.ANIMATION, "animation"))
     if not name:
         return None
@@ -490,21 +637,23 @@ def load_animation_interactive(mirror: bool = False, prompter: bmaya.core.prompt
     have none), onto the selected controls or the whole active rig, keyed at the frames they were saved on. mirror
     puts the Left side's keys on the Right and the Right's on the Left. Returns the path, or None when cancelled."""
     scope = bmaya.maya.posetools.get_scope()
-    asset = find_asset(rigmodules.query.get_rig_info(scope[0]).asset_id)
+    info = rigmodules.query.get_rig_info(scope[0])
+    asset = find_asset(info.asset_id)
     path = _prompter(prompter).ask_file("Load Animation", ANIMATION_FILTER, save=False,
-                                        folder=_library_folder(asset, bmaya.core.asset.library.ANIMATION))
+                                        folder=_library_folder(asset, info.rig_name, bmaya.core.asset.library.ANIMATION))
     if path:
         bmaya.maya.posetools.load_animation(scope, path, mirror=mirror)
     return path
 
 
 def save_joint_clip(asset_id: str, name: str, rig_root: str, start_frame: int, end_frame: int) -> str:
-    """Captures the rig's export joints over start_frame to end_frame into exports/<name>/<name>.fbx in the
-    asset's folder, which every variant of the asset shares. An existing clip is versioned first. Returns the FBX
-    path."""
+    """Captures the rig's export joints over start_frame to end_frame into exports/<name>/<name>.fbx in the exports
+    folder of the rig's skeleton, which every rig of that skeleton shares. An existing clip is versioned first.
+    Returns the FBX path."""
     asset = require_asset(asset_id)
+    rig = rigmodules.query.get_rig_info(rig_root).rig_name
     fbx = bmaya.maya.assethandlers.save_anim_clip(
-        asset, name, rig_root=rig_root, start_frame=start_frame, end_frame=end_frame)
+        asset, rig, name, rig_root=rig_root, start_frame=start_frame, end_frame=end_frame)
     bmaya.core.log.info(f"Saved clip {name!r} of {asset.id} on frames {start_frame} to {end_frame}: {fbx}")
     return fbx
 
@@ -546,7 +695,7 @@ def _capture_joint_clip(prompter: bmaya.core.prompts.Prompter, caption: str, sta
     name = prompter.ask_text(caption, f"Clip name, saved in the exports folder of {asset.id}:")
     if not name:
         return None
-    fbx = bmaya.maya.assethandlers.AnimClipHandler.fbx_path(asset.path("exports"), name)
+    fbx = bmaya.maya.assethandlers.AnimClipHandler.fbx_path(bmaya.maya.assethandlers.get_exports_folder(asset, rig.rig_name), name)
     if os.path.exists(fbx) and not _confirm_replace(prompter, caption, f"Clip {name!r}"):
         return None
     return save_joint_clip(asset.id, name, rig.rig_root, start_frame, end_frame)
@@ -579,8 +728,9 @@ def animate_from_joint_clip_interactive(prompter: bmaya.core.prompts.Prompter | 
 def _ask_clip(prompter: bmaya.core.prompts.Prompter, caption: str) -> bmaya.maya.assethandlers.AnimClip | None:
     """An FBX clip the user picks, starting in the active rig's asset's exports folder, read into a JointClip file
     (with the bone map beside it, when there is one). None when cancelled."""
-    asset = find_asset(bmaya.maya.activerig.get_active_rig().asset_id)
-    path = prompter.ask_file(caption, CLIP_FILTER, save=False, folder=_asset_folder(asset, "exports"))
+    rig = bmaya.maya.activerig.get_active_rig()
+    asset = find_asset(rig.asset_id)
+    path = prompter.ask_file(caption, CLIP_FILTER, save=False, folder=_exports_folder(asset, rig.rig_name))
     if not path:
         return None
     folder, file_name = os.path.split(path)
@@ -593,21 +743,22 @@ def _command_path(path: str) -> str:
 
 def save_skeleton_export_interactive() -> str | None:
     """Writes the active rig's skeleton export (the export joints at rest, as the skeleton asset source for the
-    engine, with its bone map) into its asset's exports folder. Needs the asset's folder. Returns the FBX path."""
+    engine, with its bone map) into the exports folder of its skeleton. Needs the asset's folder. Returns the FBX
+    path."""
     rig = bmaya.maya.activerig.get_active_rig()
     fbx, _ = save_skeleton_export(rig.asset_id, rig.rig_root)
     return fbx
 
 
 def check_clip_skeleton_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
-    """Checks an animation FBX the user picks against the active rig's asset's skeleton export. Raises when the
-    joints differ, naming them. Returns the FBX path, or None when cancelled."""
+    """Checks an animation FBX the user picks against the skeleton export of the active rig's skeleton. Raises when
+    the joints differ, naming them. Returns the FBX path, or None when cancelled."""
     rig = bmaya.maya.activerig.get_active_rig()
     asset = find_asset(rig.asset_id)
     path = _prompter(prompter).ask_file("Check Clip Against Skeleton", CLIP_FILTER, save=False,
-                                        folder=_asset_folder(asset, "exports"))
+                                        folder=_exports_folder(asset, rig.rig_name))
     if path:
-        check_clip_skeleton(rig.asset_id, path)
+        check_clip_skeleton(rig.asset_id, rig.rig_name, path)
     return path
 
 
@@ -621,13 +772,14 @@ class ClipSettings:
 
 
 def edit_clip_properties_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
-    """Sets the engine properties of an exported clip: an FBX the user picks, starting in the active rig's asset's
-    exports folder, then loop, root motion and additive type in a form. Events and curves are kept as they are.
-    Returns the FBX path, or None when cancelled."""
+    """Sets the engine properties of an exported clip: an FBX the user picks, starting in the exports folder of the
+    active rig's skeleton, then loop, root motion and additive type in a form. Events and curves are kept as they
+    are. Returns the FBX path, or None when cancelled."""
     prompter = _prompter(prompter)
-    asset = find_asset(bmaya.maya.activerig.get_active_rig().asset_id)
+    rig = bmaya.maya.activerig.get_active_rig()
+    asset = find_asset(rig.asset_id)
     path = prompter.ask_file("Edit Clip Properties: pick the clip", CLIP_FILTER, save=False,
-                             folder=_asset_folder(asset, "exports"))
+                             folder=_exports_folder(asset, rig.rig_name))
     if not path:
         return None
     properties_path = bmaya.core.asset.animproperties.get_path(path)
@@ -641,11 +793,34 @@ def edit_clip_properties_interactive(prompter: bmaya.core.prompts.Prompter | Non
 
 
 def save_skin_weights_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
-    save_skin_weights(bmaya.maya.activerig.get_active_rig().rig_root, prompter=prompter)
+    """Saves the active rig's skin weights to a look of its asset: the only look the rig can wear, or one the user
+    picks."""
+    rig = bmaya.maya.activerig.get_active_rig()
+    look, cancelled = _ask_rig_look(_prompter(prompter), "Save Skin Weights", rig)
+    if not cancelled:
+        save_skin_weights(rig.rig_root, look, prompter=prompter)
 
 
 def load_skin_weights_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
-    load_skin_weights(bmaya.maya.activerig.get_active_rig().rig_root, prompter=prompter)
+    """Loads a look's skin weights onto the active rig's meshes: the only look the rig can wear, or one the user
+    picks."""
+    rig = bmaya.maya.activerig.get_active_rig()
+    look, cancelled = _ask_rig_look(_prompter(prompter), "Load Skin Weights", rig)
+    if not cancelled:
+        load_skin_weights(rig.rig_root, look, prompter=prompter)
+
+
+def _ask_rig_look(prompter: bmaya.core.prompts.Prompter, title: str,
+                  rig: rigmodules.query.RigInfo) -> tuple[str | None, bool]:
+    """(look, cancelled) for a tool that writes or reads a look's files of the active rig. Asks only when the rig can
+    wear more than one look. look is None when there is no asset folder or no choice to make: the plain function then
+    decides, and reports an asset with no look."""
+    asset = find_asset(rig.asset_id)
+    looks = get_rig_looks(asset, rig.rig_name) if asset is not None else []
+    if len(looks) < 2:
+        return None, False
+    look = prompter.choose(title, f"Look of {asset.id}:", looks)
+    return look, look is None
 
 
 # ---- questions the workflows share ----------------------------------------------------------
@@ -658,9 +833,11 @@ def _playback_range() -> tuple[int, int]:
     return int(cmds.playbackOptions(query=True, minTime=True)), int(cmds.playbackOptions(query=True, maxTime=True))
 
 
-def _asset_folder(asset: bmaya.core.asset.Asset | None, file_type: str) -> str:
-    """The folder a file dialog starts in: the asset's folder for file_type when it exists, else none."""
-    folder = asset.path(file_type) if asset else ""
+def _exports_folder(asset: bmaya.core.asset.Asset | None, rig: str) -> str:
+    """The folder a clip dialog starts in: the exports folder of the rig's skeleton when it exists, else none."""
+    if asset is None or rig not in asset.rigs:
+        return ""
+    folder = bmaya.maya.assethandlers.get_exports_folder(asset, rig)
     return folder if os.path.isdir(folder) else ""
 
 
@@ -669,13 +846,15 @@ def _library_file(source: bmaya.core.asset.library.LibrarySource, kind: str, nam
     return bmaya.core.asset.library.find_file(source.folders[kind], kind, name)
 
 
-def _library_folder(asset: bmaya.core.asset.Asset | None, kind: str) -> str:
-    """The folder a pose or animation dialog starts in: the user's own library when it exists, else the asset's
-    Approved folder when that does, else none."""
+def _library_folder(asset: bmaya.core.asset.Asset | None, rig: str, kind: str) -> str:
+    """The folder a pose or animation dialog starts in: the user's own library of the rig when it exists, else the
+    rig's Approved folder when that does, else none."""
     if asset is None:
         return ""
-    user = bmaya.core.asset.library.user_source(asset).folders[kind]
-    return user if os.path.isdir(user) else _asset_folder(asset, bmaya.core.asset.library.FOLDER_TYPE[kind])
+    for source in reversed(bmaya.core.asset.library.sources(asset, rig)):
+        if source.key != bmaya.core.asset.library.SHARED and os.path.isdir(source.folders[kind]):
+            return source.folders[kind]
+    return ""
 
 
 def _ask_asset_id(prompter: bmaya.core.prompts.Prompter, title: str,
@@ -689,12 +868,29 @@ def _ask_asset_id(prompter: bmaya.core.prompts.Prompter, title: str,
     return prompter.ask_text(title, message, default)
 
 
-def _choose_variant(prompter: bmaya.core.prompts.Prompter, title: str, asset_id: str) -> str | None:
-    """The asset's only variant, or one the user picks. Raises when it has none."""
-    variants = require_asset(asset_id).variants
-    if not variants:
-        raise bmaya.core.asset.AssetError(f"{asset_id} has no variants. Add a template with New Variant first.")
-    return variants[0] if len(variants) == 1 else prompter.choose(title, f"Variant of {asset_id}:", variants)
+# What each kind of an asset's parts is listed by, and the tool that adds one.
+_OWNER_TOOLS = {"skeleton": "Save Skeleton", "rig": "New Rig", "look": "New Look"}
+
+
+def _choose_owner(prompter: bmaya.core.prompts.Prompter, title: str, asset_id: str, kind: str) -> str | None:
+    """The asset's only skeleton, rig or look (kind), or one the user picks. Raises when it has none."""
+    asset = require_asset(asset_id)
+    names = {"skeleton": asset.skeletons, "rig": asset.rigs, "look": asset.looks}[kind]
+    if not names:
+        raise bmaya.core.asset.AssetError(f"{asset_id} has no {kind}s. Add one with {_OWNER_TOOLS[kind]} first.")
+    return names[0] if len(names) == 1 else prompter.choose(title, f"{kind.capitalize()} of {asset_id}:", names)
+
+
+def _ask_skeleton(prompter: bmaya.core.prompts.Prompter, title: str, asset: bmaya.core.asset.Asset,
+                  message: str) -> str | None:
+    """The name of a skeleton of the asset for a new rig or look: its only skeleton, one the user picks, or a name
+    the user types ("default" offered) when it has none saved yet."""
+    skeletons = asset.skeletons
+    if len(skeletons) == 1:
+        return skeletons[0]
+    if skeletons:
+        return prompter.choose(title, message, skeletons)
+    return prompter.ask_text(title, message + " None is saved yet, so name the one it will be.", DEFAULT_NAME)
 
 
 def _confirm_replace(prompter: bmaya.core.prompts.Prompter, title: str, what: str) -> bool:

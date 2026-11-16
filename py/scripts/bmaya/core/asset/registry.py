@@ -1,8 +1,13 @@
 """The project registry: an index of every asset in a project, built by scanning the workspace.
 
-It answers questions about many assets without opening Maya: assets of a type, assets sharing a
-skeleton (whose poses and animations can be shared, and which need a batch update when that skeleton
-changes), and the latest publish of each variant (for the out-of-date check on imported rigs).
+It answers questions about many assets without opening Maya: assets of a type, assets with a rig or a look on
+one skeleton (which need a batch update when that skeleton changes), and the latest publish of each rig and look
+(for the out-of-date check on imported rigs). An entry:
+
+    {"assetType": "Character",
+     "skeletons": ["default"],
+     "rigs":  {"body": {"skeleton": SkeletonRef("default"), "source": None, "latestPublish": "2026..."}},
+     "looks": {"default": {"skeletons": (SkeletonRef("default"),), "latestPublish": None}}}
 
 The index lives in memory and is never written anywhere, so it is never checked out, submitted or
 merged, and every workspace (every branch) indexes the files it actually has. Registry.of(project)
@@ -62,23 +67,28 @@ class Registry:
         entry = self.assets.get(assetid.check(asset_id))
         return dict(entry) if entry is not None else None
 
-    def find(self, asset_type: str | None = None, skeleton: str | None = None) -> list[str]:
-        """Ids matching every filter given. skeleton matches the asset that owns it and every asset using it."""
+    def find(self, asset_type: str | None = None, skeleton: tuple[str, str] | None = None) -> list[str]:
+        """Ids matching every filter given. skeleton is (the id of the asset that holds it, its name), and matches
+        that asset and every asset with a rig or a look on it."""
         result = []
         for asset_id, entry in self.assets.items():
             if asset_type is not None and entry["assetType"] != asset_type:
                 continue
-            if skeleton is not None and entry["skeleton"] != skeleton:
+            if skeleton is not None and tuple(skeleton) not in _skeletons_used(asset_id, entry):
                 continue
             result.append(asset_id)
         return sorted(result)
 
-    def latest_publish(self, asset_id: str, variant: str) -> str | None:
-        """The id of a variant's latest publish, or None when it was never published."""
+    def latest_publish(self, asset_id: str, kind: str, name: str) -> str | None:
+        """The id of the latest publish of a rig or a look (kind is publishes.RIG or publishes.LOOK), or None when
+        it was never published."""
         entry = self.get(asset_id)
         if entry is None:
             raise ProjectError(f"{asset_id} is not in the project at {self.project.root}.")
-        return entry["latestPublish"].get(variant)
+        if kind not in publishes.FOLDER_TYPE:
+            raise ProjectError(f"A publish is of a {publishes.RIG!r} or a {publishes.LOOK!r}, not {kind!r}.")
+        found = entry["rigs" if kind == publishes.RIG else "looks"].get(name)
+        return found["latestPublish"] if found else None
 
     # ---- scan ------------------------------------------------------------------------------
 
@@ -117,12 +127,24 @@ class Registry:
 
 
 def _entry(asset: Asset) -> dict:
-    info = asset.info
-    variants = asset.variants
-    return {
-        "assetType": info["assetType"],
-        "skeleton": info.get("skeleton") or asset.id,
-        "variants": variants,
-        "latestPublish": {v: p for v in variants if (p := publishes.latest(asset, v))},
-    }
+    rigs = {}
+    for name in asset.rigs:
+        record = asset.rig(name)
+        rigs[name] = {"skeleton": record.skeleton, "source": record.source,
+                      "latestPublish": publishes.latest(asset, publishes.RIG, name)}
+    looks = {}
+    for name in asset.looks:
+        looks[name] = {"skeletons": asset.look(name).skeletons,
+                       "latestPublish": publishes.latest(asset, publishes.LOOK, name)}
+    return {"assetType": asset.info["assetType"], "skeletons": asset.skeletons, "rigs": rigs, "looks": looks}
+
+
+def _skeletons_used(asset_id: str, entry: dict) -> set[tuple[str, str]]:
+    """Every skeleton an asset holds or names, as (the id of the asset that holds it, its name)."""
+    references = [rig["skeleton"] for rig in entry["rigs"].values()]
+    for look in entry["looks"].values():
+        references.extend(look["skeletons"])
+    used = {(asset_id, name) for name in entry["skeletons"]}
+    used.update((reference.asset or asset_id, reference.name) for reference in references)
+    return used
 
