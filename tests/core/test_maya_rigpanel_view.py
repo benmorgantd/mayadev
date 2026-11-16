@@ -47,6 +47,8 @@ class FakeSession:
         self.changed = bmaya.core.observable.Event()
         self.spaces_changed = bmaya.core.observable.Event()
         self.space = None
+        self.limb_changed = bmaya.core.observable.Event()
+        self.limb = None
         self.watching = []
         self.rigs = rigs
         self.rig = rigs[active] if rigs else None
@@ -64,6 +66,7 @@ class FakeSession:
 
     def watch_selection(self, watch): self.watching.append(watch)
     def set_space(self, label, key=False): self._record("set_space", label, key)
+    def set_ik_fk(self, mode, key=False): self._record("set_ik_fk", mode, key)
     def close(self): self.calls.append(("close",))   # a destroyed panel calls it, even when commands are set to fail
     def refresh(self): self._record("refresh")
     def set_active(self, rig_root): self._record("set_active", rig_root)
@@ -209,6 +212,49 @@ class RigPanelView(unittest.TestCase):
             self.click(panel.space_buttons[2])
         error.assert_called_once_with("refused")
         self.assertEqual([button.isChecked() for button in panel.space_buttons], [True, False, False])
+
+    def limb(self, session, blend=1.0):
+        import bmaya.maya.rigpanel
+        session.limb = bmaya.maya.rigpanel.LimbState("hero:arm_l", ("hero:upper_ctrl_l", "hero:settings_ctrl_l"),
+                                                     "hero:settings_ctrl_l", blend)
+        session.limb_changed.emit()
+
+    def test_the_limb_section_shows_only_for_a_selected_limb_and_its_mode(self):
+        session = FakeSession([make_rig("hero:rigRoot", "hero")])
+        panel = self.panel(session)
+        self.assertFalse(panel.limb_section.isVisible())
+        self.limb(session, blend=1.0)
+        self.assertTrue(panel.limb_section.isVisible())
+        self.assertEqual(panel.limb_section.header.text(), "IK/FK")
+        self.assertEqual(panel.limb_label.text(), "arm_l: IK")
+        self.assertEqual({mode: button.isChecked() for mode, button in panel.limb_buttons.items()}, {"IK": True, "FK": False})
+        self.limb(session, blend=0.0)
+        self.assertEqual({mode: button.isChecked() for mode, button in panel.limb_buttons.items()}, {"IK": False, "FK": True})
+        self.limb(session, blend=0.25)
+        self.assertEqual(panel.limb_label.text(), "arm_l: blend 0.25")
+        self.assertEqual([button.isChecked() for button in panel.limb_buttons.values()], [False, False])
+        session.limb = None
+        session.limb_changed.emit()
+        self.assertFalse(panel.limb_section.isVisible())
+
+    def test_a_limb_button_switches_and_the_key_box_keys(self):
+        session = FakeSession([make_rig("hero:rigRoot", "hero")])
+        panel = self.panel(session)
+        self.limb(session)
+        self.click(panel.limb_buttons["FK"])
+        panel.limb_key.setChecked(True)
+        self.click(panel.limb_buttons["IK"])
+        self.assertEqual(session.calls, [("set_ik_fk", "FK", False), ("set_ik_fk", "IK", True)])
+
+    def test_a_refused_limb_switch_is_logged_and_the_buttons_show_the_current_mode(self):
+        session = FakeSession([make_rig("hero:rigRoot", "hero")])
+        panel = self.panel(session)
+        self.limb(session, blend=1.0)
+        session.error = "refused"
+        with mock.patch("bmaya.core.log.error") as error:
+            self.click(panel.limb_buttons["FK"])
+        error.assert_called_once_with("refused")
+        self.assertEqual([button.isChecked() for button in panel.limb_buttons.values()], [True, False])
 
     def test_the_panel_watches_the_selection_only_while_it_shows(self):
         session = FakeSession([make_rig("hero:rigRoot", "hero")])

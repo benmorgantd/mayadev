@@ -42,6 +42,19 @@ def build(name):
     cmds.select(clear=True)
 
 
+def build_limb(name):
+    cmds.namespace(add="skel_" + name)
+    for usage, position, export in (("upperArm", (0, 0, 0), True), ("lowerArm", (1.8, 2.4, 0), True),
+                                    ("hand", (5, 0, 0), True), ("handIk", (5, 0, 0), False),
+                                    ("armPole", (2.5, 5, 0), False), ("armSettings", (0, 8, 0), False)):
+        cmds.select(clear=True)
+        joint = cmds.joint(name=":skel_%s:%s_jnt" % (name, usage), position=position)
+        cmds.rigJointMarkup(joint, usage=usage, side="Left", export=export, skin=export)
+    joints = cmds.ls("skel_%s:*" % name, type="joint")
+    cmds.createRigFromTemplate(*joints, template=os.environ["PANEL_LIMB_TEMPLATE"], asset="shooter" + B + name)
+    cmds.select(clear=True)
+
+
 STATE = {}
 
 
@@ -132,6 +145,30 @@ def steps_rest():
     cmds.select(villain_ctrl, replace=True)
     pump(300)
     check(not panel.space_section.isVisible(), "selecting a control with no space switch hides the section")
+
+    # The IK/FK section follows a limb's selection and switches it, with Key.
+    build_limb("pilot")
+    pilot = cmds.ls("pilot:*", type="rigRootModule")[0]
+    handle = cmds.getRigControls(pilot, usage="handIk")[0]
+    settings = cmds.getRigControls(pilot, usage="armSettings")[0]
+    cmds.select(handle, replace=True)
+    pump(400)
+    check(panel.session.rig.namespace == "pilot", "selecting the limb switched the panel to its rig")
+    check(panel.limb_section.isVisible() and panel.limb_buttons["IK"].isChecked(), "selecting a limb control shows IK/FK in IK")
+    panel.limb_buttons["FK"].click()
+    pump(300)
+    check(cmds.getAttr(settings + ".ikFkBlend") == 0 and panel.limb_buttons["FK"].isChecked(), "pressing FK switches the limb")
+    cmds.currentTime(30)
+    panel.limb_key.setChecked(True)
+    panel.limb_buttons["IK"].click()
+    pump(300)
+    check(cmds.keyframe(settings + ".ikFkBlend", query=True, timeChange=True) == [29.0, 30.0], "Key checked: keys frames 29 and 30")
+    cmds.select(cmds.getRigControls(pilot, moduleType="TwoBoneIk"), replace=True)
+    pump(300)
+    check(panel.limb_section.isVisible(), "the limb's group selected shows IK/FK")
+    cmds.select(villain_ctrl, replace=True)
+    pump(300)
+    check(not panel.limb_section.isVisible(), "selecting a control of another rig hides IK/FK")
 
     # Reopen several times: the path that crashes with dockable widgets.
     for index in range(3):

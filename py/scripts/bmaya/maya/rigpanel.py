@@ -22,6 +22,8 @@ import bmaya.maya.eventsregistry
 import bmaya.maya.posetools
 
 SELECTION_CALLBACK = "rig_panel_selection_changed"
+MAX_LIMB_SELECTION = 6   # a TwoBoneIk limb has six controls
+IK_FK_BLENDS = {"IK": 1.0, "FK": 0.0}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -46,6 +48,24 @@ class SpaceState:
     current: int
 
 
+@dataclasses.dataclass(frozen=True)
+class LimbState:
+    """The TwoBoneIk limb the selection names: its module, its controls, the settings control that holds
+    ikFkBlend, and the blend (1 is IK, 0 is FK, between is a blend)."""
+
+    module: str
+    controls: tuple[str, ...]
+    settings: str
+    blend: float
+
+    @property
+    def mode(self) -> str:
+        """"IK", "FK" or "Blend"."""
+        if self.blend >= 1.0:
+            return "IK"
+        return "FK" if self.blend <= 0.0 else "Blend"
+
+
 def group_controls(controls: list[rigmodules.query.RigControl]) -> list[ControlGroup]:
     """Groups controls by (module, side), in the order each group first appears."""
     members: dict[tuple[str, str], list[rigmodules.query.RigControl]] = {}
@@ -67,7 +87,9 @@ class RigPanelSession:
     def __init__(self) -> None:
         self.changed = bmaya.core.observable.Event()
         self.spaces_changed = bmaya.core.observable.Event()
+        self.limb_changed = bmaya.core.observable.Event()
         self.space: SpaceState | None = None
+        self.limb: LimbState | None = None
         self.rigs: list[rigmodules.query.RigInfo] = []
         self.rig: rigmodules.query.RigInfo | None = None
         self.groups: list[ControlGroup] = []
@@ -92,6 +114,46 @@ class RigPanelSession:
             registry.unregister(key)
         if watch:
             self.refresh_space()
+            self.refresh_limb()
+
+    def refresh_limb(self) -> None:
+        """Reads the IK/FK limb the selection names, and emits limb_changed when it differs from before. The
+        selection names a limb when it is one to MAX_LIMB_SELECTION rig controls that all belong to one TwoBoneIk
+        module, so a limb's group button shows it. A bigger selection is not read: select all costs no query."""
+        limb = None
+        controls = cmds.ls(selection=True, type=rigmodules.query.RIG_CONTROL_TYPE, long=True)
+        if 0 < len(controls) <= MAX_LIMB_SELECTION:
+            try:
+                found = rigmodules.query.find_ik_fk_limb(controls[0])
+                if found is not None and set(controls) <= set(cmds.ls(found.controls, long=True)):
+                    limb = LimbState(found.module, found.controls, found.settings, found.blend)
+            except RuntimeError as error:
+                bmaya.core.log.error(f"The rig panel could not read the limb of {controls[0]}: {error}")
+        if limb != self.limb:
+            self.limb = limb
+            self.limb_changed.emit()
+
+    def set_ik_fk(self, mode: str, key: bool = False) -> None:
+        """Switches the selected limb to "IK" or "FK" (setRigIkFkBlend): the limb's joints stay where they are. With
+        key, all six controls, the settings control included, are keyed on the previous frame first and on the
+        current frame after, so the animation holds the old mode up to the cut. One undo reverts all of it."""
+        limb = self.limb
+        if limb is None:
+            raise RuntimeError("Select the controls of one two-bone IK limb.")
+        if mode not in IK_FK_BLENDS:
+            raise RuntimeError(f"The mode must be one of {', '.join(IK_FK_BLENDS)}, not {mode!r}.")
+        if limb.mode == mode:
+            return
+        cmds.undoInfo(openChunk=True, chunkName="Switch IK/FK")
+        try:
+            if key:
+                rigmodules.pose.key_controls(list(limb.controls), time=cmds.currentTime(query=True) - 1)
+            cmds.setRigIkFkBlend(limb.module, blend=IK_FK_BLENDS[mode])
+            if key:
+                rigmodules.pose.key_controls(list(limb.controls))
+        finally:
+            cmds.undoInfo(closeChunk=True)
+        self.refresh_limb()
 
     def refresh_space(self) -> None:
         """Reads the space switch of the selected control, and emits spaces_changed when it differs from before.
@@ -150,6 +212,7 @@ class RigPanelSession:
             self.rigs, self.rig, self.groups = [], None, []
         self.changed.emit()
         self.refresh_space()   # the selected control may belong to another rig now
+        self.refresh_limb()
 
     def set_active(self, rig_root: str) -> None:
         """Makes a rig of the scene the active rig. The tracker announces it and the session refreshes."""
@@ -190,3 +253,4 @@ class RigPanelSession:
 
     def _on_selection_changed(self, *args) -> None:
         self.refresh_space()
+        self.refresh_limb()

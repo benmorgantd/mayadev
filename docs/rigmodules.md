@@ -33,7 +33,9 @@ Python `maya.cmds` calls, with the module that makes them.
 | `cmds.saveRigAnimation(*scope, file=, startFrame=, endFrame=, meta=)` | `assethandlers.ControlAnimHandler`, `AnimClipHandler` | Animations, and the ControlAnim beside a clip |
 | `cmds.loadRigAnimation(*scope, file=, offset=, mirror=)` | `assethandlers.ControlAnimHandler`, `posetools.load_animation` | Load animation, offset and optionally mirrored |
 | `cmds.zeroRigControls`, `cmds.mirrorRigPose(leftToRight=)`, `cmds.flipRigPose` | `posetools` | The pose tools |
-| `cmds.setRigConstraintSpace(constraint, label=)` | `rigpanel.RigPanelSession.set_space` | Switch the selected control's space without moving it |
+| `cmds.setRigControlSpace(control, label=)` | `rigpanel.RigPanelSession.set_space` | Switch the selected control's space, either kind (a constraint's or the TwoBoneIk pole's), without moving it |
+| `cmds.setRigIkFkBlend(module, blend=)` | `rigpanel.RigPanelSession.set_ik_fk` | Switch a TwoBoneIk limb to IK (1) or FK (0), matched so the limb's joints stay put |
+| `query.find_ik_fk_limb(control)` | `rigpanel.RigPanelSession.refresh_limb` | The selected limb's module, six controls, settings control and `ikFkBlend` (RigModules D52) |
 | `cmds.poseRigFromJointPose(*scope, jointPose=)` | `assettools.pose_from_joint_pose_interactive` | Restore controls from a one-pose clip |
 | `cmds.animateRigFromJointClip(*scope, jointClip=, sidecar=)` | `assettools.animate_from_joint_clip_interactive` | Restore keys from a clip |
 
@@ -51,7 +53,7 @@ Python `maya.cmds` calls, with the module that makes them.
 | `query.get_rig_controls(rig_root)`, `query.find_control(node)` | `posetools.get_selected_modules` | Map a selection to the modules of the active rig |
 | `template.get_rig_name(path)` | `assettools.new_variant`, `RigTemplateHandler` | The `rigName` of a template file, which names the variant |
 | `pose.key_rig(rig_root)`, `pose.key_modules(rig_root, modules)` | `posetools` | Key every channel of a rig, or of chosen modules |
-| `pose.key_controls(controls, time=)` | `rigpanel.RigPanelSession.set_space` | Key the switched control on the previous frame and the current one |
+| `pose.key_controls(controls, time=)` | `rigpanel.RigPanelSession.set_space` | Key the switched control (or the six controls of a switched limb) on the previous frame and the current one |
 | `query.find_control_space(control)` | `rigpanel.RigPanelSession.refresh_space` | The selected control's constraint, space labels and current space (RigModules `getRigControlSpace`, D50) |
 | `query.get_rigs()`, `query.get_rig_controls(rig_root)` | `rigpanel.RigPanelSession.refresh` | The rigs in the scene and the active rig's controls, for the active rig panel |
 | `query.get_rig_controls(rig_root)`, `query.RigControl` (`node`, `module`, `module_type`, `side`, `usage`) | `librarybrowser.LibrarySession` | The rig's masks, and the controls a mask picks |

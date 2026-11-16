@@ -298,6 +298,236 @@ class Session(RigPanelBase):
         self.assertEqual(calls, [])
 
 
+LIMB_TEMPLATE = {
+    "rigVersion": 1,
+    "rigTemplateName": "RigPanelLimbTest",
+    "rigName": "game",
+    "rigAuthor": "tests",
+    "rigModules": [
+        {"moduleType": "TwoBoneIk", "name": "arm_l", "shapeType": "Box", "side": "Left", "mirror": True,
+         "moduleArgs": {"joints": [["Left", "upperArm"], ["Left", "lowerArm"], ["Left", "hand"]],
+                        "ik": ["Left", "handIk"], "pole": ["Left", "armPole"], "settings": ["Left", "armSettings"]},
+         "parentStructure": {"start": "layout.end", "ik": "layout.end", "pole": "layout.end"}},
+    ],
+}
+# The limb of RigModules' twoboneik_basic fixture: a bent arm with the pole on the bend side, and its mirror.
+LIMB_JOINTS = (
+    ("upperArm", (0, 0, 0), True), ("lowerArm", (1.8, 2.4, 0), True), ("hand", (5, 0, 0), True),
+    ("handIk", (5, 0, 0), False), ("armPole", (2.5, 5, 0), False), ("armSettings", (0, 8, 0), False),
+)
+
+
+class LimbPanel(RigPanelBase):
+    """The IK/FK limb in the panel (D52 phase 8): the limb the selection names, the switch with and without keys,
+    and the pole's module-owned space and the pose commands on a limb."""
+
+    def setUp(self):
+        super().setUp()
+        with open(self.template, "w", encoding="utf-8") as handle:
+            json.dump(LIMB_TEMPLATE, handle)
+        cmds = self.cmds
+        cmds.namespace(add="skel_hero")
+        self.joints = {}
+        for side, sign in (("Left", 1), ("Right", -1)):
+            for usage, (x, y, z), export in LIMB_JOINTS:
+                cmds.select(clear=True)
+                joint = cmds.joint(name=f":skel_hero:{usage}_{side[0].lower()}_jnt", position=(x * sign, y, z))
+                cmds.rigJointMarkup(joint, usage=usage, side=side, export=export, skin=export)
+                self.joints[side, usage] = joint
+        cmds.createRigFromTemplate(*self.joints.values(), template=self.template, asset="shooter\\hero")
+        cmds.select(clear=True)
+        self.root = self.query.get_rigs("hero")[0].rig_root
+        self.left = {usage: self.query.get_rig_controls(self.root, side="Left", usage=usage)[0].node
+                     for usage, _, _ in LIMB_JOINTS}
+        self.right_settings = self.query.get_rig_controls(self.root, side="Right", usage="armSettings")[0].node
+        self.limb_controls = tuple(self.left.values())
+        self.settings = self.left["armSettings"]
+        self.session = self.rigpanel.RigPanelSession()
+        self.addCleanup(self.session.close)
+        self.seen = []
+        self.session.limb_changed.connect(lambda: self.seen.append(self.session.limb))
+
+    def select(self, *controls):
+        self.cmds.select(list(controls), replace=True)
+        self.session.refresh_limb()
+
+    def blend(self, node=None):
+        return self.cmds.getAttr((node or self.settings) + ".ikFkBlend")
+
+    def elbow(self):
+        # The build moves the skeleton into the rig's namespace.
+        return self.cmds.xform("hero:lowerArm_l_jnt", query=True, worldSpace=True, translation=True)
+
+    def test_any_control_of_a_limb_gives_the_limb_in_ik_by_default(self):
+        for control in self.limb_controls:
+            with self.subTest(control=control):
+                self.select(control)
+                limb = self.session.limb
+                self.assertEqual(set(limb.controls), set(self.limb_controls))
+                self.assertEqual(len(limb.controls), 6)
+                self.assertEqual(limb.settings, self.settings)
+                self.assertEqual((limb.blend, limb.mode), (1.0, "IK"))
+
+    def test_the_whole_limb_selected_gives_the_limb_and_anything_else_gives_none(self):
+        self.select(*self.limb_controls)
+        self.assertIsNotNone(self.session.limb)
+        self.select(self.left["hand"], self.right_settings)
+        self.assertIsNone(self.session.limb)
+        self.select(self.left["hand"], self.cmds.getRigControls(self.root, moduleType="Layout")[0])
+        self.assertIsNone(self.session.limb)
+        self.cmds.select(clear=True)
+        self.session.refresh_limb()
+        self.assertIsNone(self.session.limb)
+
+    def test_a_selection_over_six_controls_is_not_read(self):
+        self.cmds.select(self.cmds.getRigControls(self.root), replace=True)
+        with mock.patch("rigmodules.query.find_ik_fk_limb") as find:
+            self.session.refresh_limb()
+        find.assert_not_called()
+        self.assertIsNone(self.session.limb)
+
+    def test_limb_changed_emits_only_when_the_limb_changes(self):
+        self.select(self.left["hand"])
+        self.select(self.left["hand"])
+        self.select(self.left["armPole"])
+        self.assertEqual(len(self.seen), 1)
+        self.cmds.setAttr(self.settings + ".ikFkBlend", 0)
+        self.session.refresh_limb()
+        self.assertEqual(len(self.seen), 2)
+        self.assertEqual(self.seen[-1].mode, "FK")
+
+    def test_a_blend_between_is_reported_as_a_blend(self):
+        self.cmds.setAttr(self.settings + ".ikFkBlend", 0.5)
+        self.select(self.left["handIk"])
+        self.assertEqual((self.session.limb.blend, self.session.limb.mode), (0.5, "Blend"))
+
+    def test_the_selection_callback_follows_the_selection_while_watching(self):
+        self.session.watch_selection(True)
+        self.cmds.select(self.left["handIk"], replace=True)
+        self.assertEqual(self.session.limb.settings, self.settings)
+        self.cmds.select(clear=True)
+        self.assertIsNone(self.session.limb)
+
+    def test_switching_to_fk_keeps_the_joints_and_keys_nothing(self):
+        self.cmds.setAttr(self.left["handIk"] + ".translateY", -1)
+        before = self.elbow()
+        self.select(self.left["handIk"])
+        self.session.set_ik_fk("FK")
+        self.assertEqual(self.blend(), 0)
+        self.assertEqual(self.session.limb.mode, "FK")
+        for was, now in zip(before, self.elbow()):
+            self.assertAlmostEqual(was, now, places=3)
+        self.assertFalse(self.cmds.keyframe(self.limb_controls, query=True, keyframeCount=True))
+        self.session.set_ik_fk("IK")
+        self.assertEqual(self.blend(), 1)
+        for was, now in zip(before, self.elbow()):
+            self.assertAlmostEqual(was, now, places=3)
+
+    def test_switching_to_the_current_mode_does_nothing(self):
+        self.select(self.left["handIk"])
+        self.cmds.undoInfo(state=True, infinity=True)
+        self.cmds.flushUndo()
+        self.session.set_ik_fk("IK")
+        self.assertEqual(self.cmds.undoInfo(query=True, undoName=True) or "", "")
+
+    def test_key_keys_all_six_controls_either_side_of_the_cut_in_one_undo(self):
+        self.cmds.undoInfo(state=True, infinity=True)
+        self.cmds.currentTime(10)
+        self.select(*self.limb_controls)
+        self.session.set_ik_fk("FK", key=True)
+        self.assertEqual(self.cmds.keyframe(self.settings + ".ikFkBlend", query=True, timeChange=True), [9.0, 10.0])
+        self.assertEqual(self.cmds.keyframe(self.settings + ".ikFkBlend", query=True, valueChange=True), [1.0, 0.0])
+        for control in (self.left["upperArm"], self.left["handIk"], self.left["armPole"]):
+            self.assertEqual(self.cmds.keyframe(control, query=True, timeChange=True)[:1], [9.0])
+        self.cmds.undo()
+        self.assertEqual(self.blend(), 1)
+        self.assertFalse(self.cmds.keyframe(self.limb_controls, query=True, keyframeCount=True))
+
+    def test_a_bad_mode_or_no_limb_is_an_error(self):
+        with self.assertRaisesRegex(RuntimeError, "Select the controls of one two-bone IK limb"):
+            self.session.set_ik_fk("FK")
+        self.select(self.left["hand"])
+        with self.assertRaisesRegex(RuntimeError, "must be one of IK, FK"):
+            self.session.set_ik_fk("Blend")
+
+    def test_the_group_button_selects_the_hidden_controls_too(self):
+        # At blend 1 the FK lower and end controls are hidden, at blend 0 the IK handle and pole are.
+        self.session.refresh()
+        (group,) = [group for group in self.session.groups if group.module_type == "TwoBoneIk" and group.side == "Left"]
+        self.assertEqual(len(group.controls), 6)
+        for blend in (1, 0):
+            with self.subTest(blend=blend):
+                self.cmds.setAttr(self.settings + ".ikFkBlend", blend)
+                self.session.select_group(group)
+                selected = self.cmds.ls(selection=True, long=True)
+                self.assertEqual(set(selected), set(self.cmds.ls(self.limb_controls, long=True)))
+
+    def test_the_pole_has_a_parent_and_an_ik_space_and_the_switch_keeps_it_in_place(self):
+        pole = self.left["armPole"]
+        self.cmds.setAttr(self.left["handIk"] + ".translateX", -1)
+        self.cmds.select(pole, replace=True)
+        self.session.refresh_space()
+        space = self.session.space
+        self.assertEqual((space.constraint, space.labels, space.current), ("", ("Parent", "Ik"), 0))
+        before = self.cmds.xform(pole, query=True, worldSpace=True, matrix=True)
+        self.session.set_space("Ik")
+        self.assertEqual(self.session.space.current, 1)
+        for was, now in zip(before, self.cmds.xform(pole, query=True, worldSpace=True, matrix=True)):
+            self.assertAlmostEqual(was, now, places=3)
+        self.assertFalse(self.cmds.keyframe(pole, query=True, keyframeCount=True))
+
+    def test_the_pole_space_switch_keys_and_one_undo_reverts_it(self):
+        pole = self.left["armPole"]
+        self.cmds.undoInfo(state=True, infinity=True)
+        self.cmds.currentTime(10)
+        self.cmds.select(pole, replace=True)
+        self.session.refresh_space()
+        self.session.set_space("Ik", key=True)
+        self.assertEqual(self.cmds.keyframe(pole + ".space", query=True, valueChange=True), [0.0, 1.0])
+        self.cmds.undo()
+        self.assertEqual(self.cmds.getAttr(pole + ".space"), 0)
+        self.assertFalse(self.cmds.keyframe(pole, query=True, keyframeCount=True))
+
+    def test_the_selection_callback_reads_the_pole_space(self):
+        self.session.watch_selection(True)
+        self.cmds.select(self.left["armPole"], replace=True)
+        self.assertEqual(self.session.space.labels, ("Parent", "Ik"))
+        self.cmds.select(self.left["hand"], replace=True)
+        self.assertIsNone(self.session.space)
+
+    def test_zero_puts_the_limb_in_ik_because_ik_is_the_rest(self):
+        self.cmds.setAttr(self.settings + ".ikFkBlend", 0)
+        self.cmds.setAttr(self.left["upperArm"] + ".rotateZ", 20)
+        self.select(*self.limb_controls)
+        self.session.zero()
+        self.assertEqual(self.blend(), 1)
+        self.assertEqual(self.cmds.getAttr(self.left["upperArm"] + ".rotateZ"), 0)
+
+    def test_mirror_copies_the_blend_and_flip_swaps_it(self):
+        self.cmds.setAttr(self.settings + ".ikFkBlend", 0)
+        self.cmds.setAttr(self.left["upperArm"] + ".rotateZ", 20)
+        self.cmds.select(clear=True)
+        self.session.mirror(True)
+        self.assertEqual(self.blend(self.right_settings), 0)
+        right_upper = self.query.get_rig_controls(self.root, side="Right", usage="upperArm")[0].node
+        self.assertAlmostEqual(abs(self.cmds.getAttr(right_upper + ".rotateZ")), 20, places=3)
+        self.cmds.setAttr(self.right_settings + ".ikFkBlend", 1)
+        self.session.flip()
+        self.assertEqual(self.blend(), 1)
+        self.assertEqual(self.blend(self.right_settings), 0)
+
+    def test_key_rig_and_key_modules_key_the_limb_including_the_blend(self):
+        self.session.key_rig()
+        for control in self.limb_controls[:3] + (self.settings,):
+            self.assertTrue(self.cmds.keyframe(control, query=True, keyframeCount=True), control)
+        self.assertTrue(self.cmds.keyframe(self.settings + ".ikFkBlend", query=True, keyframeCount=True))
+        self.cmds.cutKey(self.limb_controls)
+        self.select(self.left["handIk"])
+        self.session.key_modules()
+        self.assertTrue(self.cmds.keyframe(self.settings + ".ikFkBlend", query=True, keyframeCount=True))
+        self.assertTrue(self.cmds.keyframe(self.left["upperArm"], query=True, keyframeCount=True))
+
+
 class SpaceSwitch(RigPanelBase):
     """The selected control's space switch, and switching it (D50). The left arm gets World and Chest drivers."""
 

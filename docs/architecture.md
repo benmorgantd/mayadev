@@ -117,7 +117,7 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `maya/posetools.py` | Zero, mirror, flip, key, load pose and load animation tools on the selection or the active rig: plain functions with a scope, and the `*_interactive` entry points |
 | `maya/activerig.py` | `get_active_rig`, `ActiveRigTracker` and its `changed` event |
 | `maya/librarybrowser.py` | `LibrarySession`, the library browser's view-model with no Qt: the listing that follows the active rig, search, scope, apply, save, tags, rename, delete and masks, and what the window can't compute itself: `facets` (the values in use), `name_taken`, `current_frame`, `playback_range`, `mask_from_selection`, and the project's vocabulary warnings in `details`. `read_file_infos` is its `Index` reader, `rig_masks` its masks from a rig |
-| `maya/rigpanel.py` | `RigPanelSession`, `ControlGroup` and `SpaceState`: the active rig panel's view-model, no Qt |
+| `maya/rigpanel.py` | `RigPanelSession`, `ControlGroup`, `SpaceState` and `LimbState`: the active rig panel's view-model, no Qt |
 | `maya/devreload.py` | Reload and unload RigModules, and the reload hooks slot |
 | `maya/eventsregistry.py` | `EventsRegistry`, `EventType`, `pause_callbacks` |
 | `maya/batch/` | `MayaBatchEnvironment`, `MayaStandaloneBatchPackage`, `run_batch_test` |

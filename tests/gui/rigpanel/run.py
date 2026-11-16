@@ -23,6 +23,15 @@ TEMPLATE = {
          "moduleArgs": {"joints": [["Left", "arm"]]}, "parentStructure": {"start": "spine.end"}},
     ],
 }
+LIMB_TEMPLATE = {
+    "rigVersion": 1, "rigTemplateName": "PanelGuiLimb", "rigName": "game", "rigAuthor": "tests",
+    "rigModules": [
+        {"moduleType": "TwoBoneIk", "name": "arm_l", "shapeType": "Box", "side": "Left",
+         "moduleArgs": {"joints": [["Left", "upperArm"], ["Left", "lowerArm"], ["Left", "hand"]],
+                        "ik": ["Left", "handIk"], "pole": ["Left", "armPole"], "settings": ["Left", "armSettings"]},
+         "parentStructure": {"start": "layout.end", "ik": "layout.end", "pole": "layout.end"}},
+    ],
+}
 
 
 def main() -> int:
@@ -40,6 +49,9 @@ def main() -> int:
         template = os.path.join(work, "template.json")
         with open(template, "w", encoding="utf-8") as handle:
             json.dump(TEMPLATE, handle)
+        limb_template = os.path.join(work, "limb_template.json")
+        with open(limb_template, "w", encoding="utf-8") as handle:
+            json.dump(LIMB_TEMPLATE, handle)
         plugin_copy = os.path.join(work, "RigModules.mll")
         shutil.copy(plugin, plugin_copy)
         log = os.path.join(work, "check.log")
@@ -47,6 +59,7 @@ def main() -> int:
             "PANEL_LOG": log,
             "PANEL_PLUGIN": plugin_copy.replace("\\", "/"),
             "PANEL_TEMPLATE": template.replace("\\", "/"),
+            "PANEL_LIMB_TEMPLATE": limb_template.replace("\\", "/"),
             "PYTHONPATH": os.pathsep.join([os.path.join(MAYADEV, "py", "scripts"), python_folder]),
         })
         result = mayalaunch.gui.run_gui(os.path.join(HERE, "check.py"), env=env, timeout=TIMEOUT)

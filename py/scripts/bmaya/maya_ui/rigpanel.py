@@ -1,7 +1,7 @@
 """The active rig panel: widgets bound to a RigPanelSession (RigModules design/active-rig-panel.md, D50).
 
 The panel is a launcher and a state display, in folding sections: Rig, Select, Pose, and Space when the one selected
-control has a space switch. Every button is one call on the session. It doesn't list controls: Maya's Outliner does
+control has a space switch, and IK/FK when the selection names a two-bone IK limb. Every button is one call on the session. It doesn't list controls: Maya's Outliner does
 that, so the Select section has one button per module and side instead. Qt only, no Maya (host.py docks it).
 """
 
@@ -52,7 +52,9 @@ class RigPanel(QtWidgets.QWidget):
         self.select_section = CollapsibleSection("Select")
         self.pose_section = CollapsibleSection("Pose")
         self.space_section = CollapsibleSection("Space")
-        for section in (self.rig_section, self.select_section, self.pose_section, self.space_section):
+        self.limb_section = CollapsibleSection("IK/FK")
+        for section in (self.rig_section, self.select_section, self.pose_section, self.space_section,
+                        self.limb_section):
             layout.addWidget(section)
         layout.addStretch(1)
 
@@ -97,11 +99,30 @@ class RigPanel(QtWidgets.QWidget):
         self.space_section.content_layout.addWidget(self.space_key)
         self.space_buttons: list[QtWidgets.QPushButton] = []
 
+        self.limb_label = QtWidgets.QLabel()
+        self.limb_key = QtWidgets.QCheckBox("Key")
+        self.limb_key.setToolTip("Key the limb's controls on the previous frame and on this one, so the animation "
+                                 "holds the old mode up to the switch")
+        limb_row = QtWidgets.QHBoxLayout()
+        self.limb_buttons: dict[str, QtWidgets.QPushButton] = {}
+        for mode in bmaya.maya.rigpanel.IK_FK_BLENDS:
+            button = QtWidgets.QPushButton(mode)
+            button.setCheckable(True)
+            button.setToolTip(f"Switch the limb to {mode}. The limb stays where it is.")
+            button.clicked.connect(lambda checked=False, mode=mode: self._on_limb_clicked(mode))
+            limb_row.addWidget(button)
+            self.limb_buttons[mode] = button
+        self.limb_section.content_layout.addWidget(self.limb_label)
+        self.limb_section.content_layout.addLayout(limb_row)
+        self.limb_section.content_layout.addWidget(self.limb_key)
+
         self.rig_combo.currentIndexChanged.connect(self._on_rig_picked)
         self.session.changed.connect(self.reload)
         self.session.spaces_changed.connect(self.reload_space)
+        self.session.limb_changed.connect(self.reload_limb)
         self.reload()
         self.reload_space()
+        self.reload_limb()
 
     def _button(self, name: str, text: str, command: Callable[[], None], tip: str,
                 icon: str = "") -> QtWidgets.QPushButton:
@@ -172,6 +193,21 @@ class RigPanel(QtWidgets.QWidget):
             button.clicked.connect(lambda checked=False, label=label: self._on_space_clicked(label))
             self.space_layout.addWidget(button, index // GROUP_COLUMNS, index % GROUP_COLUMNS)
             self.space_buttons.append(button)
+
+    def reload_limb(self) -> None:
+        """Shows the IK/FK section for the selected limb, or hides it when the selection names none."""
+        limb = self.session.limb
+        self.limb_section.setVisible(limb is not None)
+        if limb is None:
+            return
+        self.limb_label.setText(f"{leaf_name(limb.module)}: {limb.mode}" if limb.mode != "Blend"
+                                else f"{leaf_name(limb.module)}: blend {limb.blend:.2f}")
+        for mode, button in self.limb_buttons.items():
+            button.setChecked(limb.mode == mode)
+
+    def _on_limb_clicked(self, mode: str) -> None:
+        self.run(lambda: self.session.set_ik_fk(mode, key=self.limb_key.isChecked()))
+        self.reload_limb()   # a refused switch puts the checked button back on the current mode
 
     def _on_space_clicked(self, label: str) -> None:
         self.run(lambda: self.session.set_space(label, key=self.space_key.isChecked()))
