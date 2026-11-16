@@ -77,7 +77,7 @@ class ActiveRig(unittest.TestCase):
             joint = cmds.joint(name=f"{usage}_jnt", position=(0, i * 2, 0))
             cmds.rigJointMarkup(joint, usage=usage, side="Center", export=True, skin=True)
             joints.append(joint)
-        cmds.createRigFromTemplate(*joints, template=self.template, asset=asset_id)
+        cmds.createRigFromTemplate(*joints, template=self.template, asset=asset_id, namespace=name)
         import rigmodules.query
         rig_root = rigmodules.query.get_rigs(name)[0].rig_root
         return rig_root, [f"{name}:{joint}" for joint in joints]

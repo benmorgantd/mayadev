@@ -33,9 +33,11 @@ def setUpModule():
         raise unittest.SkipTest("put RigModules' python folder on the path (RigModules.mod)")
 
 
-def make_rig(rig_root, namespace, variant="main"):
+def make_rig(rig_root, namespace, rig_name="main"):
     import rigmodules.query
-    return rigmodules.query.RigInfo(rig_root, f"{namespace}:assetRoot", f"shooter\\{namespace}", variant, namespace, 1, "0.1", "")
+    return rigmodules.query.RigInfo(rig_root=rig_root, asset_id=f"shooter\\{namespace}", rig_name=rig_name,
+                                    skeleton_hash="0123456789abcdef", namespace=namespace, rig_version=1,
+                                    plugin_version="0.1", publish_version="")
 
 
 class FakeSession:

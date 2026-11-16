@@ -1,7 +1,7 @@
 """Asset tools for RigModules rigs, behind the RigModules menu (RigModules D30).
 
 A rig can be built anywhere, before its asset exists. Once the asset's folder exists, these tools read and
-write the asset's files. A built rig names its own asset id and variant (the rig root's rigName), read
+write the asset's files. A built rig names its own asset id and rig name (the rig root's rigName, which is the variant's name), read
 through rigmodules.query. Nothing here walks rig nodes or parses names (RigModules D24).
 
 The shape, weight and rig tools ask for a file or folder for a rig whose asset folder doesn't exist yet.
@@ -106,14 +106,17 @@ def save_model(asset_id: str, variant: str) -> str:
 def build_rig(asset_id: str, variant: str, namespace: str | None = None) -> str:
     """Imports the asset's skeleton, builds the variant's template on it, then loads the variant's files that
     exist: its shape file, its model (imported into the same namespace) and its skin weights. Builds into the
-    open scene. Returns the rig root."""
+    open scene, into "{asset name}_{variant}" unless namespace is given, the namespace RigModules gives a rig
+    (D54). Returns the rig root."""
     asset = require_asset(asset_id)
     bmaya.maya.assethandlers.register()
     template = bmaya.core.asset.handlers.load(asset, "template", variant)
     skeleton_asset = require_asset(asset.skeleton)
-    namespace = namespace or asset.name
-    # Variants share one skeleton, so a second variant in the namespace would need the joints already there,
-    # not a second import. Until that is built, each build gets a namespace of its own.
+    # The skeleton is imported into the namespace before the build, so the namespace is decided here. The variant
+    # is the template's rigName, so this is RigModules' own default.
+    namespace = namespace or f"{asset.name}_{variant}"
+    # A namespace holds one rig (RigModules D54), and createRigFromTemplate refuses a second. Failing here keeps
+    # the skeleton import out of a namespace that can't take the build.
     if rigmodules.query.get_rigs(namespace):
         raise RuntimeError(f"Namespace {namespace!r} already holds a rig. Build into a new scene or another namespace.")
 
@@ -123,7 +126,8 @@ def build_rig(asset_id: str, variant: str, namespace: str | None = None) -> str:
         raise RuntimeError(f"The skeleton file of {skeleton_asset.id} has no joints.")
     cmds.createRigFromTemplate(*joints, template=template.replace("\\", "/"), asset=asset.id, namespace=namespace)
 
-    rig_root = next(info.rig_root for info in rigmodules.query.get_rigs(namespace) if info.variant == variant)
+    (rig_info,) = rigmodules.query.get_rigs(namespace)
+    rig_root = rig_info.rig_root
     if asset.file_exists("shapes", variant):
         bmaya.core.asset.handlers.load(asset, "shapes", variant, rig_root=rig_root)
     if asset.file_exists("model", variant):
@@ -154,11 +158,11 @@ def save_rig(node: str, prompter: bmaya.core.prompts.Prompter | None = None) -> 
             cmds.file(save=True, type="mayaAscii", force=True)
         return path
 
-    if info.variant not in asset.variants:
-        raise bmaya.core.asset.AssetError(f"{asset.id} has no variant {info.variant!r}. Add its template with New Variant first.")
+    if info.rig_name not in asset.variants:
+        raise bmaya.core.asset.AssetError(f"{asset.id} has no variant {info.rig_name!r}. Add its template with New Variant first.")
     bmaya.maya.assethandlers.register()
-    path = bmaya.core.asset.handlers.save(asset, "rig", info.variant)
-    bmaya.core.log.info(f"Saved {asset.id} variant {info.variant!r}: {path}")
+    path = bmaya.core.asset.handlers.save(asset, "rig", info.rig_name)
+    bmaya.core.log.info(f"Saved {asset.id} variant {info.rig_name!r}: {path}")
     return path
 
 
@@ -174,8 +178,8 @@ def save_control_shapes(node: str, prompter: bmaya.core.prompts.Prompter | None 
         return path
 
     bmaya.maya.assethandlers.register()
-    path = bmaya.core.asset.handlers.save(asset, "shapes", info.variant, rig_root=info.rig_root)
-    bmaya.core.log.info(f"Saved the control shapes of {asset.id} variant {info.variant!r}: {path}")
+    path = bmaya.core.asset.handlers.save(asset, "shapes", info.rig_name, rig_root=info.rig_root)
+    bmaya.core.log.info(f"Saved the control shapes of {asset.id} variant {info.rig_name!r}: {path}")
     return path
 
 
@@ -191,19 +195,19 @@ def load_control_shapes(node: str, prompter: bmaya.core.prompts.Prompter | None 
         return path
 
     bmaya.maya.assethandlers.register()
-    bmaya.core.asset.handlers.load(asset, "shapes", info.variant, rig_root=info.rig_root)
-    return asset.path("shapes", info.variant)
+    bmaya.core.asset.handlers.load(asset, "shapes", info.rig_name, rig_root=info.rig_root)
+    return asset.path("shapes", info.rig_name)
 
 
 def library_meta(asset: bmaya.core.asset.Asset, scope: list[str], tags: typing.Sequence[str] = (),
                  description: str = "") -> dict:
     """The part of a library file's meta that the caller gives (RigModules D51): the author (the OS user), the rig's
-    variant as the template, the skeleton asset, and the tags and description when there are any. The rig fills the
-    asset id, variant, plugin version and date itself."""
+    name as the template, the skeleton asset, and the tags and description when there are any. The rig fills the
+    asset id, rig name, skeleton hash, plugin version and date itself (RigModules D54)."""
     meta = {
         "author": bmaya.core.asset.library.login(),
-        "template": rigmodules.query.get_rig_info(scope[0]).variant,
-        "skeletonId": asset.skeleton if asset.exists() else asset.id,
+        "template": rigmodules.query.get_rig_info(scope[0]).rig_name,
+        "skeleton": asset.skeleton if asset.exists() else asset.id,
     }
     if tags:
         meta["tags"] = list(tags)
@@ -283,8 +287,8 @@ def save_skin_weights(node: str, prompter: bmaya.core.prompts.Prompter | None = 
         return handler.save(None, folder, namespace=info.namespace) if folder else None
 
     bmaya.maya.assethandlers.register()
-    path = bmaya.core.asset.handlers.save(asset, "weights", info.variant, namespace=info.namespace)
-    bmaya.core.log.info(f"Saved the skin weights of {asset.id} variant {info.variant!r}: {path}")
+    path = bmaya.core.asset.handlers.save(asset, "weights", info.rig_name, namespace=info.namespace)
+    bmaya.core.log.info(f"Saved the skin weights of {asset.id} variant {info.rig_name!r}: {path}")
     return handler.files(path)
 
 
@@ -300,7 +304,7 @@ def load_skin_weights(node: str, prompter: bmaya.core.prompts.Prompter | None = 
         return handler.load(None, folder, namespace=info.namespace) if folder else None
 
     bmaya.maya.assethandlers.register()
-    return bmaya.core.asset.handlers.load(asset, "weights", info.variant, namespace=info.namespace)
+    return bmaya.core.asset.handlers.load(asset, "weights", info.rig_name, namespace=info.namespace)
 
 
 def mark_meshes_for_skinning(new_ids: bool = False) -> list[str]:

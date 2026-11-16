@@ -370,7 +370,7 @@ def _term_matches(entry: LibraryEntry, field: str, value: str) -> bool:
     values = {
         "tag": entry.tags,
         "template": [entry.meta("template")],
-        "skeleton": [entry.meta("skeletonId")],
+        "skeleton": [entry.meta("skeleton")],
         "by": [entry.meta("author")],
         "category": [entry.meta("category")],
         "asset": [entry.meta("assetId")],

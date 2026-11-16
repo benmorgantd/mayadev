@@ -112,7 +112,8 @@ class AssetTools(unittest.TestCase):
 
     def build_outside_the_asset(self, asset_id):
         """A rig built from a template anywhere, the way a rigger iterates before the asset exists."""
-        self.cmds.createRigFromTemplate(*self.make_skeleton(), template=self.template.replace("\\", "/"), asset=asset_id)
+        self.cmds.createRigFromTemplate(*self.make_skeleton(), template=self.template.replace("\\", "/"), asset=asset_id,
+                                       namespace=asset_id.split("\\")[-1])
         import rigmodules.query
         return rigmodules.query.get_rigs()[0].rig_root
 
@@ -158,8 +159,9 @@ class AssetTools(unittest.TestCase):
         self.make_buildable_asset()
         rig_root = self.tools.build_rig(HERO, "game")
         info = rigmodules.query.get_rig_info(rig_root)
-        self.assertEqual((info.asset_id, info.variant, info.namespace), (HERO, "game", "hero"))
-        self.assertTrue(self.cmds.objExists("hero:spine1_ctrl_c"))
+        # RigModules' default namespace, "{asset name}_{rigName}" (D54).
+        self.assertEqual((info.asset_id, info.rig_name, info.namespace), (HERO, "game", "hero_game"))
+        self.assertTrue(self.cmds.objExists("hero_game:spine1_ctrl_c"))
 
     def test_build_rig_leaves_nothing_selected(self):
         self.make_buildable_asset()
@@ -170,12 +172,12 @@ class AssetTools(unittest.TestCase):
         cmds = self.cmds
         self.make_buildable_asset()
         rig_root = self.tools.build_rig(HERO, "game")
-        cmds.setAttr("hero:spine1_ctrl_c.shapeType", 1)  # Sphere
+        cmds.setAttr("hero_game:spine1_ctrl_c.shapeType", 1)  # Sphere
         self.tools.save_control_shapes(rig_root)
 
         cmds.file(new=True, force=True)
         self.tools.build_rig(HERO, "game")
-        self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.shapeType", asString=True), "Sphere")
+        self.assertEqual(cmds.getAttr("hero_game:spine1_ctrl_c.shapeType", asString=True), "Sphere")
 
     def test_build_rig_into_a_namespace_that_holds_a_rig_fails(self):
         self.make_buildable_asset()
@@ -235,7 +237,7 @@ class AssetTools(unittest.TestCase):
         with open(path, encoding="utf-8") as handle:
             meta = json.load(handle)["meta"]
         import getpass
-        self.assertEqual((meta["assetId"], meta["author"], meta["template"], meta["skeletonId"]),
+        self.assertEqual((meta["assetId"], meta["author"], meta["template"], meta["skeleton"]),
                          (HERO, getpass.getuser(), "game", HERO))
 
     def test_save_pose_replace_keeps_a_version_and_cancel_keeps_the_file(self):
@@ -574,14 +576,14 @@ class AssetTools(unittest.TestCase):
 
         cmds.file(new=True, force=True)
         rig_root = self.tools.build_rig(HERO, "game")
-        self.assertEqual(cmds.ls(cmds.listHistory("hero:box_geo"), type="skinCluster"), [])
-        self.skin_box("hero:box_geo")
-        saved = self.spine2_weights("hero:box_geo")
+        self.assertEqual(cmds.ls(cmds.listHistory("hero_game:box_geo"), type="skinCluster"), [])
+        self.skin_box("hero_game:box_geo", namespace="hero_game")
+        saved = self.spine2_weights("hero_game:box_geo", namespace="hero_game")
         self.tools.save_skin_weights(rig_root)
 
         cmds.file(new=True, force=True)
         self.tools.build_rig(HERO, "game")
-        self.assertEqual(self.spine2_weights("hero:box_geo"), saved)
+        self.assertEqual(self.spine2_weights("hero_game:box_geo", namespace="hero_game"), saved)
 
     def test_rig_tools_need_a_rig_node(self):
         self.make_skeleton()
@@ -630,7 +632,7 @@ class AssetTools(unittest.TestCase):
         self.make_buildable_asset()
         self.tools.build_rig_interactive(prompter=self.answers(HERO))   # one variant: no question for it
         import rigmodules.query
-        self.assertEqual(self.cmds.ls(selection=True), [rigmodules.query.get_rigs("hero")[0].rig_root])
+        self.assertEqual(self.cmds.ls(selection=True), [rigmodules.query.get_rigs("hero_game")[0].rig_root])
 
 
 if __name__ == "__main__":

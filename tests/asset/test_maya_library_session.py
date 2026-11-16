@@ -113,7 +113,7 @@ class LibraryBase(unittest.TestCase):
             joint = cmds.joint(name=f":skel_{name}:arm_{side[0].lower()}_jnt", position=(x, 12, 0))
             cmds.rigJointMarkup(joint, usage="arm", side=side, export=True, skin=True)
             joints.append(joint)
-        cmds.createRigFromTemplate(*joints, template=self.template, asset=asset_id)
+        cmds.createRigFromTemplate(*joints, template=self.template, asset=asset_id, namespace=name)
         cmds.select(clear=True)
         return self.query.get_rigs(name)[0].rig_root
 
@@ -152,7 +152,7 @@ class Listing(LibraryBase):
         self.assertEqual(session.selected, saved)
         self.assertEqual(saved.path, os.path.join(self.user_folder(self.library.POSE), "wave.controlpose.json"))
         self.assertEqual((saved.tags, saved.description, saved.source), (["arm", "friendly"], "Raised hand", "user"))
-        self.assertEqual((saved.meta("assetId"), saved.meta("author"), saved.meta("template"), saved.meta("skeletonId")),
+        self.assertEqual((saved.meta("assetId"), saved.meta("author"), saved.meta("template"), saved.meta("skeleton")),
                          (HERO, "tester", "game", BIPED))
         self.assertEqual((saved.info.control_count, saved.info.unmatched_controls),
                          (len(self.cmds.getRigControls(root)), ()))

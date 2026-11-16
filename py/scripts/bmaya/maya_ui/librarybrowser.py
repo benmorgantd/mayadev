@@ -437,7 +437,7 @@ class LibraryBrowser(QtWidgets.QWidget):
         _show_text(self.warning_label, "" if failed else "\n".join(lines[1:]))
         origin = []
         if entry is not None and not failed:
-            for label, key in (("Template", "template"), ("Skeleton", "skeletonId")):
+            for label, key in (("Template", "template"), ("Skeleton", "skeleton")):
                 if entry.meta(key):
                     origin.append(f"{label} {entry.meta(key)}.")
             if entry.meta("author"):

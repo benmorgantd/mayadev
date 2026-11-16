@@ -291,7 +291,7 @@ import bmaya.maya.assettools
 bmaya.maya.assettools.new_variant("shooter\\main\\characters\\hero", r"C:\rigs\Human.json")   # variant "Human"
 bmaya.maya.assettools.save_skeleton("shooter\\main\\characters\\hero")              # the open scene
 bmaya.maya.assettools.save_model("shooter\\main\\characters\\hero", "Human")        # the open scene, meshes only
-rig_root = bmaya.maya.assettools.build_rig("shooter\\main\\characters\\hero", "Human")
+rig_root = bmaya.maya.assettools.build_rig("shooter\\main\\characters\\hero", "game")   # into hero_game
 bmaya.maya.assettools.save_control_shapes(rig_root)                                # variants/Human/shapes.json
 bmaya.maya.assettools.save_skin_weights(rig_root)                                  # variants/Human/weights/*.json
 bmaya.maya.assettools.save_rig(rig_root)                                           # variants/Human/hero_Human_rig.ma

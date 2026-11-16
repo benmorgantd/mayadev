@@ -39,7 +39,7 @@ def build(name):
         joint = cmds.joint(name=":skel_%s:arm_%s_jnt" % (name, side[0].lower()), position=(x, 12, 0))
         cmds.rigJointMarkup(joint, usage="arm", side=side, export=True, skin=True)
         joints.append(joint)
-    cmds.createRigFromTemplate(*joints, template=os.environ["LIBRARY_TEMPLATE"], asset="shooter" + B + name)
+    cmds.createRigFromTemplate(*joints, template=os.environ["LIBRARY_TEMPLATE"], asset="shooter" + B + name, namespace=name)
     cmds.select(clear=True)
 
 

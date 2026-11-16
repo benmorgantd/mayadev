@@ -92,7 +92,7 @@ class RigPanelBase(unittest.TestCase):
             joint = cmds.joint(name=f":skel_{name}:arm_{side[0].lower()}_jnt", position=(x, 12, 0))
             cmds.rigJointMarkup(joint, usage="arm", side=side, export=True, skin=True)
             joints.append(joint)
-        cmds.createRigFromTemplate(*joints, template=self.template, asset=asset_id)
+        cmds.createRigFromTemplate(*joints, template=self.template, asset=asset_id, namespace=name)
         cmds.select(clear=True)
         return self.query.get_rigs(name)[0].rig_root
 
@@ -334,7 +334,7 @@ class LimbPanel(RigPanelBase):
                 joint = cmds.joint(name=f":skel_hero:{usage}_{side[0].lower()}_jnt", position=(x * sign, y, z))
                 cmds.rigJointMarkup(joint, usage=usage, side=side, export=export, skin=export)
                 self.joints[side, usage] = joint
-        cmds.createRigFromTemplate(*self.joints.values(), template=self.template, asset="shooter\\hero")
+        cmds.createRigFromTemplate(*self.joints.values(), template=self.template, asset="shooter\\hero", namespace="hero")
         cmds.select(clear=True)
         self.root = self.query.get_rigs("hero")[0].rig_root
         self.left = {usage: self.query.get_rig_controls(self.root, side="Left", usage=usage)[0].node

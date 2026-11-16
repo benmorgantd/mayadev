@@ -309,7 +309,7 @@ class Search(unittest.TestCase):
         self.assertTrue(library.matches(found, library.parse_query("")))
 
     def test_terms_match_their_field(self):
-        found = entry("a", kind=ANIMATION, source=library.APPROVED, tags=["fist", "angry"], template="Human", skeletonId="Biped",
+        found = entry("a", kind=ANIMATION, source=library.APPROVED, tags=["fist", "angry"], template="Human", skeleton="Biped",
                       author="bmorgan", category="Expressions", assetId="shooter\\hero", status="final", rigRegions=["hands", "head"])
         for text in ("tag:fis", "tag:ANGRY", "template:hum", "skeleton:biped", "by:bmorgan", "by:morg",
                      "category:express", "asset:hero", "source:approved", "kind:animation", "status:final",

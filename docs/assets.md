@@ -17,7 +17,7 @@ shooter\main\characters\hero   ->   <RIGGING_PROJECT_DIR>\shooter\main\character
 - Each folder name is letters, digits and `_` (`[A-Za-z0-9_]+`).
 - Ids compare without case (`assetid.key`, `assetid.equals`) and are stored as written.
 - A folder is an asset when it holds an `asset.json`. Assets never nest.
-- The last token (`hero`) is the asset's **name**, and the default namespace its rigs are built into.
+- The last token (`hero`) is the asset's **name**. A rig is built into `{name}_{variant}` (`hero_game`) by default: a namespace holds one rig (RigModules D54).
 - The id is relative to the projects root, so it means the same asset in every workspace and branch.
 - The same rules are in RigModules' `core/AssetId`, which validates the `assetId` of a built rig.
 
@@ -221,7 +221,7 @@ The Maya handlers are registered by `bmaya.maya.assethandlers.register()`:
 
 | File types | Handler | Context | Behaviour |
 |---|---|---|---|
-| `skeleton`, `model`, `rig` | `MayaSceneHandler` | `namespace=` (load) | Save renames the open scene to the path and saves it as Maya ASCII. Load imports into the asset's namespace (its name, or `namespace=`), merging into it if it exists, and returns the new nodes. Never references |
+| `skeleton`, `model`, `rig` | `MayaSceneHandler` | `namespace=` (load) | Save renames the open scene to the path and saves it as Maya ASCII. Load imports into the rig's namespace (`namespace=`, else the asset's name), merging into it if it exists, and returns the new nodes. Never references |
 | `template` | `RigTemplateHandler` | `source=` (save) | Save copies the template file passed as `source=`, and fails unless its `rigName` is the variant. Load returns the template's path |
 | `shapes` | `RigShapesHandler` | `rig_root=` | RigModules `saveRigControlShapes` and `loadRigControlShapes` |
 | `weights` | `RigSkinWeightsHandler` | `namespace=` | One RigModules weight file per skinned mesh in the namespace, named after the mesh (`box_geo.json`). Save fails on a skinned mesh without a `meshId`, and removes a file left from a mesh's old name. Load matches each file to a mesh by the `meshId` inside it, never by name, skips a file whose mesh isn't in the scene with a warning, fails if two files name one `meshId`, and is one undo step |
@@ -300,7 +300,7 @@ library.filter_entries(entries, library.parse_query("tag:fist hand"))
 `bmaya.maya.assettools.build_rig(asset_id, variant, namespace=None)` is the one place the asset model and RigModules meet. It:
 
 1. Loads the variant's template path through the `template` handler.
-2. Refuses a namespace that already holds a rig (`rigmodules.query.get_rigs`). Each build gets a namespace of its own, because variants share one skeleton and a second variant in the namespace would need the joints already there.
+2. Picks the namespace, `namespace` or `{asset name}_{variant}` (`hero_game`), RigModules' own default, and refuses one that already holds a rig (`rigmodules.query.get_rigs`). A namespace holds one rig (RigModules D54), so this fails before the skeleton import rather than in the build.
 3. Imports the **skeleton asset's** skeleton (`asset.skeleton`, which may be another asset) into the namespace, and collects its joints.
 4. Builds: `cmds.createRigFromTemplate(*joints, template=..., asset=asset.id, namespace=...)`.
 5. Loads the variant's files that exist: the shape file, then the model (imported into the same namespace, added to the rig's display layers with `rigmodules.displaylayers.add_meshes` and parented under its mesh group with `rigmodules.groups.parent_meshes`), then, with a model, the skin weights.

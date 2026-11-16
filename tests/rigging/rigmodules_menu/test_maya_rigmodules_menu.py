@@ -113,7 +113,7 @@ class MenuScripts(unittest.TestCase):
         path = os.path.join(self.temp, "template.json")
         with open(path, "w", encoding="utf-8") as handle:
             json.dump(TEMPLATE, handle)
-        self.cmds.createRigFromTemplate(*self.make_skeleton(), template=path.replace("\\", "/"), asset="shooter\\hero")
+        self.cmds.createRigFromTemplate(*self.make_skeleton(), template=path.replace("\\", "/"), asset="shooter\\hero", namespace="hero")
         # The build moves the joints into the asset's namespace, so look them up afterwards.
         self.joints = self.cmds.ls(type="joint")
         self.root = "hero:rigRootModule1"

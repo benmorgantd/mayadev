@@ -148,14 +148,14 @@ class RigPanel(QtWidgets.QWidget):
         self.rig_combo.blockSignals(True)   # filling it is not the user picking a rig
         self.rig_combo.clear()
         for rig in session.rigs:
-            self.rig_combo.addItem(f"{rig.namespace}  ({rig.variant})", rig.rig_root)
+            self.rig_combo.addItem(f"{rig.namespace}  ({rig.rig_name})", rig.rig_root)
         if session.rig is not None:
             self.rig_combo.setCurrentIndex(self.rig_combo.findData(session.rig.rig_root))
         self.rig_combo.blockSignals(False)
         many = len(session.rigs) > 1
         self.rig_combo.setVisible(many)
         self.rig_label.setVisible(not many)
-        self.rig_label.setText(f"{session.rig.namespace}  ({session.rig.variant})" if session.rig else "")
+        self.rig_label.setText(f"{session.rig.namespace}  ({session.rig.rig_name})" if session.rig else "")
 
         for button in self.group_buttons:
             self.groups_layout.removeWidget(button)

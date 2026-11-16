@@ -86,7 +86,7 @@ class MayaHandlers(unittest.TestCase):
         path = os.path.join(self.root, "template.json")
         with open(path, "w", encoding="utf-8") as handle:
             json.dump(TEMPLATE, handle)
-        self.cmds.createRigFromTemplate(*self.make_skeleton(), template=path.replace("\\", "/"), asset=HERO)
+        self.cmds.createRigFromTemplate(*self.make_skeleton(), template=path.replace("\\", "/"), asset=HERO, namespace="hero")
         return "hero:rigRootModule1"
 
     def test_shapes_save_and_load_through_rigmodules(self):
