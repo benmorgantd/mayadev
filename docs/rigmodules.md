@@ -21,12 +21,12 @@ Python `maya.cmds` calls, with the module that makes them.
 
 | Command | Called from | Used for |
 |---|---|---|
-| `cmds.createRigFromTemplate(*joints, template=, asset=, namespace=)` | `assettools.build_rig` | Build a variant on the imported skeleton. `build_rig` always passes `namespace`, because the skeleton is imported first: `{asset name}_{variant}`, the same as RigModules' default (D54) |
+| `cmds.createRigFromTemplate(*joints, template=, asset=, namespace=)` | `assettools.build_rig` | Build a rig on the skeleton it just created. `build_rig` always passes `namespace`, because the skeleton goes in first: `{asset name}_{rig}`, the same as RigModules' default (D54) |
 | `cmds.rigJointMarkup(*joints, query=True)` and `remove=True` | Registry tools (Print and Remove Joint Markup, in `assettools`) | Inspect and clear joint markup |
 | `cmds.getRigControls(rig_root)` | Registry tool (Select All Controls, in `posetools`) | Every control of the active rig |
 | `cmds.getRigMirrorControl(control)` | Registry tool (Select Mirror Controls, in `posetools`) | The control on the other side |
 | `cmds.mirrorRigControlShapes(rig_root, leftToRight=)` | Registry tools (Mirror Shapes, in `assettools`) | Copy shapes across sides |
-| `cmds.saveRigControlShapes(rig_root, file=)`, `cmds.loadRigControlShapes(...)` | `assethandlers.RigShapesHandler`, `assettools` (no-asset fallback) | The variant's `shapes.json` |
+| `cmds.saveRigControlShapes(rig_root, file=)`, `cmds.loadRigControlShapes(...)` | `assethandlers.RigShapesHandler`, `assettools` (no-asset fallback) | The rig's `shapes.json` |
 | `cmds.setRigMeshId(newId=)` | `assettools.mark_meshes_for_skinning` | Give meshes the id weight files match on |
 | `cmds.saveRigSkinWeights(mesh, file=)`, `cmds.loadRigSkinWeights(...)` | `assethandlers.RigSkinWeightsHandler` | One weight file per mesh |
 | `cmds.saveRigPose(*scope, file=, meta=)`, `cmds.loadRigPose(*scope, file=, mirror=)` | `assethandlers.ControlPoseHandler`, `posetools.load_pose` | Poses, with the caller's part of the `meta` block (`author`, `template`, `skeleton`, `tags`, `description`), and a mirror applied to the file's data (D51). The rig fills `assetId`, `rigName`, `skeletonHash`, `pluginVersion` and `created` (D54) |
@@ -45,13 +45,13 @@ Python `maya.cmds` calls, with the module that makes them.
 
 | Function | Called from | Used for |
 |---|---|---|
-| `query.get_rig_info(node)` | `assettools` (every tool that finds an asset) | A node of a rig to its asset id, rig name (the variant's name), namespace and rig root. Raises when the node isn't in a rig |
+| `query.get_rig_info(node)` | `assettools` (every tool that finds an asset) | A node of a rig to its asset id, rig name (the rig's folder name), namespace and rig root. Raises when the node isn't in a rig |
 | `query.find_rig_info(node)` | `activerig` | The same, returning `None` when the node isn't in a rig |
 | `query.get_rigs(namespace=None)` | `activerig`, `assettools.build_rig` | The rigs in the scene, or in a namespace (which holds at most one, RigModules D54). `build_rig` refuses a namespace that already holds one |
-| `query.RigInfo` | `activerig` | The result type. mayadev reads `rig_root`, `asset_id`, `rig_name` (the variant) and `namespace`. It also has `skeleton_hash`, `rig_version`, `plugin_version` and `publish_version` (RigModules D54 renamed `variant` and removed `asset_root`) |
+| `query.RigInfo` | `activerig` | The result type. mayadev reads `rig_root`, `asset_id`, `rig_name` (the rig) and `namespace`. It also has `skeleton_hash`, `rig_version`, `plugin_version` and `publish_version` (RigModules D54 renamed `variant` and removed `asset_root`) |
 | `query.RIG_CONTROL_TYPE` | `posetools.get_scope` | The node type of a rig control, to filter the selection |
 | `query.get_rig_controls(rig_root)`, `query.find_control(node)` | `posetools.get_selected_modules` | Map a selection to the modules of the active rig |
-| `template.get_rig_name(path)` | `assettools.new_variant`, `RigTemplateHandler` | The `rigName` of a template file, which names the variant |
+| `template.get_rig_name(path)` | `assettools.new_rig`, `RigTemplateHandler` | The `rigName` of a template file, offered as the new rig's name |
 | `pose.key_rig(rig_root)`, `pose.key_modules(rig_root, modules)` | `posetools` | Key every channel of a rig, or of chosen modules |
 | `pose.key_controls(controls, time=)` | `rigpanel.RigPanelSession.set_space` | Key the switched control (or the six controls of a switched limb) on the previous frame and the current one |
 | `query.find_control_space(control)` | `rigpanel.RigPanelSession.refresh_space` | The selected control's constraint, space labels and current space (RigModules `getRigControlSpace`, D50) |

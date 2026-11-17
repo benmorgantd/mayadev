@@ -53,7 +53,6 @@ Found reading the code and compiling it. None were fixed by the documentation ch
 The two guides under `py/scripts/docs/guides/` predate this folder:
 
 - `Mayadev Env Setup.md` lists the RigModules submenus as asset, mesh, joints, weights, shapes, control and dev. The menu has **pose** and **clip** too, no **dev** (it is in the bmaya menu now), and the layout test pins eight submenus.
-- `Asset Layout.md` shows the rig file as `variants/Human/hero_Human.ma`. The default `rig` file type is `variants/{variant}/{name}_{variant}_rig.ma` (`hero_Human_rig.ma`).
 - Both are deprecated and superseded by [`setup.md`](setup.md), [`tools.md`](tools.md) and [`assets.md`](assets.md) ([`README.md`](README.md#the-old-mkdocs-site-deprecated)). They carry a banner saying so, and these two details are left as they were.
 
 ## Test coverage

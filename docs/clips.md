@@ -1,6 +1,6 @@
 # Clips
 
-How an asset holds animation that leaves the rig: FBX clips in `exports`, skeleton data from other tools in `sources`, the skeleton export, and the engine properties file. The data model (control data against skeleton data) and the reasons are in RigModules' `docs/library.md` and `design/control-library.md` (D42). This page covers what mayadev writes and reads.
+How an asset holds animation that leaves the rig: FBX clips in a skeleton's `exports` (`skeletons/<skeleton>/exports`, shared by every rig of that skeleton, RigModules D54), skeleton data from other tools in `sources`, the skeleton export, and the engine properties file. The data model (control data against skeleton data) and the reasons are in RigModules' `docs/library.md` and `design/control-library.md` (D42). This page covers what mayadev writes and reads.
 
 ## Control data and skeleton data
 
@@ -8,7 +8,7 @@ How an asset holds animation that leaves the rig: FBX clips in `exports`, skelet
 |---|---|---|---|
 | Control pose | `controlposes/` | `<name>.controlpose.json` | `cmds.saveRigPose` |
 | Control animation | `controlanims/` | `<name>.controlanim.json` | `cmds.saveRigAnimation` |
-| Skeleton clip | `exports/<name>/` | `<name>.fbx` and files beside it | `rigmodules.jointclip` |
+| Skeleton clip | `skeletons/<skeleton>/exports/<name>/` | `<name>.fbx` and files beside it | `rigmodules.jointclip` |
 | Skeleton data from outside | `sources/` | `<name>.fbx` (and `<name>.bonemap.json`) | Copied in by hand |
 
 Control data binds to a rig's controls by markup, so it survives renames and rebuilds, and it keeps what joints can't (IK/FK blend, spaces, the animator's keys and tangents). Skeleton data is for another rig or skeleton, mocap and the engine. All four folders belong to the asset, so every variant on its skeleton shares them.
@@ -26,8 +26,8 @@ exports\
     walk.controlanim.json     what the rig did: the ControlAnim the clip was captured from
     walk.animproperties.json  what the engine importer reads
     walk.bonemap.json         optional: joint markup for an FBX from another tool
-  hero_skeleton.fbx           the skeleton export, in the folder itself: not a clip
-  hero_skeleton.bonemap.json
+  hero_default_skeleton.fbx   the skeleton export, in the folder itself: not a clip
+  hero_default_skeleton.bonemap.json
 ```
 
 | File | Written | Read | Purpose |
@@ -93,9 +93,9 @@ The engine needs the skeleton as its own asset, and an animation pairs with the 
 
 | Function | Does |
 |---|---|
-| `assethandlers.save_skeleton_export(asset, rig_root)` | Writes `exports/<name>_skeleton.fbx` (the rig's export joints at rest) and `<name>_skeleton.bonemap.json` (with the asset's id and its skeleton's id) through `rigmodules.jointclip.write_skeleton_fbx`. Existing files are versioned and checked out first. Returns the FBX and the bone map |
-| `assethandlers.get_skeleton_export_path(asset)` | Where the skeleton export is, or will be |
-| `assettools.check_clip_skeleton(asset_id, fbx)` | Compares a clip with the skeleton export through `rigmodules.jointclip.check_skeleton_match`. Raises `FileNotFoundError` when the asset has no skeleton export, and `ValueError` naming every joint that differs |
+| `assethandlers.save_skeleton_export(asset, rig, rig_root)` | Writes `<name>_<skeleton>_skeleton.fbx` (the rig's export joints at rest) and its `.bonemap.json` (with the rig's asset id and its skeleton's name) into the exports folder of the rig's skeleton through `rigmodules.jointclip.write_skeleton_fbx`. Existing files are versioned and checked out first. Returns the FBX and the bone map |
+| `assethandlers.get_skeleton_export_path(asset, rig)`, `get_exports_folder(asset, rig)` | Where the skeleton export is, or will be, and the exports folder of the rig's skeleton |
+| `assettools.check_clip_skeleton(asset_id, rig, fbx)` | Compares a clip with the skeleton export through `rigmodules.jointclip.check_skeleton_match`. Raises `FileNotFoundError` when the rig's skeleton has no skeleton export, and `ValueError` naming every joint that differs |
 
 ## Clip properties
 

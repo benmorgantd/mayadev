@@ -92,7 +92,8 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `core/asset/__init__.py` | Exports `Asset`, `AssetError`, `AssetIdError`, `Project`, `ProjectError`, `Registry`, `projects_root` |
 | `core/asset/assetid.py` | Id rules: `is_valid`, `check`, `tokens`, `name`, `key`, `equals`, `to_relative_path`, `from_relative_path`, `SEPARATOR` |
 | `core/asset/project.py` | `Project`, `FileType`, `DEFAULT_PROJECT`, `projects_root`, `read_json`, `write_json` |
-| `core/asset/asset.py` | `Asset`: paths, variants, `create`, `from_path`; the nesting check |
+| `core/asset/asset.py` | `Asset`: paths by owner, `skeletons`, `rigs`, `looks`, `rig`, `look`, `skeleton_of`, `add_rig`, `add_look`, `create`, `from_path`; the nesting check |
+| `core/asset/records.py` | `rig.json` and `look.json`: `SkeletonRef`, `RigRef`, `RigRecord`, `LookRecord` and their readers and writers |
 | `core/asset/registry.py` | `Registry`: the in-memory index of a project |
 | `core/asset/publishes.py` | `make_id`, `list_ids`, `latest`, `info`, `create` |
 | `core/asset/versions.py` | Local version copies: `version`, `list_versions`, `versions_root` |
@@ -112,7 +113,7 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `core/batch/base_batch_framework.py` | `BaseBatchEnvironment`, `BaseBatchPackage` |
 | `maya/startup.py` | `register()`: the Maya layer's registration pass |
 | `maya/constants.py` | `MAYADEV_ROOT`, the toolset paths, `MenuSpec`, `MENUS` and `menu_layout_paths`, `RIGMODULES_PLUGIN`, `IS_BATCH` |
-| `maya/assethandlers.py` | The Maya handlers and `register()`, `AnimClip`, `save_control_file`, `save_anim_clip`, `save_skeleton_export` |
+| `maya/assethandlers.py` | The Maya handlers (`RigSkeletonHandler`, `ModelHandler` with `export_meshes`) and `register()`, `AnimClip`, `save_control_file`, `save_anim_clip`, `save_skeleton_export` |
 | `maya/assettools.py` | The asset, pose, clip and weight tools: plain functions, then the `*_interactive` menu entry points, which ask through a `Prompter`, and `ClipSettings` |
 | `maya/posetools.py` | Zero, mirror, flip, key, load pose and load animation tools on the selection or the active rig: plain functions with a scope, and the `*_interactive` entry points |
 | `maya/activerig.py` | `get_active_rig`, `ActiveRigTracker` and its `changed` event |
@@ -139,10 +140,10 @@ Take **Save Control Shapes...** from the RigModules menu.
 
 1. The menu item runs the tool `rigmodules.shapes.save`, whose call is `bmaya.maya.assettools.save_control_shapes_interactive()` (`run_tool` imports the module and calls the function, see [`tools.md`](tools.md)).
 2. The `*_interactive` function gets the active rig from `bmaya.maya.activerig.get_active_rig()` and calls the plain function `save_control_shapes(node, prompter=...)`.
-3. That asks RigModules which asset and variant the rig belongs to: `rigmodules.query.get_rig_info(node)`. It does not read node names.
+3. That asks RigModules which asset and rig the rig belongs to: `rigmodules.query.get_rig_info(node)`. It does not read node names.
 4. It builds an `Asset` from the id and checks the asset folder exists. Without one it asks the prompter for a file and calls `cmds.saveRigControlShapes` directly.
-5. With one it calls `bmaya.core.asset.handlers.save(asset, "shapes", variant, rig_root=...)`.
-6. `handlers.save` asks the asset for the path (`asset.path("shapes", variant)`, pure), keeps a local version of the existing file, tells source control to check it out, makes the folder, and hands the path to the registered `RigShapesHandler`.
+5. With one it calls `bmaya.core.asset.handlers.save(asset, "shapes", rig, rig_root=...)`.
+6. `handlers.save` asks the asset for the path (`asset.path("shapes", rig)`, pure), keeps a local version of the existing file, tells source control to check it out, makes the folder, and hands the path to the registered `RigShapesHandler`.
 7. The handler calls `cmds.saveRigControlShapes(rig_root, file=path)`. Source control gets `add` if the file is new.
 
 Every file tool follows this shape: a `*_interactive` function for the menu, a plain function with arguments for scripts and batch, an asset lookup, then `handlers.save` or `handlers.load`.
@@ -151,7 +152,7 @@ Every file tool follows this shape: a `*_interactive` function for the menu, a p
 
 Where a file lives is kept apart from how it is read and written.
 
-- `bmaya.core.asset` knows paths: `project.json` maps a file type key (`shapes`, `weights`, `rig`) to a path pattern, and `Asset.path(file_type, variant)` fills it in.
+- `bmaya.core.asset` knows paths: `project.json` maps a file type key (`shapes`, `weights`, `rig`) to a path pattern, and `Asset.path(file_type, owner)` fills it in.
 - A `FileHandler` knows one format. `bmaya.core.asset.handlers` keeps a registry of handlers by file type key and never imports one, so the asset layer stays Maya-free.
 - `bmaya.maya.assethandlers.register()` registers the Maya handlers once per session. Every tool calls it before `handlers.save` or `handlers.load`, and it is safe to call repeatedly.
 - `handlers.save` does the shared work (version copy, source control, folders) so a handler writes only its format. A file type with no handler raises `NotImplementedError`.
@@ -179,7 +180,7 @@ Where a file lives is kept apart from how it is read and written.
 
 ### Add a file type
 
-1. Add its key and path pattern to `DEFAULT_PROJECT["fileTypes"]` in `core/asset/project.py`. Use `{name}` and `{variant}` only, and give a variant path the form `<folder>/{variant}/...`. Add `"folder": True` if it is a folder. Existing projects need a step in `PROJECT_UPDATES` that adds the key, with `FORMAT_VERSION` bumped, so their `project.json` picks it up on the next load ([`assets.md`](assets.md#projectjson)).
+1. Add its key and path pattern to `DEFAULT_PROJECT["fileTypes"]` in `core/asset/project.py`. Use `{name}` and at most one owner, `{skeleton}`, `{rig}` or `{look}`, and give an owned path the form `<folder>/{owner}/...`. Add `"folder": True` if it is a folder. Existing projects need a step in `PROJECT_UPDATES` that adds the key, with `FORMAT_VERSION` bumped, so their `project.json` picks it up on the next load ([`assets.md`](assets.md#projectjson)).
 2. Write the handler (below) if the format is one a tool writes or reads.
 3. Update the project and file tables in [`assets.md`](assets.md).
 

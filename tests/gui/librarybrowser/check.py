@@ -101,7 +101,7 @@ def steps_rest():
     check(shiboken6.isValid(window.delete_mask_action) and shiboken6.isValid(window.save_mask_action), "the Masks menu's actions are alive")
     check(window.isVisible(), "window is visible in its workspace control")
     check(listeners() == base + 1, "one session listens (%d)" % listeners())
-    check(window.rig_label.text() == ASSET, "the window shows the active rig's asset (%s)" % window.rig_label.text())
+    check(window.rig_label.text().startswith(ASSET + "  ("), "the window shows the active rig's asset and rig (%s)" % window.rig_label.text())
     check(window.table.model().rowCount() == 0, "the library starts empty")
     check(window.name_edit.text() == "pose_001", "the name is prefilled (%s)" % window.name_edit.text())
 

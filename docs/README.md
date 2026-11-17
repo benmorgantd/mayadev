@@ -22,7 +22,7 @@ Each topic has one owning page. Other pages link to it instead of repeating it. 
 | [`../README.md`](../README.md) | What mayadev is, requirements, install, quick start, repo layout, links |
 | [`setup.md`](setup.md) | Environment variables, `.mod` files, the startup sequence, the dev reload tools |
 | [`architecture.md`](architecture.md) | The code: layers and dependency rules, the registration pass and its slots, how tools ask questions (the `Prompter`), the source map, the file handler pattern, and recipes for adding a tool, a file type, a handler or a slot |
-| [`assets.md`](assets.md) | `bmaya.core.asset`: asset ids, `project.json`, `asset.json`, variants, the registry, publishes, local versions, source control, saving and loading by file type |
+| [`assets.md`](assets.md) | `bmaya.core.asset`: asset ids, `project.json`, `asset.json`, skeletons, rigs and looks (`rig.json`, `look.json`), the registry, publishes, local versions, source control, saving and loading by file type |
 | [`clips.md`](clips.md) | The `exports` and `sources` bundles: FBX clips, the ControlAnim beside them, the bone map, the `animproperties` file format, the skeleton export |
 | [`tools.md`](tools.md) | The tool registry and menu layout files, the two menus, every RigModules menu tool, the active rig, the two editors |
 | [`rigmodules.md`](rigmodules.md) | Everything mayadev takes from RigModules: each command and `rigmodules` function, who calls it, and the rules for crossing the boundary |

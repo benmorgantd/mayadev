@@ -177,11 +177,13 @@ Most tools act on the **active rig**, so nobody selects a rig root ([below](#the
 |---|---|---|
 | New Project... | nothing | Writes a `project.json` into a folder you pick (`Project.create`) |
 | New Asset... | nothing | Asks for an asset id and one of the project's asset types, then writes the asset's `asset.json` |
-| New Variant... | nothing | Copies a template you pick into the asset as the variant named by its `rigName` (`new_variant`) |
-| Save Skeleton... | nothing | Saves the open scene as the asset's skeleton file. Refused when the asset uses another asset's skeleton |
-| Save Model... | nothing | Saves the open scene as a variant's model file, the meshes it skins. Warns about meshes without a `meshId` |
-| Build Rig from Asset... | nothing | `build_rig`: imports the skeleton, builds the variant's template, then loads the shapes, model and skin weights the asset has ([`assets.md`](assets.md#building-a-rig-from-an-asset)) |
-| Save Rig | active rig | Saves the open scene as the variant's rig file. Before the asset folder exists, uses a file dialog |
+| New Rig... | nothing | Asks for the asset, a template to copy, the rig's name (the template's `rigName` is offered) and its skeleton, then copies the template into `rigs/<rig>` with its `rigName` set to the rig's name and writes `rig.json` (`new_rig`) |
+| New Look... | nothing | Asks for the asset, the look's name (`default` is offered for the first) and the skeleton its meshes bind to, then writes `looks/<look>/look.json` (`new_look`) |
+| Save Skeleton... | nothing | Saves every joint in the scene as a skeleton of the asset: `skeletons/<skeleton>/skeleton.json`, the only form a skeleton is stored in. The scene is not saved or renamed. Every joint must be marked, and none may be driven by a rig. Nothing is written when one fails |
+| Load Skeleton... | nothing | Creates a skeleton's joints from its `skeleton.json`, at rest and marked, and selects them |
+| Save Model... | nothing | Saves the selected meshes (every mesh when none is selected) as a look's model file: meshes only, from their undeformed shape, with no skinning, no history and no joints. The scene is left as it was. Warns about meshes without a `meshId` |
+| Build Rig from Asset... | nothing | `build_rig`: creates the rig's skeleton, builds its template, then loads the shapes, and the look's model and skin weights. The look is asked for only when the rig can wear more than one ([`assets.md`](assets.md#building-a-rig-from-an-asset)) |
+| Save Rig | active rig | Saves the open scene as the rig's scene file. Before the asset folder exists, uses a file dialog |
 
 #### mesh
 
@@ -203,7 +205,7 @@ Mark meshes in the model scene, before **Save Model...**, so every build imports
 
 | Tool | Select | Does |
 |---|---|---|
-| Save Skin Weights... | active rig | Saves every skinned mesh in the rig's namespace to the variant's `weights` folder, one file per mesh. Before the asset folder exists, uses a folder dialog |
+| Save Skin Weights... | active rig | Saves every skinned mesh in the rig's namespace to a look's `weights` folder, one file per mesh (the look is asked for when the rig can wear several). Before the asset folder exists, uses a folder dialog |
 | Load Skin Weights... | active rig | Loads the folder onto the meshes, matched by `meshId`, as one undo step |
 
 #### shapes
@@ -211,7 +213,7 @@ Mark meshes in the model scene, before **Save Model...**, so every build imports
 | Tool | Select | Does |
 |---|---|---|
 | Mirror Shapes Left to Right / Right to Left | active rig | `cmds.mirrorRigControlShapes` from one side to the other |
-| Save Control Shapes... / Load Control Shapes... | active rig | Saves or loads the variant's `shapes.json`. Before the asset folder exists, uses a file dialog |
+| Save Control Shapes... / Load Control Shapes... | active rig | Saves or loads the rig's `shapes.json`. Before the asset folder exists, uses a file dialog |
 
 #### control
 
@@ -240,7 +242,7 @@ The window is widgets and connections only. `bmaya.maya.rigpanel.RigPanelSession
 
 ### The library browser
 
-`bmaya.maya_ui.librarybrowser.show_window` (RigModules `design/library-browser.md`, D51) opens one docked window on the active rig's pose and animation library, and follows the active rig. It lists the files of three sources: **Approved** (the asset's own `controlposes` and `controlanims`), **Shared** (the skeleton asset's, when the rig uses another asset's skeleton) and **User** (your own, [`assets.md`](assets.md#library)). Each has a chip that shows or hides it.
+`bmaya.maya_ui.librarybrowser.show_window` (RigModules `design/library-browser.md`, D51) opens one docked window on the active rig's pose and animation library, and follows the active rig. It lists the files of three sources: **Approved** (the rig's own `controlposes` and `controlanims`), **Shared** (those of the rig it was copied from, when `rig.json` names a source) and **User** (your own, [`assets.md`](assets.md#library)). Each has a chip that shows or hides it.
 
 - **Poses and Animations** are two tabs, two libraries.
 - **Search** is the box under the tabs: free words match the name, tags and description, and `tag:fist`, `template:Human`, `by:bmorgan`, `region:hands`, `status:final`, `category:` and the other terms ([`assets.md`](assets.md#library)) match a field. **Filter** lists the tags, templates, regions, statuses and categories in use, and picking one writes its term in the box (a second pick takes it out), so nobody needs the syntax.
@@ -255,7 +257,7 @@ The window is widgets and connections only. `bmaya.maya.librarybrowser.LibrarySe
 
 | Tool | Does |
 |---|---|
-| Save Pose... | Saves the pose under a name you type (a free `pose_001` is offered), in your own library of the asset: `<projects root>\user\<login>\animlibrary\<asset id>\controlposes`, as `<name>.controlpose.json` with the author, template and skeleton in its `meta`. No source control. Asks before replacing a file. Before the asset folder exists, a file dialog |
+| Save Pose... | Saves the pose under a name you type (a free `pose_001` is offered), in your own library of the rig: `<projects root>\user\<login>\animlibrary\<asset id>\<rig>\controlposes`, as `<name>.controlpose.json` with the author, template and skeleton in its `meta`. No source control. Asks before replacing a file. Before the asset folder exists, a file dialog |
 | Load Pose... | Loads a pose file chosen in a dialog that opens in your own library, else in the asset's `controlposes` (`posetools.load_pose`, one undo step) |
 | Save Animation... | Saves the keys over the playback range under a name, in your own library's `controlanims`, as `<name>.controlanim.json`. Before the asset folder exists, a file dialog |
 | Load Animation... | Loads an animation file, keyed at the frames it was saved on (`posetools.load_animation`, one undo step) |
@@ -277,24 +279,25 @@ Clips are FBX files ([`clips.md`](clips.md)).
 | Capture Joint Pose... | The same at the current frame, as a clip with one pose |
 | Pose From Joint Pose... | Sets the selected controls, or the whole active rig, from a one-pose clip chosen in a dialog that opens in `exports` (`cmds.poseRigFromJointPose`). Uses the bone map beside the FBX when there is one |
 | Animate From Joint Clip... | Keys them from a clip (`cmds.animateRigFromJointClip`), with the ControlAnim beside the FBX as the sidecar when there is one |
-| Save Skeleton Export | Writes the active rig's skeleton export into its asset's `exports` folder. Needs the asset folder |
-| Check Clip Against Skeleton... | Checks an animation FBX against the asset's skeleton export, naming every joint whose name or parent differs |
+| Save Skeleton Export | Writes the active rig's skeleton export into the `exports` folder of its skeleton. Needs the asset folder |
+| Check Clip Against Skeleton... | Checks an animation FBX against the skeleton export of the active rig's skeleton, naming every joint whose name or parent differs |
 | Edit Clip Properties... | Sets loop, root motion and additive type of a clip's `animproperties` in a small dialog, keeping its events and curves |
 
 ### Scripts call the same functions
 
-Every tool above is a call into `bmaya.maya.assettools`, `bmaya.maya.posetools` or `bmaya.maya.rigging.joint`, and those functions take arguments, so scripts and batch jobs call them without the dialogs. The functions at the top of `assettools` (`new_variant`, `save_skeleton`, `save_model`, `build_rig`, `save_rig`, `save_control_shapes`, `load_control_shapes`, `save_pose`, `save_animation`, `save_joint_clip`, `save_skeleton_export`, `check_clip_skeleton`, `set_clip_properties`, `save_skin_weights`, `load_skin_weights`, `mark_meshes_for_skinning`) are the scriptable ones. The `*_interactive` functions below them are the menu's entry points: they read the active rig and ask through a `Prompter` (Qt dialogs in a GUI session), then call them. A script can run an entry point too, with its answers in a `bmaya.core.prompts.ScriptedPrompter` ([`architecture.md`](architecture.md#questions-a-tool-asks)). In mayapy with no prompter, a question raises `PromptError` naming it rather than waiting on a dialog.
+Every tool above is a call into `bmaya.maya.assettools`, `bmaya.maya.posetools` or `bmaya.maya.rigging.joint`, and those functions take arguments, so scripts and batch jobs call them without the dialogs. The functions at the top of `assettools` (`new_rig`, `new_look`, `save_skeleton`, `load_skeleton`, `save_model`, `build_rig`, `save_rig`, `save_control_shapes`, `load_control_shapes`, `save_pose`, `save_animation`, `save_joint_clip`, `save_skeleton_export`, `check_clip_skeleton`, `set_clip_properties`, `save_skin_weights`, `load_skin_weights`, `mark_meshes_for_skinning`) are the scriptable ones. The `*_interactive` functions below them are the menu's entry points: they read the active rig and ask through a `Prompter` (Qt dialogs in a GUI session), then call them. A script can run an entry point too, with its answers in a `bmaya.core.prompts.ScriptedPrompter` ([`architecture.md`](architecture.md#questions-a-tool-asks)). In mayapy with no prompter, a question raises `PromptError` naming it rather than waiting on a dialog.
 
 ```python
 import bmaya.maya.assettools
 
-bmaya.maya.assettools.new_variant("shooter\\main\\characters\\hero", r"C:\rigs\Human.json")   # variant "Human"
-bmaya.maya.assettools.save_skeleton("shooter\\main\\characters\\hero")              # the open scene
-bmaya.maya.assettools.save_model("shooter\\main\\characters\\hero", "Human")        # the open scene, meshes only
-rig_root = bmaya.maya.assettools.build_rig("shooter\\main\\characters\\hero", "game")   # into hero_game
-bmaya.maya.assettools.save_control_shapes(rig_root)                                # variants/Human/shapes.json
-bmaya.maya.assettools.save_skin_weights(rig_root)                                  # variants/Human/weights/*.json
-bmaya.maya.assettools.save_rig(rig_root)                                           # variants/Human/hero_Human_rig.ma
+bmaya.maya.assettools.new_rig("shooter\\main\\characters\\hero", r"C:\rigs\human.json", "body")   # rigs/body, rigName "body"
+bmaya.maya.assettools.new_look("shooter\\main\\characters\\hero")                         # looks/default
+bmaya.maya.assettools.save_skeleton("shooter\\main\\characters\\hero")                    # the scene's joints, skeletons/default/skeleton.json
+bmaya.maya.assettools.save_model("shooter\\main\\characters\\hero", "default")            # the scene's meshes, meshes only
+rig_root = bmaya.maya.assettools.build_rig("shooter\\main\\characters\\hero", "body")      # into hero_body, with the default look
+bmaya.maya.assettools.save_control_shapes(rig_root)                                  # rigs/body/shapes.json
+bmaya.maya.assettools.save_skin_weights(rig_root, "default")                         # looks/default/weights/*.json
+bmaya.maya.assettools.save_rig(rig_root)                                             # rigs/body/hero_body_rig.ma
 ```
 
 ## The active rig
