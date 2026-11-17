@@ -176,6 +176,8 @@ Reading a path never makes a folder. `Asset.create` makes the asset folder and i
 | `asset_type` | From `asset.json` |
 | `project` | The nearest `Project` above the folder |
 | `skeletons`, `rigs`, `looks` | The names of the folders that hold a `skeleton.json`, `rig.json` or `look.json`, sorted. Adding one adds files and edits nothing |
+| `all_looks()` | Every look as `AssetLook(name, local)`, including looks that source control has but the workspace doesn't (`local` False, listed by name only). The local scan when source control can't list, with a warning. `looks` stays the local scan |
+| `sync_look(name)` | Syncs a look that isn't local through source control. Raises `AssetError` when the sync fails or leaves no `look.json` |
 | `path(file_type, owner=None)` | Where a file type lives. `owner` is the skeleton, rig or look name for a file type that belongs to one. Pure |
 | `file_exists(file_type, owner=None)` | Whether that path exists |
 | `rig(name)`, `look(name)` | The parsed `rig.json` or `look.json` (`RigRecord`, `LookRecord`). Raise `AssetError` naming what the asset has |
@@ -240,6 +242,8 @@ The versions root is `%LOCALAPPDATA%\bmaya\versions`, private to the machine and
 ## Source control
 
 Saves call `bmaya.core.asset.sourcecontrol`: `checkout(path)` before overwriting an existing file, `add(path)` after writing a new one. The default `SourceControl` does nothing, so everything works without source control. A Perforce adapter is a `SourceControl` subclass set with `sourcecontrol.set_current(adapter)`. None is written yet. For a folder file type the adapter handles everything under it (in Perforce terms, `<folder>/...`).
+
+Two more calls serve looks that exist in the depot but not in the workspace (RigModules D54 phase 6). `list_folders(path)` returns the child folder names whether or not they are synced, and `None` for the default adapter, which means "scan the disk". `sync(path)` brings a folder into the workspace and raises when it can't. `Asset.all_looks()` uses the first (a failure falls back to the local scan with a warning, so a server that is down never empties the list) and `assettools.apply_look` the second: choosing a look that isn't local syncs it, checks that its `look.json` names the rig's skeleton, then swaps it in. A failed sync or a look that doesn't fit changes nothing in the scene.
 
 Ask the Perforce admin for `+l` (exclusive lock) on files that can't be merged, including `.ma`.
 
@@ -343,7 +347,7 @@ A built rig carries its own asset id and rig name (the rig root's `assetId` and 
 
 ### Putting a rig in a look
 
-`bmaya.maya.assettools.apply_look(node, look)` swaps the look of the rig that `node` belongs to (RigModules D54 phase 5, `docs/looks.md` there). It checks that the asset has the look, that its `look.json` names the rig's skeleton, and that it has a model and weight files. Then, as one undo step, it imports the model into the rig's namespace and calls `cmds.setRigLook` with the imported meshes and the weight files. RigModules matches each mesh to its file by `meshId`, fails the swap when a file's `skeletonHash` is not the rig's, deletes the previous look's meshes, names the new ones after their files and records the look on the rig. The new meshes then join the rig's mesh layer and group. A failed swap deletes the meshes it imported. The controls and the animation are not touched. Materials of the previous look stay in the scene.
+`bmaya.maya.assettools.apply_look(node, look)` swaps the look of the rig that `node` belongs to (RigModules D54 phase 5, `docs/looks.md` there). A look that isn't synced is synced first. It checks that the asset has the look, that its `look.json` names the rig's skeleton, and that it has a model and weight files. Then, as one undo step, it imports the model into the rig's namespace and calls `cmds.setRigLook` with the imported meshes and the weight files. RigModules matches each mesh to its file by `meshId`, fails the swap when a file's `skeletonHash` is not the rig's, deletes the previous look's meshes, names the new ones after their files and records the look on the rig. The new meshes then join the rig's mesh layer and group. A failed swap deletes the meshes it imported. The controls and the animation are not touched. Materials of the previous look stay in the scene.
 
 ## Tests
 

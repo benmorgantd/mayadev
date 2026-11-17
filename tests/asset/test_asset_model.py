@@ -15,7 +15,7 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "py", "scripts"))
 
-from bmaya.core.asset import Asset, AssetError, AssetIdError, Project, ProjectError, Registry  # noqa: E402
+from bmaya.core.asset import Asset, AssetError, AssetIdError, AssetLook, Project, ProjectError, Registry  # noqa: E402
 from bmaya.core.asset import LookRecord, RecordError, RigRecord, RigRef, SkeletonRef  # noqa: E402
 from bmaya.core.asset import assetid, handlers, publishes, records, sourcecontrol, versions  # noqa: E402
 from bmaya.core.asset.project import (  # noqa: E402
@@ -53,6 +53,32 @@ class RecordingSourceControl(sourcecontrol.SourceControl):
 
     def add(self, path):
         self.calls.append(("add", path))
+
+
+class DepotSourceControl(sourcecontrol.SourceControl):
+    """A depot that holds look folders the workspace may not have. list_folders answers from `depot`, and sync copies a
+    depot folder's files into the workspace (a name -> {relative file: text} map). A failing list or sync raises."""
+
+    def __init__(self, depot=None):
+        self.depot = depot or {}
+        self.listing_fails = False
+        self.sync_fails = False
+        self.synced = []
+
+    def list_folders(self, path):
+        if self.listing_fails:
+            raise ConnectionError("server down")
+        return sorted(self.depot)
+
+    def sync(self, path):
+        if self.sync_fails:
+            raise ConnectionError("server down")
+        self.synced.append(path)
+        for relative, text in self.depot[os.path.basename(path)].items():
+            target = os.path.join(path, relative)
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with open(target, "w", encoding="utf-8") as handle:
+                handle.write(text)
 
 
 class TempRoot(unittest.TestCase):
@@ -409,6 +435,62 @@ class Assets(TempRoot):
         self.assertEqual(hero.rigs, ["body", "body_cine"])
         self.assertEqual(hero.looks, ["default", "winter"])
         self.assertEqual(self.read(hero.info_path), before, "adding a skeleton, a rig or a look edits nothing shared")
+
+    LOOK_JSON = '{"formatVersion": 1, "skeletons": ["default"]}'
+
+    def use_depot(self, depot):
+        depot_control = DepotSourceControl(depot)
+        sourcecontrol.set_current(depot_control)   # setUp registered the cleanup that restores the default
+        return depot_control
+
+    def test_all_looks_is_the_local_scan_without_a_source_control_listing(self):
+        hero = self.create(looks=["winter", "default"])
+        self.assertEqual(hero.all_looks(), [AssetLook("default", True), AssetLook("winter", True)])
+        self.assertEqual(self.create(VILLAIN).all_looks(), [])
+
+    def test_all_looks_lists_the_depots_looks_and_marks_the_unsynced_ones(self):
+        hero = self.create(looks=["default"])
+        self.use_depot({"default": {}, "winter": {}, "Bad Name": {}})
+        self.assertEqual(hero.all_looks(), [AssetLook("default", True), AssetLook("winter", False)],
+                         "an invalid folder name is not a look")
+        self.assertEqual(hero.looks, ["default"], "looks stays the local scan")
+
+    def test_a_look_folder_without_its_look_json_is_not_local(self):
+        hero = self.create()
+        self.use_depot({"winter": {}})
+        os.makedirs(os.path.join(hero.folder, "looks", "winter", "weights"))   # half synced: no look.json
+        self.assertEqual(hero.all_looks(), [AssetLook("winter", False)])
+
+    def test_a_failing_listing_falls_back_to_the_local_scan_with_a_warning(self):
+        hero = self.create(looks=["default"])
+        depot = self.use_depot({"default": {}, "winter": {}})
+        depot.listing_fails = True
+        with mock.patch("bmaya.core.log.warning") as warning:
+            self.assertEqual(hero.all_looks(), [AssetLook("default", True)])
+        warning.assert_called_once()
+        self.assertIn("server down", warning.call_args.args[0])
+
+    def test_sync_look_brings_in_an_unsynced_look_and_leaves_a_local_one_alone(self):
+        hero = self.create(looks=["default"])
+        depot = self.use_depot({"default": {}, "winter": {"look.json": self.LOOK_JSON}})
+        hero.sync_look("default")
+        self.assertEqual(depot.synced, [], "a local look is not synced again")
+        hero.sync_look("winter")
+        self.assertEqual(depot.synced, [os.path.join(hero.folder, "looks", "winter")])
+        self.assertEqual(hero.look("winter"), LookRecord((DEFAULT,)))
+        self.assertEqual(hero.all_looks(), [AssetLook("default", True), AssetLook("winter", True)])
+
+    def test_sync_look_failures_raise_asset_error(self):
+        hero = self.create()
+        depot = self.use_depot({"winter": {"look.json": self.LOOK_JSON}, "empty": {"x.txt": ""}})
+        depot.sync_fails = True
+        with self.assertRaisesRegex(AssetError, "Could not sync the look 'winter'.*server down"):
+            hero.sync_look("winter")
+        depot.sync_fails = False
+        with self.assertRaisesRegex(AssetError, "no look.json after syncing"):
+            hero.sync_look("empty")
+        with self.assertRaisesRegex(AssetError, "not a look name"):
+            hero.sync_look("Bad Name")
 
     def test_add_rig_and_add_look_write_their_file_and_tell_source_control(self):
         hero = self.create()

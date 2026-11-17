@@ -297,11 +297,16 @@ class LibrarySession:
     # Not a third kind of file in the list: a look is a model and its weights, not a library file with a meta block,
     # so the view-model offers the active rig's looks and applying one. The window has no tab for them yet.
 
-    def looks(self) -> list[str]:
-        """The looks of the active rig's asset that its skeleton can wear (those whose look.json names it), sorted.
-        Raises RuntimeError with no active rig."""
+    def look_entries(self) -> list[bmaya.core.asset.AssetLook]:
+        """The looks of the active rig's asset that its skeleton can wear, sorted, with whether each is local. A look
+        that is not synced is listed by name: its fit is checked when it is chosen and synced. Raises RuntimeError with
+        no active rig."""
         self._require_rig()
-        return sorted(bmaya.maya.assettools.get_rig_looks(self._asset, self.rig_name))
+        return bmaya.maya.assettools.list_rig_looks(self._asset, self.rig_name)
+
+    def looks(self) -> list[str]:
+        """The names in look_entries(). Raises RuntimeError with no active rig."""
+        return [entry.name for entry in self.look_entries()]
 
     def worn_look(self) -> str | None:
         """The look the active rig wears, from its lookRoot, or None. Raises RuntimeError with no active rig."""
@@ -311,7 +316,7 @@ class LibrarySession:
     def apply_look(self, name: str) -> str:
         """Puts the active rig in the look, in one undo step (assettools.apply_look): the previous look's meshes go,
         the controls and animation stay. Raises RuntimeError for no rig or a look the rig can't wear, and what
-        apply_look raises. Returns the lookRoot."""
+        apply_look raises, including a failed sync of a look that is not local. Returns the lookRoot."""
         rig_root = self._require_rig()
         if name not in self.looks():
             raise RuntimeError(f"{self.asset_id} has no look {name!r} that the rig {self.rig_name!r} can wear: "

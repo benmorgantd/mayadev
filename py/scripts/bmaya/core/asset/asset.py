@@ -19,6 +19,8 @@ from __future__ import annotations
 import os
 import typing
 
+import bmaya.core.log
+
 from . import assetid, records, sourcecontrol
 from .project import Project, ProjectError, projects_root, read_json, write_json
 from .records import LookRecord, RigRecord, RigRef, SkeletonRef
@@ -29,6 +31,13 @@ FORMAT_VERSION = 2
 
 class AssetError(RuntimeError):
     """An asset that doesn't exist, already exists, or would break the layout rules."""
+
+
+class AssetLook(typing.NamedTuple):
+    """A look of an asset and whether its files are in the workspace. A look that is not local is only a name: its
+    look.json can't be read until it is synced."""
+    name: str
+    local: bool
 
 
 class Asset:
@@ -89,6 +98,37 @@ class Asset:
     def looks(self) -> list[str]:
         """The looks: folders that hold a look.json. A look-only asset has looks and no skeletons or rigs."""
         return self._owners("lookinfo")
+
+    def all_looks(self) -> list[AssetLook]:
+        """Every look of the asset, sorted by name, including those that exist in source control but are not synced
+        (local False). With no source control, or when it fails (a warning is logged), it is the local scan:
+        everything in `looks`, all local. looks stays the local scan, so a caller that reads a look's files can't
+        be handed one that isn't there."""
+        local = self.looks
+        remote: list[str] | None = None
+        parent = os.path.join(self.folder, self.project.file_type("lookinfo").owner_parent())
+        try:
+            remote = sourcecontrol.current().list_folders(parent)
+        except Exception as error:   # a server that is down must not empty the library
+            bmaya.core.log.warning(f"Source control could not list the looks of {self.id}, so only the synced ones are "
+                                   f"shown: {error}")
+        names = set(local) | {name for name in remote or () if assetid.is_valid_token(name)}
+        return [AssetLook(name, name in local) for name in sorted(names)]
+
+    def sync_look(self, name: str) -> None:
+        """Brings a look that is not local into the workspace. Does nothing for a local look. Raises AssetError when
+        source control can't sync it or the folder holds no look.json afterwards."""
+        if not assetid.is_valid_token(name):
+            raise AssetError(f"{name!r} is not a look name.")
+        if self.file_exists("lookinfo", name):
+            return
+        folder = os.path.dirname(self.path("lookinfo", name))
+        try:
+            sourcecontrol.current().sync(folder)
+        except Exception as error:
+            raise AssetError(f"Could not sync the look {name!r} of {self.id}: {error}") from error
+        if not self.file_exists("lookinfo", name):
+            raise AssetError(f"The look {name!r} of {self.id} has no look.json after syncing {folder}.")
 
     def _owners(self, file_type: str) -> list[str]:
         parent = os.path.join(self.folder, self.project.file_type(file_type).owner_parent())

@@ -12,11 +12,11 @@ asset holds skeletons, rigs and looks.
     Registry.of(hero.project).find(skeleton=(hero.id, "default"))   # assets with a rig or look on hero's skeleton
 """
 
-from .asset import Asset, AssetError
+from .asset import Asset, AssetError, AssetLook
 from .assetid import AssetIdError
 from .project import Project, ProjectError, projects_root
 from .records import LookRecord, RecordError, RigRecord, RigRef, SkeletonRef
 from .registry import Registry
 
-__all__ = ["Asset", "AssetError", "AssetIdError", "LookRecord", "Project", "ProjectError", "RecordError", "Registry",
+__all__ = ["Asset", "AssetError", "AssetIdError", "AssetLook", "LookRecord", "Project", "ProjectError", "RecordError", "Registry",
            "RigRecord", "RigRef", "SkeletonRef", "projects_root"]

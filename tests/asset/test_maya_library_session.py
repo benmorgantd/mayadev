@@ -146,6 +146,22 @@ class Looks(LibraryBase):
         self.assertIsNone(session.worn_look())
         self.assertEqual(self.query.get_rig_info(root).look, None)
 
+    def test_a_look_that_is_not_synced_is_offered_with_a_not_local_flag(self):
+        self.hero_asset.add_look("default", [self.asset.SkeletonRef("default")])
+        self.hero_asset.add_look("head", [self.asset.SkeletonRef("face")])
+        self.build(HERO)
+
+        class Depot(self.asset.sourcecontrol.SourceControl):
+            def list_folders(self, path):
+                return ["default", "head", "winter"]
+
+        self.asset.sourcecontrol.set_current(Depot())
+        self.addCleanup(self.asset.sourcecontrol.set_current, self.asset.sourcecontrol.SourceControl())
+        session = self.browser.LibrarySession()
+        self.assertEqual([(entry.name, entry.local) for entry in session.look_entries()],
+                         [("default", True), ("winter", False)], "head is local and fits another skeleton")
+        self.assertEqual(session.looks(), ["default", "winter"])
+
     def test_apply_look_goes_through_assettools_and_refuses_a_look_the_rig_cannot_wear(self):
         self.hero_asset.add_look("default", [self.asset.SkeletonRef("default")])
         self.hero_asset.add_look("head", [self.asset.SkeletonRef("face")])

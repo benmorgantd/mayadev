@@ -949,6 +949,69 @@ class AssetTools(unittest.TestCase):
         self.assertTrue(cmds.objExists("hero_game:box_geo"))
         self.assertTrue(cmds.ls(cmds.listHistory("hero_game:box_geo"), type="skinCluster"))
 
+    def make_unsynced_winter(self):
+        """make_two_looks, then the winter look's folder moved out of the workspace into a fake depot that syncs it
+        back. Returns the depot."""
+        import bmaya.core.asset.sourcecontrol
+        self.make_two_looks()
+        folder = os.path.join(self.hero.folder, "looks", "winter")
+        depot_folder = os.path.join(self.hero.folder, "depot_winter")   # outside looks/, so it is not scanned
+        shutil.move(folder, depot_folder)
+
+        class Depot(bmaya.core.asset.sourcecontrol.SourceControl):
+            fails = False
+
+            def list_folders(self, path):
+                return ["default", "winter"]
+
+            def sync(self, path):
+                if self.fails:
+                    raise ConnectionError("server down")
+                shutil.copytree(depot_folder, path)
+
+        depot = Depot()
+        bmaya.core.asset.sourcecontrol.set_current(depot)
+        self.addCleanup(bmaya.core.asset.sourcecontrol.set_current, bmaya.core.asset.sourcecontrol.SourceControl())
+        return depot
+
+    def test_apply_look_syncs_a_look_that_is_not_local_first(self):
+        cmds = self.cmds
+        depot = self.make_unsynced_winter()
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        self.assertFalse(self.hero.file_exists("lookinfo", "winter"))
+        self.assertEqual([(entry.name, entry.local) for entry in self.tools.list_rig_looks(self.hero, "game")],
+                         [("default", True), ("winter", False)])
+        self.tools.apply_look(rig_root, "winter")
+        self.assertTrue(self.hero.file_exists("lookinfo", "winter"))
+        self.assertEqual(self.look_of(rig_root).name, "winter")
+        self.assertTrue(cmds.objExists("hero_game:ball_geo"))
+
+    def test_apply_look_with_a_failed_sync_changes_nothing(self):
+        cmds = self.cmds
+        depot = self.make_unsynced_winter()
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        depot.fails = True
+        with self.assertRaisesRegex(RuntimeError, "Could not sync the look 'winter'"):
+            self.tools.apply_look(rig_root, "winter")
+        self.assertEqual(self.look_of(rig_root).name, "default")
+        self.assertTrue(cmds.objExists("hero_game:box_geo"))
+        self.assertFalse(cmds.objExists("hero_game:ball_geo"))
+
+    def test_apply_look_that_does_not_fit_after_syncing_changes_nothing(self):
+        cmds = self.cmds
+        depot = self.make_unsynced_winter()
+        look_json = os.path.join(self.hero.folder, "depot_winter", "look.json")
+        data = self.read_json(look_json)
+        data["skeletons"] = ["face"]
+        with open(look_json, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        with self.assertRaisesRegex(RuntimeError, "is not for the skeleton"):
+            self.tools.apply_look(rig_root, "winter")
+        self.assertEqual(self.look_of(rig_root).name, "default")
+        self.assertTrue(cmds.objExists("hero_game:box_geo"))
+        self.assertFalse(cmds.objExists("hero_game:ball_geo"))
+
     def test_apply_look_with_another_skeletons_weights_fails_and_leaves_the_rig_alone(self):
         cmds = self.cmds
         self.make_two_looks()

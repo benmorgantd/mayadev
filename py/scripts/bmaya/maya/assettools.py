@@ -212,11 +212,14 @@ def apply_look(node: str, look: str) -> str:
     """Puts the rig that node belongs to in a look of its asset (RigModules D54): imports the look's model into the
     rig's namespace, then cmds.setRigLook loads the look's weight files onto the rig's joints, deletes the previous
     look's meshes and records the look on the rig's lookRoot. The new meshes join the rig's mesh layer and group. The
-    controls and animation are not touched. One undo step. A weight file made for another skeleton fails the swap, and
+    controls and animation are not touched. A look that is not synced yet is synced first (source control), and then
+    checked against the rig like any other. One undo step. A weight file made for another skeleton fails the swap, and
     the imported meshes are removed again. Raises AssetError for a look the asset doesn't have, one that doesn't fit the
     rig's skeleton, or one with no model or weights. Returns the lookRoot node."""
     info = rigmodules.query.get_rig_info(node)
     asset = require_asset(info.asset_id)
+    if look in {entry.name for entry in asset.all_looks() if not entry.local}:
+        asset.sync_look(look)   # before the scene is touched: a failed sync changes nothing
     asset.look(look)   # raises for a look the asset doesn't have
     if info.rig_name in asset.rigs and not asset.look_fits(look, info.rig_name):
         raise bmaya.core.asset.AssetError(
@@ -433,6 +436,14 @@ def get_rig_looks(asset: bmaya.core.asset.Asset, rig: str) -> list[str]:
     if rig not in asset.rigs:
         return asset.looks
     return [look for look in asset.looks if asset.look_fits(look, rig)]
+
+
+def list_rig_looks(asset: bmaya.core.asset.Asset, rig: str) -> list[bmaya.core.asset.AssetLook]:
+    """The looks a rig can wear, local or not (RigModules D54 phase 6). A local look is listed when its look.json names
+    the rig's skeleton (every one when the asset has no such rig). A look that is not synced can't be read, so it is
+    listed as a name and its fit is checked when it is synced, by apply_look."""
+    fitting = set(get_rig_looks(asset, rig))
+    return [entry for entry in asset.all_looks() if entry.name in fitting or not entry.local]
 
 
 def _worn_look(info: rigmodules.query.RigInfo) -> str | None:
