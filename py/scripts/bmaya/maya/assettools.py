@@ -3,9 +3,9 @@
 A rig can be built anywhere, before its asset exists. Once the asset's folder exists, these tools read and
 write the asset's files. An asset holds skeletons, rigs and looks (RigModules D54): a rig is a template built on one
 skeleton, and a look is the meshes and skin weights a rig of that skeleton wears. A built rig names its own asset id
-and rig name (the rig root's rigName, which is the rig's folder name), read through rigmodules.query. It does not
-record its look yet, so the tools that write a look's files take the look. Nothing here walks rig nodes or parses
-names (RigModules D24).
+and rig name (the rig root's rigName, which is the rig's folder name) and the look it wears (RigInfo.look, from its
+lookRoot node, RigModules D54), read through rigmodules.query. The tools that read or write a look's files use the
+look the rig wears, and take a look to override it. Nothing here walks rig nodes or parses names (RigModules D24).
 
 The shape, weight and rig tools ask for a file or folder for a rig whose asset folder doesn't exist yet.
 Once it exists, they always use the asset's paths, so a file never lands in two places.
@@ -190,11 +190,13 @@ def build_rig(asset_id: str, rig: str, look: str | None = None, namespace: str |
     if asset.file_exists("shapes", rig):
         bmaya.core.asset.handlers.load(asset, "shapes", rig, rig_root=rig_root)
     if look is not None and asset.file_exists("model", look):
-        model_nodes = bmaya.core.asset.handlers.load(asset, "model", look, namespace=namespace)
-        rigmodules.displaylayers.add_meshes(rig_root, model_nodes)
-        rigmodules.groups.parent_meshes(rig_root, model_nodes)
         if asset.file_exists("weights", look):
-            bmaya.core.asset.handlers.load(asset, "weights", look, namespace=namespace)
+            apply_look(rig_root, look)   # records the look on the rig
+        else:
+            # A model with no weights yet has nothing to swap in: its meshes are imported unskinned and no look is recorded.
+            model_nodes = bmaya.core.asset.handlers.load(asset, "model", look, namespace=namespace)
+            rigmodules.displaylayers.add_meshes(rig_root, model_nodes)
+            rigmodules.groups.parent_meshes(rig_root, model_nodes)
     # The imports above leave their nodes selected. A finished build starts with nothing selected.
     cmds.select(clear=True)
     # The build selects nothing, so the tracker would never see the new rig. It becomes the active rig.
@@ -204,6 +206,53 @@ def build_rig(asset_id: str, rig: str, look: str | None = None, namespace: str |
     wearing = f" wearing the look {look!r}" if look is not None else " with no look"
     bmaya.core.log.info(f"Built the rig {rig!r} of {asset.id} into namespace {namespace!r},{wearing}.")
     return rig_root
+
+
+def apply_look(node: str, look: str) -> str:
+    """Puts the rig that node belongs to in a look of its asset (RigModules D54): imports the look's model into the
+    rig's namespace, then cmds.setRigLook loads the look's weight files onto the rig's joints, deletes the previous
+    look's meshes and records the look on the rig's lookRoot. The new meshes join the rig's mesh layer and group. The
+    controls and animation are not touched. One undo step. A weight file made for another skeleton fails the swap, and
+    the imported meshes are removed again. Raises AssetError for a look the asset doesn't have, one that doesn't fit the
+    rig's skeleton, or one with no model or weights. Returns the lookRoot node."""
+    info = rigmodules.query.get_rig_info(node)
+    asset = require_asset(info.asset_id)
+    asset.look(look)   # raises for a look the asset doesn't have
+    if info.rig_name in asset.rigs and not asset.look_fits(look, info.rig_name):
+        raise bmaya.core.asset.AssetError(
+            f"The look {look!r} of {asset.id} is not for the skeleton that the rig {info.rig_name!r} is built on.")
+    for file_type in ("model", "weights"):
+        if not asset.file_exists(file_type, look):
+            raise bmaya.core.asset.AssetError(f"The look {look!r} of {asset.id} has no {file_type} file. Save it first.")
+    files = bmaya.maya.assethandlers.RigSkinWeightsHandler.files(asset.path("weights", look))
+    if not files:
+        raise bmaya.core.asset.AssetError(f"The look {look!r} of {asset.id} has no weight files.")
+
+    bmaya.maya.assethandlers.register()
+    cmds.undoInfo(openChunk=True, chunkName="Apply Look")
+    try:
+        model_nodes = bmaya.core.asset.handlers.load(asset, "model", look, namespace=info.namespace)
+        meshes = [model_node for model_node in model_nodes
+                  if cmds.nodeType(model_node) == "transform" and rigmodules.skinweights.get_mesh_id(model_node)]
+        try:
+            if not meshes:
+                raise bmaya.core.asset.AssetError(f"The model of the look {look!r} has no mesh with a meshId.")
+            look_root = cmds.setRigLook(info.rig_root, mesh=meshes, file=[path.replace("\\", "/") for path in files],
+                                        asset=asset.id, look=look)
+        except Exception:
+            # The import is not part of setRigLook's undo, so a failed swap takes the imported meshes out itself.
+            cmds.delete([mesh for mesh in meshes if cmds.objExists(mesh)])
+            raise
+        # setRigLook renamed the meshes after their files, so they are found again by id.
+        wanted = {rigmodules.skinweights.read_file_mesh_id(path) for path in files}
+        new_meshes = [mesh for mesh_id, mesh in rigmodules.skinweights.get_meshes(info.namespace).items() if mesh_id in wanted]
+        rigmodules.displaylayers.add_meshes(info.rig_root, new_meshes)
+        rigmodules.groups.parent_meshes(info.rig_root, new_meshes)
+        cmds.select(clear=True)   # inside the chunk, so an undo takes the whole apply and not just the selection
+    finally:
+        cmds.undoInfo(closeChunk=True)
+    bmaya.core.log.info(f"Put the rig {info.rig_name!r} of {asset.id} in the look {look!r}.")
+    return look_root
 
 
 def save_rig(node: str, prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
@@ -344,8 +393,9 @@ def save_skin_weights(node: str, look: str | None = None,
                       prompter: bmaya.core.prompts.Prompter | None = None) -> list[str] | None:
     """Saves the weights of every skinned mesh in the rig's namespace to a look's weights folder in its asset, or to
     a folder the user picks when the asset folder doesn't exist. Skin weights belong to a look, and a built rig
-    doesn't record the look it wears yet, so look says which: the asset's only look for the rig's skeleton when left
-    out, and an error when it has several. Returns the files written, or None when cancelled."""
+    records the look it wears (RigModules D54), so look is only an override: the rig's look when left out, else the
+    asset's only look for the rig's skeleton, and an error when it has several. Returns the files written, or None
+    when cancelled."""
     info = rigmodules.query.get_rig_info(node)
     asset = find_asset(info.asset_id)
     handler = bmaya.maya.assethandlers.RigSkinWeightsHandler()
@@ -353,7 +403,7 @@ def save_skin_weights(node: str, look: str | None = None,
         folder = _ask_folder(_prompter(prompter), "Save Skin Weights: pick the weights folder")
         return handler.save(None, folder, namespace=info.namespace) if folder else None
 
-    look = _require_look(asset, info.rig_name, look)
+    look = _require_look(asset, info.rig_name, look, _worn_look(info))
     bmaya.maya.assethandlers.register()
     path = bmaya.core.asset.handlers.save(asset, "weights", look, namespace=info.namespace)
     bmaya.core.log.info(f"Saved the skin weights of {asset.id} look {look!r}: {path}")
@@ -372,7 +422,7 @@ def load_skin_weights(node: str, look: str | None = None,
         handler = bmaya.maya.assethandlers.RigSkinWeightsHandler()
         return handler.load(None, folder, namespace=info.namespace) if folder else None
 
-    look = _require_look(asset, info.rig_name, look)
+    look = _require_look(asset, info.rig_name, look, _worn_look(info))
     bmaya.maya.assethandlers.register()
     return bmaya.core.asset.handlers.load(asset, "weights", look, namespace=info.namespace)
 
@@ -385,8 +435,15 @@ def get_rig_looks(asset: bmaya.core.asset.Asset, rig: str) -> list[str]:
     return [look for look in asset.looks if asset.look_fits(look, rig)]
 
 
-def _require_look(asset: bmaya.core.asset.Asset, rig: str, look: str | None) -> str:
-    """look when given and the asset has it, else the one look the rig can wear. Raises AssetError otherwise."""
+def _worn_look(info: rigmodules.query.RigInfo) -> str | None:
+    """The name of the look the rig wears when it is a look of the rig's own asset, else None."""
+    return info.look.name if info.look is not None and info.look.asset_id == info.asset_id else None
+
+
+def _require_look(asset: bmaya.core.asset.Asset, rig: str, look: str | None, worn: str | None = None) -> str:
+    """look when given and the asset has it, else the look the rig wears (worn), else the one look the rig can wear.
+    Raises AssetError otherwise."""
+    look = look or worn
     if look is not None:
         asset.look(look)   # raises for a look the asset doesn't have
         return look

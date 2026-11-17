@@ -132,6 +132,40 @@ class LibraryBase(unittest.TestCase):
         return (self.cmds.getRigControls(root, side="Left")[0], self.cmds.getRigControls(root, side="Right")[0])
 
 
+class Looks(LibraryBase):
+    """The looks the session offers for the active rig (RigModules D54 phase 5). Applying one is assettools.apply_look,
+    tested with real files in test_maya_asset_tools.py."""
+
+    def test_the_rig_is_offered_the_looks_its_skeleton_can_wear(self):
+        self.hero_asset.add_look("default", [self.asset.SkeletonRef("default")])
+        self.hero_asset.add_look("head", [self.asset.SkeletonRef("face")])
+        self.hero_asset.add_look("winter", [self.asset.SkeletonRef("default")])
+        root = self.build(HERO)
+        session = self.browser.LibrarySession()
+        self.assertEqual(session.looks(), ["default", "winter"])
+        self.assertIsNone(session.worn_look())
+        self.assertEqual(self.query.get_rig_info(root).look, None)
+
+    def test_apply_look_goes_through_assettools_and_refuses_a_look_the_rig_cannot_wear(self):
+        self.hero_asset.add_look("default", [self.asset.SkeletonRef("default")])
+        self.hero_asset.add_look("head", [self.asset.SkeletonRef("face")])
+        root = self.build(HERO)
+        session = self.browser.LibrarySession()
+        with mock.patch.object(self.browser.bmaya.maya.assettools, "apply_look", return_value="hero:lookRoot") as apply_look:
+            self.assertEqual(session.apply_look("default"), "hero:lookRoot")
+            apply_look.assert_called_once_with(root, "default")
+            with self.assertRaisesRegex(RuntimeError, "no look 'head' that the rig 'game' can wear: default"):
+                session.apply_look("head")
+            apply_look.assert_called_once()
+
+    def test_looks_need_an_active_rig(self):
+        session = self.browser.LibrarySession()
+        with self.assertRaisesRegex(RuntimeError, "no active rig"):
+            session.looks()
+        with self.assertRaisesRegex(RuntimeError, "no active rig"):
+            session.apply_look("default")
+
+
 class Listing(LibraryBase):
 
     def test_with_no_rig_the_state_is_empty_with_a_reason_and_commands_say_so(self):

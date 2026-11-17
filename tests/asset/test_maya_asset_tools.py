@@ -885,6 +885,95 @@ class AssetTools(unittest.TestCase):
         self.assertEqual(self.cmds.ls(type="joint"), [])
         self.assertFalse(self.cmds.namespace(exists=":hero_game"))
 
+    # ---- looks on the rig (RigModules D54 phase 5) ----
+
+    def make_two_looks(self):
+        """The hero's rig game with two looks that have a model and weights: "default" is a box, "winter" a ball."""
+        cmds = self.cmds
+        self.make_buildable_asset()
+        self.make_look("default")
+        cmds.file(new=True, force=True)
+        self.tools.new_look(HERO, "winter")
+        ball = cmds.polySphere(name="ball_geo", constructionHistory=False)[0]
+        cmds.setRigMeshId(ball)
+        self.tools.save_model(HERO, "winter")
+        for look, mesh in (("default", "hero_game:box_geo"), ("winter", "hero_game:ball_geo")):
+            cmds.file(new=True, force=True)
+            rig_root = self.tools.build_rig(HERO, "game", look)   # a model with no weights yet: the meshes only
+            self.skin_box(mesh, namespace="hero_game")
+            self.tools.save_skin_weights(rig_root, look)
+        cmds.file(new=True, force=True)
+
+    def look_of(self, rig_root):
+        import rigmodules.query
+        return rigmodules.query.get_rig_info(rig_root).look
+
+    def test_build_rig_records_the_look_and_the_weight_tools_follow_it(self):
+        cmds = self.cmds
+        self.make_buildable_asset()
+        self.make_look()
+        rig_root = self.tools.build_rig(HERO, "game")
+        self.assertIsNone(self.look_of(rig_root), "a model with no weights is imported bare, and records no look")
+        self.skin_box("hero_game:box_geo", namespace="hero_game")
+        self.tools.save_skin_weights(rig_root)
+        cmds.file(new=True, force=True)
+
+        rig_root = self.tools.build_rig(HERO, "game")
+        look = self.look_of(rig_root)
+        self.assertEqual((look.asset_id, look.name), (HERO, "default"))
+        self.tools.new_look(HERO, "winter")
+        path = os.path.join(self.hero.folder, "looks", "default", "weights", "box_geo.json")
+        os.remove(path)
+        self.tools.save_skin_weights(rig_root)   # two looks now and none named: the one the rig wears
+        self.assertTrue(os.path.isfile(path))
+        self.assertEqual([m.split("|")[-1] for m in self.tools.load_skin_weights(rig_root)], ["hero_game:box_geo"])
+
+    def test_apply_look_swaps_the_rigs_look(self):
+        cmds = self.cmds
+        self.make_two_looks()
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        self.assertTrue(cmds.objExists("hero_game:box_geo"))
+        cmds.setAttr("hero_game:spine1_ctrl_c.rotateZ", 30)
+
+        look_root = self.tools.apply_look(rig_root, "winter")
+        self.assertEqual(look_root, "hero_game:lookRoot")
+        self.assertEqual(self.look_of(rig_root).name, "winter")
+        self.assertFalse(cmds.objExists("hero_game:box_geo"))
+        self.assertEqual(len(cmds.ls(type="skinCluster")), 1)
+        self.assertTrue(cmds.ls(cmds.listHistory("hero_game:ball_geo"), type="skinCluster"))
+        self.assertAlmostEqual(cmds.getAttr("hero_game:spine1_ctrl_c.rotateZ"), 30, places=5)
+        self.assertTrue(cmds.listRelatives("hero_game:ball_geo", parent=True), "the new mesh joins the rig's mesh group")
+
+        cmds.undo()
+        self.assertEqual(self.look_of(rig_root).name, "default")
+        self.assertTrue(cmds.objExists("hero_game:box_geo"))
+        self.assertTrue(cmds.ls(cmds.listHistory("hero_game:box_geo"), type="skinCluster"))
+
+    def test_apply_look_with_another_skeletons_weights_fails_and_leaves_the_rig_alone(self):
+        cmds = self.cmds
+        self.make_two_looks()
+        weights = os.path.join(self.hero.folder, "looks", "winter", "weights", "ball_geo.json")
+        data = self.read_json(weights)
+        data["skeletonHash"] = "0000000000000000"
+        with open(weights, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        with self.assertRaisesRegex(RuntimeError, "weight file is for skeleton 0000000000000000"):
+            self.tools.apply_look(rig_root, "winter")
+        self.assertEqual(self.look_of(rig_root).name, "default")
+        self.assertTrue(cmds.objExists("hero_game:box_geo"))
+        self.assertFalse(cmds.objExists("hero_game:ball_geo"), "the imported meshes are removed again")
+
+    def test_apply_look_needs_a_model_and_weights(self):
+        import bmaya.core.asset
+        self.make_two_looks()
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        self.tools.new_look(HERO, "empty")
+        with self.assertRaisesRegex(bmaya.core.asset.AssetError, "has no model file"):
+            self.tools.apply_look(rig_root, "empty")
+        with self.assertRaisesRegex(bmaya.core.asset.AssetError, "has no look 'summer'"):
+            self.tools.apply_look(rig_root, "summer")
+
     def test_rig_tools_need_a_rig_node(self):
         self.make_skeleton()
         with self.assertRaises(RuntimeError):

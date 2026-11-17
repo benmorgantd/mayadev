@@ -293,6 +293,33 @@ class LibrarySession:
         """The playback range, which an animation is saved over unless the caller says otherwise."""
         return int(cmds.playbackOptions(query=True, minTime=True)), int(cmds.playbackOptions(query=True, maxTime=True))
 
+    # ---- looks (RigModules D54 phase 5) ------------------------------------------------------------------
+    # Not a third kind of file in the list: a look is a model and its weights, not a library file with a meta block,
+    # so the view-model offers the active rig's looks and applying one. The window has no tab for them yet.
+
+    def looks(self) -> list[str]:
+        """The looks of the active rig's asset that its skeleton can wear (those whose look.json names it), sorted.
+        Raises RuntimeError with no active rig."""
+        self._require_rig()
+        return sorted(bmaya.maya.assettools.get_rig_looks(self._asset, self.rig_name))
+
+    def worn_look(self) -> str | None:
+        """The look the active rig wears, from its lookRoot, or None. Raises RuntimeError with no active rig."""
+        info = rigmodules.query.get_rig_info(self._require_rig())
+        return info.look.name if info.look is not None and info.look.asset_id == info.asset_id else None
+
+    def apply_look(self, name: str) -> str:
+        """Puts the active rig in the look, in one undo step (assettools.apply_look): the previous look's meshes go,
+        the controls and animation stay. Raises RuntimeError for no rig or a look the rig can't wear, and what
+        apply_look raises. Returns the lookRoot."""
+        rig_root = self._require_rig()
+        if name not in self.looks():
+            raise RuntimeError(f"{self.asset_id} has no look {name!r} that the rig {self.rig_name!r} can wear: "
+                               f"{', '.join(self.looks()) or 'none'}.")
+        look_root = bmaya.maya.assettools.apply_look(rig_root, name)
+        self.refresh()
+        return look_root
+
     # ---- commands -----------------------------------------------------------------------------------------
 
     def apply(self, mirror: bool = False, start_frame: float | None = None) -> list[str]:

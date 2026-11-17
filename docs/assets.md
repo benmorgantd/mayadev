@@ -336,10 +336,14 @@ library.filter_entries(entries, library.parse_query("tag:fist hand"))
 3. Picks the namespace, `namespace` or `{asset name}_{rig}` (`hero_game`), RigModules' own default, and refuses one that already holds a rig (`rigmodules.query.get_rigs`). A namespace holds one rig (RigModules D54), so this fails before the skeleton is created rather than in the build.
 4. Creates the skeleton's joints from its `skeleton.json` in the namespace (`cmds.loadRigSkeleton`).
 5. Builds: `cmds.createRigFromTemplate(*joints, template=..., asset=asset.id, namespace=...)`.
-6. Loads the rig's shape file when it has one. Then the look's model, imported into the same namespace, added to the rig's display layers with `rigmodules.displaylayers.add_meshes` and parented under its mesh group with `rigmodules.groups.parent_meshes`, and the look's skin weights onto the rig's joints.
+6. Loads the rig's shape file when it has one. Then the look, through `apply_look` (below) when it has a model and weight files, which records it on the rig. A look with a model and no weights yet has its meshes imported bare, and the rig records no look.
 7. Clears the selection and returns the rig root.
 
-A built rig carries its own asset id and rig name (the rig root's `assetId` and `rigName`), which the other tools read through `rigmodules.query`. Nothing parses node names. It does not record its look yet (RigModules D54 phase 5), so the tools that write a look's files, `save_skin_weights` and `load_skin_weights`, take the look: the one look the rig can wear when left out, an error when there are several.
+A built rig carries its own asset id and rig name (the rig root's `assetId` and `rigName`) and the look it wears (`RigInfo.look`, from its `lookRoot`), which the other tools read through `rigmodules.query`. Nothing parses node names. `save_skin_weights` and `load_skin_weights` use the look the rig wears, and `look` overrides it. For a rig that wears none they use the one look it can wear, and raise when there are several.
+
+### Putting a rig in a look
+
+`bmaya.maya.assettools.apply_look(node, look)` swaps the look of the rig that `node` belongs to (RigModules D54 phase 5, `docs/looks.md` there). It checks that the asset has the look, that its `look.json` names the rig's skeleton, and that it has a model and weight files. Then, as one undo step, it imports the model into the rig's namespace and calls `cmds.setRigLook` with the imported meshes and the weight files. RigModules matches each mesh to its file by `meshId`, fails the swap when a file's `skeletonHash` is not the rig's, deletes the previous look's meshes, names the new ones after their files and records the look on the rig. The new meshes then join the rig's mesh layer and group. A failed swap deletes the meshes it imported. The controls and the animation are not touched. Materials of the previous look stay in the scene.
 
 ## Tests
 

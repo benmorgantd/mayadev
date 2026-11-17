@@ -22,6 +22,7 @@ Python `maya.cmds` calls, with the module that makes them.
 | Command | Called from | Used for |
 |---|---|---|
 | `cmds.createRigFromTemplate(*joints, template=, asset=, namespace=)` | `assettools.build_rig` | Build a rig on the skeleton it just created. `build_rig` always passes `namespace`, because the skeleton goes in first: `{asset name}_{rig}`, the same as RigModules' default (D54) |
+| `cmds.setRigLook(rig_root, mesh=, file=, asset=, look=)` | `assettools.apply_look` | Put the rig in a look: the imported meshes and their weight files (RigModules D54 phase 5). Fails on a weight file with another skeleton's hash, deletes the previous look's meshes, records the look |
 | `cmds.rigJointMarkup(*joints, query=True)` and `remove=True` | Registry tools (Print and Remove Joint Markup, in `assettools`) | Inspect and clear joint markup |
 | `cmds.getRigControls(rig_root)` | Registry tool (Select All Controls, in `posetools`) | Every control of the active rig |
 | `cmds.getRigMirrorControl(control)` | Registry tool (Select Mirror Controls, in `posetools`) | The control on the other side |
@@ -60,7 +61,7 @@ Python `maya.cmds` calls, with the module that makes them.
 | `library.get_data_file_info(rig_root, files)`, `library.DataFileInfo` | `librarybrowser.read_file_infos` | What each library file holds, and which of its controls the rig lacks, in one command call (`getRigDataFileInfo`, D51) |
 | `library.set_data_file_meta(file, meta)` | `librarybrowser.LibrarySession.set_meta` | Edit a file's tags and description without loading it |
 | `skinweights.get_mesh_id(mesh)`, `get_skinned_meshes(namespace)`, `get_meshes(namespace)`, `read_file_mesh_id(path)` | `assethandlers.RigSkinWeightsHandler`, `assettools.save_model` | Find skinned meshes and match weight files by `meshId` |
-| `displaylayers.add_meshes(rig_root, nodes)`, `groups.parent_meshes(rig_root, nodes)` | `assettools.build_rig` | Put an imported model into the rig's display layers and mesh group |
+| `displaylayers.add_meshes(rig_root, nodes)`, `groups.parent_meshes(rig_root, nodes)` | `assettools.apply_look` | Put an imported model into the rig's display layers and mesh group |
 | `jointclip.write_fbx`, `read_fbx`, `capture_joint_clip` | `assethandlers.AnimClipHandler` | Clip FBX in and out, and capture a rig's export joints |
 | `jointclip.write_skeleton_fbx`, `check_skeleton_match` | `assethandlers.save_skeleton_export`, `assettools.check_clip_skeleton` | The skeleton export and its match check |
 
