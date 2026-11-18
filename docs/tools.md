@@ -199,6 +199,7 @@ Mark meshes in the model scene, before **Save Model...**, so every build imports
 | Tool | Select | Does |
 |---|---|---|
 | Print Joint Markup | joints | Prints each joint's markup JSON (`cmds.rigJointMarkup(query=True)`) |
+| Mirror Joints (L to R) | `*_L_JNT` joints | Mirrors each selected joint across YZ with mirror behavior onto a `*_R_JNT` joint (`assettools.mirror_joints`). Works on a flat set that Maya's Mirror Joint can't mirror in place, such as ribbon and twist joints under one parent. A joint whose parent is also selected goes under that parent's mirror. Any other parent is replaced by its `_R_JNT` counterpart, which must exist, or kept when it isn't a `_L_JNT` (a Center joint). The new joint keeps the markup and gets the opposite `side` (`cmds.rigJointMarkup(edit=True, side=)`). Refuses, changing nothing, when a name doesn't end in `_L_JNT`, the `_R_JNT` name exists or a parent's counterpart is missing. One undo step |
 | Remove Joint Markup | joints | Removes their markup (`cmds.rigJointMarkup(remove=True)`) |
 
 #### weights

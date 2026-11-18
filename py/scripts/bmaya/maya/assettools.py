@@ -629,6 +629,108 @@ def remove_joint_markup_interactive() -> None:
     cmds.rigJointMarkup(*_get_selected_joints(), remove=True)
 
 
+_MIRROR_SOURCE_SUFFIX = "_L_JNT"
+_MIRROR_TARGET_SUFFIX = "_R_JNT"
+_MIRROR_SIDES = {"Left": "Right", "Right": "Left"}
+
+
+def mirror_joints(joints: list[str]) -> list[str]:
+    """Mirrors each joint named ``*_L_JNT`` across YZ with mirror behavior, onto a joint named ``*_R_JNT`` that gets
+    the mirrored joint's markup side. Returns the new joints in the order of ``joints``.
+
+    Maya's own Mirror Joint tool mirrors a joint with its children, so a flat set of joints (ribbon and twist joints
+    under one parent) can't be mirrored in place. This does what a rigger does by hand: duplicates the joints under a
+    temporary root, mirrors the root, parents each mirrored joint to the mirror of its parent and renames it. A joint
+    whose parent is also in ``joints`` goes under that parent's mirror. Any other parent is replaced by its ``_R_JNT``
+    counterpart, which must exist, or kept when it has no ``_L_JNT`` name (a Center joint).
+
+    Nothing is changed when a joint isn't named ``_L_JNT``, its mirror name is taken, or a parent's counterpart is
+    missing. One undo step.
+    """
+    joints = [str(cmds.ls(joint, long=True)[0]) for joint in joints]
+    targets = _mirror_targets(joints)
+    cmds.undoInfo(openChunk=True, chunkName="mirrorJoints")
+    try:
+        return _mirror_joints(joints, targets)
+    finally:
+        cmds.undoInfo(closeChunk=True)
+
+
+def _mirror_targets(joints: list[str]) -> dict[str, tuple[str, str | None]]:
+    """Each joint's new short name and the existing node its mirror goes under (None: under the mirror of another
+    joint in ``joints``, or the world). Raises, changing nothing, when the set can't be mirrored."""
+    errors = []
+    chosen = set(joints)
+    new_names = {}
+    for joint in joints:
+        name = joint.rpartition("|")[2]
+        if not name.endswith(_MIRROR_SOURCE_SUFFIX):
+            errors.append(f"{name} isn't named *{_MIRROR_SOURCE_SUFFIX}.")
+            continue
+        new_name = name[:-len(_MIRROR_SOURCE_SUFFIX)] + _MIRROR_TARGET_SUFFIX
+        new_names[joint] = new_name
+        if cmds.objExists(new_name):
+            errors.append(f"{new_name} already exists.")
+    targets = {}
+    for joint, new_name in new_names.items():
+        parent = (cmds.listRelatives(joint, parent=True, fullPath=True) or [None])[0]
+        if parent is None or parent in chosen:
+            targets[joint] = (new_name, None)
+            continue
+        parent_name = parent.rpartition("|")[2]
+        if not parent_name.endswith(_MIRROR_SOURCE_SUFFIX):
+            targets[joint] = (new_name, parent)
+            continue
+        mirror_parent = parent_name[:-len(_MIRROR_SOURCE_SUFFIX)] + _MIRROR_TARGET_SUFFIX
+        if cmds.objExists(mirror_parent):
+            targets[joint] = (new_name, mirror_parent)
+        else:
+            errors.append(f"{new_name}'s parent {mirror_parent} doesn't exist.")
+    if len(set(new_names.values())) != len(new_names):
+        errors.append("Two joints have the same short name.")
+    if errors:
+        raise RuntimeError("Can't mirror the joints:\n" + "\n".join(errors))
+    return targets
+
+
+def _mirror_joints(joints: list[str], targets: dict[str, tuple[str, str | None]]) -> list[str]:
+    chosen = set(joints)
+    index_of = {joint: index for index, joint in enumerate(joints)}
+    # The temporary names carry no side and no namespace, so the mirror's search and replace turns exactly "a" into "b".
+    copy_prefix, mirror_prefix = "mirrorJointsTmp_a", "mirrorJointsTmp_b"
+    cmds.select(clear=True)
+    root = cmds.joint(name="mirrorJointsTmp_root")
+    copies = [cmds.duplicate(joint, parentOnly=True, name=f"{copy_prefix}{index}")[0] for index, joint in enumerate(joints)]
+    for index, joint in enumerate(joints):
+        parent = (cmds.listRelatives(joint, parent=True, fullPath=True) or [None])[0]
+        cmds.parent(copies[index], copies[index_of[parent]] if parent in chosen else root)
+    mirrored_root = cmds.mirrorJoint(root, mirrorYZ=True, mirrorBehavior=True,
+                                     searchReplace=(copy_prefix, mirror_prefix))[0]
+    for index, joint in enumerate(joints):
+        new_name, parent = targets[joint]
+        node = f"{mirror_prefix}{index}"
+        if parent is not None:
+            cmds.parent(node, parent)
+        elif (cmds.listRelatives(joint, parent=True) or [None])[0] is None:
+            cmds.parent(node, world=True)
+    cmds.delete(root, mirrored_root)
+    results = []
+    for index, joint in enumerate(joints):
+        new_name = targets[joint][0]
+        results.append(cmds.ls(cmds.rename(f"{mirror_prefix}{index}", new_name), long=True)[0])
+    for node in results:
+        side = cmds.rigJointMarkup(node, query=True, side=True)[0]
+        if side:
+            cmds.rigJointMarkup(node, edit=True, side=_MIRROR_SIDES.get(side, side))
+    cmds.select(results, replace=True)
+    return results
+
+
+def mirror_joints_interactive() -> None:
+    """Mirrors the selected ``*_L_JNT`` joints onto ``*_R_JNT`` joints (see ``mirror_joints``)."""
+    mirror_joints(_get_selected_joints())
+
+
 def _get_selected_joints() -> list[str]:
     joints = cmds.ls(selection=True, type="joint")
     if not joints:

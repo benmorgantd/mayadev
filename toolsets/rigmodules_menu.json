@@ -96,6 +96,11 @@
                 },
                 {
                     "type": "tool",
+                    "tool": "rigmodules.joints.mirror_joints",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
                     "tool": "rigmodules.joints.remove_markup",
                     "enabled": true
                 }

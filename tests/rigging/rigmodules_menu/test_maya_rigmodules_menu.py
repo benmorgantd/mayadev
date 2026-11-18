@@ -69,7 +69,7 @@ class MenuLayout(unittest.TestCase):
     def test_every_tool_is_in_the_menu_once(self):
         ids = [item.tool for item in _layout().tool_items()]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(len(ids), 42)
+        self.assertEqual(len(ids), 43)
 
     def test_the_asset_submenu_adds_rigs_looks_and_skeletons(self):
         # A variant became a rig and a look (RigModules D54), and a skeleton is saved and loaded as its skeleton file.
@@ -172,6 +172,13 @@ class MenuScripts(unittest.TestCase):
         lines = out.getvalue().splitlines()
         self.assertEqual(len(lines), len(self.joints))
         self.assertIn('hero:spine1_jnt: {"export":true,"markupVersion":1,"side":"Center","skin":true,"usage":"spine1"}', lines)
+
+    def test_mirror_joints_mirrors_the_selected_left_joints(self):
+        self.cmds.select(clear=True)
+        self.cmds.joint(name="arm_twist_00_L_JNT", position=(3, 10, 0))
+        self.run_tool("Mirror Joints (L to R)", ["arm_twist_00_L_JNT"])
+        self.assertEqual(self.selected(), ["arm_twist_00_R_JNT"])
+        self.assertEqual([round(v, 4) for v in self.cmds.xform("arm_twist_00_R_JNT", query=True, worldSpace=True, translation=True)], [-3, 10, 0])
 
     def test_remove_joint_markup(self):
         self.run_tool("Remove Joint Markup", self.joints[:1])

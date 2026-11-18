@@ -1158,5 +1158,111 @@ class AssetTools(unittest.TestCase):
         self.assertEqual(self.cmds.ls(type="joint"), [])
 
 
+class MirrorJoints(unittest.TestCase):
+    """mirror_joints: a flat set of ribbon and twist joints (which Maya's Mirror Joint can't mirror in place) onto the
+    other side. The joints sit under shoulder_00_L_JNT, whose R counterpart exists."""
+
+    def setUp(self):
+        from maya import cmds
+        import bmaya.maya.assettools
+
+        self.cmds = cmds
+        self.tools = bmaya.maya.assettools
+        cmds.file(new=True, force=True)
+        cmds.undoInfo(state=True, infinity=True)
+        self.shoulder_l = self.joint("shoulder_00_L_JNT", (5, 10, 0), None, "Left", "shoulder")
+        self.shoulder_r = self.joint("shoulder_00_R_JNT", (-5, 10, 0), None, "Right", "shoulder")
+        self.ribbon_0 = self.joint("ribbon_00_L_JNT", (8, 10, 2), self.shoulder_l, "Left", "ribbon0")
+        self.ribbon_1 = self.joint("ribbon_01_L_JNT", (12, 10, 3), self.shoulder_l, "Left", "ribbon1")
+        self.tip = self.joint("tip_00_L_JNT", (14, 11, 3), self.ribbon_1, "Left", "tip")
+
+    def joint(self, name, position, parent, side, usage):
+        cmds = self.cmds
+        cmds.select(clear=True)
+        joint = cmds.joint(name=name, position=position)
+        if parent:
+            joint = cmds.parent(joint, parent)[0]
+        cmds.rigJointMarkup(joint, usage=usage, side=side, export=True, skin=True)
+        return joint
+
+    def position(self, joint):
+        return [round(v, 4) for v in self.cmds.xform(joint, query=True, worldSpace=True, translation=True)]
+
+    def test_mirrors_a_flat_set_across_yz_under_the_mirror_parent(self):
+        result = self.tools.mirror_joints([self.ribbon_0, self.ribbon_1])
+        self.assertEqual([r.rpartition("|")[2] for r in result], ["ribbon_00_R_JNT", "ribbon_01_R_JNT"])
+        self.assertEqual(self.position("ribbon_00_R_JNT"), [-8, 10, 2])
+        self.assertEqual(self.position("ribbon_01_R_JNT"), [-12, 10, 3])
+        for name in ("ribbon_00_R_JNT", "ribbon_01_R_JNT"):
+            self.assertEqual(self.cmds.listRelatives(name, parent=True), ["shoulder_00_R_JNT"])
+        self.assertEqual(self.position(self.ribbon_0), [8, 10, 2])
+
+    def test_a_selected_chain_keeps_its_hierarchy(self):
+        self.tools.mirror_joints([self.ribbon_1, self.tip])
+        self.assertEqual(self.cmds.listRelatives("tip_00_R_JNT", parent=True), ["ribbon_01_R_JNT"])
+        self.assertEqual(self.position("tip_00_R_JNT"), [-14, 11, 3])
+
+    def test_mirror_behavior_turns_the_joint_half_a_turn_about_x_with_no_negative_scale(self):
+        self.tools.mirror_joints([self.ribbon_0])
+        matrix = self.cmds.xform("ribbon_00_R_JNT", query=True, worldSpace=True, matrix=True)
+        # Behavior keeps the bone axis and flips the other two, the same as Maya's own Mirror Joint on an identity joint.
+        self.assertEqual([round(v, 4) + 0 for v in matrix[0:3] + matrix[4:7] + matrix[8:11]], [1, 0, 0, 0, -1, 0, 0, 0, -1])
+        self.assertEqual([round(v, 4) for v in self.cmds.getAttr("ribbon_00_R_JNT.scale")[0]], [1, 1, 1])
+
+    def test_markup_gets_the_mirrored_side_and_keeps_the_rest(self):
+        self.tools.mirror_joints([self.ribbon_0])
+        self.assertEqual(self.cmds.rigJointMarkup("ribbon_00_R_JNT", query=True, side=True), ["Right"])
+        self.assertEqual(self.cmds.rigJointMarkup("ribbon_00_R_JNT", query=True, usage=True), ["ribbon0"])
+        self.assertEqual(self.cmds.rigJointMarkup("ribbon_00_R_JNT", query=True, export=True), ["true"])
+        self.assertEqual(self.cmds.rigJointMarkup("ribbon_00_L_JNT", query=True, side=True), ["Left"])
+
+    def test_a_center_parent_is_kept(self):
+        cmds = self.cmds
+        cmds.select(clear=True)
+        spine = cmds.joint(name="spine_00_M_JNT", position=(0, 5, 0))
+        cmds.select(clear=True)
+        twist = cmds.parent(cmds.joint(name="twist_00_L_JNT", position=(3, 5, 0)), spine)[0]
+        self.tools.mirror_joints([twist])
+        self.assertEqual(cmds.listRelatives("twist_00_R_JNT", parent=True), ["spine_00_M_JNT"])
+        self.assertEqual(self.position("twist_00_R_JNT"), [-3, 5, 0])
+
+    def test_namespaced_joints_mirror_into_the_same_namespace(self):
+        cmds = self.cmds
+        cmds.namespace(add="skel")
+        cmds.select(clear=True)
+        left = cmds.joint(name="skel:arm_L_JNT", position=(4, 8, 1))
+        self.tools.mirror_joints([left])
+        self.assertTrue(cmds.objExists("skel:arm_R_JNT"))
+        self.assertEqual(self.position("skel:arm_R_JNT"), [-4, 8, 1])
+
+    def test_no_temporary_nodes_are_left(self):
+        before = set(self.cmds.ls(type="joint"))
+        self.tools.mirror_joints([self.ribbon_0, self.ribbon_1])
+        self.assertEqual(set(self.cmds.ls(type="joint")) - before, {"ribbon_00_R_JNT", "ribbon_01_R_JNT"})
+
+    def test_it_is_one_undo_step(self):
+        self.tools.mirror_joints([self.ribbon_0, self.ribbon_1, self.tip])
+        self.cmds.undo()
+        self.assertEqual(self.cmds.ls("*_R_JNT", type="joint"), ["shoulder_00_R_JNT"])
+        self.cmds.redo()
+        self.assertTrue(self.cmds.objExists("tip_00_R_JNT"))
+
+    def test_refusals_change_nothing(self):
+        cmds = self.cmds
+        cmds.select(clear=True)
+        center = cmds.joint(name="neck_00_M_JNT", position=(0, 12, 0))
+        self.joint("ribbon_00_R_JNT", (-1, 1, 1), None, "Right", "taken")
+        orphan = self.joint("orphan_00_L_JNT", (3, 3, 3), None, "Left", "orphan")
+        lonely_parent = self.joint("elbow_00_L_JNT", (3, 3, 3), None, "Left", "elbow")
+        child = self.joint("wrist_00_L_JNT", (4, 3, 3), lonely_parent, "Left", "wrist")
+        before = set(cmds.ls(type="joint"))
+        for joints, message in (([center], "neck_00_M_JNT isn't named"), ([self.ribbon_0], "ribbon_00_R_JNT already exists"),
+                                ([child], "elbow_00_R_JNT doesn't exist")):
+            with self.assertRaisesRegex(RuntimeError, message):
+                self.tools.mirror_joints(joints)
+        self.assertEqual(set(cmds.ls(type="joint")), before)
+        self.assertTrue(orphan)
+
+
 if __name__ == "__main__":
     unittest.main()
