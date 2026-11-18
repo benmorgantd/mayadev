@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import dataclasses
 import os
+import re
 import tempfile
 import typing
 
@@ -729,6 +730,81 @@ def _mirror_joints(joints: list[str], targets: dict[str, tuple[str, str | None]]
 def mirror_joints_interactive() -> None:
     """Mirrors the selected ``*_L_JNT`` joints onto ``*_R_JNT`` joints (see ``mirror_joints``)."""
     mirror_joints(_get_selected_joints())
+
+
+@dataclasses.dataclass(frozen=True)
+class TwistJointSettings:
+    """What Add Twist Joints asks for. ``name`` is the joint name before its number and side, so ``shoulderTwist``
+    gives ``shoulderTwist_00_L_JNT``, and the markup usage ``shoulderTwist_00``."""
+
+    name: str = "twist"
+    count: int = 3
+    skin: bool = True
+    include_ends: bool = True
+
+
+_JOINT_NAME = re.compile(r"^(?P<namespace>.*:)?(?P<base>.+)_(?P<side>[LRM])_JNT$")
+
+
+def add_twist_joints(start: str, end: str, count: int, name: str, skin: bool = True,
+                     include_ends: bool = True) -> list[str]:
+    """Creates ``count`` joints in a line between two joints and parents them to ``start``, for twist and ribbon
+    joints and a ribbon's control joints.
+
+    With ``include_ends`` the first joint sits on ``start`` and the last on ``end`` (``count`` is at least 2), the
+    spacing of a twist chain. Without it they are spread strictly between the two, at 1/(count+1), 2/(count+1) and so
+    on. The joints have no rotation or joint orient, so they share ``start``'s orientation. They are named
+    ``{name}_{NN}_{side}_JNT`` with the side and namespace of ``start``'s name, which must end in ``_L_JNT``,
+    ``_R_JNT`` or ``_M_JNT``, and get markup copied from ``start`` (its side) with the usage ``{name}_{NN}``, export
+    on and ``skin`` as given, when ``start`` has markup. Nothing is created when a name is taken. One undo step.
+    Returns the new joints in order."""
+    minimum = 2 if include_ends else 1
+    if count < minimum:
+        raise RuntimeError(f"Make at least {minimum} joint(s).")
+    if not name or not re.fullmatch(r"[A-Za-z][A-Za-z0-9]*", name):
+        raise RuntimeError(f"{name!r} isn't a name: use letters and digits, starting with a letter.")
+    match = _JOINT_NAME.match(start.rpartition("|")[2])
+    if match is None:
+        raise RuntimeError(f"{start} isn't named *_L_JNT, *_R_JNT or *_M_JNT.")
+    prefix, side = match.group("namespace") or "", match.group("side")
+    names = [f"{prefix}{name}_{index:02d}_{side}_JNT" for index in range(count)]
+    taken = [joint for joint in names if cmds.objExists(joint)]
+    if taken:
+        raise RuntimeError("Can't add the joints: " + ", ".join(taken) + " already exist(s).")
+    first = cmds.xform(start, query=True, worldSpace=True, translation=True)
+    last = cmds.xform(end, query=True, worldSpace=True, translation=True)
+    markup_side = cmds.rigJointMarkup(start, query=True, side=True)[0]
+    radius = cmds.getAttr(f"{start}.radius")
+    cmds.undoInfo(openChunk=True, chunkName="addTwistJoints")
+    try:
+        joints = []
+        for index, joint_name in enumerate(names):
+            fraction = index / (count - 1) if include_ends else (index + 1) / (count + 1)
+            cmds.select(clear=True)
+            joint = cmds.joint(name=joint_name, radius=radius)
+            # relative: a plain parent keeps the world orientation by writing a joint orient, and these share start's
+            joint = cmds.parent(joint, start, relative=True)[0]
+            cmds.xform(joint, worldSpace=True, translation=[a + (b - a) * fraction for a, b in zip(first, last)])
+            if markup_side:
+                cmds.rigJointMarkup(joint, usage=f"{name}_{index:02d}", side=markup_side, export=True, skin=skin)
+            joints.append(cmds.ls(joint, long=True)[0])
+        cmds.select(joints, replace=True)
+    finally:
+        cmds.undoInfo(closeChunk=True)
+    return joints
+
+
+def add_twist_joints_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> list[str] | None:
+    """Select the start joint, then the end joint, and fill in a form: the joints get created between them
+    (``add_twist_joints``). Returns the new joints, or None when cancelled."""
+    prompter = _prompter(prompter)
+    selected = cmds.ls(orderedSelection=True, type="joint", long=True)
+    if len(selected) != 2:
+        raise RuntimeError("Select the start joint, then the end joint.")
+    settings = prompter.ask_form("Add Twist Joints", TwistJointSettings())
+    if settings is None:
+        return None
+    return add_twist_joints(selected[0], selected[1], **dataclasses.asdict(settings))
 
 
 def _get_selected_joints() -> list[str]:

@@ -1264,5 +1264,115 @@ class MirrorJoints(unittest.TestCase):
         self.assertTrue(orphan)
 
 
+class AddTwistJoints(unittest.TestCase):
+    """add_twist_joints: n joints in a line between a start and an end joint, parented to the start."""
+
+    def setUp(self):
+        from maya import cmds
+        import bmaya.maya.assettools
+
+        self.cmds = cmds
+        self.tools = bmaya.maya.assettools
+        cmds.file(new=True, force=True)
+        cmds.undoInfo(state=True, infinity=True)
+        cmds.select(clear=True)
+        self.start = cmds.joint(name="shoulder_00_L_JNT", position=(0, 10, 0))
+        cmds.rigJointMarkup(self.start, usage="shoulder", side="Left", export=True, skin=True)
+        self.end = cmds.joint(name="elbow_00_L_JNT", position=(8, 10, 4))
+        cmds.joint(self.start, edit=True, orientJoint="xyz", secondaryAxisOrient="yup", zeroScaleOrient=True)
+
+    def position(self, joint):
+        return [round(v, 4) for v in self.cmds.xform(joint, query=True, worldSpace=True, translation=True)]
+
+    def prompter(self, *answers):
+        import bmaya.core.prompts
+        return bmaya.core.prompts.ScriptedPrompter(answers)
+
+    def test_the_ends_are_included_by_default_and_the_rest_are_evenly_spaced(self):
+        joints = self.tools.add_twist_joints(self.start, self.end, 5, "shoulderTwist")
+        self.assertEqual([j.rpartition("|")[2] for j in joints], [f"shoulderTwist_0{i}_L_JNT" for i in range(5)])
+        self.assertEqual([self.position(j) for j in joints],
+                         [[0, 10, 0], [2, 10, 1], [4, 10, 2], [6, 10, 3], [8, 10, 4]])
+
+    def test_without_the_ends_they_sit_strictly_between(self):
+        joints = self.tools.add_twist_joints(self.start, self.end, 3, "rib", include_ends=False)
+        self.assertEqual([self.position(j) for j in joints], [[2, 10, 1], [4, 10, 2], [6, 10, 3]])
+
+    def test_they_are_children_of_the_start_with_its_orientation(self):
+        for joint in self.tools.add_twist_joints(self.start, self.end, 3, "t"):
+            self.assertEqual(self.cmds.listRelatives(joint, parent=True), ["shoulder_00_L_JNT"])
+            self.assertEqual(self.cmds.getAttr(f"{joint}.rotate")[0], (0, 0, 0))
+            self.assertEqual(self.cmds.getAttr(f"{joint}.jointOrient")[0], (0, 0, 0))
+
+    def test_they_lie_on_the_start_joints_bone_axis_when_it_aims_at_the_end(self):
+        for joint in self.tools.add_twist_joints(self.start, self.end, 4, "t"):
+            local = self.cmds.getAttr(f"{joint}.translate")[0]
+            self.assertAlmostEqual(local[1], 0, places=4)
+            self.assertAlmostEqual(local[2], 0, places=4)
+
+    def test_markup_copies_the_side_and_numbers_the_usage(self):
+        joints = self.tools.add_twist_joints(self.start, self.end, 2, "shoulderTwist", skin=False)
+        self.assertEqual(self.cmds.rigJointMarkup(joints[1], query=True, usage=True), ["shoulderTwist_01"])
+        self.assertEqual(self.cmds.rigJointMarkup(joints[1], query=True, side=True), ["Left"])
+        self.assertEqual(self.cmds.rigJointMarkup(joints[1], query=True, skin=True), ["false"])
+        self.assertEqual(self.cmds.rigJointMarkup(joints[1], query=True, export=True), ["true"])
+
+    def test_a_start_without_markup_gives_joints_without_markup(self):
+        self.cmds.rigJointMarkup(self.start, remove=True)
+        joints = self.tools.add_twist_joints(self.start, self.end, 2, "t")
+        self.assertEqual(self.cmds.rigJointMarkup(joints[0], query=True, usage=True), [""])
+
+    def test_the_new_joints_are_selected_and_it_is_one_undo_step(self):
+        joints = self.tools.add_twist_joints(self.start, self.end, 3, "t")
+        self.assertEqual(self.cmds.ls(selection=True, long=True), joints)
+        self.cmds.undo()
+        self.assertEqual(self.cmds.ls("t_*", type="joint"), [])
+        self.cmds.redo()
+        self.assertEqual(len(self.cmds.ls("t_*", type="joint")), 3)
+
+    def test_a_namespace_and_a_right_side_carry_over(self):
+        cmds = self.cmds
+        cmds.namespace(add="skel")
+        cmds.select(clear=True)
+        start = cmds.joint(name="skel:arm_00_R_JNT", position=(0, 0, 0))
+        end = cmds.joint(name="skel:arm_01_R_JNT", position=(-6, 0, 0))
+        joints = self.tools.add_twist_joints(start, end, 3, "armTwist")
+        self.assertEqual([j.rpartition("|")[2] for j in joints], [f"skel:armTwist_0{i}_R_JNT" for i in range(3)])
+        self.assertEqual(self.position(joints[1]), [-3, 0, 0])
+
+    def test_refusals_create_nothing(self):
+        cmds = self.cmds
+        cmds.select(clear=True)
+        cmds.joint(name="t_01_L_JNT", position=(1, 1, 1))
+        cmds.select(clear=True)
+        plain = cmds.joint(name="plain", position=(0, 0, 0))
+        before = set(cmds.ls(type="joint"))
+        for args, message in (((self.start, self.end, 1, "t"), "at least 2"),
+                              ((self.start, self.end, 0, "t", True, False), "at least 1"),
+                              ((self.start, self.end, 3, "t"), "t_01_L_JNT already exist"),
+                              ((self.start, self.end, 3, "bad name"), "isn't a name"),
+                              ((plain, self.end, 3, "t"), "plain isn't named")):
+            with self.assertRaisesRegex(RuntimeError, message):
+                self.tools.add_twist_joints(*args)
+        self.assertEqual(set(cmds.ls(type="joint")), before)
+
+    def test_the_tool_needs_exactly_two_selected_joints(self):
+        self.cmds.select(self.start, replace=True)
+        with self.assertRaisesRegex(RuntimeError, "start joint, then the end joint"):
+            self.tools.add_twist_joints_interactive()
+
+    def test_the_tool_uses_the_selection_order_and_the_form(self):
+        self.cmds.select(self.start, self.end, replace=True)
+        settings = self.tools.TwistJointSettings(name="tw", count=3, skin=False)
+        joints = self.tools.add_twist_joints_interactive(self.prompter(settings))
+        self.assertEqual(len(joints), 3)
+        self.assertEqual(self.cmds.listRelatives(joints[0], parent=True), ["shoulder_00_L_JNT"])
+
+    def test_a_cancelled_form_creates_nothing(self):
+        self.cmds.select(self.start, self.end, replace=True)
+        self.assertIsNone(self.tools.add_twist_joints_interactive(self.prompter(None)))
+        self.assertEqual(self.cmds.ls("*tw*", type="joint"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

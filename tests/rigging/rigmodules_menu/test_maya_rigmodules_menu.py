@@ -69,7 +69,7 @@ class MenuLayout(unittest.TestCase):
     def test_every_tool_is_in_the_menu_once(self):
         ids = [item.tool for item in _layout().tool_items()]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(len(ids), 43)
+        self.assertEqual(len(ids), 44)
 
     def test_the_asset_submenu_adds_rigs_looks_and_skeletons(self):
         # A variant became a rig and a look (RigModules D54), and a skeleton is saved and loaded as its skeleton file.
@@ -172,6 +172,18 @@ class MenuScripts(unittest.TestCase):
         lines = out.getvalue().splitlines()
         self.assertEqual(len(lines), len(self.joints))
         self.assertIn('hero:spine1_jnt: {"export":true,"markupVersion":1,"side":"Center","skin":true,"usage":"spine1"}', lines)
+
+    def test_add_twist_joints_fills_in_the_form_and_adds_joints_between_the_selection(self):
+        import bmaya.maya.assettools
+        cmds = self.cmds
+        cmds.select(clear=True)
+        start = cmds.joint(name="up_00_L_JNT", position=(0, 0, 0))
+        end = cmds.joint(name="up_01_L_JNT", position=(8, 0, 0))
+        settings = bmaya.maya.assettools.TwistJointSettings(name="upTwist", count=5)
+        with self.answers(settings):
+            self.run_tool("Add Twist Joints...", [start, end])
+        self.assertEqual(sorted(j for j in cmds.ls(type="joint") if j.startswith("upTwist")), [f"upTwist_0{i}_L_JNT" for i in range(5)])
+        self.assertEqual(len(cmds.listRelatives(start, children=True)), 6)
 
     def test_mirror_joints_mirrors_the_selected_left_joints(self):
         self.cmds.select(clear=True)

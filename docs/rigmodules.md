@@ -23,7 +23,7 @@ Python `maya.cmds` calls, with the module that makes them.
 |---|---|---|
 | `cmds.createRigFromTemplate(*joints, template=, asset=, namespace=)` | `assettools.build_rig` | Build a rig on the skeleton it just created. `build_rig` always passes `namespace`, because the skeleton goes in first: `{asset name}_{rig}`, the same as RigModules' default (D54) |
 | `cmds.setRigLook(rig_root, mesh=, file=, asset=, look=)` | `assettools.apply_look` | Put the rig in a look: the imported meshes and their weight files (RigModules D54 phase 5). Fails on a weight file with another skeleton's hash, deletes the previous look's meshes, records the look |
-| `cmds.rigJointMarkup(*joints, query=True)`, `edit=True, side=` and `remove=True` | Registry tools (Print and Remove Joint Markup, and Mirror Joints, in `assettools`) | Inspect, clear and mirror joint markup |
+| `cmds.rigJointMarkup(*joints, query=True)`, `edit=True, side=` and `remove=True` | Registry tools (Print and Remove Joint Markup, Mirror Joints and Add Twist Joints, in `assettools`) | Inspect, clear, mirror and create joint markup |
 | `cmds.getRigControls(rig_root)` | Registry tool (Select All Controls, in `posetools`) | Every control of the active rig |
 | `cmds.getRigMirrorControl(control)` | Registry tool (Select Mirror Controls, in `posetools`) | The control on the other side |
 | `cmds.mirrorRigControlShapes(rig_root, leftToRight=)` | Registry tools (Mirror Shapes, in `assettools`) | Copy shapes across sides |

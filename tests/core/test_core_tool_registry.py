@@ -100,7 +100,7 @@ class RepoFiles(TempDirTest):
         registry = tr.read_registry(os.path.join(TOOLS, "master_tool_registry.json"))
         rig = tr.read_layout(os.path.join(TOOLS, "rigmodules_menu.json"), registry.tools)
         self.assertEqual([i.label for i in rig.items], ["panels", "asset", "mesh", "joints", "weights", "shapes", "control", "pose", "clip"])
-        self.assertEqual(len(list(rig.tool_items())), 43)
+        self.assertEqual(len(list(rig.tool_items())), 44)
         bmaya = tr.read_layout(os.path.join(TOOLS, "bmaya_menu.json"), registry.tools)
         dev = [i for i in bmaya.items if isinstance(i, tr.Submenu) and i.label == "dev"][0]
         self.assertEqual([i.tool for i in dev.items], ["bmaya.dev.reload_rigmodules", "bmaya.dev.unload_rigmodules", "bmaya.dev.reload_menu"])
