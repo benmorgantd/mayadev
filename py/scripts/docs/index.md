@@ -15,5 +15,4 @@ Where to read instead:
 Still here:
 
 * [Setup guide (deprecated)](guides/Mayadev Env Setup.md)
-* [Asset layout guide (deprecated)](guides/Asset Layout.md)
 * [Generated API reference](maya/eventsregistry.md): module and function docstrings, written by `batch/docgen`

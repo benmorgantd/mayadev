@@ -6,7 +6,7 @@
 
 ## Environment variables
 Set these as user environment variables, or in `documents\maya\2026\Maya.env`. Maya.env only fills in a variable the system doesn't already set, so set each one in one place.
-- `RIGGING_PROJECT_DIR` : The root of every game's projects, and the root asset ids are relative to (see [Asset Layout](Asset Layout.md))
+- `RIGGING_PROJECT_DIR` : The root of every game's projects, and the root asset ids are relative to (see `docs/assets.md`)
 - `MAYADEV_ROOT` : This is where your mayadev repo is installed
 - `RIGMODULES_PLUGIN` (optional) : The `RigModules.mll` that startup loads. Defaults to the plugin name `RigModules`, which only works once the plugin is on `MAYA_PLUG_IN_PATH`. Point it at a copy of the build, not `cpp\x64\Release\RigModules.mll` itself: a loaded plugin locks the file, so the next build would fail.
 

@@ -62,7 +62,7 @@ A change updates its owning page **in the same change** when it touches anything
 
 `py/scripts/docs/` with `py/scripts/mkdocs.yml` and the generator `batch/docgen` is deprecated. This folder is the maintained documentation.
 
-- **Guides:** `guides/Mayadev Env Setup.md` and `guides/Asset Layout.md` are replaced by [`setup.md`](setup.md), [`tools.md`](tools.md), [`assets.md`](assets.md) and [`clips.md`](clips.md). Each carries a deprecation banner and is no longer edited. Fix this folder's pages, not those.
+- **Guides:** `guides/Mayadev Env Setup.md` is replaced by [`setup.md`](setup.md), [`tools.md`](tools.md), [`assets.md`](assets.md) and [`clips.md`](clips.md). It carries a deprecation banner and is no longer edited. The old Asset Layout guide is deleted (its content is in `assets.md`). Fix this folder's pages, not those.
 - **Generated API pages:** they have no replacement yet, so they stay as the per-function reference. They are not extended: no new pages by hand, and the generator is not changed except to keep it running. It logs a deprecation warning when it runs.
 - **Index and config:** `docs/index.md` and `mkdocs.yml` say the site is deprecated and point here.
 - **Removing it** (the site, `mkdocs.yml`, `batch/docgen` and the mkdocs install) is a later step, when the API pages are no longer wanted. Nothing in the code imports any of it.

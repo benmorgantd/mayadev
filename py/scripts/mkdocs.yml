@@ -24,7 +24,6 @@ nav:
   - Home: index.md
   - Manual Guides:
       - Mayadev Env Setup: guides/Mayadev Env Setup.md
-      - Asset Layout: guides/Asset Layout.md
   - API Reference:
       - Core:
           - Constants: core/constants.md
