@@ -9,6 +9,7 @@ Run with tests/asset/run.bat.
 import dataclasses
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -1064,7 +1065,7 @@ class AssetTools(unittest.TestCase):
     def test_asset_id_dialog_starts_with_the_active_rig_asset(self):
         self.build_outside_the_asset(HERO)
         self.cmds.select(clear=True)
-        answers = self.answers(HERO, self.template, "body", "default")
+        answers = self.answers(HERO, self.template, "body", "default", "none")
         self.tools.new_rig_interactive(prompter=answers)
         self.assertEqual(answers.asked[0].default, HERO)
         self.assertEqual(answers.asked[2].default, "game", "the template's rigName is offered as the rig's name")
@@ -1075,7 +1076,7 @@ class AssetTools(unittest.TestCase):
 
     def test_new_rig_and_new_look_take_the_assets_only_skeleton_and_choose_between_several(self):
         self.tools.save_skeleton(HERO, joints=self.make_skeleton())
-        self.tools.new_rig_interactive(prompter=self.answers(HERO, self.template, "game"))   # one skeleton: not asked
+        self.tools.new_rig_interactive(prompter=self.answers(HERO, self.template, "game", "none"))   # one skeleton: not asked
         self.assertEqual(self.read_json(self.hero.path("riginfo", "game"))["skeleton"], "default")
         look = self.answers(HERO, "default")
         self.tools.new_look_interactive(prompter=look)
@@ -1090,7 +1091,8 @@ class AssetTools(unittest.TestCase):
         self.assertEqual(self.read_json(self.hero.path("lookinfo", "winter"))["skeletons"], ["face"])
 
     def test_cancelled_new_rig_and_new_look_write_nothing(self):
-        for answers in ((None,), (HERO, None), (HERO, self.template, None), (HERO, self.template, "game", None)):
+        for answers in ((None,), (HERO, None), (HERO, self.template, None), (HERO, self.template, "game", None),
+                        (HERO, self.template, "game", "default", None)):
             self.tools.new_rig_interactive(prompter=self.answers(*answers))
         for answers in ((None,), (HERO, None), (HERO, "default", None)):
             self.tools.new_look_interactive(prompter=self.answers(*answers))
@@ -1156,6 +1158,252 @@ class AssetTools(unittest.TestCase):
         self.cmds.file(new=True, force=True)
         self.tools.build_rig_interactive(prompter=self.answers(HERO, None))   # cancelled at the look: nothing built
         self.assertEqual(self.cmds.ls(type="joint"), [])
+
+    # ---- attachments (RigModules D55) ----
+
+    def make_joint_chain(self, usages, heights, chained=True):
+        """Marked joints at the given heights: a chain, or unparented roots (a face's joints hang off no joint)."""
+        cmds = self.cmds
+        joints = []
+        for usage, height in zip(usages, heights):
+            if chained and joints:
+                cmds.select(joints[-1], replace=True)
+            else:
+                cmds.select(clear=True)
+            joint = cmds.joint(name=f"{usage}_jnt", position=(0, height, 0))
+            cmds.rigJointMarkup(joint, usage=usage, side="Center", export=True, skin=True)
+            joints.append(joint)
+        return joints
+
+    def make_attachable_asset(self):
+        """The hero with the rigs body (skeleton default: a, b, c) and face (skeleton face: n, f_a, f_b), the face
+        attached to the body. The face template is RigModules' attach_face fixture: its chain starts on the body's
+        fkchain_1.end and its neck_copy follows fkchain_1.index_1. Skeletons are saved, the scene is new."""
+        import bmaya.core.asset
+        body = {"rigVersion": 1, "rigTemplateName": "AttachBody", "rigName": "body", "rigAuthor": "tests",
+                "rigModules": [{"moduleType": "FkChain", "name": "fkchain_1", "shapeType": "Box", "side": "Center",
+                                "moduleArgs": {"joints": [["Center", "a"], ["Center", "b"], ["Center", "c"]]}}]}
+        face = {"rigVersion": 1, "rigTemplateName": "AttachFace", "rigName": "face", "rigAuthor": "tests",
+                "rigModules": [
+                    {"moduleType": "FkChain", "name": "face_chain", "shapeType": "Box", "side": "Center",
+                     "moduleArgs": {"joints": [["Center", "f_a"], ["Center", "f_b"]]},
+                     "parentStructure": {"start": "parent:fkchain_1.end"}},
+                    {"moduleType": "FkChain", "name": "neck_copy", "shapeType": "Box", "side": "Center",
+                     "moduleArgs": {"joints": [["Center", "n"]]}}],
+                "constraints": [{"name": "neck_follow", "target": "neck_copy.start",
+                                 "drivers": [{"socket": "parent:fkchain_1.index_1", "label": "Body"}]}]}
+        self.tools.new_rig(HERO, self.write_template(body, "body.json"), "body")
+        self.tools.new_rig(HERO, self.write_template(face, "face.json"), "face", skeleton="face",
+                           parent=bmaya.core.asset.RigRef("body"))
+        self.tools.save_skeleton(HERO, "default", joints=self.make_joint_chain(("a", "b", "c"), (0, 2, 4)))
+        self.cmds.file(new=True, force=True)
+        self.tools.save_skeleton(HERO, "face", joints=self.make_joint_chain(("n", "f_a", "f_b"), (2, 5, 6), chained=False))
+        self.cmds.file(new=True, force=True)
+
+    def make_spanning_look(self):
+        """A look "default" that names both skeletons: one model (box_geo for the body, face_geo for the face) and
+        one weights folder (a file for each). The scene is new afterwards."""
+        import bmaya.core.asset
+        cmds = self.cmds
+        self.hero.add_look("default", [bmaya.core.asset.SkeletonRef("default"), bmaya.core.asset.SkeletonRef("face")])
+        for mesh in (self.make_box(), cmds.polyCube(name="face_geo", constructionHistory=False)[0]):
+            cmds.setRigMeshId(mesh)
+        self.tools.save_model(HERO, "default")
+        cmds.file(new=True, force=True)
+        # With no weights yet, a look imports its whole model bare into each rig: skin each rig's own mesh from there.
+        face_root = self.tools.build_rig(HERO, "face")
+        body_root = self.rig_root("hero_body")
+        cmds.skinCluster("hero_body:a_jnt", "hero_body:b_jnt", "hero_body:box_geo", toSelectedBones=True)
+        cmds.skinCluster("hero_face:f_a_jnt", "hero_face:f_b_jnt", "hero_face:face_geo", toSelectedBones=True)
+        self.tools.save_skin_weights(body_root, "default")
+        self.tools.save_skin_weights(face_root, "default")
+        cmds.file(new=True, force=True)
+
+    def rig_root(self, namespace):
+        import rigmodules.query
+        (info,) = rigmodules.query.get_rigs(namespace)
+        return info.rig_root
+
+    def test_new_rig_writes_the_parent(self):
+        import bmaya.core.asset
+        self.tools.new_rig(HERO, self.template, "body")
+        self.tools.new_rig(HERO, self.template, "face", skeleton="face", parent=bmaya.core.asset.RigRef("body"))
+        self.tools.new_rig(HERO, self.template, "hat", skeleton="hat",
+                           parent=bmaya.core.asset.RigRef("face", VILLAIN))
+        self.assertEqual(self.read_json(self.hero.path("riginfo", "face")),
+                         {"formatVersion": 1, "skeleton": "face", "parent": "body"})
+        self.assertEqual(self.read_json(self.hero.path("riginfo", "hat"))["parent"], {"asset": VILLAIN, "rig": "face"})
+
+    def test_new_rig_with_a_parent_loop_writes_nothing(self):
+        import bmaya.core.asset
+        self.tools.new_rig(HERO, self.template, "face", skeleton="face", parent=bmaya.core.asset.RigRef("body"))
+        with self.assertRaisesRegex(RuntimeError, "attach to itself"):
+            self.tools.new_rig(HERO, self.template, "body", parent=bmaya.core.asset.RigRef("face"))
+        self.assertEqual(self.hero.rigs, ["face"])
+        self.assertFalse(os.path.exists(os.path.dirname(self.hero.path("template", "body"))),
+                         "the template is not copied for a rig that is refused")
+
+    def test_new_rig_dialog_asks_what_the_rig_attaches_to(self):
+        import bmaya.core.asset
+        self.tools.save_skeleton(HERO, joints=self.make_skeleton())
+        self.tools.new_rig(HERO, self.template, "body")
+        answers = self.answers(HERO, self.template, "face", "body")
+        self.tools.new_rig_interactive(prompter=answers)
+        self.assertEqual(answers.asked[3].options, ("none", "body", "another asset..."))
+        self.assertEqual(self.hero.parent_of("face"), (self.hero, "body"))
+
+        bmaya.core.asset.Asset.create(VILLAIN, "Character").add_rig("body", bmaya.core.asset.SkeletonRef("default"))
+        self.tools.new_rig_interactive(prompter=self.answers(HERO, self.template, "hat", "another asset...", VILLAIN))
+        self.assertEqual(self.read_json(self.hero.path("riginfo", "hat"))["parent"], {"asset": VILLAIN, "rig": "body"})
+
+        self.tools.new_rig_interactive(prompter=self.answers(HERO, self.template, "prop", "none"))
+        self.assertIsNone(self.hero.parent_of("prop"))
+
+    def test_build_rig_builds_the_parent_first_and_the_attachment_follows_it(self):
+        import rigmodules.query
+        cmds = self.cmds
+        self.make_attachable_asset()
+        face_root = self.tools.build_rig(HERO, "face")
+        body_root = self.rig_root("hero_body")
+        self.assertEqual(rigmodules.query.get_rig_info(face_root).parent_rig_root, body_root)
+        self.assertIsNone(rigmodules.query.get_rig_info(body_root).parent_rig_root)
+        self.assertEqual(sorted(info.rig_name for info in rigmodules.query.get_rigs()), ["body", "face"])
+        self.assertEqual(cmds.ls(selection=True), [], "a build leaves nothing selected")
+
+        # A chest-up control of the body moves the face, which is the point of the attachment.
+        before = cmds.xform("hero_face:f_a_jnt", query=True, worldSpace=True, translation=True)
+        cmds.setAttr("hero_body:a_ctrl_c.rotateZ", 90)
+        after = cmds.xform("hero_face:f_a_jnt", query=True, worldSpace=True, translation=True)
+        self.assertGreater(max(abs(a - b) for a, b in zip(before, after)), 1.0)
+
+    def test_build_rig_without_a_parent_is_as_before(self):
+        import rigmodules.query
+        self.make_attachable_asset()
+        rig_root = self.tools.build_rig(HERO, "body")
+        self.assertIsNone(rigmodules.query.get_rig_info(rig_root).parent_rig_root)
+        self.assertEqual(len(rigmodules.query.get_rigs()), 1)
+
+    def test_build_rig_reuses_the_parent_already_in_the_scene(self):
+        import rigmodules.query
+        self.make_attachable_asset()
+        body_root = self.tools.build_rig(HERO, "body")
+        face_root = self.tools.build_rig(HERO, "face")
+        self.assertEqual(len(rigmodules.query.get_rigs()), 2)
+        self.assertEqual(rigmodules.query.get_rig_info(face_root).parent_rig_root, body_root)
+
+    def test_build_rig_refuses_several_candidate_parents_and_takes_the_one_named(self):
+        import rigmodules.query
+        self.make_attachable_asset()
+        first = self.tools.build_rig(HERO, "body")
+        second = self.tools.build_rig(HERO, "body", namespace="hero_body2")
+        with self.assertRaisesRegex(RuntimeError, "2 copies of the rig 'body'.*parent_rig_root"):
+            self.tools.build_rig(HERO, "face")
+        self.assertEqual(rigmodules.query.get_rigs("hero_face"), [], "nothing was built")
+        face_root = self.tools.build_rig(HERO, "face", parent_rig_root=second)
+        self.assertEqual(rigmodules.query.get_rig_info(face_root).parent_rig_root, second)
+        self.assertNotEqual(first, second)
+
+    def test_build_rig_refuses_a_parent_rig_root_that_is_not_the_parent(self):
+        self.make_attachable_asset()
+        body_root = self.tools.build_rig(HERO, "body")
+        self.cmds.createRigFromTemplate(
+            *self.make_skeleton(), template=self.template.replace("\\", "/"), asset=VILLAIN, namespace="villain")
+        villain_root = self.rig_root("villain")
+        with self.assertRaisesRegex(RuntimeError, "is the rig 'game' of " + re.escape(VILLAIN) + ".*attaches to the rig 'body'"):
+            self.tools.build_rig(HERO, "face", parent_rig_root=villain_root)
+        with self.assertRaisesRegex(RuntimeError, "is not a rig"):
+            self.tools.build_rig(HERO, "face", parent_rig_root="time1")
+        with self.assertRaisesRegex(RuntimeError, "attaches to no rig, so it takes no parent_rig_root"):
+            self.tools.build_rig(HERO, "body", namespace="hero_body2", parent_rig_root=body_root)
+        self.assertEqual(self.cmds.ls("hero_face:*"), [], "a refused build creates nothing")
+
+    def test_a_failed_attachment_leaves_the_parent_and_says_so(self):
+        import rigmodules.query
+        self.make_attachable_asset()
+        path = self.hero.path("template", "face")
+        data = self.read_json(path)
+        data["rigModules"][0]["parentStructure"]["start"] = "parent:fkchain_1.no_such_socket"
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+        with self.assertRaisesRegex(RuntimeError, "(?s)attachment 'face'.*no_such_socket.*parent rig .*left in the scene"):
+            self.tools.build_rig(HERO, "face")
+        self.assertEqual([info.rig_name for info in rigmodules.query.get_rigs()], ["body"])
+
+    def test_rigs_that_attach_to_each_other_in_a_loop_fail_to_build(self):
+        import bmaya.core.asset.records
+        self.make_attachable_asset()
+        bmaya.core.asset.records.write_rig(
+            self.hero.path("riginfo", "body"),
+            bmaya.core.asset.RigRecord(bmaya.core.asset.SkeletonRef("default"), parent=bmaya.core.asset.RigRef("face")))
+        with self.assertRaisesRegex(RuntimeError, "attach to each other in a loop"):
+            self.tools.build_rig(HERO, "face")
+        self.assertEqual(self.cmds.ls(type="joint"), [], "the loop is found before anything is created")
+
+    def test_a_look_that_spans_both_skeletons_gives_each_rig_its_own_meshes_and_weights(self):
+        import rigmodules.query
+        cmds = self.cmds
+        self.make_attachable_asset()
+        self.make_spanning_look()
+        face_root = self.tools.build_rig(HERO, "face")
+        body_root = self.rig_root("hero_body")
+        self.assertTrue(cmds.objExists("hero_body:box_geo"))
+        self.assertFalse(cmds.objExists("hero_body:face_geo"), "the body keeps only its own mesh")
+        self.assertTrue(cmds.objExists("hero_face:face_geo"))
+        self.assertFalse(cmds.objExists("hero_face:box_geo"), "the face keeps only its own mesh")
+        for mesh in ("hero_body:box_geo", "hero_face:face_geo"):
+            self.assertEqual(len(cmds.ls(cmds.listHistory(mesh), type="skinCluster")), 1, mesh)
+        self.assertEqual(len(cmds.ls(type="skinCluster")), 2)
+        for root in (body_root, face_root):
+            self.assertEqual(rigmodules.query.get_rig_info(root).look.name, "default")
+        self.assertEqual(rigmodules.query.get_rig_info(face_root).parent_rig_root, body_root)
+
+    def test_apply_look_on_a_spanning_look_takes_each_rigs_files_only(self):
+        cmds = self.cmds
+        self.make_attachable_asset()
+        self.make_spanning_look()
+        face_root = self.tools.build_rig(HERO, "face")
+        body_root = self.rig_root("hero_body")
+        self.tools.apply_look(face_root, "default")    # the same look again: the swap deletes and re-imports its meshes
+        self.tools.apply_look(body_root, "default")
+        self.assertEqual(sorted(cmds.ls(type="mesh", noIntermediate=True)), ["hero_body:box_geoShape", "hero_face:face_geoShape"])
+
+    def test_a_weight_file_with_no_hash_is_refused_on_a_spanning_look(self):
+        self.make_attachable_asset()
+        self.make_spanning_look()
+        path = os.path.join(self.hero.path("weights", "default"), "face_geo.json")
+        data = self.read_json(path)
+        data["skeletonHash"] = ""
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+        with self.assertRaisesRegex(RuntimeError, "names several skeletons.*face_geo.json has no skeletonHash"):
+            self.tools.build_rig(HERO, "body")
+
+    def test_a_spanning_look_with_no_file_for_a_rig_is_refused_and_names_it(self):
+        import rigmodules.query
+        self.make_attachable_asset()
+        self.make_spanning_look()
+        os.remove(os.path.join(self.hero.path("weights", "default"), "face_geo.json"))
+        with self.assertRaisesRegex(RuntimeError, "no weight file for the skeleton of the rig 'face'"):
+            self.tools.build_rig(HERO, "face")
+        # As for any rig whose look fails, the rig itself stays: bare, with no look recorded.
+        self.assertEqual([(info.rig_name, info.look is not None) for info in rigmodules.query.get_rigs()],
+                         [("body", True), ("face", False)])
+
+    def test_a_look_of_one_skeleton_still_passes_every_file(self):
+        # As before: no partition for a look that names one skeleton, so a file with no hash loads (an old file).
+        self.make_buildable_asset()
+        self.make_look()
+        rig_root = self.tools.build_rig(HERO, "game")
+        self.skin_box("hero_game:box_geo", namespace="hero_game")
+        self.tools.save_skin_weights(rig_root)
+        path = os.path.join(self.hero.path("weights", "default"), "box_geo.json")
+        data = self.read_json(path)
+        data["skeletonHash"] = ""
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+        self.cmds.file(new=True, force=True)
+        rig_root = self.tools.build_rig(HERO, "game")
+        self.assertEqual(self.look_of(rig_root).name, "default")
 
 
 class MirrorJoints(unittest.TestCase):

@@ -524,6 +524,47 @@ class Assets(TempRoot):
         with self.assertRaises(AssetError):
             hero.look("winter")
 
+    def test_add_rig_writes_the_parent_and_parent_of_reads_it(self):
+        hero = self.create(rigs=["body"])
+        record = hero.add_rig("face", SkeletonRef("face"), parent=RigRef("body"))
+        self.assertEqual(record.parent, RigRef("body"))
+        self.assertEqual(json.loads(self.read(hero.path("riginfo", "face"))),
+                         {"formatVersion": 1, "skeleton": "face", "parent": "body"})
+        self.assertEqual(hero.parent_of("face"), (hero, "body"))
+        self.assertIsNone(hero.parent_of("body"))
+        villain = self.create(VILLAIN)
+        villain.add_rig("hat", SkeletonRef("hat"), parent=RigRef("body", HERO))
+        self.assertEqual(villain.parent_of("hat"), (hero, "body"), "a parent can be in another asset")
+
+    def test_a_parent_needn_t_exist_when_the_rig_is_added(self):
+        hero = self.create()
+        hero.add_rig("face", SkeletonRef("face"), parent=RigRef("body"))   # built later, like a skeleton
+        self.assertEqual(hero.parent_of("face"), (hero, "body"))
+
+    def test_a_rig_can_not_attach_to_itself_or_to_its_own_attachment(self):
+        hero = self.create()
+        with self.assertRaisesRegex(AssetError, "can't attach to itself"):
+            hero.add_rig("face", SkeletonRef("face"), parent=RigRef("face"))
+        self.assertFalse(hero.file_exists("riginfo", "face"), "nothing is written for a refused rig")
+        # The parents are added before the body, so the body closes the loop: body -> hat -> face -> body.
+        hero.add_rig("face", SkeletonRef("face"), parent=RigRef("body"))
+        hero.add_rig("hat", SkeletonRef("hat"), parent=RigRef("face"))
+        with self.assertRaisesRegex(AssetError, "body.*hat.*face.*body|hat.*face.*body"):
+            hero.add_rig("body", DEFAULT, parent=RigRef("hat"))
+        self.assertFalse(hero.file_exists("riginfo", "body"))
+
+    def test_a_parent_loop_through_another_asset_is_refused(self):
+        hero = self.create()
+        villain = self.create(VILLAIN)
+        villain.add_rig("mask", SkeletonRef("mask"), parent=RigRef("body", HERO))
+        with self.assertRaisesRegex(AssetError, "attach to itself"):
+            hero.add_rig("body", DEFAULT, parent=RigRef("mask", VILLAIN))
+
+    def test_a_rig_can_be_a_copy_and_an_attachment(self):
+        hero = self.create(rigs=["body"])
+        hero.add_rig("face", SkeletonRef("face"), source=RigRef("body"), parent=RigRef("body"))
+        self.assertEqual(hero.rig("face"), RigRecord(SkeletonRef("face"), RigRef("body"), RigRef("body")))
+
     def test_a_rig_and_a_look_can_name_another_assets_skeleton(self):
         # NPCs share one skeleton with no copied skeleton file. A look-only asset has looks and nothing else.
         hero = self.create(skeletons=["default"], rigs=["body"])
@@ -567,6 +608,21 @@ class Records(TempRoot):
             self.assertEqual(json.loads(self.read(self.path())), data)
             self.assertEqual(records.read_rig(self.path()), record)
 
+    def test_rig_parent_round_trip_and_old_files_read_as_before(self):
+        for record, data in (
+            (RigRecord(SkeletonRef("face"), parent=RigRef("body")),
+             {"formatVersion": 1, "skeleton": "face", "parent": "body"}),
+            (RigRecord(SkeletonRef("prop"), parent=RigRef("body", HERO)),
+             {"formatVersion": 1, "skeleton": "prop", "parent": {"asset": HERO, "rig": "body"}}),
+            (RigRecord(SkeletonRef("face"), RigRef("face_old"), RigRef("body")),
+             {"formatVersion": 1, "skeleton": "face", "source": "face_old", "parent": "body"}),
+        ):
+            records.write_rig(self.path(), record)
+            self.assertEqual(json.loads(self.read(self.path())), data)
+            self.assertEqual(records.read_rig(self.path()), record)
+        self.write(self.path(), json.dumps({"formatVersion": 1, "skeleton": "default"}))
+        self.assertEqual(records.read_rig(self.path()), RigRecord(DEFAULT, None, None), "no parent key: no parent")
+
     def test_look_round_trip(self):
         record = LookRecord((DEFAULT, SkeletonRef("face", HERO)))
         records.write_look(self.path("look.json"), record)
@@ -579,7 +635,9 @@ class Records(TempRoot):
             "not json": "{nope",
             "wrong version": {"formatVersion": 2, "skeleton": "default"},
             "no skeleton": {"formatVersion": 1},
-            "unknown key": {"formatVersion": 1, "skeleton": "default", "parent": "body"},
+            "unknown key": {"formatVersion": 1, "skeleton": "default", "variant": "body"},
+            "parent by the wrong key": {"formatVersion": 1, "skeleton": "default", "parent": {"asset": HERO, "name": "body"}},
+            "joined parent": {"formatVersion": 1, "skeleton": "default", "parent": HERO + "\\body"},
             "joined string": {"formatVersion": 1, "skeleton": HERO + "\\default"},
             "uppercase name": {"formatVersion": 1, "skeleton": "Default"},
             "half a reference": {"formatVersion": 1, "skeleton": {"asset": HERO}},

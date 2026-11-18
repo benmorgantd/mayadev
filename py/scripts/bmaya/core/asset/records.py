@@ -2,6 +2,7 @@
 
     rigs/body/rig.json          {"formatVersion": 1, "skeleton": "default"}
     rigs/body_cine/rig.json     {"formatVersion": 1, "skeleton": "default", "source": "body"}
+    rigs/face/rig.json          {"formatVersion": 1, "skeleton": "face", "parent": "body"}
     looks/default/look.json     {"formatVersion": 1, "skeletons": ["default"]}
 
 A skeleton or a rig in the same asset is named by a plain string. One in another asset is named by two fields,
@@ -9,6 +10,7 @@ never a joined string:
 
     {"skeleton": {"asset": "shooter\\main\\characters\\npc_male", "name": "default"}}
     {"source": {"asset": "shooter\\main\\characters\\hero", "rig": "body"}}
+    {"parent": {"asset": "shooter\\main\\characters\\hero", "rig": "body"}}
 
 A template can't hold the skeleton, because templates are shared between assets, so the rig's folder holds this
 small file. Each rig and each look has its own, so adding one adds files and edits nothing shared.
@@ -72,10 +74,12 @@ class RigRef:
 class RigRecord:
     """rig.json. skeleton is what the rig's template is built on. source is the rig this one was copied from, whose
     poses and animations the library lists beside the copy's own (one level: a copy of a copy names the rig it was
-    copied from)."""
+    copied from). parent is the rig this one attaches to (RigModules D55): the build passes it as parentRig, so a
+    face rig follows the body rig. A rig can be a copy and an attachment: they are separate questions."""
 
     skeleton: SkeletonRef
     source: RigRef | None = None
+    parent: RigRef | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -90,10 +94,11 @@ class LookRecord:
 
 
 def read_rig(path: str) -> RigRecord:
-    data = _read(path, {"skeleton"}, {"source"})
+    data = _read(path, {"skeleton"}, {"source", "parent"})
     try:
         source = RigRef.from_json(data["source"], "source") if "source" in data else None
-        return RigRecord(SkeletonRef.from_json(data["skeleton"], "skeleton"), source)
+        parent = RigRef.from_json(data["parent"], "parent") if "parent" in data else None
+        return RigRecord(SkeletonRef.from_json(data["skeleton"], "skeleton"), source, parent)
     except (RecordError, assetid.AssetIdError) as error:
         raise RecordError(f"{path}: {error}") from None
 
@@ -102,6 +107,8 @@ def write_rig(path: str, record: RigRecord) -> None:
     data = {"formatVersion": FORMAT_VERSION, "skeleton": record.skeleton.to_json()}
     if record.source is not None:
         data["source"] = record.source.to_json()
+    if record.parent is not None:
+        data["parent"] = record.parent.to_json()
     write_json(path, data)
 
 

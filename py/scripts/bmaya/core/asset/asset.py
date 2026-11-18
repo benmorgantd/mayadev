@@ -171,6 +171,11 @@ class Asset:
         """The skeleton a rig is built on: the asset that holds it and its name."""
         return self.resolve_skeleton(self.rig(rig).skeleton)
 
+    def parent_of(self, rig: str) -> tuple["Asset", str] | None:
+        """The rig a rig attaches to: the asset that holds it and its name, or None for a rig that attaches to nothing."""
+        parent = self.rig(rig).parent
+        return None if parent is None else self.resolve_rig(parent)
+
     def look_fits(self, look: str, rig: str) -> bool:
         """Whether a rig can wear a look: the look names the rig's skeleton."""
         wanted = self._skeleton_key(self.rig(rig).skeleton)
@@ -196,12 +201,36 @@ class Asset:
         sourcecontrol.current().add(asset.info_path)
         return asset
 
-    def add_rig(self, name: str, skeleton: SkeletonRef, source: RigRef | None = None) -> RigRecord:
+    def add_rig(self, name: str, skeleton: SkeletonRef, source: RigRef | None = None,
+                parent: RigRef | None = None) -> RigRecord:
         """Writes a new rig's rig.json. The skeleton needn't exist yet: a rig can be set up before its skeleton is
-        saved, and the build reports a missing one."""
-        record = RigRecord(skeleton, source)
+        saved, and the build reports a missing one. The same goes for the parent, which has to exist when the rig is
+        built. A rig can't attach to itself, and following parents must end, across assets too."""
+        record = RigRecord(skeleton, source, parent)
+        if parent is not None:
+            self.check_parent(name, parent)
         self._add_record("riginfo", name, "rig", lambda path: records.write_rig(path, record))
         return record
+
+    def check_parent(self, name: str, parent: RigRef) -> None:
+        """Raises when a rig of this asset called name can't attach to parent: following parents from it must not come
+        back to it. A parent that has no rig.json yet ends the walk. add_rig checks this, and a tool checks it before
+        it writes anything else."""
+        me = (self.id, name)
+        asset, rig = self.resolve_rig(parent)
+        seen = [me]
+        while True:
+            key = (asset.id, rig)
+            if key == me:
+                chain = " -> ".join(f"{a}:{r}" for a, r in seen + [key])
+                raise AssetError(f"The rig {name!r} of {self.id} can't attach to itself, directly or through its parents: {chain}.")
+            if key in seen or not asset.file_exists("riginfo", rig):
+                return
+            seen.append(key)
+            following = asset.rig(rig).parent
+            if following is None:
+                return
+            asset, rig = asset.resolve_rig(following)
 
     def add_look(self, name: str, skeletons: typing.Sequence[SkeletonRef]) -> LookRecord:
         """Writes a new look's look.json."""

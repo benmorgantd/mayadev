@@ -21,7 +21,7 @@ Python `maya.cmds` calls, with the module that makes them.
 
 | Command | Called from | Used for |
 |---|---|---|
-| `cmds.createRigFromTemplate(*joints, template=, asset=, namespace=)` | `assettools.build_rig` | Build a rig on the skeleton it just created. `build_rig` always passes `namespace`, because the skeleton goes in first: `{asset name}_{rig}`, the same as RigModules' default (D54) |
+| `cmds.createRigFromTemplate(*joints, template=, asset=, namespace=, parentRig=)` | `assettools.build_rig` | Build a rig on the skeleton it just created. `build_rig` always passes `namespace`, because the skeleton goes in first: `{asset name}_{rig}`, the same as RigModules' default (D54). It passes `parentRig` (the parent's rig root) only for a rig whose `rig.json` has a `parent` (D55): RigModules requires it for a template with `parent:` ids and refuses it for one without |
 | `cmds.setRigLook(rig_root, mesh=, file=, asset=, look=)` | `assettools.apply_look` | Put the rig in a look: the imported meshes and their weight files (RigModules D54 phase 5). Fails on a weight file with another skeleton's hash, deletes the previous look's meshes, records the look |
 | `cmds.rigJointMarkup(*joints, query=True)`, `edit=True, side=` and `remove=True` | Registry tools (Print and Remove Joint Markup, Mirror Joints and Add Twist Joints, in `assettools`) | Inspect, clear, mirror and create joint markup |
 | `cmds.getRigControls(rig_root)` | Registry tool (Select All Controls, in `posetools`) | Every control of the active rig |
@@ -49,9 +49,10 @@ Python `maya.cmds` calls, with the module that makes them.
 | `query.get_rig_info(node)` | `assettools` (every tool that finds an asset) | A node of a rig to its asset id, rig name (the rig's folder name), namespace and rig root. Raises when the node isn't in a rig |
 | `query.find_rig_info(node)` | `activerig` | The same, returning `None` when the node isn't in a rig |
 | `query.get_rigs(namespace=None)` | `activerig`, `assettools.build_rig` | The rigs in the scene, or in a namespace (which holds at most one, RigModules D54). `build_rig` refuses a namespace that already holds one |
-| `query.RigInfo` | `activerig` | The result type. mayadev reads `rig_root`, `asset_id`, `rig_name` (the rig) and `namespace`. It also has `skeleton_hash`, `rig_version`, `plugin_version` and `publish_version` (RigModules D54 renamed `variant` and removed `asset_root`) |
+| `query.RigInfo` | `activerig` | The result type. mayadev reads `rig_root`, `asset_id`, `rig_name` (the rig) and `namespace`. It also has `skeleton_hash` (also what `apply_look` compares a spanning look's weight files against), `parent_rig_root` (the rig root an attachment follows, `None` otherwise, D55), `rig_version`, `plugin_version` and `publish_version` (RigModules D54 renamed `variant` and removed `asset_root`) |
 | `query.RIG_CONTROL_TYPE` | `posetools.get_scope` | The node type of a rig control, to filter the selection |
 | `query.get_rig_controls(rig_root)`, `query.find_control(node)` | `posetools.get_selected_modules` | Map a selection to the modules of the active rig |
+| `skinweights.read_file_skeleton_hash(path)` | `assettools.apply_look` | The `skeletonHash` a weight file was saved from, `""` for a file with none. Used to give a rig and its attachment the files of their own skeletons from one weights folder |
 | `template.get_rig_name(path)` | `assettools.new_rig`, `RigTemplateHandler` | The `rigName` of a template file, offered as the new rig's name |
 | `pose.key_rig(rig_root)`, `pose.key_modules(rig_root, modules)` | `posetools` | Key every channel of a rig, or of chosen modules |
 | `pose.key_controls(controls, time=)` | `rigpanel.RigPanelSession.set_space` | Key the switched control (or the six controls of a switched limb) on the previous frame and the current one |

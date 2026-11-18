@@ -71,20 +71,26 @@ def require_asset(asset_id: str) -> bmaya.core.asset.Asset:
 
 
 def new_rig(asset_id: str, template_path: str, rig: str | None = None, skeleton: str = DEFAULT_NAME,
-            skeleton_asset: str | None = None, source: bmaya.core.asset.RigRef | None = None) -> str:
+            skeleton_asset: str | None = None, source: bmaya.core.asset.RigRef | None = None,
+            parent: bmaya.core.asset.RigRef | None = None) -> str:
     """Adds a rig to the asset: copies a template into rigs/<rig>, with its rigName set to the rig's name, and writes
     the rig's rig.json. rig is the template's own rigName when left out. skeleton is the skeleton the rig is built on,
     in this asset unless skeleton_asset names another. It needn't be saved yet. source is the rig this one is a copy
-    of, whose poses and animations the library then lists beside its own. Returns the rig's name."""
+    of, whose poses and animations the library then lists beside its own. parent is the rig this one attaches to
+    (RigModules D55): Build Rig builds it first and the new rig follows it. The template's own parent: ids are not
+    read here: the build checks them against the parent and lists every problem. Returns the rig's name."""
     asset = require_asset(asset_id)
     rig = rig or rigmodules.template.get_rig_name(template_path)
     reference = bmaya.core.asset.SkeletonRef(skeleton, skeleton_asset)
     if asset.file_exists("riginfo", rig) or asset.file_exists("template", rig):
         raise bmaya.core.asset.AssetError(f"{asset.id} already has a rig {rig!r}: {os.path.dirname(asset.path('riginfo', rig))}")
+    if parent is not None:
+        asset.check_parent(rig, parent)   # before the template is copied: a refused rig writes nothing
     bmaya.maya.assethandlers.register()
     path = bmaya.core.asset.handlers.save(asset, "template", rig, source=template_path)
-    asset.add_rig(rig, reference, source)
-    bmaya.core.log.info(f"Added the rig {rig!r} to {asset.id}, on the skeleton {skeleton!r}: {path}")
+    asset.add_rig(rig, reference, source, parent)
+    attaches = f", attached to the rig {parent.rig!r}" if parent is not None else ""
+    bmaya.core.log.info(f"Added the rig {rig!r} to {asset.id}, on the skeleton {skeleton!r}{attaches}: {path}")
     return rig
 
 
@@ -153,14 +159,28 @@ def save_model(asset_id: str, look: str, meshes: list[str] | None = None) -> str
     return path
 
 
-def build_rig(asset_id: str, rig: str, look: str | None = None, namespace: str | None = None) -> str:
+def build_rig(asset_id: str, rig: str, look: str | None = None, namespace: str | None = None,
+              parent_rig_root: str | None = None) -> str:
     """Builds a rig of the asset in the open scene: creates its skeleton's joints from the skeleton file (the
     skeleton may be another asset's), builds the rig's template on them, and loads the rig's shape file. Then it puts
     a look on the rig: the look's model is imported into the same namespace and its skin weights are loaded onto the
     rig's joints. look is the asset's "default" look when left out and it has one, else none. A look that is named and
     missing, or whose look.json doesn't name the rig's skeleton, fails before anything is created. Builds into
-    "{asset name}_{rig}" unless namespace is given, the namespace RigModules gives a rig (D54). Returns the rig root."""
+    "{asset name}_{rig}" unless namespace is given, the namespace RigModules gives a rig (D54).
+
+    A rig whose rig.json has a parent is an attachment (RigModules D55) and follows that rig. parent_rig_root is the
+    parent's rig root. Left out, the parent is found in the scene by its asset id and rig name: one is used, none is
+    built first with its own default look (and its own parent before it), and several raise an error that names them.
+    The parent stays in the scene when the attachment fails to build. Returns the rig root."""
+    return _build_rig(asset_id, rig, look, namespace, parent_rig_root, ())
+
+
+def _build_rig(asset_id: str, rig: str, look: str | None, namespace: str | None, parent_rig_root: str | None,
+               chain: tuple[tuple[str, str], ...]) -> str:
     asset = require_asset(asset_id)
+    if (asset.id, rig) in chain:
+        raise bmaya.core.asset.AssetError(
+            "The rigs attach to each other in a loop: " + " -> ".join(f"{a}:{r}" for a, r in chain + ((asset.id, rig),)))
     bmaya.maya.assethandlers.register()
     template = bmaya.core.asset.handlers.load(asset, "template", rig)
     skeleton_asset, skeleton = asset.skeleton_of(rig)
@@ -181,10 +201,67 @@ def build_rig(asset_id: str, rig: str, look: str | None = None, namespace: str |
     if rigmodules.query.get_rigs(namespace):
         raise RuntimeError(f"Namespace {namespace!r} already holds a rig. Build into a new scene or another namespace.")
 
+    parent = asset.parent_of(rig)
+    if parent is None:
+        if parent_rig_root is not None:
+            raise bmaya.core.asset.AssetError(
+                f"The rig {rig!r} of {asset.id} attaches to no rig, so it takes no parent_rig_root. Set its parent "
+                f"in {asset.path('riginfo', rig)}.")
+        parent_root = None
+    else:
+        parent_root = _find_or_build_parent(parent[0], parent[1], parent_rig_root, chain + ((asset.id, rig),))
+    try:
+        rig_root = _build_rig_nodes(asset, rig, look, namespace, template, skeleton_asset, skeleton, parent_root)
+    except Exception as error:
+        if parent_root is None:
+            raise
+        raise RuntimeError(f"The attachment {rig!r} of {asset.id} failed to build: {error} "
+                           f"The parent rig {parent_root!r} is built and was left in the scene.") from error
+    # The imports leave their nodes selected. A finished build starts with nothing selected.
+    cmds.select(clear=True)
+    # The build selects nothing, so the tracker would never see the new rig. It becomes the active rig.
+    tracker = bmaya.maya.activerig.ActiveRigTracker.current()
+    if tracker is not None:
+        tracker.set_rig_root(rig_root)
+    wearing = f" wearing the look {look!r}" if look is not None else " with no look"
+    following = f", following {parent_root!r}" if parent_root is not None else ""
+    bmaya.core.log.info(f"Built the rig {rig!r} of {asset.id} into namespace {namespace!r},{wearing}{following}.")
+    return rig_root
+
+
+def _find_or_build_parent(parent_asset: bmaya.core.asset.Asset, parent_rig: str, parent_rig_root: str | None,
+                          chain: tuple[tuple[str, str], ...]) -> str:
+    """The rig root of the rig an attachment follows (RigModules D55): the one given, else the scene's one rig of that
+    asset id and rig name, else a new build of it. Several in the scene are an error, since the choice is the author's."""
+    if parent_rig_root is not None:
+        info = rigmodules.query.find_rig_info(parent_rig_root)
+        if info is None:
+            raise bmaya.core.asset.AssetError(f"parent_rig_root {parent_rig_root!r} is not a rig.")
+        if (info.asset_id, info.rig_name) != (parent_asset.id, parent_rig):
+            raise bmaya.core.asset.AssetError(
+                f"parent_rig_root {parent_rig_root!r} is the rig {info.rig_name!r} of {info.asset_id}, but the rig "
+                f"attaches to the rig {parent_rig!r} of {parent_asset.id}.")
+        return info.rig_root
+    candidates = [info.rig_root for info in rigmodules.query.get_rigs()
+                  if (info.asset_id, info.rig_name) == (parent_asset.id, parent_rig)]
+    if len(candidates) > 1:
+        raise bmaya.core.asset.AssetError(
+            f"The scene holds {len(candidates)} copies of the rig {parent_rig!r} of {parent_asset.id}: "
+            f"{', '.join(candidates)}. Pass parent_rig_root to say which one to follow.")
+    if candidates:
+        return candidates[0]
+    return _build_rig(parent_asset.id, parent_rig, None, None, None, chain)
+
+
+def _build_rig_nodes(asset: bmaya.core.asset.Asset, rig: str, look: str | None, namespace: str, template: str,
+                     skeleton_asset: bmaya.core.asset.Asset, skeleton: str, parent_root: str | None) -> str:
+    """The build proper: the skeleton's joints, the rig on them (following parent_root when it is given), the shape
+    file and the look. Returns the rig root."""
     joints = bmaya.core.asset.handlers.load(skeleton_asset, "skeleton", skeleton, namespace=namespace)
     if not joints:
         raise RuntimeError(f"The skeleton {skeleton!r} of {skeleton_asset.id} has no joints.")
-    cmds.createRigFromTemplate(*joints, template=template.replace("\\", "/"), asset=asset.id, namespace=namespace)
+    flags = {"parentRig": parent_root} if parent_root is not None else {}
+    cmds.createRigFromTemplate(*joints, template=template.replace("\\", "/"), asset=asset.id, namespace=namespace, **flags)
 
     (rig_info,) = rigmodules.query.get_rigs(namespace)
     rig_root = rig_info.rig_root
@@ -198,14 +275,6 @@ def build_rig(asset_id: str, rig: str, look: str | None = None, namespace: str |
             model_nodes = bmaya.core.asset.handlers.load(asset, "model", look, namespace=namespace)
             rigmodules.displaylayers.add_meshes(rig_root, model_nodes)
             rigmodules.groups.parent_meshes(rig_root, model_nodes)
-    # The imports above leave their nodes selected. A finished build starts with nothing selected.
-    cmds.select(clear=True)
-    # The build selects nothing, so the tracker would never see the new rig. It becomes the active rig.
-    tracker = bmaya.maya.activerig.ActiveRigTracker.current()
-    if tracker is not None:
-        tracker.set_rig_root(rig_root)
-    wearing = f" wearing the look {look!r}" if look is not None else " with no look"
-    bmaya.core.log.info(f"Built the rig {rig!r} of {asset.id} into namespace {namespace!r},{wearing}.")
     return rig_root
 
 
@@ -216,7 +285,13 @@ def apply_look(node: str, look: str) -> str:
     controls and animation are not touched. A look that is not synced yet is synced first (source control), and then
     checked against the rig like any other. One undo step. A weight file made for another skeleton fails the swap, and
     the imported meshes are removed again. Raises AssetError for a look the asset doesn't have, one that doesn't fit the
-    rig's skeleton, or one with no model or weights. Returns the lookRoot node."""
+    rig's skeleton, or one with no model or weights.
+
+    A look can name several skeletons (a body and its attachment, RigModules D55), with one model and one weights
+    folder. Then the rig takes only the weight files saved from its own skeleton (the file's skeletonHash is the
+    rig's), and only the meshes those files are for: the rest of the imported model is deleted. A file with no hash
+    can't be placed on such a look, so it is an error. A look of one skeleton passes every file, as ever.
+    Returns the lookRoot node."""
     info = rigmodules.query.get_rig_info(node)
     asset = require_asset(info.asset_id)
     if look in {entry.name for entry in asset.all_looks() if not entry.local}:
@@ -231,6 +306,9 @@ def apply_look(node: str, look: str) -> str:
     files = bmaya.maya.assethandlers.RigSkinWeightsHandler.files(asset.path("weights", look))
     if not files:
         raise bmaya.core.asset.AssetError(f"The look {look!r} of {asset.id} has no weight files.")
+    spans = len(asset.look(look).skeletons) > 1
+    if spans:
+        files = _weight_files_of_rig(asset, look, info, files)
 
     bmaya.maya.assethandlers.register()
     cmds.undoInfo(openChunk=True, chunkName="Apply Look")
@@ -239,8 +317,15 @@ def apply_look(node: str, look: str) -> str:
         meshes = [model_node for model_node in model_nodes
                   if cmds.nodeType(model_node) == "transform" and rigmodules.skinweights.get_mesh_id(model_node)]
         try:
+            if spans:
+                wanted_ids = {rigmodules.skinweights.read_file_mesh_id(path) for path in files}
+                for mesh in [mesh for mesh in meshes if rigmodules.skinweights.get_mesh_id(mesh) not in wanted_ids]:
+                    cmds.delete(mesh)
+                    meshes.remove(mesh)
             if not meshes:
-                raise bmaya.core.asset.AssetError(f"The model of the look {look!r} has no mesh with a meshId.")
+                raise bmaya.core.asset.AssetError(
+                    f"The model of the look {look!r} has no mesh with a meshId"
+                    + (f" that the rig {info.rig_name!r} has a weight file for." if spans else "."))
             look_root = cmds.setRigLook(info.rig_root, mesh=meshes, file=[path.replace("\\", "/") for path in files],
                                         asset=asset.id, look=look)
         except Exception:
@@ -257,6 +342,27 @@ def apply_look(node: str, look: str) -> str:
         cmds.undoInfo(closeChunk=True)
     bmaya.core.log.info(f"Put the rig {info.rig_name!r} of {asset.id} in the look {look!r}.")
     return look_root
+
+
+def _weight_files_of_rig(asset: bmaya.core.asset.Asset, look: str, info: rigmodules.query.RigInfo,
+                         files: list[str]) -> list[str]:
+    """The weight files of a look that spans several skeletons which belong to a rig: the ones saved from its
+    skeleton, by the file's skeletonHash against the rig's. A file with no hash is an error, since which skeleton it
+    is for can't be told."""
+    mine = []
+    for path in files:
+        skeleton_hash = rigmodules.skinweights.read_file_skeleton_hash(path)
+        if not skeleton_hash:
+            raise bmaya.core.asset.AssetError(
+                f"The look {look!r} of {asset.id} names several skeletons, and the weight file {path} has no "
+                f"skeletonHash to say which one it is for. Save the weights again from a built rig.")
+        if skeleton_hash == info.skeleton_hash:
+            mine.append(path)
+    if not mine:
+        raise bmaya.core.asset.AssetError(
+            f"The look {look!r} of {asset.id} has no weight file for the skeleton of the rig {info.rig_name!r} "
+            f"(skeleton hash {info.skeleton_hash}).")
+    return mine
 
 
 def save_rig(node: str, prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
@@ -522,8 +628,11 @@ def new_rig_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> 
     if not rig:
         return
     skeleton = _ask_skeleton(prompter, "New Rig", asset, f"Skeleton the rig {rig!r} is built on:")
-    if skeleton:
-        new_rig(asset_id, template, rig, skeleton)
+    if not skeleton:
+        return
+    parent = _ask_parent_rig(prompter, "New Rig", asset, rig)
+    if parent is not False:
+        new_rig(asset_id, template, rig, skeleton, parent=parent)
 
 
 def new_look_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
@@ -1137,6 +1246,25 @@ def _ask_skeleton(prompter: bmaya.core.prompts.Prompter, title: str, asset: bmay
     if skeletons:
         return prompter.choose(title, message, skeletons)
     return prompter.ask_text(title, message + " None is saved yet, so name the one it will be.", DEFAULT_NAME)
+
+
+def _ask_parent_rig(prompter: bmaya.core.prompts.Prompter, title: str, asset: bmaya.core.asset.Asset,
+                    rig: str) -> bmaya.core.asset.RigRef | None | bool:
+    """The rig a new rig attaches to (RigModules D55): None for no parent (the default), a RigRef for one of the
+    asset's rigs or one of another asset's, False when the user cancels."""
+    none, other = "none", "another asset..."
+    answer = prompter.choose(title, f"Does the rig {rig!r} attach to a rig?", [none, *asset.rigs, other])
+    if not answer:
+        return False
+    if answer == none:
+        return None
+    if answer != other:
+        return bmaya.core.asset.RigRef(answer)
+    other_id = _ask_asset_id(prompter, title, "Asset id of the rig it attaches to:")
+    if not other_id:
+        return False
+    parent = _choose_owner(prompter, title, other_id, "rig")
+    return bmaya.core.asset.RigRef(parent, other_id) if parent else False
 
 
 def _confirm_replace(prompter: bmaya.core.prompts.Prompter, title: str, what: str) -> bool:

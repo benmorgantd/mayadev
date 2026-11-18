@@ -55,6 +55,13 @@ The two guides under `py/scripts/docs/guides/` predate this folder:
 - `Mayadev Env Setup.md` lists the RigModules submenus as asset, mesh, joints, weights, shapes, control and dev. The menu has **pose** and **clip** too, no **dev** (it is in the bmaya menu now), and the layout test pins eight submenus.
 - Both are deprecated and superseded by [`setup.md`](setup.md), [`tools.md`](tools.md) and [`assets.md`](assets.md) ([`README.md`](README.md#the-old-mkdocs-site-deprecated)). They carry a banner saying so, and these two details are left as they were.
 
+**Attachments (RigModules D55)**
+
+- The registry entry for a rig (`Registry.get`) doesn't list its `parent`. Nothing reads it there yet.
+- The active rig panel doesn't show a rig's parent, and a rig can't be attached or detached from it. Attaching means changing `rig.json` and rebuilding.
+- A published attachment doesn't pin a published parent. The asset browser (RigModules D54 phase 8) will need that.
+- The GUI checks under `tests/gui/` were not run for this change, and not in D54 phases 5 to 7.
+
 ## Test coverage
 
 | Area | Tests |

@@ -41,7 +41,7 @@ shooter\main\characters\hero   ->   <RIGGING_PROJECT_DIR>\shooter\main\character
       skeleton.json               the skeleton: its only stored form, no scene file
       exports\                    animation FBX clips and the skeleton export, shared by every rig of the skeleton
     rigs\game\                    a rig: a template built on one skeleton
-      rig.json                    the skeleton it is built on, and the rig it was copied from
+      rig.json                    the skeleton it is built on, the rig it was copied from, the rig it attaches to
       template.json  shapes.json  postops.py  hero_game_rig.ma
       controlposes\  controlanims\   the rig's library (control markup is unique per rig)
       publish\20261108T142012Z_bmorgan\
@@ -134,11 +134,13 @@ A template is shared between assets, so it can't say what skeleton it is built o
 { "formatVersion": 1, "skeleton": "default" }
 // rigs/body_cine/rig.json, a copy of the body rig on a skeleton of another asset
 { "formatVersion": 1, "skeleton": { "asset": "shooter\\main\\characters\\npc_male", "name": "default" }, "source": "body" }
+// rigs/face/rig.json, an attachment: it follows the body rig (RigModules D55)
+{ "formatVersion": 1, "skeleton": "face", "parent": "body" }
 // looks/winter/look.json
 { "formatVersion": 1, "skeletons": ["default"] }
 ```
 
-A skeleton or rig in the same asset is a plain name. One in another asset is an object with two fields, never a joined string. `source` is the rig this one was copied from: the library lists the source's poses and animations beside the copy's own, one level only. A look names every skeleton its meshes bind to, and a rig of any of them can wear it. `SkeletonRef(name, asset=None)` and `RigRef(rig, asset=None)` are the references, `RigRecord` and `LookRecord` the files. A look-only asset (crowd looks on a shared skeleton) holds `looks/` and nothing else.
+A skeleton or rig in the same asset is a plain name. One in another asset is an object with two fields, never a joined string. `source` is the rig this one was copied from: the library lists the source's poses and animations beside the copy's own, one level only. `parent` is the rig this one attaches to, a face or a prop that follows a body: `build_rig` builds the parent first and passes it to RigModules as `parentRig`. It is the same reference form as `source` (a plain name, or `asset` and `rig` for a rig of another asset), it is optional, and it needs no format version, so every older file reads as before. A rig can be both a copy and an attachment. The parent needn't exist when the rig is added, like a skeleton. A rig can't attach to itself, and following parents must end, across assets too. A look names every skeleton its meshes bind to, and a rig of any of them can wear it. `SkeletonRef(name, asset=None)` and `RigRef(rig, asset=None)` are the references, `RigRecord` and `LookRecord` the files. A look-only asset (crowd looks on a shared skeleton) holds `looks/` and nothing else.
 
 ## Using it
 
@@ -185,7 +187,8 @@ Reading a path never makes a folder. `Asset.create` makes the asset folder and i
 | `skeleton_of(rig)` | The skeleton a rig is built on: the asset that holds it, and its name |
 | `look_fits(look, rig)` | Whether the look names the rig's skeleton |
 | `Asset.create(id, asset_type, root=None)` | Makes the folder and `asset.json`, and tells source control to add it. Raises when the asset exists, the type isn't in the project, or it would nest |
-| `add_rig(name, skeleton, source=None)`, `add_look(name, skeletons)` | Write a new `rig.json` or `look.json` and tell source control. Raise when it exists. The skeleton needn't exist yet |
+| `add_rig(name, skeleton, source=None, parent=None)`, `add_look(name, skeletons)` | Write a new `rig.json` or `look.json` and tell source control. Raise when it exists. The skeleton and the parent needn't exist yet. A parent that would make a loop raises `AssetError` and nothing is written |
+| `parent_of(rig)`, `check_parent(name, parent)` | The `(Asset, rig name)` a rig attaches to, or `None`. `check_parent` raises when a rig called `name` can't attach to `parent` (it is its own ancestor), before anything is written |
 | `Asset.from_path(path, root=None)` | The asset a file or folder belongs to: the nearest folder at or above it with an `asset.json` |
 
 Nesting is checked where assets are made: an asset can't sit inside another asset, can't hold one, and can't be the project folder. That keeps the registry scan from having to walk into asset folders.
@@ -333,21 +336,34 @@ library.filter_entries(entries, library.parse_query("tag:fist hand"))
 
 ## Building a rig from an asset
 
-`bmaya.maya.assettools.build_rig(asset_id, rig, look=None, namespace=None)` is the one place the asset model and RigModules meet. It:
+`bmaya.maya.assettools.build_rig(asset_id, rig, look=None, namespace=None, parent_rig_root=None)` is the one place the asset model and RigModules meet. It:
 
 1. Loads the rig's template path through the `template` handler, and finds the skeleton the rig is built on (`Asset.skeleton_of`, which may be another asset). A missing skeleton file fails here: "Save it with Save Skeleton first".
 2. Picks the look: `look`, else the asset's `default` look when it has one, else none. A look the asset doesn't have, or whose `look.json` doesn't name the rig's skeleton, fails now, before anything is created.
 3. Picks the namespace, `namespace` or `{asset name}_{rig}` (`hero_game`), RigModules' own default, and refuses one that already holds a rig (`rigmodules.query.get_rigs`). A namespace holds one rig (RigModules D54), so this fails before the skeleton is created rather than in the build.
-4. Creates the skeleton's joints from its `skeleton.json` in the namespace (`cmds.loadRigSkeleton`).
-5. Builds: `cmds.createRigFromTemplate(*joints, template=..., asset=asset.id, namespace=...)`.
-6. Loads the rig's shape file when it has one. Then the look, through `apply_look` (below) when it has a model and weight files, which records it on the rig. A look with a model and no weights yet has its meshes imported bare, and the rig records no look.
-7. Clears the selection and returns the rig root.
+4. Finds the parent when the rig has one (below).
+5. Creates the skeleton's joints from its `skeleton.json` in the namespace (`cmds.loadRigSkeleton`).
+6. Builds: `cmds.createRigFromTemplate(*joints, template=..., asset=asset.id, namespace=..., parentRig=...)`, with `parentRig` only for an attachment.
+7. Loads the rig's shape file when it has one. Then the look, through `apply_look` (below) when it has a model and weight files, which records it on the rig. A look with a model and no weights yet has its meshes imported bare, and the rig records no look.
+8. Clears the selection and returns the rig root.
 
 A built rig carries its own asset id and rig name (the rig root's `assetId` and `rigName`) and the look it wears (`RigInfo.look`, from its `lookRoot`), which the other tools read through `rigmodules.query`. Nothing parses node names. `save_skin_weights` and `load_skin_weights` use the look the rig wears, and `look` overrides it. For a rig that wears none they use the one look it can wear, and raise when there are several.
+
+### Building an attachment
+
+A rig whose `rig.json` has a `parent` follows that rig (RigModules D55, `docs/attachments.md` there). `build_rig` finds the parent's rig root before it creates anything:
+
+- `parent_rig_root` given: it must be a rig of the parent's asset id and rig name (`RigInfo.asset_id`, `rig_name`), else an error says which rig it is. A rig that has no parent takes no `parent_rig_root`.
+- Not given: the scene's rigs are searched for that asset id and rig name. One is used and left as it is. **None: the parent is built first**, with its own default look, by the same call (so a hat on a face on a body builds all three). Several is an error that names them and asks for `parent_rig_root`.
+- Rigs that attach to each other in a loop fail before anything is created.
+
+The attachment builds into `{asset name}_{rig}` as ever, with `parentRig` set. RigModules checks the template's `parent:` ids against the parent and lists every missing socket. A failed attachment build leaves the parent in the scene, since it is a valid rig on its own, and the error says so. The shapes, look and active rig run per rig, and the attachment's root is the one returned and made active.
 
 ### Putting a rig in a look
 
 `bmaya.maya.assettools.apply_look(node, look)` swaps the look of the rig that `node` belongs to (RigModules D54 phase 5, `docs/looks.md` there). A look that isn't synced is synced first. It checks that the asset has the look, that its `look.json` names the rig's skeleton, and that it has a model and weight files. Then, as one undo step, it imports the model into the rig's namespace and calls `cmds.setRigLook` with the imported meshes and the weight files. RigModules matches each mesh to its file by `meshId`, fails the swap when a file's `skeletonHash` is not the rig's, deletes the previous look's meshes, names the new ones after their files and records the look on the rig. The new meshes then join the rig's mesh layer and group. A failed swap deletes the meshes it imported. The controls and the animation are not touched. Materials of the previous look stay in the scene.
+
+**A look that spans a rig and its attachment.** `look.json` can name several skeletons, so one look (`default`) holds one model and one weights folder for a body and its face. Then `apply_look` gives each rig only what is its own: it keeps the weight files whose `skeletonHash` is the rig's (`RigInfo.skeleton_hash`, read with `rigmodules.skinweights.read_file_skeleton_hash`), imports the model, deletes the meshes with no kept file (by `meshId`) and passes the rest to `cmds.setRigLook`. A weight file with no hash can't be placed on such a look and is an error that names the file. A look with no file for the rig is an error that names the rig and its skeleton hash. The cost is one model import per rig, trimmed afterwards. A look that names one skeleton behaves as it always did: every file is passed, and a file for another skeleton fails in RigModules.
 
 ## Tests
 

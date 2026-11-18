@@ -177,12 +177,12 @@ Most tools act on the **active rig**, so nobody selects a rig root ([below](#the
 |---|---|---|
 | New Project... | nothing | Writes a `project.json` into a folder you pick (`Project.create`) |
 | New Asset... | nothing | Asks for an asset id and one of the project's asset types, then writes the asset's `asset.json` |
-| New Rig... | nothing | Asks for the asset, a template to copy, the rig's name (the template's `rigName` is offered) and its skeleton, then copies the template into `rigs/<rig>` with its `rigName` set to the rig's name and writes `rig.json` (`new_rig`) |
+| New Rig... | nothing | Asks for the asset, a template to copy, the rig's name (the template's `rigName` is offered), its skeleton, and whether it attaches to a rig (none, one of the asset's rigs, or a rig of another asset), then copies the template into `rigs/<rig>` with its `rigName` set to the rig's name and writes `rig.json` (`new_rig`) |
 | New Look... | nothing | Asks for the asset, the look's name (`default` is offered for the first) and the skeleton its meshes bind to, then writes `looks/<look>/look.json` (`new_look`) |
 | Save Skeleton... | nothing | Saves every joint in the scene as a skeleton of the asset: `skeletons/<skeleton>/skeleton.json`, the only form a skeleton is stored in. The scene is not saved or renamed. Every joint must be marked, and none may be driven by a rig. Nothing is written when one fails |
 | Load Skeleton... | nothing | Creates a skeleton's joints from its `skeleton.json`, at rest and marked, and selects them |
 | Save Model... | nothing | Saves the selected meshes (every mesh when none is selected) as a look's model file: meshes only, from their undeformed shape, with no skinning, no history and no joints. The scene is left as it was. Warns about meshes without a `meshId` |
-| Build Rig from Asset... | nothing | `build_rig`: creates the rig's skeleton, builds its template, then loads the shapes, and puts the look on the rig with `apply_look` (the look is recorded on the rig). The look is asked for only when the rig can wear more than one ([`assets.md`](assets.md#building-a-rig-from-an-asset)) |
+| Build Rig from Asset... | nothing | `build_rig`: creates the rig's skeleton, builds its template, then loads the shapes, and puts the look on the rig with `apply_look` (the look is recorded on the rig). A rig that attaches to another follows it: the parent is found in the scene or built first ([`assets.md`](assets.md#building-an-attachment)). The look is asked for only when the rig can wear more than one ([`assets.md`](assets.md#building-a-rig-from-an-asset)) |
 | Save Rig | active rig | Saves the open scene as the rig's scene file. Before the asset folder exists, uses a file dialog |
 
 #### mesh
@@ -297,6 +297,7 @@ bmaya.maya.assettools.new_look("shooter\\main\\characters\\hero")               
 bmaya.maya.assettools.save_skeleton("shooter\\main\\characters\\hero")                    # the scene's joints, skeletons/default/skeleton.json
 bmaya.maya.assettools.save_model("shooter\\main\\characters\\hero", "default")            # the scene's meshes, meshes only
 rig_root = bmaya.maya.assettools.build_rig("shooter\\main\\characters\\hero", "body")      # into hero_body, with the default look
+face_root = bmaya.maya.assettools.build_rig("shooter\\main\\characters\\hero", "face")    # a face rig.json names the body as its parent: follows hero_body
 bmaya.maya.assettools.save_control_shapes(rig_root)                                  # rigs/body/shapes.json
 bmaya.maya.assettools.save_skin_weights(rig_root, "default")                         # looks/default/weights/*.json
 bmaya.maya.assettools.apply_look(rig_root, "winter")                                 # swaps the rig's look: no controls or animation change
