@@ -272,6 +272,18 @@
             "enabled": true
         },
         {
+            "id": "rigmodules.weights.smooth",
+            "name": "Smooth Skin Weights",
+            "short_name": "Smooth Weights",
+            "call": {
+                "module": "bmaya.maya.assettools",
+                "function": "smooth_skin_weights",
+                "kwargs": {}
+            },
+            "icon": null,
+            "enabled": true
+        },
+        {
             "id": "rigmodules.weights.load",
             "name": "Load Skin Weights...",
             "short_name": "Load Weights",

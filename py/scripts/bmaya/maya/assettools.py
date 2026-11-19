@@ -589,6 +589,16 @@ def mark_meshes_for_skinning(new_ids: bool = False) -> list[str]:
     return ids
 
 
+def smooth_skin_weights(iterations: int = 3, strength: float = 1.0) -> int:
+    """Smooths the skin weights of the selected vertices, or of every vertex of a selected mesh: each vertex becomes the
+    average of itself and its neighbors, `iterations` times, and `strength` is how far each pass goes (RigModules D64).
+    Locked influences and the skinCluster's maximum influences are kept. One undo step. Returns the number of vertices
+    that changed."""
+    changed = cmds.smoothSkinWeights(iterations=iterations, strength=strength)
+    bmaya.core.log.info(f"Smoothed the skin weights of {changed} vertex(es).")
+    return changed
+
+
 # ---- menu entry points ---------------------------------------------------------------------
 # Each takes its scope from the session (the active rig, the selection, the playback range) and asks for the rest
 # through a Prompter: the one passed in, else the session's (bmaya.core.prompts.current()). Batch jobs call the

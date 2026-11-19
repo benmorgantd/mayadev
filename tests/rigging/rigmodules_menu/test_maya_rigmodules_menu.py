@@ -69,7 +69,7 @@ class MenuLayout(unittest.TestCase):
     def test_every_tool_is_in_the_menu_once(self):
         ids = [item.tool for item in _layout().tool_items()]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(len(ids), 45)
+        self.assertEqual(len(ids), 46)
 
     def test_the_asset_submenu_adds_rigs_looks_and_skeletons(self):
         # A variant became a rig and a look (RigModules D54), and a skeleton is saved and loaded as its skeleton file.
@@ -471,6 +471,21 @@ class MenuScripts(unittest.TestCase):
             cmds.delete(cluster)
             self.run_tool("Load Skin Weights...", self.root)
         self.assertTrue(cmds.ls(cmds.listHistory(box), type="skinCluster"))
+
+    def test_smooth_skin_weights_smooths_the_selected_vertices_in_one_undo_step(self):
+        cmds = self.cmds
+        box, cluster = self.make_skinned_box()
+        before = [cmds.skinPercent(cluster, f"{box}.vtx[{v}]", query=True, value=True) for v in range(8)]
+        self.run_tool("Smooth Skin Weights", [f"{box}.vtx[0:7]"])
+        after = [cmds.skinPercent(cluster, f"{box}.vtx[{v}]", query=True, value=True) for v in range(8)]
+        for row in after:
+            self.assertAlmostEqual(sum(row), 1.0, places=6)
+        cmds.undo()
+        self.assertEqual([cmds.skinPercent(cluster, f"{box}.vtx[{v}]", query=True, value=True) for v in range(8)], before)
+
+    def test_smooth_skin_weights_needs_a_mesh(self):
+        with self.assertRaisesRegex(RuntimeError, "needs meshes"):
+            self.run_tool("Smooth Skin Weights", None)
 
     def run_bmaya_tool(self, tool_id, selection):
         """Runs a tool of the bmaya menu, with the selection set first."""

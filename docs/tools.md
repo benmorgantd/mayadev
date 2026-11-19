@@ -210,6 +210,7 @@ Mark meshes in the model scene, before **Save Model...**, so every build imports
 |---|---|---|
 | Save Skin Weights... | active rig | Saves every skinned mesh in the rig's namespace to a look's `weights` folder, one file per mesh (the look is asked for when the rig can wear several). Before the asset folder exists, uses a folder dialog |
 | Load Skin Weights... | active rig | Loads the folder onto the meshes, matched by `meshId`, as one undo step |
+| Smooth Skin Weights | vertices, or meshes | Each selected vertex (every vertex of a selected mesh) becomes the average of itself and its neighbors, three passes (`assettools.smooth_skin_weights`, which runs `cmds.smoothSkinWeights`, RigModules D64). Locked influences and the skinCluster's maximum influences are kept. One undo step |
 
 #### shapes
 
