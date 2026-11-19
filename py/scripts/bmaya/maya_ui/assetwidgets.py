@@ -1,5 +1,5 @@
 """Widgets of the Asset Editor, each over a plain list or value so another window can use them (RigModules
-design/asset-editor.md, D61): AssetPicker, FileStatusTable and OwnerCombo. Qt only, no Maya.
+design/asset-editor.md, D61): AssetPicker, FileStatusTable, OwnerCombo and MixedFieldForm. Qt only, no Maya.
 
 They hold no asset logic. The editor window binds them to an AssetEditorSession.
 """
@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import datetime
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
+from bmaya.core.fieldset import FieldSpec, FieldState
 from bmaya.maya_ui.widgets import ListModel
 
 FILE, NAME, STATUS, VERSIONS, SAVE, LOAD = range(6)
@@ -137,3 +138,142 @@ class FileStatusTable(QtWidgets.QTableView):
         button.clicked.connect(lambda checked=False, key=row.key: signal.emit(key))
         self.setIndexWidget(self.row_model.index(number, column), button)
         self.buttons[(row.key, name)] = button
+
+
+MIXED_TEXT = "Mixed"
+PLACEHOLDER = "placeholder"   # the item data of a choice's Mixed or blank row
+
+
+class MixedFieldForm(QtWidgets.QWidget):
+    """A form for fields edited across several objects (bmaya.core.fieldset). set_states shows each field's value over
+    the selection, and a field the objects disagree on says Mixed. field_edited emits (name, value) when the user
+    changes a field, never when set_states does. A choice is a drop-down, text an editable drop-down of suggestions, a
+    bool a check box (partly checked when mixed), a float a line edit. values() reads what is on screen: None for a
+    field that is blank or mixed."""
+
+    field_edited = QtCore.Signal(str, object)
+
+    def __init__(self, specs: tuple[FieldSpec, ...], parent: QtWidgets.QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.specs = {spec.name: spec for spec in specs}
+        self.editors: dict[str, QtWidgets.QWidget] = {}
+        self._shown: dict[str, object] = {}   # the value each field was last set to, to tell an edit from a refill
+        layout = QtWidgets.QFormLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        for spec in specs:
+            editor = self._make_editor(spec)
+            editor.setToolTip(spec.tip)
+            self.editors[spec.name] = editor
+            layout.addRow(spec.label, editor)
+
+    # ---- building --------------------------------------------------------------------------
+
+    def _make_editor(self, spec: FieldSpec) -> QtWidgets.QWidget:
+        name = spec.name
+        if spec.kind == "choice":
+            combo = QtWidgets.QComboBox()
+            combo.addItems(spec.options)
+            combo.activated.connect(lambda index, name=name, combo=combo: self._emit_choice(name, combo))
+            return combo
+        if spec.kind == "text":
+            combo = QtWidgets.QComboBox()
+            combo.setEditable(True)
+            combo.setInsertPolicy(QtWidgets.QComboBox.InsertPolicy.NoInsert)
+            combo.addItems(spec.options)
+            combo.lineEdit().setPlaceholderText(MIXED_TEXT)
+            combo.activated.connect(lambda index, name=name, combo=combo: self._emit_text(name, combo))
+            combo.lineEdit().editingFinished.connect(lambda name=name, combo=combo: self._emit_text(name, combo))
+            return combo
+        if spec.kind == "bool":
+            box = QtWidgets.QCheckBox()
+            box.clicked.connect(lambda checked=False, name=name, box=box: self._emit_bool(name, box))
+            return box
+        edit = QtWidgets.QLineEdit()
+        edit.setPlaceholderText(MIXED_TEXT)
+        edit.setValidator(QtGui.QDoubleValidator(edit))
+        edit.editingFinished.connect(lambda name=name, edit=edit: self._emit_float(name, edit))
+        return edit
+
+    def _emit_bool(self, name: str, box: QtWidgets.QCheckBox) -> None:
+        """A click on a mixed box makes the value True for every object. A click on any other flips it."""
+        if box.property("mixed"):
+            box.setProperty("mixed", False)
+            box.setCheckState(QtCore.Qt.CheckState.Checked)
+        self.field_edited.emit(name, box.isChecked())
+
+    def _emit_choice(self, name: str, combo: QtWidgets.QComboBox) -> None:
+        text = combo.currentText()
+        if text and text != MIXED_TEXT:
+            self.field_edited.emit(name, text)
+
+    def _emit_text(self, name: str, combo: QtWidgets.QComboBox) -> None:
+        text = combo.currentText().strip()
+        if text and text != self._shown.get(name):
+            self.field_edited.emit(name, text)
+
+    def _emit_float(self, name: str, edit: QtWidgets.QLineEdit) -> None:
+        if edit.isModified() and edit.text().strip():
+            edit.setModified(False)
+            try:
+                self.field_edited.emit(name, float(edit.text()))
+            except ValueError:
+                pass
+
+    # ---- showing and reading ---------------------------------------------------------------
+
+    def set_options(self, name: str, options: list[str]) -> None:
+        """Replaces the suggestions of a text field."""
+        combo = self.editors[name]
+        text = combo.currentText()
+        combo.blockSignals(True)
+        combo.clear()
+        combo.addItems(options)
+        combo.setEditText(text)
+        combo.blockSignals(False)
+
+    def set_states(self, states: dict[str, FieldState]) -> None:
+        """Shows the state of each named field. A field with no state is blank."""
+        self._shown = {}
+        for name, spec in self.specs.items():
+            self.set_state(name, states.get(name, FieldState()))
+
+    def set_state(self, name: str, state: FieldState) -> None:
+        spec, editor = self.specs[name], self.editors[name]
+        editor.blockSignals(True)
+        shown = None if state.mixed else state.value
+        self._shown[name] = shown
+        if spec.kind == "choice":
+            for index in reversed(range(editor.count())):
+                if editor.itemData(index) == PLACEHOLDER:   # the Mixed or blank row an earlier state put in
+                    editor.removeItem(index)
+            if shown is None:
+                editor.insertItem(0, MIXED_TEXT if state.mixed else "", PLACEHOLDER)
+                editor.setCurrentIndex(0)
+            else:
+                editor.setCurrentIndex(editor.findText(str(shown)))
+        elif spec.kind == "text":
+            editor.setEditText("" if shown is None else str(shown))
+        elif spec.kind == "bool":
+            editor.setProperty("mixed", state.mixed)
+            editor.setCheckState(QtCore.Qt.CheckState.PartiallyChecked if state.mixed else
+                                 (QtCore.Qt.CheckState.Checked if shown else QtCore.Qt.CheckState.Unchecked))
+        else:
+            editor.setText("" if shown is None else f"{shown:.6g}")
+            editor.setModified(False)
+        editor.blockSignals(False)
+
+    def values(self) -> dict[str, object]:
+        """What the form shows, by field name. None for a blank or mixed field."""
+        out: dict[str, object] = {}
+        for name, spec in self.specs.items():
+            editor = self.editors[name]
+            if spec.kind == "choice":
+                text = editor.currentText()
+                out[name] = text if text and text != MIXED_TEXT else None
+            elif spec.kind == "text":
+                out[name] = editor.currentText().strip() or None
+            elif spec.kind == "bool":
+                out[name] = None if editor.checkState() == QtCore.Qt.CheckState.PartiallyChecked else editor.isChecked()
+            else:
+                out[name] = float(editor.text()) if editor.text().strip() else None
+        return out

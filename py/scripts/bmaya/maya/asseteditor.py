@@ -25,6 +25,7 @@ import bmaya.core.prompts
 import bmaya.maya.activerig
 import bmaya.maya.assetfiles
 import bmaya.maya.assettools
+import bmaya.maya.markupmodel
 import bmaya.maya.eventsregistry
 
 LAST_ASSET_OPTION = "bmayaAssetEditorLastAsset"
@@ -46,7 +47,8 @@ class AssetEditorSession:
     """State and commands of the Asset Editor.
 
     changed emits with no arguments when the view should read asset_ids, the context's values, the header strings
-    or the files again. The context's own changed event is forwarded to it, so a view connects to one event."""
+    or the files again. The context's own changed event is forwarded to it, so a view connects to one event. markup
+    has its own changed event, and reads the scene only while a view marks it active."""
 
     def __init__(self, asset_id: str | None = None) -> None:
         self.changed = bmaya.core.observable.Event()
@@ -64,6 +66,7 @@ class AssetEditorSession:
         bmaya.maya.activerig.ActiveRigTracker()   # the singleton: starts its callbacks when none runs
         self.context = bmaya.core.asset.context.AssetContext.start(asset_id or self._initial_asset())
         self.files = bmaya.maya.assetfiles.AssetFilesModel(self.context)
+        self.markup = bmaya.maya.markupmodel.MarkupModel(self.selection_changed)
         self.context.changed.connect(self._on_context_changed)
         bmaya.maya.activerig.ActiveRigTracker.changed.connect(self._on_active_rig_changed)
 

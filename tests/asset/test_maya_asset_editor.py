@@ -533,5 +533,271 @@ class Creating(EditorBase):
         self.assertIn("puzzle\\levels\\props\\gem", session.asset_ids)
 
 
+class Markup(EditorBase):
+
+    def joints(self, *names, namespace=""):
+        """Unmarked joints with these names, each its own root."""
+        made = []
+        for index, name in enumerate(names):
+            self.cmds.select(clear=True)
+            made.append(self.cmds.joint(name=f"{namespace}{name}", position=(index, 0, 0)))
+        return made
+
+    def mark(self, joint, usage, side="Center", export=True, skin=True):
+        self.cmds.rigJointMarkup(joint, usage=usage, side=side, export=export, skin=skin)
+
+    def model(self, *selected):
+        session = self.session(HERO)
+        if selected:
+            self.cmds.select(list(selected), replace=True)
+        else:
+            self.cmds.select(clear=True)
+        session.markup.set_active(True)
+        return session.markup
+
+    def read(self, joint):
+        return json.loads(self.cmds.rigJointMarkup(joint, query=True)[0])
+
+    def test_with_no_selection_it_says_what_to_select(self):
+        self.assertEqual(self.model().summary, "Select joints or rig controls.")
+
+    def test_an_inactive_model_does_not_read_the_selection(self):
+        session = self.session(HERO)
+        [joint] = self.joints("a_00_M_JNT")
+        self.assertEqual(session.markup.joints, [])
+        session.markup.set_active(True)
+        self.assertEqual(session.markup.joints, [self.cmds.ls(joint, long=True)[0]])
+
+    def test_the_selection_changing_refreshes_an_active_model_only(self):
+        session = self.session(HERO)
+        session.watch_selection(True)
+        [joint] = self.joints("a_00_M_JNT")
+        self.mark(joint, "spine")
+        self.cmds.select(joint, replace=True)
+        self.assertEqual(session.markup.joints, [])
+        session.markup.set_active(True)
+        self.cmds.select(clear=True)
+        self.assertEqual(session.markup.joints, [])
+        self.cmds.select(joint, replace=True)
+        self.assertEqual(len(session.markup.joints), 1)
+
+    def test_marked_and_unmarked_joints_are_told_apart(self):
+        a, b, c = self.joints("a_00_M_JNT", "b_00_M_JNT", "c_00_M_JNT")
+        self.mark(a, "spine")
+        self.mark(b, "chest")
+        model = self.model(a, b, c)
+        self.assertEqual((len(model.marked), len(model.unmarked)), (2, 1))
+        self.assertEqual(model.summary, "3 joint(s): 2 marked, 1 not")
+
+    def test_a_field_the_joints_agree_on_has_one_value_and_one_they_dont_is_mixed(self):
+        a, b = self.joints("a_00_L_JNT", "b_00_L_JNT")
+        self.mark(a, "arm", "Left", export=True, skin=True)
+        self.mark(b, "hand", "Left", export=False, skin=True)
+        fields = self.model(a, b).fields
+        self.assertEqual((fields["side"].value, fields["side"].mixed), ("Left", False))
+        self.assertEqual((fields["usage"].value, fields["usage"].mixed), (None, True))
+        self.assertEqual((fields["export"].value, fields["export"].mixed), (None, True))
+        self.assertEqual((fields["skin"].value, fields["skin"].mixed), (True, False))
+
+    def test_set_field_edits_every_marked_joint_in_one_undo_step(self):
+        self.cmds.undoInfo(state=True, infinity=True)
+        a, b = self.joints("a_00_M_JNT", "b_00_M_JNT")
+        self.mark(a, "arm", "Left")
+        self.mark(b, "hand", "Left")
+        model = self.model(a, b)
+        model.set_field("side", "Right")
+        self.assertEqual([self.read(j)["side"] for j in (a, b)], ["Right", "Right"])
+        self.assertEqual(model.fields["side"].value, "Right")
+        self.cmds.undo()
+        self.assertEqual([self.read(j)["side"] for j in (a, b)], ["Left", "Left"])
+
+    def test_set_field_on_the_booleans(self):
+        a, b = self.joints("a_00_M_JNT", "b_00_M_JNT")
+        self.mark(a, "arm", skin=True)
+        self.mark(b, "hand", skin=False)
+        self.model(a, b).set_field("skin", True)
+        self.assertEqual([self.read(j)["skin"] for j in (a, b)], [True, True])
+
+    def test_set_field_skips_unmarked_joints(self):
+        a, b = self.joints("a_00_M_JNT", "b_00_M_JNT")
+        self.mark(a, "arm")
+        self.model(a, b).set_field("side", "Left")
+        self.assertEqual(self.read(a)["side"], "Left")
+        self.assertEqual(self.cmds.rigJointMarkup(b, query=True), [""])
+
+    def test_set_field_with_nothing_marked_says_to_add_markup(self):
+        [a] = self.joints("a_00_M_JNT")
+        with self.assertRaisesRegex(RuntimeError, "Add markup first"):
+            self.model(a).set_field("side", "Left")
+
+    def test_two_joints_cannot_be_given_one_usage_and_nothing_changes(self):
+        a, b = self.joints("a_00_M_JNT", "b_00_M_JNT")
+        self.mark(a, "arm")
+        self.mark(b, "hand")
+        with self.assertRaisesRegex(RuntimeError, "unique on a skeleton"):
+            self.model(a, b).set_field("usage", "arm")
+        self.assertEqual([self.read(j)["usage"] for j in (a, b)], ["arm", "hand"])
+
+    def test_a_usage_another_joint_of_the_skeleton_has_is_refused(self):
+        a, b = self.joints("a_00_M_JNT", "b_00_M_JNT")
+        self.mark(a, "arm")
+        self.mark(b, "hand")
+        with self.assertRaisesRegex(RuntimeError, "unique on a skeleton"):
+            self.model(b).set_field("usage", "arm")
+
+    def test_the_same_usage_in_another_namespace_is_a_different_skeleton(self):
+        self.cmds.namespace(add="one")
+        self.cmds.namespace(add="two")
+        a, = self.joints("a_00_M_JNT", namespace=":one:")
+        b, = self.joints("b_00_M_JNT", namespace=":two:")
+        self.mark(a, "arm")
+        self.mark(b, "hand")
+        self.model(b).set_field("usage", "arm")
+        self.assertEqual(self.read(b)["usage"], "arm")
+
+    def test_an_empty_usage_or_a_bad_side_is_refused(self):
+        [a] = self.joints("a_00_M_JNT")
+        self.mark(a, "arm")
+        model = self.model(a)
+        with self.assertRaisesRegex(RuntimeError, "can't be empty"):
+            model.set_field("usage", "  ")
+        with self.assertRaisesRegex(RuntimeError, "Center, Left, Right"):
+            model.set_field("side", "Up")
+        with self.assertRaisesRegex(RuntimeError, "not a markup field"):
+            model.set_field("colour", "red")
+
+    def test_add_markup_marks_one_joint(self):
+        [a] = self.joints("a_00_M_JNT")
+        model = self.model(a)
+        model.add_markup("spine", "Center", export=True, skin=False)
+        self.assertEqual(self.read(a), {"markupVersion": 1, "usage": "spine", "side": "Center", "export": True,
+                                        "skin": False})
+        self.assertEqual((len(model.marked), len(model.unmarked)), (1, 0))
+
+    def test_add_markup_to_several_joints_needs_numbering(self):
+        a, b = self.joints("a_00_M_JNT", "b_00_M_JNT")
+        model = self.model(a, b)
+        with self.assertRaisesRegex(RuntimeError, "Number them"):
+            model.add_markup("spine")
+        self.assertEqual(self.cmds.rigJointMarkup(a, b, query=True), ["", ""])
+
+    def test_numbered_markup_follows_the_selection_order_in_one_undo_step(self):
+        self.cmds.undoInfo(state=True, infinity=True)
+        a, b, c = self.joints("a_00_M_JNT", "b_00_M_JNT", "c_00_M_JNT")
+        model = self.model(c, a, b)
+        model.add_markup("spine", "Left", numbered=True)
+        self.assertEqual([self.read(j)["usage"] for j in (c, a, b)], ["spine_00", "spine_01", "spine_02"])
+        self.assertEqual({self.read(j)["side"] for j in (a, b, c)}, {"Left"})
+        self.cmds.undo()
+        self.assertEqual(self.cmds.rigJointMarkup(a, b, c, query=True), ["", "", ""])
+
+    def test_add_markup_leaves_marked_joints_alone(self):
+        a, b = self.joints("a_00_M_JNT", "b_00_M_JNT")
+        self.mark(a, "arm")
+        self.model(a, b).add_markup("hand")
+        self.assertEqual((self.read(a)["usage"], self.read(b)["usage"]), ("arm", "hand"))
+
+    def test_add_markup_refuses_a_usage_the_skeleton_has(self):
+        a, b = self.joints("a_00_M_JNT", "b_00_M_JNT")
+        self.mark(a, "arm")
+        with self.assertRaisesRegex(RuntimeError, "unique on a skeleton"):
+            self.model(b).add_markup("arm")
+        self.assertEqual(self.cmds.rigJointMarkup(b, query=True), [""])
+
+    def test_add_markup_with_every_joint_marked_says_so(self):
+        [a] = self.joints("a_00_M_JNT")
+        self.mark(a, "arm")
+        with self.assertRaisesRegex(RuntimeError, "already has markup"):
+            self.model(a).add_markup("hand")
+
+    def test_remove_clears_the_markup_in_one_undo_step(self):
+        self.cmds.undoInfo(state=True, infinity=True)
+        a, b = self.joints("a_00_M_JNT", "b_00_M_JNT")
+        self.mark(a, "arm")
+        self.mark(b, "hand")
+        model = self.model(a, b)
+        self.assertEqual(len(model.remove()), 2)
+        self.assertEqual(self.cmds.rigJointMarkup(a, b, query=True), ["", ""])
+        self.cmds.undo()
+        self.assertEqual([self.read(j)["usage"] for j in (a, b)], ["arm", "hand"])
+
+    def test_remove_with_nothing_marked_says_so(self):
+        [a] = self.joints("a_00_M_JNT")
+        with self.assertRaisesRegex(RuntimeError, "has markup"):
+            self.model(a).remove()
+
+    def test_joints_that_share_a_side_and_usage_are_a_warning(self):
+        a, b = self.joints("a_00_M_JNT", "b_00_M_JNT")
+        self.mark(a, "arm")
+        self.mark(b, "arm")
+        warnings = self.model(a).warnings
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("2 joints share side Center and usage 'arm'", warnings[0])
+
+    def test_the_usages_in_the_scene_are_the_suggestions(self):
+        a, b, c = self.joints("a_00_M_JNT", "b_00_M_JNT", "c_00_M_JNT")
+        self.mark(a, "spine")
+        self.mark(b, "arm")
+        self.assertEqual(self.model(a).usages, ["arm", "spine"])
+        self.assertEqual(c, self.cmds.ls(c)[0])
+
+    def test_a_huge_selection_is_not_read(self):
+        import bmaya.maya.markupmodel
+        a, b = self.joints("a_00_M_JNT", "b_00_M_JNT")
+        with mock.patch.object(bmaya.maya.markupmodel, "MAX_SELECTED", 1):
+            model = self.model(a, b)
+        self.assertEqual((model.joints, "Select fewer" in model.summary), ([], True))
+
+    def test_rig_controls_are_listed_with_their_markup_and_never_edited(self):
+        self.make_buildable_hero()
+        session = self.session(HERO)
+        session.files.build_rig()
+        controls = self.cmds.ls(type="rigControlNode", long=True)
+        control = controls[0]
+        self.cmds.select(controls, replace=True)
+        session.markup.set_active(True)
+        listed = session.markup.controls
+        self.assertEqual(session.markup.controls_selected, len(controls))
+        self.assertEqual({entry.module_type for entry in listed}, {"Layout", "FkChain"})
+        self.assertTrue(all(entry.usage and entry.side == "Center" for entry in listed))
+        self.assertEqual(session.markup.summary, f"{len(controls)} rig control(s)")
+        before = self.cmds.getAttr(control + ".controlMarkup")
+        with self.assertRaises(RuntimeError):
+            session.markup.set_field("usage", "x")   # no joint is selected
+        self.assertEqual(self.cmds.getAttr(control + ".controlMarkup"), before)
+
+    def test_joints_and_controls_selected_together_are_both_shown(self):
+        self.make_buildable_hero()
+        session = self.session(HERO)
+        session.files.build_rig()
+        control = self.cmds.ls(type="rigControlNode", long=True)[0]
+        [joint] = self.joints("loose_00_M_JNT")
+        self.cmds.select([control, joint], replace=True)
+        session.markup.set_active(True)
+        self.assertEqual(session.markup.summary, "1 joint(s): 0 marked, 1 not, 1 rig control(s)")
+
+    def test_mirror_joints_copies_markup_to_the_other_side(self):
+        [a] = self.joints("arm_00_L_JNT")
+        self.cmds.xform(a, worldSpace=True, translation=(3, 5, 0))
+        self.mark(a, "arm", "Left")
+        self.model(a).mirror_joints()
+        self.assertTrue(self.cmds.objExists("arm_00_R_JNT"))
+        self.assertEqual(self.read("arm_00_R_JNT")["side"], "Right")
+
+    def test_mirror_joints_with_no_joint_selected_says_so(self):
+        with self.assertRaisesRegex(RuntimeError, "Select joints"):
+            self.model().mirror_joints()
+
+    def test_add_twist_joints_asks_for_the_settings_and_adds_marked_joints(self):
+        start, end = self.joints("start_00_L_JNT", "end_00_L_JNT")
+        self.cmds.xform(end, worldSpace=True, translation=(0, 10, 0))
+        self.mark(start, "upperArm", "Left")
+        self.mark(end, "lowerArm", "Left")
+        model = self.model(start, end)
+        created = model.add_twist_joints(self.answers(self.tools.TwistJointSettings(name="twist", count=3)))
+        self.assertEqual(len(created), 3)
+        self.assertEqual(sorted(self.read(j)["usage"] for j in created), ["twist_00", "twist_01", "twist_02"])
+
+
 if __name__ == "__main__":
     unittest.main()

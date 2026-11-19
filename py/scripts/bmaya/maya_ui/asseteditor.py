@@ -15,13 +15,17 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 import bmaya.core.log
 import bmaya.maya.asseteditor
+import bmaya.maya.markupmodel
+from bmaya.core.fieldset import FieldState
 from bmaya.maya_ui import host
-from bmaya.maya_ui.assetwidgets import AssetPicker, FileStatusTable, OwnerCombo
+from bmaya.maya_ui.assetwidgets import AssetPicker, FileStatusTable, MixedFieldForm, OwnerCombo
 from bmaya.maya_ui.librarybrowser import menu_action
+from bmaya.maya_ui.widgets import ListModel
 
 OBJECT_NAME = "bmayaAssetEditor"
 FILES_TAB = "Files"
-TAB_OPTION = "bmayaAssetEditorTab"
+MARKUP_TAB = "Markup"
+CONTROL_COLUMNS = ("Control", "Module", "Side", "Usage", "Mirror")
 
 
 class AssetEditor(QtWidgets.QWidget):
@@ -54,13 +58,18 @@ class AssetEditor(QtWidgets.QWidget):
 
         self.tabs = QtWidgets.QTabWidget()
         self.tabs.addTab(self._build_files_tab(), FILES_TAB)
+        self.markup_tab = self._build_markup_tab()
+        self.tabs.addTab(self.markup_tab, MARKUP_TAB)
+        self.tabs.currentChanged.connect(lambda index: self._sync_active())
         layout.addWidget(self.tabs, 1)
         self.status_label = QtWidgets.QLabel()
         self.status_label.setWordWrap(True)
         layout.addWidget(self.status_label)
 
         self.session.changed.connect(self.reload)
+        self.session.markup.changed.connect(self.reload_markup)
         self.reload()
+        self.reload_markup()
 
     # ---- building --------------------------------------------------------------------------
 
@@ -123,6 +132,70 @@ class AssetEditor(QtWidgets.QWidget):
         layout.addLayout(row)
         return tab
 
+    def _build_markup_tab(self) -> QtWidgets.QWidget:
+        """The selected joints' markup, edited across all of them, and the selected controls' markup, shown."""
+        markup = bmaya.maya.markupmodel
+        tab = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(tab)
+        self.markup_summary = QtWidgets.QLabel()
+        layout.addWidget(self.markup_summary)
+
+        self.markup_form = MixedFieldForm(markup.JOINT_FIELDS)
+        self.markup_form.field_edited.connect(
+            lambda name, value: self.run(lambda: self.session.markup.set_field(name, value)))
+        layout.addWidget(self.markup_form)
+        row = QtWidgets.QHBoxLayout()
+        self.remove_markup_button = QtWidgets.QPushButton("Remove Markup")
+        self.remove_markup_button.setToolTip("Remove the markup of the selected joints")
+        self.remove_markup_button.clicked.connect(lambda: self.run(self.session.markup.remove))
+        self.mirror_joints_button = QtWidgets.QPushButton("Mirror Joints")
+        self.mirror_joints_button.setToolTip("Mirror the selected _L_JNT joints onto _R_JNT joints")
+        self.mirror_joints_button.clicked.connect(lambda: self.run(self.session.markup.mirror_joints))
+        self.twist_button = QtWidgets.QPushButton("Add Twist Joints...")
+        self.twist_button.setToolTip("Select the start joint, then the end joint")
+        self.twist_button.clicked.connect(lambda: self.run(self.session.markup.add_twist_joints))
+        for button in (self.remove_markup_button, self.mirror_joints_button, self.twist_button):
+            row.addWidget(button)
+        layout.addLayout(row)
+
+        self.add_box = QtWidgets.QGroupBox("Joints without markup")
+        add_layout = QtWidgets.QVBoxLayout(self.add_box)
+        self.add_form = MixedFieldForm(markup.JOINT_FIELDS)
+        self.add_form.set_states({"usage": FieldState("", False, 1), "side": FieldState("Center", False, 1),
+                                  "export": FieldState(True, False, 1), "skin": FieldState(True, False, 1)})
+        add_layout.addWidget(self.add_form)
+        self.number_check = QtWidgets.QCheckBox("Number them")
+        self.number_check.setToolTip("Name the usages usage_00, usage_01 and so on, in selection order. "
+                                     "Two joints may not share a side and usage.")
+        add_layout.addWidget(self.number_check)
+        self.add_markup_button = QtWidgets.QPushButton("Add Markup")
+        self.add_markup_button.clicked.connect(lambda: self.run(self._add_markup))
+        add_layout.addWidget(self.add_markup_button)
+        layout.addWidget(self.add_box)
+
+        self.markup_warnings = QtWidgets.QLabel()
+        self.markup_warnings.setWordWrap(True)
+        layout.addWidget(self.markup_warnings)
+        self.controls_table = QtWidgets.QTableView()
+        self.controls_model = ListModel(
+            {}, columns=[(CONTROL_COLUMNS[0], lambda control: control.node.rsplit("|", 1)[-1]),
+                         (CONTROL_COLUMNS[1], lambda control: control.module.rsplit("|", 1)[-1]),
+                         (CONTROL_COLUMNS[2], lambda control: control.side),
+                         (CONTROL_COLUMNS[3], lambda control: control.usage),
+                         (CONTROL_COLUMNS[4], lambda control: (control.mirror or "").rsplit("|", 1)[-1])],
+            parent=self.controls_table)
+        self.controls_table.setModel(self.controls_model)
+        self.controls_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.controls_table.verticalHeader().setVisible(False)
+        self.controls_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+        layout.addWidget(self.controls_table, 1)
+        return tab
+
+    def _add_markup(self) -> None:
+        values = self.add_form.values()
+        self.session.markup.add_markup(values["usage"] or "", values["side"] or "Center", bool(values["export"]),
+                                       bool(values["skin"]), numbered=self.number_check.isChecked())
+
     # ---- reading the session ---------------------------------------------------------------
 
     def run(self, command: Callable[[], object]) -> None:
@@ -156,6 +229,30 @@ class AssetEditor(QtWidgets.QWidget):
         self.files_message.setVisible(bool(files.message))
         self.build_button.setEnabled(bool(files.rows) and context.rig is not None)
 
+    def reload_markup(self) -> None:
+        """Shows the markup model: the selected joints' fields, the add box, the warnings and the controls."""
+        markup = self.session.markup
+        self.markup_summary.setText(markup.summary)
+        self.markup_form.set_options("usage", markup.usages)
+        self.add_form.set_options("usage", markup.usages)
+        self.markup_form.set_states(markup.fields)
+        self.markup_form.setEnabled(bool(markup.marked))
+        self.remove_markup_button.setEnabled(bool(markup.marked))
+        self.mirror_joints_button.setEnabled(bool(markup.joints))
+        self.add_box.setVisible(bool(markup.unmarked))
+        self.add_markup_button.setText(f"Add Markup to {len(markup.unmarked)} Joint(s)")
+        self.number_check.setEnabled(len(markup.unmarked) > 1)
+        if len(markup.unmarked) <= 1:
+            self.number_check.setChecked(False)
+        self.markup_warnings.setText("\n".join(markup.warnings))
+        self.markup_warnings.setVisible(bool(markup.warnings))
+        self.controls_model.set_items(markup.controls)
+        self.controls_table.setVisible(bool(markup.controls))
+
+    def _sync_active(self) -> None:
+        """The markup model reads the scene only while its tab is showing."""
+        self.session.markup.set_active(self.isVisible() and self.tabs.currentWidget() is self.markup_tab)
+
     # ---- window events ---------------------------------------------------------------------
 
     def showEvent(self, event: QtGui.QShowEvent) -> None:
@@ -164,10 +261,12 @@ class AssetEditor(QtWidgets.QWidget):
         super().showEvent(event)
         self.session.watch_selection(True)
         self.session.files.refresh()
+        self._sync_active()
 
     def hideEvent(self, event: QtGui.QHideEvent) -> None:
         super().hideEvent(event)
         self.session.watch_selection(False)
+        self.session.markup.set_active(False)
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Closing the window ends the session: its callbacks go and the asset is cleared."""
