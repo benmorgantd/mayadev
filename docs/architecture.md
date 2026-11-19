@@ -95,6 +95,8 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `core/asset/asset.py` | `Asset`: paths by owner, `skeletons`, `rigs`, `looks`, `rig`, `look`, `skeleton_of`, `add_rig`, `add_look`, `create`, `from_path`; the nesting check |
 | `core/asset/records.py` | `rig.json` and `look.json`: `SkeletonRef`, `RigRef`, `RigRecord`, `LookRecord` and their readers and writers |
 | `core/asset/registry.py` | `Registry`: the in-memory index of a project |
+| `core/asset/context.py` | `AssetContext`: the asset id and the chosen skeleton, rig and look the Asset Editor works on, with a `changed` event. `current()` is `None` unless the editor is open |
+| `core/asset/catalog.py` | `project_folders` and `asset_ids`: every project and asset below the projects root, for the Asset Editor's list |
 | `core/asset/publishes.py` | `make_id`, `list_ids`, `latest`, `info`, `create` |
 | `core/asset/versions.py` | Local version copies: `version`, `list_versions`, `versions_root` |
 | `core/asset/sourcecontrol.py` | `SourceControl` (does nothing), `current`, `set_current` |
@@ -118,6 +120,8 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `maya/posetools.py` | Zero, mirror, flip, key, load pose and load animation tools on the selection or the active rig: plain functions with a scope, and the `*_interactive` entry points |
 | `maya/activerig.py` | `get_active_rig`, `ActiveRigTracker` and its `changed` event |
 | `maya/librarybrowser.py` | `LibrarySession`, the library browser's view-model with no Qt: the listing that follows the active rig, search, scope, apply, save, tags, rename, delete and masks, and what the window can't compute itself: `facets` (the values in use), `name_taken`, `current_frame`, `playback_range`, `mask_from_selection`, and the project's vocabulary warnings in `details`. `read_file_infos` is its `Index` reader, `rig_masks` its masks from a rig |
+| `maya/asseteditor.py` | `AssetEditorSession`, the Asset Editor's view-model with no Qt: the asset context, the callbacks that keep it current (all removed by `close()`), and the create, switch and refresh commands |
+| `maya/assetfiles.py` | `AssetFilesModel`, `FileRow` and the `FileAction` table: one row per file of the chosen asset, with its status and Save, Load and Build Rig |
 | `maya/rigpanel.py` | `RigPanelSession`, `ControlGroup`, `SpaceState` and `LimbState`: the active rig panel's view-model, no Qt |
 | `maya/devreload.py` | Reload and unload RigModules, and the reload hooks slot |
 | `maya/eventsregistry.py` | `EventsRegistry`, `EventType`, `pause_callbacks` |
@@ -127,6 +131,8 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `maya_ui/prompter.py` | `QtPrompter`, `FormDialog` |
 | `maya_ui/host.py` | Maya as the host of a window: `parent_window`, `show` (one window per object name, optionally docked), `dock_control_name`, `defer`. With `menus.py`, the only file in `maya_ui` that imports Maya |
 | `maya_ui/rigpanel.py` | `RigPanel`, the active rig panel's window over a `RigPanelSession`, and `show_window` (docked) |
+| `maya_ui/asseteditor.py` | `AssetEditor`, the Asset Editor's window over an `AssetEditorSession`, and `show_window` (docked) |
+| `maya_ui/assetwidgets.py` | `AssetPicker`, `OwnerCombo` and `FileStatusTable`: the Asset Editor's reusable widgets, over plain lists |
 | `maya_ui/librarybrowser.py` | `LibraryBrowser`, the library browser's window over a `LibrarySession` (one `QTableView` as List or Details, search, filter menu, scope and apply, save, context menu), `EditMetaDialog`, and `show_window` (docked) |
 | `maya_ui/menus.py` | The Maya menus (`ToolMenu`, `build_menus`, `delete_plugin_menus`, `reload_menus`) and the Menu Editor |
 | `maya_ui/widgets.py` | `field_widget`, `show_value` and `read_value` (an editor chosen by a type hint), `DataclassForm`, `SignatureForm`, `ListModel` (a Qt item model over a list), `TagsEdit` (a line of comma-separated tags that completes the one being typed) |

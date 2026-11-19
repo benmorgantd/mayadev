@@ -162,7 +162,7 @@ Saving in an editor and then running **Reload Menu (dev)** shows the change with
 
 Built only while the plugin is loaded (`MenuSpec.plugin` in `bmaya.maya.constants.MENUS`), and deleted when it unloads. It is a set of submenus, in this order: panels, asset, mesh, joints, weights, shapes, control, pose, clip. A new tool goes in the submenu for its topic, and only a tool animators use constantly goes at the top level. Dialogs are small, and errors report in the Script Editor.
 
-Most tools act on the **active rig**, so nobody selects a rig root ([below](#the-active-rig)). The tools that ask for an asset id fill it in with the active rig's asset id. A rig can be built anywhere before its asset exists. Once the asset folder exists, the shape, weight and rig tools always use the asset's paths, so a file never lands in two places. Before it exists, they fall back to a file or folder dialog.
+Most tools act on the **active rig**, so nobody selects a rig root ([below](#the-active-rig)). The tools that ask for an asset id fill it in with the active rig's asset id, or, while the [Asset Editor](#the-asset-editor) is open, offer its asset first and ask you to confirm it (a drop-down of its asset and "Another asset..."). A rig can be built anywhere before its asset exists. Once the asset folder exists, the shape, weight and rig tools always use the asset's paths, so a file never lands in two places. Before it exists, they fall back to a file or folder dialog.
 
 #### panels
 
@@ -170,6 +170,7 @@ Most tools act on the **active rig**, so nobody selects a rig root ([below](#the
 |---|---|
 | Active Rig Panel | Opens the [active rig panel](#the-active-rig-panel), docked beside the Attribute Editor (`bmaya.maya_ui.rigpanel.show_window`) |
 | Library Browser | Opens the [library browser](#the-library-browser), docked the same way (`bmaya.maya_ui.librarybrowser.show_window`) |
+| Asset Editor | Opens the [Asset Editor](#the-asset-editor), docked the same way (`bmaya.maya_ui.asseteditor.show_window`) |
 
 #### asset
 
@@ -241,6 +242,18 @@ The pose tools act on the selected rig controls, or on the whole active rig when
 An error from a button goes to the log. The out-of-date line is not built yet.
 
 The window is widgets and connections only. `bmaya.maya.rigpanel.RigPanelSession` is the view-model, and has no Qt: `rigs`, `rig` and `groups` (a `ControlGroup` per module and side, read once per refresh), the `changed` event, and `spaces_changed` and `space` (a `SpaceState`: the selected control, its constraint, the space labels and the current index), `limb_changed` and `limb` (a `LimbState`: the limb's module, controls, settings control and `ikFkBlend`, with `mode` `IK`, `FK` or `Blend`), and the commands the buttons call (`set_active`, `select_group`, `select_all`, `select_mirrors`, `zero`, `mirror`, `flip`, `key_rig`, `key_modules`, `set_space(label, key=False)`, `set_ik_fk(mode, key=False)`, `refresh_space`, `refresh_limb` and `watch_selection(bool)`). It follows `ActiveRigTracker.changed`, so a script that changes the active rig updates an open panel. `close()` stops it following, and the window calls it when it is destroyed, which a docked panel is with its workspace control and often with no close event. The docked panel is checked in a GUI Maya by `tests/gui/rigpanel/run.bat` (manual).
+
+### The Asset Editor
+
+`bmaya.maya_ui.asseteditor.show_window` (RigModules `design/asset-editor.md`, D61) opens the context in which you work on one asset: the files of its skeletons, rigs and looks, and what the scene needs to save or load them. It is docked beside the Attribute Editor, like the active rig panel.
+
+**The asset.** The header holds a searchable list of every asset below the projects root (type to narrow it, or type an id and press Return), then the skeleton, rig and look you are working on. **Use Active Rig** works on the active rig's asset and rig. **New** makes a project, an asset, a rig or a look: the rig and look go into the asset you are on, and a new asset becomes the one you work on. **Refresh** reads the list, the files and the scene again.
+
+The asset stays until you change it. A new, opened or saved scene never changes it, and neither does selecting another rig: when the active rig belongs to another asset, a strip says so, with **Switch**. The asset is set when the editor opens (the active rig's asset, else the one it was last on) and cleared when you close it, which also removes every callback it registered. While it is open, the menu tools that ask for an asset id offer its asset, after you confirm it.
+
+**Files tab.** One row per file of the chosen skeleton, rig and look: Skeleton, Model, Skin weights, Rig scene, Control shapes and Template. A row shows its name (the skeleton, rig or look it belongs to), when it was saved (or "Not saved"), and how many local version copies it has, and has **Save** and **Load** when the file type has them. A button that cannot run is off, and its tool tip says why (no joints in the scene, no look in the asset, the rig is not in the scene). Save replaces an existing file only after you confirm, and keeps the old one as a local version. Save uses the selected joints or meshes, or all of them when nothing is selected. **Build Rig** builds the chosen rig, wearing the chosen look. The template has no buttons: a template is written by the template tool.
+
+The window is widgets and connections only. `bmaya.maya.asseteditor.AssetEditorSession` is the view-model, with no Qt: `context` (an `AssetContext`: `asset_id`, `skeleton`, `rig`, `look`, and the `skeletons()`, `rigs()` and `looks()` the asset has), `asset_ids`, `files` (an `AssetFilesModel` of `FileRow`, with `save`, `load` and `build_rig`), the `changed` event, `rig_mismatch()`, and the commands `set_asset`, `use_active_rig`, `create_project`, `create_asset`, `create_rig`, `create_look`, `refresh`, `watch_selection(bool)` and `close()`. A file type's needs are a `FileAction` in `bmaya.maya.assetfiles.ACTIONS`, so a new one (textures, shaders, tracked high-res files) is an action and a handler, with no change to the window. The widgets (`AssetPicker`, `OwnerCombo`, `FileStatusTable`) are in `bmaya.maya_ui.assetwidgets` and take plain lists, so another window can use them.
 
 ### The library browser
 

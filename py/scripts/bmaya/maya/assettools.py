@@ -35,6 +35,7 @@ import rigmodules.template
 
 import bmaya.core.asset
 import bmaya.core.asset.animproperties
+import bmaya.core.asset.context
 import bmaya.core.asset.handlers
 import bmaya.core.asset.library
 import bmaya.core.log
@@ -593,62 +594,71 @@ def mark_meshes_for_skinning(new_ids: bool = False) -> list[str]:
 # through a Prompter: the one passed in, else the session's (bmaya.core.prompts.current()). Batch jobs call the
 # plain functions above instead.
 
-def new_project_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
+def new_project_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
+    """Asks for a folder and makes it a project. Returns the folder, or None when cancelled."""
     folder = _ask_folder(_prompter(prompter), "New Project: pick the project folder")
     if folder:
         project = bmaya.core.asset.Project.create(folder)
         bmaya.core.log.info(f"Created {project.root}")
+        return project.root
+    return None
 
 
-def new_asset_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
+def new_asset_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
+    """Asks for the new asset's id and type and makes it. Returns the id, or None when cancelled. It never offers the
+    Asset Editor's asset: the id is a new one."""
     prompter = _prompter(prompter)
-    asset_id = _ask_asset_id(prompter, "New Asset", "Asset id, its folder below the projects root (game\\project\\type\\name):")
+    asset_id = _ask_asset_id(prompter, "New Asset", "Asset id, its folder below the projects root (game\\project\\type\\name):",
+                             use_context=False)
     if not asset_id:
-        return
+        return None
     project = bmaya.core.asset.Asset(asset_id).project   # raises when no project.json is above the folder
     asset_type = prompter.choose("New Asset", f"Asset type of {asset_id}:", project.asset_types)
-    if asset_type:
-        asset = bmaya.core.asset.Asset.create(asset_id, asset_type)
-        bmaya.core.log.info(f"Created {asset.id}: {asset.info_path}")
+    if not asset_type:
+        return None
+    asset = bmaya.core.asset.Asset.create(asset_id, asset_type)
+    bmaya.core.log.info(f"Created {asset.id}: {asset.info_path}")
+    return asset.id
 
 
-def new_rig_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
-    """Asks for the asset, the template to copy, the rig's name (the template's rigName offered) and the skeleton
-    the rig is built on, then adds the rig."""
+def new_rig_interactive(prompter: bmaya.core.prompts.Prompter | None = None, asset_id: str | None = None) -> str | None:
+    """Asks for the asset (unless asset_id is given), the template to copy, the rig's name (the template's rigName
+    offered) and the skeleton the rig is built on, then adds the rig. Returns the rig's name, or None when
+    cancelled."""
     prompter = _prompter(prompter)
-    asset_id = _ask_asset_id(prompter, "New Rig")
+    asset_id = asset_id or _ask_asset_id(prompter, "New Rig")
     if not asset_id:
-        return
+        return None
     asset = require_asset(asset_id)
     template = prompter.ask_file("New Rig: pick the template", TEMPLATE_FILTER, save=False)
     if not template:
-        return
+        return None
     rig = prompter.ask_text("New Rig", f"Rig name, its folder in {asset_id} and the template's rigName:",
                             rigmodules.template.get_rig_name(template))
     if not rig:
-        return
+        return None
     skeleton = _ask_skeleton(prompter, "New Rig", asset, f"Skeleton the rig {rig!r} is built on:")
     if not skeleton:
-        return
+        return None
     parent = _ask_parent_rig(prompter, "New Rig", asset, rig)
-    if parent is not False:
-        new_rig(asset_id, template, rig, skeleton, parent=parent)
+    if parent is False:
+        return None
+    return new_rig(asset_id, template, rig, skeleton, parent=parent)
 
 
-def new_look_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
-    """Asks for the asset, the look's name ("default" offered for its first look) and the skeleton its meshes bind
-    to, then adds the look."""
+def new_look_interactive(prompter: bmaya.core.prompts.Prompter | None = None, asset_id: str | None = None) -> str | None:
+    """Asks for the asset (unless asset_id is given), the look's name ("default" offered for its first look) and the
+    skeleton its meshes bind to, then adds the look. Returns the look's name, or None when cancelled."""
     prompter = _prompter(prompter)
-    asset_id = _ask_asset_id(prompter, "New Look")
+    asset_id = asset_id or _ask_asset_id(prompter, "New Look")
     if not asset_id:
-        return
+        return None
     asset = require_asset(asset_id)
     look = prompter.ask_text("New Look", f"Look name, its folder in {asset_id}:", "" if asset.looks else DEFAULT_NAME)
     if not look:
-        return
+        return None
     skeleton = _ask_skeleton(prompter, "New Look", asset, f"Skeleton the meshes of the look {look!r} bind to:")
-    if skeleton:
-        new_look(asset_id, look, skeleton)
+    return new_look(asset_id, look, skeleton) if skeleton else None
 
 
 def save_skeleton_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
@@ -1213,9 +1223,17 @@ def _library_folder(asset: bmaya.core.asset.Asset | None, rig: str, kind: str) -
 
 
 def _ask_asset_id(prompter: bmaya.core.prompts.Prompter, title: str,
-                  message: str = "Asset id (game\\project\\type\\name):") -> str | None:
-    """An asset id, offered as the active rig's asset id when the scene has a rig. Always asks, so the asset a tool
-    is about to write to is on screen first."""
+                  message: str = "Asset id (game\\project\\type\\name):", use_context: bool = True) -> str | None:
+    """An asset id. While the Asset Editor is open (RigModules D61) its asset is offered first, with a way to type
+    another, and cancelling cancels the tool. Otherwise the active rig's asset id is offered when the scene has a
+    rig. Always asks, so the asset a tool is about to write to is on screen first. use_context is False for a tool
+    whose id is a new one or another asset's."""
+    context = bmaya.core.asset.context.AssetContext.current() if use_context else None
+    if context is not None and context.asset_id:
+        other = "Another asset..."
+        answer = prompter.choose(title, f"Use the asset {context.asset_id} from the Asset Editor?", [context.asset_id, other])
+        if answer != other:
+            return answer
     try:
         default = bmaya.maya.activerig.get_active_rig().asset_id
     except RuntimeError:
@@ -1260,7 +1278,7 @@ def _ask_parent_rig(prompter: bmaya.core.prompts.Prompter, title: str, asset: bm
         return None
     if answer != other:
         return bmaya.core.asset.RigRef(answer)
-    other_id = _ask_asset_id(prompter, title, "Asset id of the rig it attaches to:")
+    other_id = _ask_asset_id(prompter, title, "Asset id of the rig it attaches to:", use_context=False)
     if not other_id:
         return False
     parent = _choose_owner(prompter, title, other_id, "rig")
