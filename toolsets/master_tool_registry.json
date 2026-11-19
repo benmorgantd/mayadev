@@ -284,6 +284,18 @@
             "enabled": true
         },
         {
+            "id": "rigmodules.weights.brush",
+            "name": "Skin Brush",
+            "short_name": "Skin Brush",
+            "call": {
+                "module": "bmaya.maya.assettools",
+                "function": "activate_skin_brush",
+                "kwargs": {}
+            },
+            "icon": null,
+            "enabled": true
+        },
+        {
             "id": "rigmodules.weights.load",
             "name": "Load Skin Weights...",
             "short_name": "Load Weights",
