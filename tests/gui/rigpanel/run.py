@@ -28,7 +28,7 @@ LIMB_TEMPLATE = {
     "rigModules": [
         {"moduleType": "TwoBoneIk", "name": "arm_l", "shapeType": "Box", "side": "Left",
          "moduleArgs": {"joints": [["Left", "upperArm"], ["Left", "lowerArm"], ["Left", "hand"]],
-                        "ik": ["Left", "handIk"], "pole": ["Left", "armPole"], "settings": ["Left", "armSettings"]},
+                        "controlName": "arm"},
          "parentStructure": {"start": "layout.end", "ik": "layout.end", "pole": "layout.end"}},
     ],
 }

@@ -306,15 +306,16 @@ LIMB_TEMPLATE = {
     "rigModules": [
         {"moduleType": "TwoBoneIk", "name": "arm_l", "shapeType": "Box", "side": "Left", "mirror": True,
          "moduleArgs": {"joints": [["Left", "upperArm"], ["Left", "lowerArm"], ["Left", "hand"]],
-                        "ik": ["Left", "handIk"], "pole": ["Left", "armPole"], "settings": ["Left", "armSettings"]},
+                        "controlName": "arm"},
          "parentStructure": {"start": "layout.end", "ik": "layout.end", "pole": "layout.end"}},
     ],
 }
-# The limb of RigModules' twoboneik_basic fixture: a bent arm with the pole on the bend side, and its mirror.
+# The limb of RigModules' twoboneik_basic fixture: a bent arm, and its mirror. The IK handle, pole and settings
+# controls have no joints (D57): they are derived from these three.
 LIMB_JOINTS = (
     ("upperArm", (0, 0, 0), True), ("lowerArm", (1.8, 2.4, 0), True), ("hand", (5, 0, 0), True),
-    ("handIk", (5, 0, 0), False), ("armPole", (2.5, 5, 0), False), ("armSettings", (0, 8, 0), False),
 )
+LIMB_CONTROL_USAGES = ("upperArm", "lowerArm", "hand", "armIK", "armPole", "armSettings")
 
 
 class LimbPanel(RigPanelBase):
@@ -338,7 +339,7 @@ class LimbPanel(RigPanelBase):
         cmds.select(clear=True)
         self.root = self.query.get_rigs("hero")[0].rig_root
         self.left = {usage: self.query.get_rig_controls(self.root, side="Left", usage=usage)[0].node
-                     for usage, _, _ in LIMB_JOINTS}
+                     for usage in LIMB_CONTROL_USAGES}
         self.right_settings = self.query.get_rig_controls(self.root, side="Right", usage="armSettings")[0].node
         self.limb_controls = tuple(self.left.values())
         self.settings = self.left["armSettings"]
@@ -398,20 +399,20 @@ class LimbPanel(RigPanelBase):
 
     def test_a_blend_between_is_reported_as_a_blend(self):
         self.cmds.setAttr(self.settings + ".ikFkBlend", 0.5)
-        self.select(self.left["handIk"])
+        self.select(self.left["armIK"])
         self.assertEqual((self.session.limb.blend, self.session.limb.mode), (0.5, "Blend"))
 
     def test_the_selection_callback_follows_the_selection_while_watching(self):
         self.session.watch_selection(True)
-        self.cmds.select(self.left["handIk"], replace=True)
+        self.cmds.select(self.left["armIK"], replace=True)
         self.assertEqual(self.session.limb.settings, self.settings)
         self.cmds.select(clear=True)
         self.assertIsNone(self.session.limb)
 
     def test_switching_to_fk_keeps_the_joints_and_keys_nothing(self):
-        self.cmds.setAttr(self.left["handIk"] + ".translateY", -1)
+        self.cmds.setAttr(self.left["armIK"] + ".translateY", -1)
         before = self.elbow()
-        self.select(self.left["handIk"])
+        self.select(self.left["armIK"])
         self.session.set_ik_fk("FK")
         self.assertEqual(self.blend(), 0)
         self.assertEqual(self.session.limb.mode, "FK")
@@ -424,7 +425,7 @@ class LimbPanel(RigPanelBase):
             self.assertAlmostEqual(was, now, places=3)
 
     def test_switching_to_the_current_mode_does_nothing(self):
-        self.select(self.left["handIk"])
+        self.select(self.left["armIK"])
         self.cmds.undoInfo(state=True, infinity=True)
         self.cmds.flushUndo()
         self.session.set_ik_fk("IK")
@@ -437,7 +438,7 @@ class LimbPanel(RigPanelBase):
         self.session.set_ik_fk("FK", key=True)
         self.assertEqual(self.cmds.keyframe(self.settings + ".ikFkBlend", query=True, timeChange=True), [9.0, 10.0])
         self.assertEqual(self.cmds.keyframe(self.settings + ".ikFkBlend", query=True, valueChange=True), [1.0, 0.0])
-        for control in (self.left["upperArm"], self.left["handIk"], self.left["armPole"]):
+        for control in (self.left["upperArm"], self.left["armIK"], self.left["armPole"]):
             self.assertEqual(self.cmds.keyframe(control, query=True, timeChange=True)[:1], [9.0])
         self.cmds.undo()
         self.assertEqual(self.blend(), 1)
@@ -464,7 +465,7 @@ class LimbPanel(RigPanelBase):
 
     def test_the_pole_has_a_parent_and_an_ik_space_and_the_switch_keeps_it_in_place(self):
         pole = self.left["armPole"]
-        self.cmds.setAttr(self.left["handIk"] + ".translateX", -1)
+        self.cmds.setAttr(self.left["armIK"] + ".translateX", -1)
         self.cmds.select(pole, replace=True)
         self.session.refresh_space()
         space = self.session.space
@@ -522,7 +523,7 @@ class LimbPanel(RigPanelBase):
             self.assertTrue(self.cmds.keyframe(control, query=True, keyframeCount=True), control)
         self.assertTrue(self.cmds.keyframe(self.settings + ".ikFkBlend", query=True, keyframeCount=True))
         self.cmds.cutKey(self.limb_controls)
-        self.select(self.left["handIk"])
+        self.select(self.left["armIK"])
         self.session.key_modules()
         self.assertTrue(self.cmds.keyframe(self.settings + ".ikFkBlend", query=True, keyframeCount=True))
         self.assertTrue(self.cmds.keyframe(self.left["upperArm"], query=True, keyframeCount=True))

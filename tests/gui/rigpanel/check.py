@@ -45,8 +45,7 @@ def build(name):
 def build_limb(name):
     cmds.namespace(add="skel_" + name)
     for usage, position, export in (("upperArm", (0, 0, 0), True), ("lowerArm", (1.8, 2.4, 0), True),
-                                    ("hand", (5, 0, 0), True), ("handIk", (5, 0, 0), False),
-                                    ("armPole", (2.5, 5, 0), False), ("armSettings", (0, 8, 0), False)):
+                                    ("hand", (5, 0, 0), True)):
         cmds.select(clear=True)
         joint = cmds.joint(name=":skel_%s:%s_jnt" % (name, usage), position=position)
         cmds.rigJointMarkup(joint, usage=usage, side="Left", export=export, skin=export)
@@ -149,7 +148,7 @@ def steps_rest():
     # The IK/FK section follows a limb's selection and switches it, with Key.
     build_limb("pilot")
     pilot = cmds.ls("pilot:*", type="rigRootModule")[0]
-    handle = cmds.getRigControls(pilot, usage="handIk")[0]
+    handle = cmds.getRigControls(pilot, usage="armIK")[0]
     settings = cmds.getRigControls(pilot, usage="armSettings")[0]
     cmds.select(handle, replace=True)
     pump(400)
