@@ -9,6 +9,7 @@ mayadev owns everything around the rigs: where an asset's files live and how the
 | Area | What you get | Page |
 |---|---|---|
 | Assets | An asset id is a folder path. Projects, assets and rig variants are found on disk. A registry answers "which assets share this skeleton". Saves keep a local version copy and tell source control | [docs/assets.md](docs/assets.md) |
+| Asset Editor | A docked window for one asset: pick it once, then save, load and build its skeleton, model, weights, rig and shapes without typing the asset id | [docs/tools.md](docs/tools.md#the-asset-editor) |
 | Rig build | Build Rig from Asset imports the skeleton, builds the variant's template, then loads its shapes, model and skin weights | [docs/tools.md](docs/tools.md) |
 | Pose and animation | Save and load poses and animations as asset files, mirror, flip, zero and key a whole rig or a selection | [docs/tools.md](docs/tools.md) |
 | Clips | Capture a rig's joints to an FBX clip, restore a rig from an FBX clip, check a clip against the skeleton export, edit the engine's clip properties | [docs/clips.md](docs/clips.md) |

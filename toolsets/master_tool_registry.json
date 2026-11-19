@@ -134,6 +134,18 @@
             "enabled": true
         },
         {
+            "id": "rigmodules.panels.asset_editor",
+            "name": "Asset Editor",
+            "short_name": "Asset Editor",
+            "call": {
+                "module": "bmaya.maya_ui.asseteditor",
+                "function": "show_window",
+                "kwargs": {}
+            },
+            "icon": null,
+            "enabled": true
+        },
+        {
             "id": "rigmodules.panels.library_browser",
             "name": "Library Browser",
             "short_name": "Library",
