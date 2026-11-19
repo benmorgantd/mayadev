@@ -222,13 +222,15 @@ class MixedFieldForm(QtWidgets.QWidget):
     # ---- showing and reading ---------------------------------------------------------------
 
     def set_options(self, name: str, options: list[str]) -> None:
-        """Replaces the suggestions of a text field."""
+        """Replaces the suggestions of a text field, or the choices of a choice field. A choice field shows nothing
+        until set_state gives it a value again."""
         combo = self.editors[name]
         text = combo.currentText()
         combo.blockSignals(True)
         combo.clear()
         combo.addItems(options)
-        combo.setEditText(text)
+        if self.specs[name].kind == "text":
+            combo.setEditText(text)
         combo.blockSignals(False)
 
     def set_states(self, states: dict[str, FieldState]) -> None:

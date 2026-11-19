@@ -96,6 +96,7 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `core/asset/records.py` | `rig.json` and `look.json`: `SkeletonRef`, `RigRef`, `RigRecord`, `LookRecord` and their readers and writers |
 | `core/asset/registry.py` | `Registry`: the in-memory index of a project |
 | `core/asset/context.py` | `AssetContext`: the asset id and the chosen skeleton, rig and look the Asset Editor works on, with a `changed` event. `current()` is `None` unless the editor is open |
+| `core/shapemath.py` | `decompose` and `compose`: a control's `shapeTransform` (16 numbers, row vector convention) as translate, rotate in degrees (XYZ) and scale, with a negative X scale for a reflection |
 | `core/fieldset.py` | `FieldSpec`, `FieldState` and `combine`: fields edited across a selection, and a field's one value or "mixed" over it. The Asset Editor's markup and shape tabs share it |
 | `core/asset/catalog.py` | `project_folders` and `asset_ids`: every project and asset below the projects root, for the Asset Editor's list |
 | `core/asset/publishes.py` | `make_id`, `list_ids`, `latest`, `info`, `create` |
@@ -122,6 +123,7 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `maya/activerig.py` | `get_active_rig`, `ActiveRigTracker` and its `changed` event |
 | `maya/librarybrowser.py` | `LibrarySession`, the library browser's view-model with no Qt: the listing that follows the active rig, search, scope, apply, save, tags, rename, delete and masks, and what the window can't compute itself: `facets` (the values in use), `name_taken`, `current_frame`, `playback_range`, `mask_from_selection`, and the project's vocabulary warnings in `details`. `read_file_infos` is its `Index` reader, `rig_masks` its masks from a rig |
 | `maya/asseteditor.py` | `AssetEditorSession`, the Asset Editor's view-model with no Qt: the asset context, the callbacks that keep it current (all removed by `close()`), and the create, switch and refresh commands |
+| `maya/shapemodel.py` | `ShapeModel`, the Asset Editor's Shapes tab view-model with no Qt: the selected rig controls' shape fields as one value or mixed, Set and Adjust edits across all of them with `setAttr` (one undo step each), and mirroring the shapes of their rigs |
 | `maya/markupmodel.py` | `MarkupModel`, the Asset Editor's Markup tab view-model with no Qt: the selected joints' markup as mixed fields, edits across all of them (set, add, remove, one undo step each, side and usage kept unique per skeleton), and the selected rig controls' markup, read only |
 | `maya/assetfiles.py` | `AssetFilesModel`, `FileRow` and the `FileAction` table: one row per file of the chosen asset, with its status and Save, Load and Build Rig |
 | `maya/rigpanel.py` | `RigPanelSession`, `ControlGroup`, `SpaceState` and `LimbState`: the active rig panel's view-model, no Qt |

@@ -799,5 +799,284 @@ class Markup(EditorBase):
         self.assertEqual(sorted(self.read(j)["usage"] for j in created), ["twist_00", "twist_01", "twist_02"])
 
 
+MIRROR_TEMPLATE = {
+    "rigVersion": 1,
+    "rigTemplateName": "AssetEditorMirrorTest",
+    "rigName": "game",
+    "rigAuthor": "tests",
+    "rigModules": [
+        {"moduleType": "FkChain", "name": "spine_00_M_MOD", "shapeType": "Box",
+         "moduleArgs": {"joints": [["Center", "spine1"], ["Center", "spine2"]]}},
+        {"moduleType": "FkChain", "name": "arm_00_L_MOD", "side": "Left", "shapeType": "Circle", "mirror": True,
+         "moduleArgs": {"joints": [["Left", "arm"]]}, "parentStructure": {"start": "spine_00_M_MOD.end"}},
+    ],
+}
+
+
+class Shapes(EditorBase):
+
+    IDENTITY = (1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+
+    def rig_controls(self):
+        """A built hero and its rig controls, selected, with the shapes tab active."""
+        self.make_buildable_hero()
+        session = self.session(HERO)
+        session.files.build_rig()
+        controls = self.cmds.ls(type="rigControlNode", long=True)
+        self.assertGreaterEqual(len(controls), 2)
+        for control in controls:
+            self.set_matrix(control, self.IDENTITY)
+        self.cmds.select(controls, replace=True)
+        session.shapes.set_active(True)
+        return session, controls
+
+    def set_matrix(self, control, matrix):
+        self.cmds.setAttr(control + ".shapeTransform", *matrix, type="matrix")
+
+    def matrix(self, control):
+        return self.cmds.getAttr(control + ".shapeTransform")
+
+    def assertMatrix(self, control, expected):
+        actual = self.matrix(control)
+        for a, b in zip(actual, expected):
+            self.assertAlmostEqual(a, b, places=6, msg=f"{control}: {actual} != {expected}")
+
+    def test_with_no_selection_it_says_what_to_select(self):
+        session = self.session(HERO)
+        session.shapes.set_active(True)
+        self.assertEqual((session.shapes.summary, session.shapes.fields), ("Select rig controls.", {}))
+
+    def test_an_inactive_model_does_not_read_the_selection(self):
+        self.make_buildable_hero()
+        session = self.session(HERO)
+        session.files.build_rig()
+        session.watch_selection(True)
+        self.cmds.select(self.cmds.ls(type="rigControlNode", long=True), replace=True)
+        self.assertEqual(session.shapes.controls, [])
+        session.shapes.set_active(True)
+        self.assertTrue(session.shapes.controls)
+        self.cmds.select(clear=True)
+        self.assertEqual(session.shapes.controls, [])
+
+    def test_the_fields_show_the_shape_the_controls_have(self):
+        session, controls = self.rig_controls()
+        names = session.shapes.enum_names
+        self.assertEqual(names[0], "Box")
+        shapes = {names[self.cmds.getAttr(c + ".shapeType")] for c in controls}
+        fields = session.shapes.fields
+        self.assertEqual(fields["shapeType"].mixed, len(shapes) > 1)
+        self.assertEqual(fields["scale"].value, 1.0)
+        self.assertEqual((fields["translateX"].value, fields["rotateZ"].value, fields["scaleY"].value), (0.0, 0.0, 1.0))
+        self.assertEqual(fields["wireframeAlpha"].value, 1.0)
+        self.assertEqual(fields["filled"].value, False)
+
+    def test_a_field_the_controls_differ_on_is_mixed(self):
+        session, controls = self.rig_controls()
+        self.set_matrix(controls[0], (2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 5, 0, 1))
+        self.cmds.setAttr(controls[0] + ".filled", True)
+        session.shapes.refresh()
+        fields = session.shapes.fields
+        self.assertEqual([fields[name].mixed for name in ("scale", "translateY", "filled")], [True, True, True])
+        self.assertEqual(fields["translateX"].value, 0.0)
+
+    def test_a_non_uniform_scale_has_no_uniform_value(self):
+        session, controls = self.rig_controls()
+        for control in controls:
+            self.set_matrix(control, (1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 3, 0, 0, 0, 0, 1))
+        session.shapes.refresh()
+        fields = session.shapes.fields
+        self.assertEqual((fields["scale"].mixed, fields["scaleY"].value, fields["scaleZ"].value), (True, 2.0, 3.0))
+
+    def test_set_the_filled_box_on_every_control_in_one_undo_step(self):
+        self.cmds.undoInfo(state=True, infinity=True)
+        session, controls = self.rig_controls()
+        session.shapes.set_field("filled", True)
+        self.assertEqual([self.cmds.getAttr(c + ".filled") for c in controls], [True] * len(controls))
+        self.assertEqual(session.shapes.fields["filled"].value, True)
+        self.cmds.undo()
+        self.assertEqual([self.cmds.getAttr(c + ".filled") for c in controls], [False] * len(controls))
+
+    def test_set_the_shape_type_by_name(self):
+        session, controls = self.rig_controls()
+        session.shapes.set_field("shapeType", "Sphere")
+        self.assertEqual({self.cmds.getAttr(c + ".shapeType", asString=True) for c in controls}, {"Sphere"})
+        self.assertEqual(session.shapes.fields["shapeType"].value, "Sphere")
+
+    def test_an_unknown_shape_changes_nothing_and_lists_the_shapes(self):
+        session, controls = self.rig_controls()
+        before = [self.cmds.getAttr(c + ".shapeType") for c in controls]
+        with self.assertRaisesRegex(RuntimeError, "'Hexagon' is not a shape.*Box.*Sphere"):
+            session.shapes.set_field("shapeType", "Hexagon")
+        self.assertEqual([self.cmds.getAttr(c + ".shapeType") for c in controls], before)
+
+    def test_set_the_alpha_and_adjust_it_within_zero_and_one(self):
+        session, controls = self.rig_controls()
+        session.shapes.set_field("wireframeAlpha", 0.5)
+        self.assertEqual({self.cmds.getAttr(c + ".wireframeAlpha") for c in controls}, {0.5})
+        session.shapes.set_field("wireframeAlpha", 0.25, "adjust")
+        self.assertAlmostEqual(self.cmds.getAttr(controls[0] + ".wireframeAlpha"), 0.75)
+        session.shapes.set_field("wireframeAlpha", 5, "adjust")
+        self.assertEqual(self.cmds.getAttr(controls[0] + ".wireframeAlpha"), 1.0)
+        session.shapes.set_field("wireframeAlpha", -5, "adjust")
+        self.assertEqual(self.cmds.getAttr(controls[0] + ".wireframeAlpha"), 0.0)
+
+    def test_set_translate_gives_every_control_the_value(self):
+        session, controls = self.rig_controls()
+        self.set_matrix(controls[0], (1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 3, 0, 0, 1))
+        session.shapes.refresh()
+        session.shapes.set_field("translateY", 2.0)
+        self.assertMatrix(controls[0], (1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 3, 2, 0, 1))
+        self.assertMatrix(controls[1], (1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 2, 0, 1))
+
+    def test_adjust_translate_adds_to_each_controls_own_value(self):
+        session, controls = self.rig_controls()
+        self.set_matrix(controls[0], (1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 3, 0, 0, 1))
+        session.shapes.refresh()
+        session.shapes.set_field("translateX", 1.5, "adjust")
+        self.assertMatrix(controls[0], (1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 4.5, 0, 0, 1))
+        self.assertMatrix(controls[1], (1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1.5, 0, 0, 1))
+
+    def test_set_the_uniform_scale_sets_all_three_axes(self):
+        session, controls = self.rig_controls()
+        self.set_matrix(controls[0], (1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 3, 0, 0, 1, 0, 1))
+        session.shapes.refresh()
+        session.shapes.set_field("scale", 2.0)
+        self.assertMatrix(controls[0], (2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 1, 0, 1))
+        self.assertEqual(session.shapes.fields["scale"].value, 2.0)
+
+    def test_adjust_scale_multiplies_each_controls_own_scale(self):
+        session, controls = self.rig_controls()
+        self.set_matrix(controls[0], (1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 3, 0, 0, 1, 0, 1))
+        session.shapes.refresh()
+        session.shapes.set_field("scale", 1.5, "adjust")
+        self.assertMatrix(controls[0], (1.5, 0, 0, 0, 0, 3, 0, 0, 0, 0, 4.5, 0, 0, 1, 0, 1))
+        self.assertMatrix(controls[1], (1.5, 0, 0, 0, 0, 1.5, 0, 0, 0, 0, 1.5, 0, 0, 0, 0, 1))
+
+    def test_one_axis_of_scale_leaves_the_others(self):
+        session, controls = self.rig_controls()
+        session.shapes.set_field("scaleX", 4.0)
+        self.assertMatrix(controls[0], (4, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1))
+
+    def test_a_negative_scale_flips_the_shape(self):
+        session, controls = self.rig_controls()
+        session.shapes.set_field("scaleX", -1.0)
+        self.assertMatrix(controls[0], (-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1))
+
+    def test_rotate_sets_and_adjusts_in_degrees(self):
+        session, controls = self.rig_controls()
+        session.shapes.set_field("rotateZ", 90.0)
+        self.assertMatrix(controls[0], (0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1))
+        session.shapes.set_field("rotateZ", 90.0, "adjust")
+        self.assertMatrix(controls[0], (-1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1))
+
+    def test_a_scale_edit_keeps_the_rotation_and_the_translation(self):
+        session, controls = self.rig_controls()
+        session.shapes.set_field("rotateX", 90.0)
+        session.shapes.set_field("translateZ", 7.0)
+        session.shapes.set_field("scale", 2.0)
+        self.assertMatrix(controls[0], (2, 0, 0, 0, 0, 0, 2, 0, 0, -2, 0, 0, 0, 0, 7, 1))
+
+    def test_a_scale_of_zero_a_word_and_an_unknown_field_are_refused_and_change_nothing(self):
+        session, controls = self.rig_controls()
+        with self.assertRaisesRegex(RuntimeError, "scale of 0"):
+            session.shapes.set_field("scaleY", 0)
+        with self.assertRaisesRegex(RuntimeError, "needs a number"):
+            session.shapes.set_field("translateX", "far")
+        with self.assertRaisesRegex(RuntimeError, "not a shape field"):
+            session.shapes.set_field("colour", 1.0)
+        with self.assertRaisesRegex(RuntimeError, "mode must be"):
+            session.shapes.set_field("scale", 2.0, "double")
+        for control in controls:
+            self.assertMatrix(control, self.IDENTITY)
+
+    def test_an_edit_with_no_controls_selected_says_so(self):
+        session = self.session(HERO)
+        session.shapes.set_active(True)
+        with self.assertRaisesRegex(RuntimeError, "Select rig controls"):
+            session.shapes.set_field("filled", True)
+
+    def test_a_scale_edit_is_one_undo_step(self):
+        self.cmds.undoInfo(state=True, infinity=True)
+        session, controls = self.rig_controls()
+        session.shapes.set_field("scale", 3.0)
+        self.cmds.undo()
+        for control in controls:
+            self.assertMatrix(control, self.IDENTITY)
+
+    def test_a_huge_selection_is_not_read(self):
+        import bmaya.maya.shapemodel
+        session, controls = self.rig_controls()
+        with mock.patch.object(bmaya.maya.shapemodel, "MAX_CONTROLS", 1):
+            session.shapes.refresh()
+        self.assertEqual((session.shapes.controls, "Select fewer" in session.shapes.summary), ([], True))
+
+    def build_mirror_rig(self):
+        """A rig with a Left arm and its mirror, built from MIRROR_TEMPLATE, and the session on it."""
+        cmds = self.cmds
+        path = os.path.join(self.temp, "mirror_template.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(MIRROR_TEMPLATE, handle)
+        self.tools.new_rig(HERO, path, "game")
+        cmds.select(clear=True)
+        spine = []
+        for i in range(2):
+            joint = cmds.joint(name=f"spine_{i:02d}_M_JNT", position=(0, 10 + 2 * i, 0))
+            cmds.rigJointMarkup(joint, usage=f"spine{i + 1}", side="Center", export=True, skin=True)
+            spine.append(joint)
+        for side, x in (("L", 2), ("R", -2)):
+            cmds.select(spine[1], replace=True)
+            joint = cmds.joint(name=f"arm_00_{side}_JNT", position=(x, 12, 0))
+            cmds.rigJointMarkup(joint, usage="arm", side="Left" if side == "L" else "Right", export=True, skin=True)
+        cmds.select(clear=True)
+        self.tools.save_skeleton(HERO, joints=cmds.ls(type="joint", long=True))
+        cmds.file(new=True, force=True)
+        session = self.session(HERO)
+        session.files.build_rig()
+        by_side = {}
+        for control in cmds.ls(type="rigControlNode", long=True):
+            info = self.query_control(control)
+            by_side[(info.side, info.usage)] = control
+        return session, by_side
+
+    def query_control(self, control):
+        import rigmodules.query
+        return rigmodules.query.get_control(control)
+
+    def test_mirror_left_to_right_copies_the_left_shapes_onto_the_right(self):
+        session, controls = self.build_mirror_rig()
+        left, right = controls[("Left", "arm")], controls[("Right", "arm")]
+        self.set_matrix(left, (2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 1, 0, 0, 1))
+        self.cmds.setAttr(left + ".filled", True)
+        self.cmds.select(left, replace=True)
+        session.shapes.set_active(True)
+        session.shapes.mirror(True)
+        self.assertTrue(self.cmds.getAttr(right + ".filled"))
+        scale = [abs(v) for v in self.matrix(right)[0:12:5]]
+        self.assertAlmostEqual(scale[0], 2.0, places=6)
+
+    def test_mirror_right_to_left_goes_the_other_way_in_one_undo_step(self):
+        self.cmds.undoInfo(state=True, infinity=True)
+        session, controls = self.build_mirror_rig()
+        left, right = controls[("Left", "arm")], controls[("Right", "arm")]
+        self.cmds.setAttr(right + ".filled", True)
+        self.cmds.select(right, replace=True)
+        session.shapes.set_active(True)
+        session.shapes.mirror(False)
+        self.assertTrue(self.cmds.getAttr(left + ".filled"))
+        self.cmds.undo()
+        self.assertFalse(self.cmds.getAttr(left + ".filled"))
+
+    def test_mirror_with_nothing_selected_uses_the_given_rig_and_otherwise_asks_for_controls(self):
+        session, controls = self.build_mirror_rig()
+        left, right = controls[("Left", "arm")], controls[("Right", "arm")]
+        self.cmds.setAttr(left + ".filled", True)
+        self.cmds.select(clear=True)
+        session.shapes.set_active(True)
+        with self.assertRaisesRegex(RuntimeError, "Select rig controls"):
+            session.shapes.mirror(True)
+        session.shapes.mirror(True, session.files.rig_root)
+        self.assertTrue(self.cmds.getAttr(right + ".filled"))
+
+
 if __name__ == "__main__":
     unittest.main()

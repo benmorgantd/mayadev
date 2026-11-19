@@ -16,8 +16,9 @@ from PySide6 import QtCore, QtGui, QtWidgets
 import bmaya.core.log
 import bmaya.maya.asseteditor
 import bmaya.maya.markupmodel
+import bmaya.maya.shapemodel
 from bmaya.core.fieldset import FieldState
-from bmaya.maya_ui import host
+from bmaya.maya_ui import host, theme
 from bmaya.maya_ui.assetwidgets import AssetPicker, FileStatusTable, MixedFieldForm, OwnerCombo
 from bmaya.maya_ui.librarybrowser import menu_action
 from bmaya.maya_ui.widgets import ListModel
@@ -25,6 +26,7 @@ from bmaya.maya_ui.widgets import ListModel
 OBJECT_NAME = "bmayaAssetEditor"
 FILES_TAB = "Files"
 MARKUP_TAB = "Markup"
+SHAPES_TAB = "Shapes"
 CONTROL_COLUMNS = ("Control", "Module", "Side", "Usage", "Mirror")
 
 
@@ -60,6 +62,8 @@ class AssetEditor(QtWidgets.QWidget):
         self.tabs.addTab(self._build_files_tab(), FILES_TAB)
         self.markup_tab = self._build_markup_tab()
         self.tabs.addTab(self.markup_tab, MARKUP_TAB)
+        self.shapes_tab = self._build_shapes_tab()
+        self.tabs.addTab(self.shapes_tab, SHAPES_TAB)
         self.tabs.currentChanged.connect(lambda index: self._sync_active())
         layout.addWidget(self.tabs, 1)
         self.status_label = QtWidgets.QLabel()
@@ -68,8 +72,10 @@ class AssetEditor(QtWidgets.QWidget):
 
         self.session.changed.connect(self.reload)
         self.session.markup.changed.connect(self.reload_markup)
+        self.session.shapes.changed.connect(self.reload_shapes)
         self.reload()
         self.reload_markup()
+        self.reload_shapes()
 
     # ---- building --------------------------------------------------------------------------
 
@@ -191,6 +197,56 @@ class AssetEditor(QtWidgets.QWidget):
         layout.addWidget(self.controls_table, 1)
         return tab
 
+    def _build_shapes_tab(self) -> QtWidgets.QWidget:
+        """The selected controls' shapes, edited across all of them."""
+        shapes = bmaya.maya.shapemodel
+        tab = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(tab)
+        self.shapes_summary = QtWidgets.QLabel()
+        layout.addWidget(self.shapes_summary)
+
+        mode_row = QtWidgets.QHBoxLayout()
+        mode_row.addWidget(QtWidgets.QLabel("Edit"))
+        self.shape_mode_combo = QtWidgets.QComboBox()
+        self.shape_mode_combo.addItem("Set", shapes.SET)
+        self.shape_mode_combo.addItem("Adjust", shapes.ADJUST)
+        self.shape_mode_combo.setToolTip("Set: every selected control gets the value. Adjust: each control's own value "
+                                         "changes by it. Translate, rotate and alpha add it, and scale multiplies by it.")
+        mode_row.addWidget(self.shape_mode_combo, 1)
+        layout.addLayout(mode_row)
+
+        self.appearance_form = MixedFieldForm(shapes.APPEARANCE_FIELDS)
+        self.transform_form = MixedFieldForm(shapes.TRANSFORM_FIELDS)
+        for form in (self.appearance_form, self.transform_form):
+            form.field_edited.connect(self._edit_shape)
+            layout.addWidget(form)
+
+        row = QtWidgets.QHBoxLayout()
+        self.mirror_buttons: dict[str, QtWidgets.QPushButton] = {}
+        for key, text, left_to_right in (("left_to_right", "Mirror L>R", True), ("right_to_left", "Mirror R>L", False)):
+            button = QtWidgets.QPushButton(text)
+            button.setIcon(theme.icon("mirror"))
+            button.setToolTip("Copy the shapes of one side of the rig onto the other, in world space")
+            button.clicked.connect(lambda checked=False, left_to_right=left_to_right:
+                                   self.run(lambda: self.session.shapes.mirror(left_to_right, self.session.files.rig_root)))
+            row.addWidget(button)
+            self.mirror_buttons[key] = button
+        self.save_shapes_button = QtWidgets.QPushButton("Save Shapes")
+        self.save_shapes_button.setToolTip("Save the rig's control shapes to the asset")
+        self.save_shapes_button.clicked.connect(lambda: self.run(lambda: self._save("shapes")))
+        self.load_shapes_button = QtWidgets.QPushButton("Load Shapes")
+        self.load_shapes_button.setToolTip("Load the rig's control shapes from the asset")
+        self.load_shapes_button.clicked.connect(lambda: self.run(lambda: self.session.files.load("shapes")))
+        row.addWidget(self.save_shapes_button)
+        row.addWidget(self.load_shapes_button)
+        layout.addLayout(row)
+        layout.addStretch(1)
+        return tab
+
+    def _edit_shape(self, name: str, value: object) -> None:
+        mode = self.shape_mode_combo.currentData()
+        self.run(lambda: self.session.shapes.set_field(name, value, mode))
+
     def _add_markup(self) -> None:
         values = self.add_form.values()
         self.session.markup.add_markup(values["usage"] or "", values["side"] or "Center", bool(values["export"]),
@@ -228,6 +284,7 @@ class AssetEditor(QtWidgets.QWidget):
         self.files_message.setText(files.message)
         self.files_message.setVisible(bool(files.message))
         self.build_button.setEnabled(bool(files.rows) and context.rig is not None)
+        self.reload_shapes()   # Save Shapes and Load Shapes follow the files
 
     def reload_markup(self) -> None:
         """Shows the markup model: the selected joints' fields, the add box, the warnings and the controls."""
@@ -249,9 +306,29 @@ class AssetEditor(QtWidgets.QWidget):
         self.controls_model.set_items(markup.controls)
         self.controls_table.setVisible(bool(markup.controls))
 
+    def reload_shapes(self) -> None:
+        """Shows the shape model: the selected controls' fields."""
+        shapes = self.session.shapes
+        self.shapes_summary.setText(shapes.summary)
+        self.appearance_form.set_options("shapeType", shapes.enum_names)
+        self.appearance_form.set_states(shapes.fields)
+        self.transform_form.set_states(shapes.fields)
+        has_controls = bool(shapes.controls)
+        self.appearance_form.setEnabled(has_controls)
+        self.transform_form.setEnabled(has_controls)
+        row = next((row for row in self.session.files.rows if row.key == "shapes"), None)
+        for button, blocked, default in ((self.save_shapes_button, row.save_blocked if row else "No asset.",
+                                          "Save the rig's control shapes to the asset"),
+                                         (self.load_shapes_button, row.load_blocked if row else "No asset.",
+                                          "Load the rig's control shapes from the asset")):
+            button.setEnabled(not blocked)
+            button.setToolTip(blocked or default)
+
     def _sync_active(self) -> None:
-        """The markup model reads the scene only while its tab is showing."""
-        self.session.markup.set_active(self.isVisible() and self.tabs.currentWidget() is self.markup_tab)
+        """The markup and shape models read the scene only while their tab is showing."""
+        showing = self.isVisible()
+        self.session.markup.set_active(showing and self.tabs.currentWidget() is self.markup_tab)
+        self.session.shapes.set_active(showing and self.tabs.currentWidget() is self.shapes_tab)
 
     # ---- window events ---------------------------------------------------------------------
 
@@ -267,6 +344,7 @@ class AssetEditor(QtWidgets.QWidget):
         super().hideEvent(event)
         self.session.watch_selection(False)
         self.session.markup.set_active(False)
+        self.session.shapes.set_active(False)
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Closing the window ends the session: its callbacks go and the asset is cleared."""

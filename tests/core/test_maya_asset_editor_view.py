@@ -111,6 +111,37 @@ class FakeMarkup:
     def add_twist_joints(self, prompter=None): self._record("add_twist_joints")
 
 
+class FakeShapes:
+    """The ShapeModel surface the Shapes tab reads and calls. Every command is recorded."""
+
+    def __init__(self):
+        import bmaya.core.observable
+        from bmaya.core.fieldset import FieldState
+        self.changed = bmaya.core.observable.Event()
+        self.summary = "2 rig control(s)"
+        self.controls = ["|a", "|b"]
+        self.enum_names = ["Box", "Sphere", "Circle"]
+        self.fields = {"shapeType": FieldState("Sphere", False, 2), "filled": FieldState(None, True, 2),
+                       "wireframeAlpha": FieldState(0.5, False, 2), "scale": FieldState(2.0, False, 2),
+                       "scaleX": FieldState(2.0, False, 2), "scaleY": FieldState(2.0, False, 2),
+                       "scaleZ": FieldState(2.0, False, 2), "translateX": FieldState(None, True, 2),
+                       "translateY": FieldState(0.0, False, 2), "translateZ": FieldState(0.0, False, 2),
+                       "rotateX": FieldState(0.0, False, 2), "rotateY": FieldState(0.0, False, 2),
+                       "rotateZ": FieldState(90.0, False, 2)}
+        self.active = []
+        self.calls = []
+        self.error = None
+
+    def _record(self, *call):
+        if self.error:
+            raise RuntimeError(self.error)
+        self.calls.append(call)
+
+    def set_active(self, active): self.active.append(active)
+    def set_field(self, name, value, mode="set"): self._record("set_field", name, value, mode)
+    def mirror(self, left_to_right, fallback_rig_root=None): self._record("mirror", left_to_right, fallback_rig_root)
+
+
 class FakeSession:
     """The AssetEditorSession surface the window reads and calls. Every command is recorded."""
 
@@ -124,6 +155,7 @@ class FakeSession:
         self.asset_ids = [HERO, VILLAIN]
         self.files = FakeFiles()
         self.markup = FakeMarkup()
+        self.shapes = FakeShapes()
         self.mismatch = ""
         self.rig = object()
         self.watching = []
@@ -333,10 +365,6 @@ class EditorView(unittest.TestCase):
         window.show()
         window.tabs.setCurrentWidget(window.markup_tab)
 
-    def test_the_markup_tab_follows_the_files_tab(self):
-        window = self.window()
-        self.assertEqual([window.tabs.tabText(i) for i in range(window.tabs.count())], ["Files", "Markup"])
-
     def test_the_markup_model_reads_only_while_its_tab_shows(self):
         session = FakeSession(self.root)
         window = self.window(session)
@@ -347,6 +375,7 @@ class EditorView(unittest.TestCase):
         window.tabs.setCurrentWidget(window.markup_tab)
         window.hide()
         self.assertEqual(session.markup.active, [False, True, False, True, False])
+        self.assertEqual(session.shapes.active, [False, False, False, False, False])
 
     def test_the_form_shows_each_fields_value_and_mixed(self):
         from PySide6 import QtCore
@@ -478,6 +507,112 @@ class EditorView(unittest.TestCase):
         session.markup.error = "That would give 2 joints side Left and usage 'arm'."
         window.markup_form.editors["skin"].click()
         self.assertEqual(window.status_label.text(), "That would give 2 joints side Left and usage 'arm'.")
+
+    # ---- the Shapes tab ----
+
+    def show_shapes(self, window):
+        window.show()
+        window.tabs.setCurrentWidget(window.shapes_tab)
+
+    def test_the_tabs_are_files_markup_and_shapes(self):
+        window = self.window()
+        self.assertEqual([window.tabs.tabText(i) for i in range(window.tabs.count())], ["Files", "Markup", "Shapes"])
+
+    def test_only_the_showing_tab_reads_the_scene(self):
+        session = FakeSession(self.root)
+        window = self.window(session)
+        window.show()
+        window.tabs.setCurrentWidget(window.shapes_tab)
+        window.tabs.setCurrentWidget(window.markup_tab)
+        window.hide()
+        self.assertEqual(session.shapes.active, [False, True, False, False])
+        self.assertEqual(session.markup.active, [False, False, True, False])
+
+    def test_the_shape_choices_come_from_the_model_and_the_fields_show_their_states(self):
+        from PySide6 import QtCore
+        window = self.window()
+        shape = window.appearance_form.editors["shapeType"]
+        self.assertEqual([shape.itemText(i) for i in range(shape.count())], ["Box", "Sphere", "Circle"])
+        self.assertEqual(shape.currentText(), "Sphere")
+        self.assertEqual(window.appearance_form.editors["filled"].checkState(), QtCore.Qt.CheckState.PartiallyChecked)
+        self.assertEqual(window.appearance_form.editors["wireframeAlpha"].text(), "0.5")
+        self.assertEqual(window.transform_form.editors["scale"].text(), "2")
+        self.assertEqual(window.transform_form.editors["translateX"].text(), "")
+        self.assertEqual(window.transform_form.editors["translateX"].placeholderText(), "Mixed")
+        self.assertEqual(window.transform_form.editors["rotateZ"].text(), "90")
+        self.assertEqual(window.shapes_summary.text(), "2 rig control(s)")
+
+    def test_an_edit_goes_to_the_model_with_the_mode(self):
+        session = FakeSession(self.root)
+        window = self.window(session)
+        edit = window.transform_form.editors["translateY"]
+        edit.setText("1.5")
+        edit.setModified(True)
+        edit.editingFinished.emit()
+        window.shape_mode_combo.setCurrentIndex(window.shape_mode_combo.findData("adjust"))
+        scale = window.transform_form.editors["scale"]
+        scale.setText("1.2")
+        scale.setModified(True)
+        scale.editingFinished.emit()
+        window.appearance_form.editors["filled"].click()
+        self.assertEqual(session.shapes.calls, [("set_field", "translateY", 1.5, "set"),
+                                                ("set_field", "scale", 1.2, "adjust"),
+                                                ("set_field", "filled", True, "adjust")])
+
+    def test_picking_a_shape_sends_its_name(self):
+        session = FakeSession(self.root)
+        window = self.window(session)
+        shape = window.appearance_form.editors["shapeType"]
+        shape.setCurrentIndex(shape.findText("Circle"))
+        shape.activated.emit(shape.currentIndex())
+        self.assertEqual(session.shapes.calls, [("set_field", "shapeType", "Circle", "set")])
+
+    def test_showing_the_model_again_edits_nothing(self):
+        session = FakeSession(self.root)
+        window = self.window(session)
+        session.shapes.changed.emit()
+        session.changed.emit()
+        self.assertEqual(session.shapes.calls, [])
+
+    def test_the_forms_are_off_with_no_controls_selected(self):
+        session = FakeSession(self.root)
+        session.shapes.controls = []
+        window = self.window(session)
+        session.shapes.changed.emit()
+        self.assertFalse(window.appearance_form.isEnabled())
+        self.assertFalse(window.transform_form.isEnabled())
+
+    def test_the_mirror_buttons_mirror_the_selected_controls_rigs_or_the_chosen_rig(self):
+        session = FakeSession(self.root)
+        session.files.rig_root = "hero:rigRootModule1"
+        window = self.window(session)
+        window.mirror_buttons["left_to_right"].click()
+        window.mirror_buttons["right_to_left"].click()
+        self.assertEqual(session.shapes.calls, [("mirror", True, "hero:rigRootModule1"),
+                                                ("mirror", False, "hero:rigRootModule1")])
+
+    def test_save_and_load_shapes_use_the_files_model_and_say_why_when_blocked(self):
+        session = FakeSession(self.root)
+        session.files.rows.append(row("shapes", "Control shapes", "rig", "game", load_blocked="Not saved yet."))
+        window = self.window(session)
+        session.changed.emit()
+        window.save_shapes_button.click()
+        self.assertTrue(window.save_shapes_button.isEnabled())
+        self.assertFalse(window.load_shapes_button.isEnabled())
+        self.assertEqual(window.load_shapes_button.toolTip(), "Not saved yet.")
+        self.assertEqual(session.files.calls, [("save", "shapes")])
+
+    def test_save_shapes_is_off_with_no_shapes_row(self):
+        window = self.window()
+        self.assertFalse(window.save_shapes_button.isEnabled())
+        self.assertEqual(window.save_shapes_button.toolTip(), "No asset.")
+
+    def test_a_shape_error_goes_to_the_status_line(self):
+        session = FakeSession(self.root)
+        window = self.window(session)
+        session.shapes.error = "A scale of 0 flattens the shape. Use a small number."
+        window.appearance_form.editors["filled"].click()
+        self.assertEqual(window.status_label.text(), "A scale of 0 flattens the shape. Use a small number.")
 
     # ---- the window's life ----
 
