@@ -33,7 +33,7 @@ TEMPLATE = {
     "rigName": "game",
     "rigAuthor": "tests",
     "rigModules": [
-        {"moduleType": "FkChain", "name": "spine", "shapeType": "Box",
+        {"moduleType": "FkChain", "name": "spine_00_M_MOD", "shapeType": "Box",
          "moduleArgs": {"joints": [["Center", "spine1"], ["Center", "spine2"]]}},
     ],
 }
@@ -101,7 +101,7 @@ class AssetTools(unittest.TestCase):
                 cmds.select(joints[-1], replace=True)
             else:
                 cmds.select(clear=True)
-            joint = cmds.joint(name=f"{usage}_jnt", position=(0, i * 2, 0))
+            joint = cmds.joint(name=f"{usage}_00_M_JNT", position=(0, i * 2, 0))
             cmds.rigJointMarkup(joint, usage=usage, side="Center", export=True, skin=True)
             joints.append(joint)
         return joints
@@ -190,21 +190,21 @@ class AssetTools(unittest.TestCase):
         self.assertEqual(self.hero.skeletons, ["default"])
         self.assertEqual(cmds.file(query=True, sceneName=True), scene, "the scene is a workspace, not the skeleton")
         data = self.read_json(path)
-        self.assertEqual([joint["name"] for joint in data["joints"]], ["spine1_jnt", "spine2_jnt"])
+        self.assertEqual([joint["name"] for joint in data["joints"]], ["spine1_00_M_JNT", "spine2_00_M_JNT"])
         self.assertEqual(data["joints"][1]["parent"], ["Center", "spine1"])
 
     def test_save_skeleton_under_a_name_and_of_named_joints(self):
         joints = self.make_skeleton()
         path = self.tools.save_skeleton(HERO, "face", joints=joints[:1])
         self.assertEqual(path, self.hero.path("skeleton", "face"))
-        self.assertEqual([joint["name"] for joint in self.read_json(path)["joints"]], ["spine1_jnt"])
+        self.assertEqual([joint["name"] for joint in self.read_json(path)["joints"]], ["spine1_00_M_JNT"])
 
     def test_save_skeleton_with_an_unmarked_joint_fails_and_writes_nothing(self):
         cmds = self.cmds
         self.make_skeleton()
         cmds.select(clear=True)
-        cmds.joint(name="helper_jnt")
-        with self.assertRaisesRegex(RuntimeError, "helper_jnt"):
+        cmds.joint(name="helper_00_M_JNT")
+        with self.assertRaisesRegex(RuntimeError, "helper_00_M_JNT"):
             self.tools.save_skeleton(HERO)
         self.assertFalse(os.path.exists(os.path.join(self.hero.folder, "skeletons")), "not even the folder")
 
@@ -215,7 +215,7 @@ class AssetTools(unittest.TestCase):
         with open(path, encoding="utf-8") as handle:
             before = handle.read()
         cmds.select(clear=True)
-        cmds.joint(name="helper_jnt")
+        cmds.joint(name="helper_00_M_JNT")
         with self.assertRaises(RuntimeError):
             self.tools.save_skeleton(HERO)
         with open(path, encoding="utf-8") as handle:
@@ -241,9 +241,9 @@ class AssetTools(unittest.TestCase):
             saved = handle.read()
         cmds.file(new=True, force=True)
         joints = self.tools.load_skeleton(HERO, namespace="edit")
-        self.assertEqual(joints, ["edit:spine1_jnt", "edit:spine2_jnt"])
-        self.assertEqual(cmds.xform("edit:spine2_jnt", query=True, worldSpace=True, translation=True), [0.0, 2.0, 0.0])
-        self.assertEqual(cmds.rigJointMarkup("edit:spine2_jnt", query=True, usage=True), ["spine2"])
+        self.assertEqual(joints, ["edit:spine1_00_M_JNT", "edit:spine2_00_M_JNT"])
+        self.assertEqual(cmds.xform("edit:spine2_00_M_JNT", query=True, worldSpace=True, translation=True), [0.0, 2.0, 0.0])
+        self.assertEqual(cmds.rigJointMarkup("edit:spine2_00_M_JNT", query=True, usage=True), ["spine2"])
         # Saved again from the loaded joints, the file is the same: the skeleton file is the skeleton.
         self.tools.save_skeleton(HERO, joints=joints)
         with open(path, encoding="utf-8") as handle:
@@ -253,7 +253,7 @@ class AssetTools(unittest.TestCase):
         self.make_skeleton()
         self.tools.save_skeleton(HERO)
         self.cmds.file(new=True, force=True)
-        self.assertEqual(self.tools.load_skeleton(HERO), ["spine1_jnt", "spine2_jnt"])
+        self.assertEqual(self.tools.load_skeleton(HERO), ["spine1_00_M_JNT", "spine2_00_M_JNT"])
         with self.assertRaises(FileNotFoundError):
             self.tools.load_skeleton(HERO, "face")
 
@@ -266,8 +266,8 @@ class AssetTools(unittest.TestCase):
         info = rigmodules.query.get_rig_info(rig_root)
         # RigModules' default namespace, "{asset name}_{rigName}" (D54).
         self.assertEqual((info.asset_id, info.rig_name, info.namespace), (HERO, "game", "hero_game"))
-        self.assertTrue(self.cmds.objExists("hero_game:spine1_ctrl_c"))
-        self.assertEqual(self.cmds.ls("hero_game:*", type="joint"), ["hero_game:spine1_jnt", "hero_game:spine2_jnt"])
+        self.assertTrue(self.cmds.objExists("hero_game:spine1_00_M_CTRL"))
+        self.assertEqual(self.cmds.ls("hero_game:*", type="joint"), ["hero_game:spine1_00_M_JNT", "hero_game:spine2_00_M_JNT"])
         # The rig is stamped with the hash of the skeleton file it was built on.
         self.assertEqual(info.skeleton_hash, self.read_json(self.hero.path("skeleton", "default"))["skeletonHash"])
 
@@ -293,12 +293,12 @@ class AssetTools(unittest.TestCase):
         cmds = self.cmds
         self.make_buildable_asset()
         rig_root = self.tools.build_rig(HERO, "game")
-        cmds.setAttr("hero_game:spine1_ctrl_c.shapeType", 1)  # Sphere
+        cmds.setAttr("hero_game:spine1_00_M_CTRL.shapeType", 1)  # Sphere
         self.tools.save_control_shapes(rig_root)
 
         cmds.file(new=True, force=True)
         self.tools.build_rig(HERO, "game")
-        self.assertEqual(cmds.getAttr("hero_game:spine1_ctrl_c.shapeType", asString=True), "Sphere")
+        self.assertEqual(cmds.getAttr("hero_game:spine1_00_M_CTRL.shapeType", asString=True), "Sphere")
 
     def test_build_rig_into_a_namespace_that_holds_a_rig_fails(self):
         self.make_buildable_asset()
@@ -306,7 +306,7 @@ class AssetTools(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "already holds a rig"):
             self.tools.build_rig(HERO, "game")
         self.tools.build_rig(HERO, "game", namespace="hero2")
-        self.assertTrue(self.cmds.objExists("hero2:spine1_ctrl_c"))
+        self.assertTrue(self.cmds.objExists("hero2:spine1_00_M_CTRL"))
 
     def test_build_rig_needs_the_rig_and_the_skeleton(self):
         with self.assertRaises(FileNotFoundError):
@@ -321,22 +321,22 @@ class AssetTools(unittest.TestCase):
     def test_shapes_go_to_the_asset_once_its_folder_exists(self):
         cmds = self.cmds
         rig_root = self.build_outside_the_asset(HERO)
-        path = self.tools.save_control_shapes("hero:spine1_ctrl_c")   # no prompter: a question would raise
+        path = self.tools.save_control_shapes("hero:spine1_00_M_CTRL")   # no prompter: a question would raise
         self.assertEqual(path, self.hero.path("shapes", "game"))
-        cmds.setAttr("hero:spine1_ctrl_c.shapeType", 1)
+        cmds.setAttr("hero:spine1_00_M_CTRL.shapeType", 1)
         self.tools.load_control_shapes(rig_root)
-        self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.shapeType", asString=True), "Box")
+        self.assertEqual(cmds.getAttr("hero:spine1_00_M_CTRL.shapeType", asString=True), "Box")
 
     def test_load_shapes_without_a_saved_file_fails(self):
         self.build_outside_the_asset(HERO)
         with self.assertRaises(FileNotFoundError):
-            self.tools.load_control_shapes("hero:spine1_ctrl_c")
+            self.tools.load_control_shapes("hero:spine1_00_M_CTRL")
 
     def test_shapes_ask_for_a_file_before_the_asset_exists(self):
         cmds = self.cmds
         self.build_outside_the_asset("shooter\\main\\characters\\nobody")
         path = os.path.join(self.temp, "chosen_shapes.json").replace("\\", "/")
-        self.assertEqual(self.tools.save_control_shapes("nobody:spine1_ctrl_c", prompter=self.answers(path)), path)
+        self.assertEqual(self.tools.save_control_shapes("nobody:spine1_00_M_CTRL", prompter=self.answers(path)), path)
         self.assertTrue(os.path.isfile(path))
         self.assertFalse(os.path.exists(os.path.join(self.root, "shooter", "main", "characters", "nobody")))
 
@@ -349,7 +349,7 @@ class AssetTools(unittest.TestCase):
         self.tools.new_rig(HERO, self.template)
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
-        cmds.setAttr("hero:spine1_ctrl_c.translateY", 2)
+        cmds.setAttr("hero:spine1_00_M_CTRL.translateY", 2)
         answers = self.answers("idle")
         path = self.tools.save_pose_interactive(prompter=answers)
         self.assertEqual([q.kind for q in answers.asked], ["ask_text"], "a name, not a file")
@@ -376,7 +376,7 @@ class AssetTools(unittest.TestCase):
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
         path = self.tools.save_pose_interactive(prompter=self.answers("idle"))
-        cmds.setAttr("hero:spine1_ctrl_c.translateY", 5)
+        cmds.setAttr("hero:spine1_00_M_CTRL.translateY", 5)
         cancel = self.answers("idle", False)
         self.assertIsNone(self.tools.save_pose_interactive(prompter=cancel))
         self.assertEqual(cancel.asked[1].options, ("Replace",))
@@ -389,7 +389,7 @@ class AssetTools(unittest.TestCase):
     def test_save_pose_rejects_a_name_that_is_not_a_file_name(self):
         self.build_outside_the_asset(HERO)
         with self.assertRaisesRegex(ValueError, "not a pose name"):
-            self.tools.save_pose(HERO, "a/b", ["hero:spine1_ctrl_c"])
+            self.tools.save_pose(HERO, "a/b", ["hero:spine1_00_M_CTRL"])
 
     def test_capture_joint_clip_names_an_fbx_in_the_exports_folder_of_the_rigs_skeleton(self):
         cmds = self.cmds
@@ -423,11 +423,11 @@ class AssetTools(unittest.TestCase):
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
         path = self.tools.save_pose_interactive(prompter=self.answers("idle"))
-        cmds.setAttr("hero:spine1_ctrl_c.translateY", 5)
+        cmds.setAttr("hero:spine1_00_M_CTRL.translateY", 5)
         answers = self.answers(path)
         self.assertEqual(self.tools.load_pose_interactive(prompter=answers), path)
         self.assertEqual(answers.asked[0].default, self.user_folder("pose"))
-        self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateY"), 0)
+        self.assertEqual(cmds.getAttr("hero:spine1_00_M_CTRL.translateY"), 0)
 
     def test_load_pose_dialog_starts_in_the_approved_folder_before_the_user_has_a_library(self):
         self.tools.new_rig(HERO, self.template)
@@ -443,17 +443,17 @@ class AssetTools(unittest.TestCase):
         cmds = self.cmds
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
-        cmds.setAttr("hero:spine1_ctrl_c.translateY", 3)
+        cmds.setAttr("hero:spine1_00_M_CTRL.translateY", 3)
         legacy = os.path.join(self.hero.path("controlposes", "game"), "old.json")
         os.makedirs(os.path.dirname(legacy))
         cmds.saveRigPose(self.cmds.ls("hero:*", type="rigRootModule")[0], file=legacy.replace("\\", "/"))
-        cmds.setAttr("hero:spine1_ctrl_c.translateY", 0)
+        cmds.setAttr("hero:spine1_00_M_CTRL.translateY", 0)
         import bmaya.maya.assethandlers
         names = bmaya.maya.assethandlers.ControlPoseHandler.names(self.hero.path("controlposes", "game"))
         self.assertEqual(names, ["old"])
         bmaya.maya.assethandlers.ControlPoseHandler().load(
             self.hero, self.hero.path("controlposes", "game"), name="old", scope=cmds.ls("hero:*", type="rigRootModule"))
-        self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateY"), 3)
+        self.assertEqual(cmds.getAttr("hero:spine1_00_M_CTRL.translateY"), 3)
 
     def test_pose_tools_use_a_file_dialog_before_the_asset_exists(self):
         cmds = self.cmds
@@ -473,8 +473,8 @@ class AssetTools(unittest.TestCase):
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
         cmds.playbackOptions(minTime=1, maxTime=3)
-        cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=1, value=0)
-        cmds.setKeyframe("hero:spine1_ctrl_c.translateY", time=3, value=4)
+        cmds.setKeyframe("hero:spine1_00_M_CTRL.translateY", time=1, value=0)
+        cmds.setKeyframe("hero:spine1_00_M_CTRL.translateY", time=3, value=4)
         path = self.tools.save_animation_interactive(prompter=self.answers("rise"))
         self.assertEqual(path, os.path.join(self.user_folder("animation"), "rise.controlanim.json"))
         with open(path, encoding="utf-8") as handle:
@@ -488,16 +488,16 @@ class AssetTools(unittest.TestCase):
         cmds = self.cmds
         self.build_outside_the_asset(HERO)
         cmds.select(clear=True)
-        cmds.setKeyframe("hero:spine1_ctrl_c.translateX", time=1, value=2)
+        cmds.setKeyframe("hero:spine1_00_M_CTRL.translateX", time=1, value=2)
         path = self.tools.save_animation_interactive(prompter=self.answers("lean"))
-        cmds.cutKey("hero:spine1_ctrl_c", attribute="translateX", clear=True)
-        cmds.setAttr("hero:spine1_ctrl_c.translateX", 0)
+        cmds.cutKey("hero:spine1_00_M_CTRL", attribute="translateX", clear=True)
+        cmds.setAttr("hero:spine1_00_M_CTRL.translateX", 0)
         answers = self.answers(path)
         self.assertEqual(self.tools.load_animation_interactive(prompter=answers), path)
         self.assertEqual(answers.asked[0].default, self.user_folder("animation"))
-        self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateX", time=1), 2)
+        self.assertEqual(cmds.getAttr("hero:spine1_00_M_CTRL.translateX", time=1), 2)
         self.assertEqual(self.tools.load_animation_interactive(mirror=True, prompter=self.answers(path)), path)
-        self.assertEqual(cmds.getAttr("hero:spine1_ctrl_c.translateX", time=1), -2)
+        self.assertEqual(cmds.getAttr("hero:spine1_00_M_CTRL.translateX", time=1), -2)
 
     def test_load_animation_cancelled_changes_nothing(self):
         self.build_outside_the_asset(HERO)
@@ -509,7 +509,7 @@ class AssetTools(unittest.TestCase):
         cmds = self.cmds
         self.build_outside_the_asset("shooter\\main\\characters\\nobody")
         cmds.select(clear=True)
-        cmds.setKeyframe("nobody:spine1_ctrl_c.translateY", time=1, value=1)
+        cmds.setKeyframe("nobody:spine1_00_M_CTRL.translateY", time=1, value=1)
         path = os.path.join(self.temp, "chosen_anim.json").replace("\\", "/")
         self.assertEqual(self.tools.save_animation_interactive(prompter=self.answers(path)), path)
         self.assertEqual(self.tools.load_animation_interactive(prompter=self.answers(path)), path)
@@ -535,7 +535,7 @@ class AssetTools(unittest.TestCase):
 
         identity = {"translate": [0, 0, 0], "rotate": [0, 0, 0, 1], "scale": [1, 1, 1]}
         other = {"formatVersion": 1, "frameRate": 30.0, "startFrame": 1, "poses": [[identity]],
-                 "joints": [{"path": "elbow_jnt", "markup": "", "rest": identity}]}
+                 "joints": [{"path": "elbow_00_M_JNT", "markup": "", "rest": identity}]}
         other_json = os.path.join(self.temp, "other.json")
         with open(other_json, "w", encoding="utf-8") as handle:
             json.dump(other, handle)
@@ -543,7 +543,7 @@ class AssetTools(unittest.TestCase):
         other_fbx = os.path.join(self.temp, "other.fbx")
         import rigmodules.jointclip
         rigmodules.jointclip.write_fbx(other_json, other_fbx)
-        with self.assertRaisesRegex(ValueError, "the animation lacks spine1_jnt, spine2_jnt"):
+        with self.assertRaisesRegex(ValueError, "the animation lacks spine1_00_M_JNT, spine2_00_M_JNT"):
             self.tools.check_clip_skeleton(HERO, "game", other_fbx)
 
     def test_checking_a_clip_needs_the_skeleton_export(self):
@@ -585,19 +585,19 @@ class AssetTools(unittest.TestCase):
     def test_save_rig_writes_the_rigs_scene_file(self):
         self.tools.new_rig(HERO, self.template)
         self.build_outside_the_asset(HERO)
-        path = self.tools.save_rig("hero:spine1_ctrl_c")
+        path = self.tools.save_rig("hero:spine1_00_M_CTRL")
         self.assertEqual(path, os.path.join(self.hero.folder, "rigs", "game", "hero_game_rig.ma"))
         self.assertTrue(os.path.isfile(path))
 
     def test_save_rig_needs_the_rig(self):
         self.build_outside_the_asset(HERO)
         with self.assertRaisesRegex(RuntimeError, "Add it with New Rig first"):
-            self.tools.save_rig("hero:spine1_ctrl_c")
+            self.tools.save_rig("hero:spine1_00_M_CTRL")
 
     def test_save_rig_uses_a_file_dialog_before_the_asset_exists(self):
         self.build_outside_the_asset("shooter\\main\\characters\\nobody")
         path = os.path.join(self.temp, "chosen_rig.ma").replace("\\", "/")
-        self.assertEqual(self.tools.save_rig("nobody:spine1_ctrl_c", prompter=self.answers(path)), path)
+        self.assertEqual(self.tools.save_rig("nobody:spine1_00_M_CTRL", prompter=self.answers(path)), path)
         self.assertTrue(os.path.isfile(path))
 
     # ---- meshes and skin weights ----
@@ -612,7 +612,7 @@ class AssetTools(unittest.TestCase):
 
     def skin_box(self, box, namespace="hero"):
         cmds = self.cmds
-        joints = [f"{namespace}:spine1_jnt", f"{namespace}:spine2_jnt"]
+        joints = [f"{namespace}:spine1_00_M_JNT", f"{namespace}:spine2_00_M_JNT"]
         cluster = cmds.skinCluster(*joints, box, toSelectedBones=True)[0]
         cmds.skinPercent(cluster, box + ".vtx[0]", transformValue=[(joints[0], 0.25), (joints[1], 0.75)])
         return cluster
@@ -620,7 +620,7 @@ class AssetTools(unittest.TestCase):
     def spine2_weights(self, box, namespace="hero"):
         cmds = self.cmds
         cluster = cmds.ls(cmds.listHistory(box), type="skinCluster")[0]
-        return [round(cmds.skinPercent(cluster, f"{box}.vtx[{v}]", transform=f"{namespace}:spine2_jnt", query=True), 6)
+        return [round(cmds.skinPercent(cluster, f"{box}.vtx[{v}]", transform=f"{namespace}:spine2_00_M_JNT", query=True), 6)
                 for v in range(8)]
 
     def test_mark_meshes_for_skinning_marks_the_selected_meshes(self):
@@ -680,7 +680,7 @@ class AssetTools(unittest.TestCase):
         self.red_material(box, "hero")
         cluster = self.skin_box(box)
         cmds.setAttr(cluster + ".envelope", 1)
-        cmds.setAttr("hero:spine2_ctrl_c.translateX", 5)     # the pose moves the top of the box
+        cmds.setAttr("hero:spine2_00_M_CTRL.translateX", 5)     # the pose moves the top of the box
         posed = cmds.xform(box + ".vtx[2]", query=True, worldSpace=True, translation=True)
         self.assertNotAlmostEqual(posed[0], -0.5)
         path = self.tools.save_model(HERO, "default")
@@ -934,7 +934,7 @@ class AssetTools(unittest.TestCase):
         self.make_two_looks()
         rig_root = self.tools.build_rig(HERO, "game", "default")
         self.assertTrue(cmds.objExists("hero_game:box_geo"))
-        cmds.setAttr("hero_game:spine1_ctrl_c.rotateZ", 30)
+        cmds.setAttr("hero_game:spine1_00_M_CTRL.rotateZ", 30)
 
         look_root = self.tools.apply_look(rig_root, "winter")
         self.assertEqual(look_root, "hero_game:lookRoot")
@@ -942,7 +942,7 @@ class AssetTools(unittest.TestCase):
         self.assertFalse(cmds.objExists("hero_game:box_geo"))
         self.assertEqual(len(cmds.ls(type="skinCluster")), 1)
         self.assertTrue(cmds.ls(cmds.listHistory("hero_game:ball_geo"), type="skinCluster"))
-        self.assertAlmostEqual(cmds.getAttr("hero_game:spine1_ctrl_c.rotateZ"), 30, places=5)
+        self.assertAlmostEqual(cmds.getAttr("hero_game:spine1_00_M_CTRL.rotateZ"), 30, places=5)
         self.assertTrue(cmds.listRelatives("hero_game:ball_geo", parent=True), "the new mesh joins the rig's mesh group")
 
         cmds.undo()
@@ -1022,11 +1022,63 @@ class AssetTools(unittest.TestCase):
         with open(weights, "w", encoding="utf-8") as handle:
             json.dump(data, handle)
         rig_root = self.tools.build_rig(HERO, "game", "default")
-        with self.assertRaisesRegex(RuntimeError, "weight file is for skeleton 0000000000000000"):
+        import bmaya.core.asset
+        with self.assertRaisesRegex(bmaya.core.asset.AssetError, "saved from another skeleton.*ball_geo.json.*ignore_skeleton_hash"):
             self.tools.apply_look(rig_root, "winter")
         self.assertEqual(self.look_of(rig_root).name, "default")
         self.assertTrue(cmds.objExists("hero_game:box_geo"))
-        self.assertFalse(cmds.objExists("hero_game:ball_geo"), "the imported meshes are removed again")
+        self.assertFalse(cmds.objExists("hero_game:ball_geo"), "checked before the model is imported")
+
+        self.tools.apply_look(rig_root, "winter", ignore_skeleton_hash=True)
+        self.assertEqual(self.look_of(rig_root).name, "winter")
+        self.assertTrue(cmds.ls(cmds.listHistory("hero_game:ball_geo"), type="skinCluster"))
+
+    def test_build_rig_passes_ignore_skeleton_hash_to_the_look(self):
+        cmds = self.cmds
+        self.make_two_looks()
+        weights = os.path.join(self.hero.folder, "looks", "default", "weights", "box_geo.json")
+        data = self.read_json(weights)
+        data["skeletonHash"] = "0000000000000000"
+        with open(weights, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+        with self.assertRaisesRegex(RuntimeError, "saved from another skeleton"):
+            self.tools.build_rig(HERO, "game", "default")
+        cmds.file(new=True, force=True)
+        rig_root = self.tools.build_rig(HERO, "game", "default", ignore_skeleton_hash=True)
+        self.assertEqual(self.look_of(rig_root).name, "default")
+
+    def test_apply_look_drops_a_mesh_with_no_weight_file(self):
+        cmds = self.cmds
+        self.make_two_looks()
+        import bmaya.core.asset
+        import bmaya.maya.assethandlers
+        bmaya.maya.assethandlers.register()
+        bmaya.core.asset.handlers.load(self.hero, "model", "winter")
+        target = cmds.polyCube(name="target_geo", constructionHistory=False)[0]
+        cmds.setRigMeshId(target)
+        self.tools.save_model(HERO, "winter")
+        cmds.file(new=True, force=True)
+
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        self.tools.apply_look(rig_root, "winter")
+        self.assertEqual(self.look_of(rig_root).name, "winter")
+        self.assertTrue(cmds.objExists("hero_game:ball_geo"))
+        self.assertFalse(cmds.ls("hero_game:target_geo*"), "a mesh with no weight file is not left behind")
+
+    def test_apply_look_with_a_weight_file_for_a_missing_mesh_fails_and_cleans_up(self):
+        cmds = self.cmds
+        self.make_two_looks()
+        folder = os.path.join(self.hero.folder, "looks", "winter", "weights")
+        data = self.read_json(os.path.join(folder, "ball_geo.json"))
+        data["meshId"] = "00000000-0000-0000-0000-000000000000"
+        with open(os.path.join(folder, "gone_geo.json"), "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        import bmaya.core.asset
+        with self.assertRaisesRegex(bmaya.core.asset.AssetError, "meshes its model doesn't have"):
+            self.tools.apply_look(rig_root, "winter")
+        self.assertEqual(self.look_of(rig_root).name, "default")
+        self.assertFalse(cmds.ls("hero_game:ball_geo*"), "everything the import made is removed again")
 
     def test_apply_look_needs_a_model_and_weights(self):
         import bmaya.core.asset
@@ -1041,7 +1093,7 @@ class AssetTools(unittest.TestCase):
     def test_rig_tools_need_a_rig_node(self):
         self.make_skeleton()
         with self.assertRaises(RuntimeError):
-            self.tools.save_control_shapes("spine1_jnt")
+            self.tools.save_control_shapes("spine1_00_M_JNT")
 
     # ---- menu entry points ----
 
@@ -1109,7 +1161,7 @@ class AssetTools(unittest.TestCase):
         self.assertEqual(again.asked[1].default, "default", "the asset's only skeleton is offered")
         cmds.file(new=True, force=True)
         self.tools.load_skeleton_interactive(prompter=self.answers(HERO))    # one skeleton: no question for it
-        self.assertEqual(cmds.ls(selection=True), ["spine1_jnt", "spine2_jnt"])
+        self.assertEqual(cmds.ls(selection=True), ["spine1_00_M_JNT", "spine2_00_M_JNT"])
         import bmaya.core.asset
         bmaya.core.asset.Asset.create(VILLAIN, "Character")
         with self.assertRaisesRegex(RuntimeError, "has no skeletons. Add one with Save Skeleton first"):
@@ -1170,34 +1222,34 @@ class AssetTools(unittest.TestCase):
                 cmds.select(joints[-1], replace=True)
             else:
                 cmds.select(clear=True)
-            joint = cmds.joint(name=f"{usage}_jnt", position=(0, height, 0))
+            joint = cmds.joint(name=f"{usage}_00_M_JNT", position=(0, height, 0))
             cmds.rigJointMarkup(joint, usage=usage, side="Center", export=True, skin=True)
             joints.append(joint)
         return joints
 
     def make_attachable_asset(self):
-        """The hero with the rigs body (skeleton default: a, b, c) and face (skeleton face: n, f_a, f_b), the face
+        """The hero with the rigs body (skeleton default: a, b, c) and face (skeleton face: n, fA, fB), the face
         attached to the body. The face template is RigModules' attach_face fixture: its chain starts on the body's
-        fkchain_1.end and its neck_copy follows fkchain_1.index_1. Skeletons are saved, the scene is new."""
+        fkChain_00_M_MOD.end and its neckCopy_00_M_MOD follows fkChain_00_M_MOD.index_1. Skeletons are saved, the scene is new."""
         import bmaya.core.asset
         body = {"rigVersion": 1, "rigTemplateName": "AttachBody", "rigName": "body", "rigAuthor": "tests",
-                "rigModules": [{"moduleType": "FkChain", "name": "fkchain_1", "shapeType": "Box", "side": "Center",
+                "rigModules": [{"moduleType": "FkChain", "name": "fkChain_00_M_MOD", "shapeType": "Box", "side": "Center",
                                 "moduleArgs": {"joints": [["Center", "a"], ["Center", "b"], ["Center", "c"]]}}]}
         face = {"rigVersion": 1, "rigTemplateName": "AttachFace", "rigName": "face", "rigAuthor": "tests",
                 "rigModules": [
-                    {"moduleType": "FkChain", "name": "face_chain", "shapeType": "Box", "side": "Center",
-                     "moduleArgs": {"joints": [["Center", "f_a"], ["Center", "f_b"]]},
-                     "parentStructure": {"start": "parent:fkchain_1.end"}},
-                    {"moduleType": "FkChain", "name": "neck_copy", "shapeType": "Box", "side": "Center",
+                    {"moduleType": "FkChain", "name": "faceChain_00_M_MOD", "shapeType": "Box", "side": "Center",
+                     "moduleArgs": {"joints": [["Center", "fA"], ["Center", "fB"]]},
+                     "parentStructure": {"start": "parent:fkChain_00_M_MOD.end"}},
+                    {"moduleType": "FkChain", "name": "neckCopy_00_M_MOD", "shapeType": "Box", "side": "Center",
                      "moduleArgs": {"joints": [["Center", "n"]]}}],
-                "constraints": [{"name": "neck_follow", "target": "neck_copy.start",
-                                 "drivers": [{"socket": "parent:fkchain_1.index_1", "label": "Body"}]}]}
+                "constraints": [{"name": "neckFollow_00_M_CON", "target": "neckCopy_00_M_MOD.start",
+                                 "drivers": [{"socket": "parent:fkChain_00_M_MOD.index_1", "label": "Body"}]}]}
         self.tools.new_rig(HERO, self.write_template(body, "body.json"), "body")
         self.tools.new_rig(HERO, self.write_template(face, "face.json"), "face", skeleton="face",
                            parent=bmaya.core.asset.RigRef("body"))
         self.tools.save_skeleton(HERO, "default", joints=self.make_joint_chain(("a", "b", "c"), (0, 2, 4)))
         self.cmds.file(new=True, force=True)
-        self.tools.save_skeleton(HERO, "face", joints=self.make_joint_chain(("n", "f_a", "f_b"), (2, 5, 6), chained=False))
+        self.tools.save_skeleton(HERO, "face", joints=self.make_joint_chain(("n", "fA", "fB"), (2, 5, 6), chained=False))
         self.cmds.file(new=True, force=True)
 
     def make_spanning_look(self):
@@ -1213,8 +1265,8 @@ class AssetTools(unittest.TestCase):
         # With no weights yet, a look imports its whole model bare into each rig: skin each rig's own mesh from there.
         face_root = self.tools.build_rig(HERO, "face")
         body_root = self.rig_root("hero_body")
-        cmds.skinCluster("hero_body:a_jnt", "hero_body:b_jnt", "hero_body:box_geo", toSelectedBones=True)
-        cmds.skinCluster("hero_face:f_a_jnt", "hero_face:f_b_jnt", "hero_face:face_geo", toSelectedBones=True)
+        cmds.skinCluster("hero_body:a_00_M_JNT", "hero_body:b_00_M_JNT", "hero_body:box_geo", toSelectedBones=True)
+        cmds.skinCluster("hero_face:fA_00_M_JNT", "hero_face:fB_00_M_JNT", "hero_face:face_geo", toSelectedBones=True)
         self.tools.save_skin_weights(body_root, "default")
         self.tools.save_skin_weights(face_root, "default")
         cmds.file(new=True, force=True)
@@ -1271,9 +1323,9 @@ class AssetTools(unittest.TestCase):
         self.assertEqual(cmds.ls(selection=True), [], "a build leaves nothing selected")
 
         # A chest-up control of the body moves the face, which is the point of the attachment.
-        before = cmds.xform("hero_face:f_a_jnt", query=True, worldSpace=True, translation=True)
-        cmds.setAttr("hero_body:a_ctrl_c.rotateZ", 90)
-        after = cmds.xform("hero_face:f_a_jnt", query=True, worldSpace=True, translation=True)
+        before = cmds.xform("hero_face:fA_00_M_JNT", query=True, worldSpace=True, translation=True)
+        cmds.setAttr("hero_body:a_00_M_CTRL.rotateZ", 90)
+        after = cmds.xform("hero_face:fA_00_M_JNT", query=True, worldSpace=True, translation=True)
         self.assertGreater(max(abs(a - b) for a, b in zip(before, after)), 1.0)
 
     def test_build_rig_without_a_parent_is_as_before(self):
@@ -1322,7 +1374,7 @@ class AssetTools(unittest.TestCase):
         self.make_attachable_asset()
         path = self.hero.path("template", "face")
         data = self.read_json(path)
-        data["rigModules"][0]["parentStructure"]["start"] = "parent:fkchain_1.no_such_socket"
+        data["rigModules"][0]["parentStructure"]["start"] = "parent:fkChain_00_M_MOD.no_such_socket"
         with open(path, "w", encoding="utf-8") as handle:
             json.dump(data, handle)
         with self.assertRaisesRegex(RuntimeError, "(?s)attachment 'face'.*no_such_socket.*parent rig .*left in the scene"):

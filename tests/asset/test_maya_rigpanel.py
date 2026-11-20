@@ -27,10 +27,10 @@ TEMPLATE = {
     "rigName": "game",
     "rigAuthor": "tests",
     "rigModules": [
-        {"moduleType": "FkChain", "name": "spine", "shapeType": "Box",
+        {"moduleType": "FkChain", "name": "spine_00_M_MOD", "shapeType": "Box",
          "moduleArgs": {"joints": [["Center", "spine1"], ["Center", "spine2"]]}},
-        {"moduleType": "FkChain", "name": "arm_l", "side": "Left", "shapeType": "Circle", "mirror": True,
-         "moduleArgs": {"joints": [["Left", "arm"]]}, "parentStructure": {"start": "spine.end"}},
+        {"moduleType": "FkChain", "name": "arm_00_L_MOD", "side": "Left", "shapeType": "Circle", "mirror": True,
+         "moduleArgs": {"joints": [["Left", "arm"]]}, "parentStructure": {"start": "spine_00_M_MOD.end"}},
     ],
 }
 
@@ -82,14 +82,14 @@ class RigPanelBase(unittest.TestCase):
         name = asset_id.split("\\")[-1]
         cmds.namespace(add=f"skel_{name}")
         cmds.select(clear=True)
-        spine1 = cmds.joint(name=f":skel_{name}:spine1_jnt", position=(0, 10, 0))
+        spine1 = cmds.joint(name=f":skel_{name}:spine1_00_M_JNT", position=(0, 10, 0))
         cmds.rigJointMarkup(spine1, usage="spine1", side="Center", export=True, skin=True)
-        spine2 = cmds.joint(name=f":skel_{name}:spine2_jnt", position=(0, 12, 0))
+        spine2 = cmds.joint(name=f":skel_{name}:spine2_00_M_JNT", position=(0, 12, 0))
         cmds.rigJointMarkup(spine2, usage="spine2", side="Center", export=True, skin=True)
         joints = [spine1, spine2]
         for side, x in (("Left", 2), ("Right", -2)):
             cmds.select(spine2, replace=True)
-            joint = cmds.joint(name=f":skel_{name}:arm_{side[0].lower()}_jnt", position=(x, 12, 0))
+            joint = cmds.joint(name=f":skel_{name}:arm_00_{side[0]}_JNT", position=(x, 12, 0))
             cmds.rigJointMarkup(joint, usage="arm", side=side, export=True, skin=True)
             joints.append(joint)
         cmds.createRigFromTemplate(*joints, template=self.template, asset=asset_id, namespace=name)
@@ -135,7 +135,7 @@ class TrackerEvent(RigPanelBase):
         villain = self.build("shooter\\villain")
         self.activerig.ActiveRigTracker().set_rig_root(hero)
         calls = self.record()
-        self.cmds.select("villain:spine1_ctrl_c", replace=True)
+        self.cmds.select("villain:spine1_00_M_CTRL", replace=True)
         self.assertEqual(calls, [villain])
         self.cmds.select(self.cmds.polyCube()[0], replace=True)   # not a rig node: no change, no emit
         self.assertEqual(calls, [villain])
@@ -189,11 +189,11 @@ class Session(RigPanelBase):
         """The template has a spine of two joints and a mirrored arm. The build adds the layout module's group."""
         groups = {(g.module, g.module_type, g.side): len(g.controls) for g in self.session.groups}
         self.assertEqual(len(groups), len(self.session.groups))   # no (module, side) twice
-        self.assertEqual(groups["hero:spine", "FkChain", "Center"], 2)
-        self.assertEqual(groups["hero:arm_l", "FkChain", "Left"], 1)
-        self.assertEqual(groups["hero:arm_r", "FkChain", "Right"], 1)
+        self.assertEqual(groups["hero:spine_00_M_MOD", "FkChain", "Center"], 2)
+        self.assertEqual(groups["hero:arm_00_L_MOD", "FkChain", "Left"], 1)
+        self.assertEqual(groups["hero:arm_00_R_MOD", "FkChain", "Right"], 1)
         self.assertEqual({module for module, _, _ in groups},
-                         {"hero:layout", "hero:spine", "hero:arm_l", "hero:arm_r"})
+                         {"hero:layout_00_M_MOD", "hero:spine_00_M_MOD", "hero:arm_00_L_MOD", "hero:arm_00_R_MOD"})
 
     def test_groups_hold_every_control_once(self):
         grouped = [control for group in self.session.groups for control in group.controls]
@@ -214,7 +214,7 @@ class Session(RigPanelBase):
 
     def test_a_selection_in_another_rig_changes_the_session(self):
         villain = self.build("shooter\\villain")
-        self.cmds.select("villain:spine1_ctrl_c", replace=True)
+        self.cmds.select("villain:spine1_00_M_CTRL", replace=True)
         self.assertEqual(self.session.rig.rig_root, villain)
 
     def test_a_new_scene_shows_no_rig(self):
@@ -304,10 +304,10 @@ LIMB_TEMPLATE = {
     "rigName": "game",
     "rigAuthor": "tests",
     "rigModules": [
-        {"moduleType": "TwoBoneIk", "name": "arm_l", "shapeType": "Box", "side": "Left", "mirror": True,
+        {"moduleType": "TwoBoneIk", "name": "arm_00_L_MOD", "shapeType": "Box", "side": "Left", "mirror": True,
          "moduleArgs": {"joints": [["Left", "upperArm"], ["Left", "lowerArm"], ["Left", "hand"]],
                         "controlName": "arm"},
-         "parentStructure": {"start": "layout.end", "ik": "layout.end", "pole": "layout.end"}},
+         "parentStructure": {"start": "layout_00_M_MOD.end", "ik": "layout_00_M_MOD.end", "pole": "layout_00_M_MOD.end"}},
     ],
 }
 # The limb of RigModules' twoboneik_basic fixture: a bent arm, and its mirror. The IK handle, pole and settings
@@ -332,7 +332,7 @@ class LimbPanel(RigPanelBase):
         for side, sign in (("Left", 1), ("Right", -1)):
             for usage, (x, y, z), export in LIMB_JOINTS:
                 cmds.select(clear=True)
-                joint = cmds.joint(name=f":skel_hero:{usage}_{side[0].lower()}_jnt", position=(x * sign, y, z))
+                joint = cmds.joint(name=f":skel_hero:{usage}_00_{side[0]}_JNT", position=(x * sign, y, z))
                 cmds.rigJointMarkup(joint, usage=usage, side=side, export=export, skin=export)
                 self.joints[side, usage] = joint
         cmds.createRigFromTemplate(*self.joints.values(), template=self.template, asset="shooter\\hero", namespace="hero")
@@ -357,7 +357,7 @@ class LimbPanel(RigPanelBase):
 
     def elbow(self):
         # The build moves the skeleton into the rig's namespace.
-        return self.cmds.xform("hero:lowerArm_l_jnt", query=True, worldSpace=True, translation=True)
+        return self.cmds.xform("hero:lowerArm_00_L_JNT", query=True, worldSpace=True, translation=True)
 
     def test_any_control_of_a_limb_gives_the_limb_in_ik_by_default(self):
         for control in self.limb_controls:
@@ -538,7 +538,7 @@ class SpaceSwitch(RigPanelBase):
         self.arm = self.cmds.getRigControls(self.root, side="Left")[0]
         self.spine = self.cmds.getRigControls(self.root, side="Center", usage="spine1")[0]
         self.constraint = self.cmds.createRigConstraint(
-            self.arm, driver=["layout.end", "spine.end"], label=["World", "Chest"])
+            self.arm, driver=["layout_00_M_MOD.end", "spine_00_M_MOD.end"], label=["World", "Chest"])
         self.session = self.rigpanel.RigPanelSession()
         self.addCleanup(self.session.close)
         self.seen = []

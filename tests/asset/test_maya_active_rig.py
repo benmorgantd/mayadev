@@ -26,7 +26,7 @@ TEMPLATE = {
     "rigName": "game",
     "rigAuthor": "tests",
     "rigModules": [
-        {"moduleType": "FkChain", "name": "spine", "shapeType": "Box",
+        {"moduleType": "FkChain", "name": "spine_00_M_MOD", "shapeType": "Box",
          "moduleArgs": {"joints": [["Center", "spine1"], ["Center", "spine2"]]}},
     ],
 }
@@ -74,7 +74,7 @@ class ActiveRig(unittest.TestCase):
         name = asset_id.split("\\")[-1]
         joints = []
         for i, usage in enumerate(("spine1", "spine2")):
-            joint = cmds.joint(name=f"{usage}_jnt", position=(0, i * 2, 0))
+            joint = cmds.joint(name=f"{usage}_00_M_JNT", position=(0, i * 2, 0))
             cmds.rigJointMarkup(joint, usage=usage, side="Center", export=True, skin=True)
             joints.append(joint)
         cmds.createRigFromTemplate(*joints, template=self.template, asset=asset_id, namespace=name)
@@ -84,7 +84,7 @@ class ActiveRig(unittest.TestCase):
 
     def test_selected_control_joint_or_root_finds_the_rig(self):
         rig_root, joints = self.build("shooter\\hero")
-        for node in ("hero:spine1_ctrl_c", joints[1], rig_root):
+        for node in ("hero:spine1_00_M_CTRL", joints[1], rig_root):
             with self.subTest(node=node):
                 self.cmds.select(node, replace=True)
                 self.assertEqual(self.activerig.rig_from_selection().rig_root, rig_root)
@@ -92,10 +92,10 @@ class ActiveRig(unittest.TestCase):
     def test_last_selected_rig_node_wins(self):
         hero, _ = self.build("shooter\\hero")
         villain, _ = self.build("shooter\\villain")
-        self.cmds.select(["hero:spine1_ctrl_c", "villain:spine1_ctrl_c"], replace=True)
+        self.cmds.select(["hero:spine1_00_M_CTRL", "villain:spine1_00_M_CTRL"], replace=True)
         self.assertEqual(self.activerig.rig_from_selection().rig_root, villain)
         cube = self.cmds.polyCube()[0]
-        self.cmds.select(["hero:spine1_ctrl_c", cube], replace=True)
+        self.cmds.select(["hero:spine1_00_M_CTRL", cube], replace=True)
         self.assertEqual(self.activerig.rig_from_selection().rig_root, hero)
 
     def test_components_and_other_nodes_find_no_rig(self):
@@ -118,10 +118,10 @@ class ActiveRig(unittest.TestCase):
         hero, _ = self.build("shooter\\hero")
         villain, _ = self.build("shooter\\villain")
         tracker = self.activerig.ActiveRigTracker()
-        self.cmds.select("villain:spine1_ctrl_c", replace=True)
+        self.cmds.select("villain:spine1_00_M_CTRL", replace=True)
         self.cmds.select(self.cmds.polyCube()[0], replace=True)
         self.assertEqual(tracker.rig_root, villain)
-        self.cmds.select("hero:spine2_ctrl_c", replace=True)
+        self.cmds.select("hero:spine2_00_M_CTRL", replace=True)
         self.assertEqual(tracker.rig_root, hero)
 
     def test_tracker_resets_on_a_new_scene(self):

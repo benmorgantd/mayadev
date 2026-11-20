@@ -17,10 +17,10 @@ TIMEOUT = 240
 TEMPLATE = {
     "rigVersion": 1, "rigTemplateName": "LibraryGui", "rigName": "game", "rigAuthor": "tests",
     "rigModules": [
-        {"moduleType": "FkChain", "name": "spine", "shapeType": "Box",
+        {"moduleType": "FkChain", "name": "spine_00_M_MOD", "shapeType": "Box",
          "moduleArgs": {"joints": [["Center", "spine1"], ["Center", "spine2"]]}},
-        {"moduleType": "FkChain", "name": "arm_l", "side": "Left", "shapeType": "Circle", "mirror": True,
-         "moduleArgs": {"joints": [["Left", "arm"]]}, "parentStructure": {"start": "spine.end"}},
+        {"moduleType": "FkChain", "name": "arm_00_L_MOD", "side": "Left", "shapeType": "Circle", "mirror": True,
+         "moduleArgs": {"joints": [["Left", "arm"]]}, "parentStructure": {"start": "spine_00_M_MOD.end"}},
     ],
 }
 

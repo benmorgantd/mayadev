@@ -32,10 +32,10 @@ TEMPLATE = {
     "rigName": "game",
     "rigAuthor": "tests",
     "rigModules": [
-        {"moduleType": "FkChain", "name": "spine", "shapeType": "Box",
+        {"moduleType": "FkChain", "name": "spine_00_M_MOD", "shapeType": "Box",
          "moduleArgs": {"joints": [["Center", "spine1"], ["Center", "spine2"]]}},
-        {"moduleType": "FkChain", "name": "arm_l", "side": "Left", "shapeType": "Circle", "mirror": True,
-         "moduleArgs": {"joints": [["Left", "arm"]]}, "parentStructure": {"start": "spine.end"}},
+        {"moduleType": "FkChain", "name": "arm_00_L_MOD", "side": "Left", "shapeType": "Circle", "mirror": True,
+         "moduleArgs": {"joints": [["Left", "arm"]]}, "parentStructure": {"start": "spine_00_M_MOD.end"}},
     ],
 }
 
@@ -108,14 +108,14 @@ class LibraryBase(unittest.TestCase):
         name = asset_id.split("\\")[-1]
         cmds.namespace(add=f"skel_{name}")
         cmds.select(clear=True)
-        spine1 = cmds.joint(name=f":skel_{name}:spine1_jnt", position=(0, 10, 0))
+        spine1 = cmds.joint(name=f":skel_{name}:spine1_00_M_JNT", position=(0, 10, 0))
         cmds.rigJointMarkup(spine1, usage="spine1", side="Center", export=True, skin=True)
-        spine2 = cmds.joint(name=f":skel_{name}:spine2_jnt", position=(0, 12, 0))
+        spine2 = cmds.joint(name=f":skel_{name}:spine2_00_M_JNT", position=(0, 12, 0))
         cmds.rigJointMarkup(spine2, usage="spine2", side="Center", export=True, skin=True)
         joints = [spine1, spine2]
         for side, x in (("Left", 2), ("Right", -2)):
             cmds.select(spine2, replace=True)
-            joint = cmds.joint(name=f":skel_{name}:arm_{side[0].lower()}_jnt", position=(x, 12, 0))
+            joint = cmds.joint(name=f":skel_{name}:arm_00_{side[0]}_JNT", position=(x, 12, 0))
             cmds.rigJointMarkup(joint, usage="arm", side=side, export=True, skin=True)
             joints.append(joint)
         cmds.createRigFromTemplate(*joints, template=self.template, asset=asset_id, namespace=name)
@@ -429,10 +429,10 @@ class Applying(LibraryBase):
 
     def test_the_rig_gives_masks_by_module_type_side_and_module(self):
         names = [mask.name for mask in self.session.masks]
-        for expected in ("FkChain", "Left", "Right", "Center", "spine"):
+        for expected in ("FkChain", "Left", "Right", "Center", "spine_00_M_MOD"):
             self.assertIn(expected, names)
         self.assertTrue(all(mask.source == "rig" for mask in self.session.masks))
-        spine = next(mask for mask in self.session.masks if mask.name == "spine")
+        spine = next(mask for mask in self.session.masks if mask.name == "spine_00_M_MOD")
         self.assertEqual({(item.side, item.usage) for item in spine.items}, {("Center", "spine1"), ("Center", "spine2")})
 
     def test_a_mask_limits_apply_to_its_controls_and_the_selection_narrows_it(self):

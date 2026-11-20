@@ -162,7 +162,7 @@ def save_model(asset_id: str, look: str, meshes: list[str] | None = None) -> str
 
 
 def build_rig(asset_id: str, rig: str, look: str | None = None, namespace: str | None = None,
-              parent_rig_root: str | None = None) -> str:
+              parent_rig_root: str | None = None, ignore_skeleton_hash: bool = False) -> str:
     """Builds a rig of the asset in the open scene: creates its skeleton's joints from the skeleton file (the
     skeleton may be another asset's), builds the rig's template on them, and loads the rig's shape file. Then it puts
     a look on the rig: the look's model is imported into the same namespace and its skin weights are loaded onto the
@@ -173,12 +173,13 @@ def build_rig(asset_id: str, rig: str, look: str | None = None, namespace: str |
     A rig whose rig.json has a parent is an attachment (RigModules D55) and follows that rig. parent_rig_root is the
     parent's rig root. Left out, the parent is found in the scene by its asset id and rig name: one is used, none is
     built first with its own default look (and its own parent before it), and several raise an error that names them.
-    The parent stays in the scene when the attachment fails to build. Returns the rig root."""
-    return _build_rig(asset_id, rig, look, namespace, parent_rig_root, ())
+    The parent stays in the scene when the attachment fails to build. ignore_skeleton_hash is apply_look's, for this
+    rig's look only. Returns the rig root."""
+    return _build_rig(asset_id, rig, look, namespace, parent_rig_root, (), ignore_skeleton_hash)
 
 
 def _build_rig(asset_id: str, rig: str, look: str | None, namespace: str | None, parent_rig_root: str | None,
-               chain: tuple[tuple[str, str], ...]) -> str:
+               chain: tuple[tuple[str, str], ...], ignore_skeleton_hash: bool = False) -> str:
     asset = require_asset(asset_id)
     if (asset.id, rig) in chain:
         raise bmaya.core.asset.AssetError(
@@ -213,7 +214,8 @@ def _build_rig(asset_id: str, rig: str, look: str | None, namespace: str | None,
     else:
         parent_root = _find_or_build_parent(parent[0], parent[1], parent_rig_root, chain + ((asset.id, rig),))
     try:
-        rig_root = _build_rig_nodes(asset, rig, look, namespace, template, skeleton_asset, skeleton, parent_root)
+        rig_root = _build_rig_nodes(asset, rig, look, namespace, template, skeleton_asset, skeleton, parent_root,
+                                    ignore_skeleton_hash)
     except Exception as error:
         if parent_root is None:
             raise
@@ -256,7 +258,8 @@ def _find_or_build_parent(parent_asset: bmaya.core.asset.Asset, parent_rig: str,
 
 
 def _build_rig_nodes(asset: bmaya.core.asset.Asset, rig: str, look: str | None, namespace: str, template: str,
-                     skeleton_asset: bmaya.core.asset.Asset, skeleton: str, parent_root: str | None) -> str:
+                     skeleton_asset: bmaya.core.asset.Asset, skeleton: str, parent_root: str | None,
+                     ignore_skeleton_hash: bool = False) -> str:
     """The build proper: the skeleton's joints, the rig on them (following parent_root when it is given), the shape
     file and the look. Returns the rig root."""
     joints = bmaya.core.asset.handlers.load(skeleton_asset, "skeleton", skeleton, namespace=namespace)
@@ -271,7 +274,7 @@ def _build_rig_nodes(asset: bmaya.core.asset.Asset, rig: str, look: str | None, 
         bmaya.core.asset.handlers.load(asset, "shapes", rig, rig_root=rig_root)
     if look is not None and asset.file_exists("model", look):
         if asset.file_exists("weights", look):
-            apply_look(rig_root, look)   # records the look on the rig
+            apply_look(rig_root, look, ignore_skeleton_hash)   # records the look on the rig
         else:
             # A model with no weights yet has nothing to swap in: its meshes are imported unskinned and no look is recorded.
             model_nodes = bmaya.core.asset.handlers.load(asset, "model", look, namespace=namespace)
@@ -280,14 +283,20 @@ def _build_rig_nodes(asset: bmaya.core.asset.Asset, rig: str, look: str | None, 
     return rig_root
 
 
-def apply_look(node: str, look: str) -> str:
+def apply_look(node: str, look: str, ignore_skeleton_hash: bool = False) -> str:
     """Puts the rig that node belongs to in a look of its asset (RigModules D54): imports the look's model into the
     rig's namespace, then cmds.setRigLook loads the look's weight files onto the rig's joints, deletes the previous
     look's meshes and records the look on the rig's lookRoot. The new meshes join the rig's mesh layer and group. The
     controls and animation are not touched. A look that is not synced yet is synced first (source control), and then
-    checked against the rig like any other. One undo step. A weight file made for another skeleton fails the swap, and
-    the imported meshes are removed again. Raises AssetError for a look the asset doesn't have, one that doesn't fit the
-    rig's skeleton, or one with no model or weights.
+    checked against the rig like any other. One undo step.
+
+    A weight file saved from another skeleton (its skeletonHash is not the rig's, as after joints were added) raises
+    AssetError before the scene is touched, naming the files. ignore_skeleton_hash=True loads them anyway with a
+    warning; save the weights again afterwards so the files carry the new hash. The model's meshes are matched to the
+    weight files by meshId: a mesh with no weight file (a blend shape target, a prop) is deleted with a warning, and a
+    weight file with no mesh is an AssetError. A failed swap deletes everything the model import created. Raises
+    AssetError for a look the asset doesn't have, one that doesn't fit the rig's skeleton, or one with no model or
+    weights.
 
     A look can name several skeletons (a body and its attachment, RigModules D55), with one model and one weights
     folder. Then the rig takes only the weight files saved from its own skeleton (the file's skeletonHash is the
@@ -311,28 +320,41 @@ def apply_look(node: str, look: str) -> str:
     spans = len(asset.look(look).skeletons) > 1
     if spans:
         files = _weight_files_of_rig(asset, look, info, files)
+    else:
+        _check_weight_skeleton(asset, look, info, files, ignore_skeleton_hash)
+    wanted_ids = {rigmodules.skinweights.read_file_mesh_id(path) for path in files}
 
     bmaya.maya.assethandlers.register()
     cmds.undoInfo(openChunk=True, chunkName="Apply Look")
     try:
         model_nodes = bmaya.core.asset.handlers.load(asset, "model", look, namespace=info.namespace)
-        meshes = [model_node for model_node in model_nodes
-                  if cmds.nodeType(model_node) == "transform" and rigmodules.skinweights.get_mesh_id(model_node)]
         try:
-            if spans:
-                wanted_ids = {rigmodules.skinweights.read_file_mesh_id(path) for path in files}
-                for mesh in [mesh for mesh in meshes if rigmodules.skinweights.get_mesh_id(mesh) not in wanted_ids]:
-                    cmds.delete(mesh)
-                    meshes.remove(mesh)
+            meshes = [model_node for model_node in model_nodes
+                      if cmds.nodeType(model_node) == "transform" and rigmodules.skinweights.get_mesh_id(model_node)]
+            # setRigLook takes one mesh per weight file, so a mesh with no file (a blend shape target, a prop) goes.
+            extra = [mesh for mesh in meshes if rigmodules.skinweights.get_mesh_id(mesh) not in wanted_ids]
+            if extra and not spans:
+                bmaya.core.log.warning(f"The look {look!r} has no weight file for these meshes, so they were not "
+                                       f"loaded: {', '.join(extra)}")
+            for mesh in extra:
+                cmds.delete(mesh)
+                meshes.remove(mesh)
             if not meshes:
                 raise bmaya.core.asset.AssetError(
                     f"The model of the look {look!r} has no mesh with a meshId"
                     + (f" that the rig {info.rig_name!r} has a weight file for." if spans else "."))
+            missing = wanted_ids - {rigmodules.skinweights.get_mesh_id(mesh) for mesh in meshes}
+            if missing:
+                raise bmaya.core.asset.AssetError(
+                    f"The look {look!r} has weight files for meshes its model doesn't have (meshId "
+                    f"{', '.join(sorted(missing))}). Save the model again, or delete those weight files.")
             look_root = cmds.setRigLook(info.rig_root, mesh=meshes, file=[path.replace("\\", "/") for path in files],
-                                        asset=asset.id, look=look)
+                                        asset=asset.id, look=look, ignoreSkeletonHash=ignore_skeleton_hash)
         except Exception:
-            # The import is not part of setRigLook's undo, so a failed swap takes the imported meshes out itself.
-            cmds.delete([mesh for mesh in meshes if cmds.objExists(mesh)])
+            # The import is not part of setRigLook's undo, so a failed swap takes out everything the import made.
+            for model_node in model_nodes:
+                if cmds.objExists(model_node):
+                    cmds.delete(model_node)
             raise
         # setRigLook renamed the meshes after their files, so they are found again by id.
         wanted = {rigmodules.skinweights.read_file_mesh_id(path) for path in files}
@@ -344,6 +366,26 @@ def apply_look(node: str, look: str) -> str:
         cmds.undoInfo(closeChunk=True)
     bmaya.core.log.info(f"Put the rig {info.rig_name!r} of {asset.id} in the look {look!r}.")
     return look_root
+
+
+def _check_weight_skeleton(asset: bmaya.core.asset.Asset, look: str, info: rigmodules.query.RigInfo,
+                           files: list[str], ignore_skeleton_hash: bool) -> None:
+    """Fails, before the scene is touched, when a look's weight files were saved from another skeleton than the rig's.
+    That is what adding or moving a joint does (RigModules D54: the hash covers names, parents and rests), so the
+    message says so. A file with no hash is not checked here: setRigLook warns about it."""
+    stale = [path for path in files
+             if (rigmodules.skinweights.read_file_skeleton_hash(path) or info.skeleton_hash) != info.skeleton_hash]
+    if not stale:
+        return
+    names = ", ".join(os.path.basename(path) for path in stale)
+    if ignore_skeleton_hash:
+        bmaya.core.log.warning(f"Loading weights saved from another skeleton (ignore_skeleton_hash): {names}. "
+                               f"Save the weights again so the files carry the rig's skeleton hash.")
+        return
+    raise bmaya.core.asset.AssetError(
+        f"The look {look!r} of {asset.id} has weight files saved from another skeleton than the rig {info.rig_name!r} "
+        f"(skeleton hash {info.skeleton_hash}): {names}. The skeleton has changed since the weights were saved, for "
+        f"example a joint was added. Pass ignore_skeleton_hash=True to load them anyway, then save the weights again.")
 
 
 def _weight_files_of_rig(asset: bmaya.core.asset.Asset, look: str, info: rigmodules.query.RigInfo,

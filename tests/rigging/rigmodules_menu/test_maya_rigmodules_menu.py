@@ -33,10 +33,10 @@ TEMPLATE = {
     "rigName": "game",
     "rigAuthor": "tests",
     "rigModules": [
-        {"moduleType": "FkChain", "name": "spine", "shapeType": "Box",
+        {"moduleType": "FkChain", "name": "spine_00_M_MOD", "shapeType": "Box",
          "moduleArgs": {"joints": [["Center", "spine1"]]}},
-        {"moduleType": "FkChain", "name": "arm_l", "side": "Left", "shapeType": "Circle", "mirror": True,
-         "moduleArgs": {"joints": [["Left", "arm"]]}, "parentStructure": {"start": "spine.end"}},
+        {"moduleType": "FkChain", "name": "arm_00_L_MOD", "side": "Left", "shapeType": "Circle", "mirror": True,
+         "moduleArgs": {"joints": [["Left", "arm"]]}, "parentStructure": {"start": "spine_00_M_MOD.end"}},
     ],
 }
 
@@ -131,12 +131,12 @@ class MenuScripts(unittest.TestCase):
         cmds = self.cmds
         cmds.namespace(add=":skel")
         cmds.select(clear=True)
-        spine = cmds.joint(name=":skel:spine1_jnt", position=(0, 10, 0))
+        spine = cmds.joint(name=":skel:spine1_00_M_JNT", position=(0, 10, 0))
         cmds.rigJointMarkup(spine, usage="spine1", side="Center", export=True, skin=True)
         joints = [spine]
         for side, x in (("Left", 2), ("Right", -2)):
             cmds.select(spine, replace=True)
-            joint = cmds.joint(name=f":skel:arm_{side[0].lower()}_jnt", position=(x, 10, 0))
+            joint = cmds.joint(name=f":skel:arm_00_{side[0]}_JNT", position=(x, 10, 0))
             cmds.rigJointMarkup(joint, usage="arm", side=side, export=True, skin=True)
             joints.append(joint)
         return joints
@@ -171,7 +171,7 @@ class MenuScripts(unittest.TestCase):
             self.run_tool("Print Joint Markup", self.joints)
         lines = out.getvalue().splitlines()
         self.assertEqual(len(lines), len(self.joints))
-        self.assertIn('hero:spine1_jnt: {"export":true,"markupVersion":1,"side":"Center","skin":true,"usage":"spine1"}', lines)
+        self.assertIn('hero:spine1_00_M_JNT: {"export":true,"markupVersion":1,"side":"Center","skin":true,"usage":"spine1"}', lines)
 
     def test_add_twist_joints_fills_in_the_form_and_adds_joints_between_the_selection(self):
         import bmaya.maya.assettools
@@ -306,7 +306,7 @@ class MenuScripts(unittest.TestCase):
         clip = self.read_fbx(path)
         self.assertEqual(clip["startFrame"], 1)
         self.assertEqual(len(clip["poses"]), 4)
-        self.assertEqual(sorted(joint["path"] for joint in clip["joints"]), ["spine1_jnt", "spine1_jnt/arm_l_jnt", "spine1_jnt/arm_r_jnt"])
+        self.assertEqual(sorted(joint["path"] for joint in clip["joints"]), ["spine1_00_M_JNT", "spine1_00_M_JNT/arm_00_L_JNT", "spine1_00_M_JNT/arm_00_R_JNT"])
 
     def test_capture_joint_pose_writes_an_fbx_with_one_frame(self):
         cmds = self.cmds
@@ -449,7 +449,7 @@ class MenuScripts(unittest.TestCase):
     def make_skinned_box(self):
         cmds = self.cmds
         box = cmds.polyCube(name=":hero:box_geo", constructionHistory=False)[0]
-        cluster = cmds.skinCluster("hero:spine1_jnt", "hero:arm_l_jnt", box, toSelectedBones=True)[0]
+        cluster = cmds.skinCluster("hero:spine1_00_M_JNT", "hero:arm_00_L_JNT", box, toSelectedBones=True)[0]
         return box, cluster
 
     def test_mark_meshes_for_skinning_and_new_ids(self):

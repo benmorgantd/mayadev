@@ -28,14 +28,14 @@ def pump(milliseconds=400):
 def build(name):
     cmds.namespace(add="skel_" + name)
     cmds.select(clear=True)
-    spine1 = cmds.joint(name=":skel_%s:spine1_jnt" % name, position=(0, 10, 0))
+    spine1 = cmds.joint(name=":skel_%s:spine1_00_M_JNT" % name, position=(0, 10, 0))
     cmds.rigJointMarkup(spine1, usage="spine1", side="Center", export=True, skin=True)
-    spine2 = cmds.joint(name=":skel_%s:spine2_jnt" % name, position=(0, 12, 0))
+    spine2 = cmds.joint(name=":skel_%s:spine2_00_M_JNT" % name, position=(0, 12, 0))
     cmds.rigJointMarkup(spine2, usage="spine2", side="Center", export=True, skin=True)
     joints = [spine1, spine2]
     for side, x in (("Left", 2), ("Right", -2)):
         cmds.select(spine2, replace=True)
-        joint = cmds.joint(name=":skel_%s:arm_%s_jnt" % (name, side[0].lower()), position=(x, 12, 0))
+        joint = cmds.joint(name=":skel_%s:arm_00_%s_JNT" % (name, side[0]), position=(x, 12, 0))
         cmds.rigJointMarkup(joint, usage="arm", side=side, export=True, skin=True)
         joints.append(joint)
     cmds.createRigFromTemplate(*joints, template=os.environ["PANEL_TEMPLATE"], asset="shooter" + B + name, namespace=name)
@@ -47,7 +47,7 @@ def build_limb(name):
     for usage, position, export in (("upperArm", (0, 0, 0), True), ("lowerArm", (1.8, 2.4, 0), True),
                                     ("hand", (5, 0, 0), True)):
         cmds.select(clear=True)
-        joint = cmds.joint(name=":skel_%s:%s_jnt" % (name, usage), position=position)
+        joint = cmds.joint(name=":skel_%s:%s_00_M_JNT" % (name, usage), position=position)
         cmds.rigJointMarkup(joint, usage=usage, side="Left", export=export, skin=export)
     joints = cmds.ls("skel_%s:*" % name, type="joint")
     cmds.createRigFromTemplate(*joints, template=os.environ["PANEL_LIMB_TEMPLATE"], asset="shooter" + B + name, namespace=name)
@@ -119,7 +119,7 @@ def steps_rest():
     panel.buttons["key_rig"].click()
     check(cmds.keyframe(cmds.ls(selection=True)[0], query=True, keyframeCount=True) > 0, "Key keyed the rig")
 
-    villain_ctrl = "villain:spine1_ctrl_c"
+    villain_ctrl = "villain:spine1_00_M_CTRL"
     cmds.select(villain_ctrl, replace=True)
     pump(200)
     check(panel.session.rig.namespace == "villain", "selecting another rig switched the panel to %s" % panel.session.rig.namespace)
@@ -127,7 +127,7 @@ def steps_rest():
     # The space section follows the selection and switches the space.
     root = cmds.ls("villain:*", type="rigRootModule")[0]
     arm = cmds.getRigControls(root, side="Left")[0]
-    cmds.createRigConstraint(arm, driver=["layout.end", "spine.end"], label=["World", "Chest"])
+    cmds.createRigConstraint(arm, driver=["layout_00_M_MOD.end", "spine_00_M_MOD.end"], label=["World", "Chest"])
     check(not panel.space_section.isVisible(), "no Space section while no control is selected")
     cmds.select(arm, replace=True)
     pump(300)
@@ -183,7 +183,7 @@ def steps_rest():
     pump(800)
     check(not cmds.workspaceControl(name, query=True, exists=True), "workspaceControl is gone after deleteUI")
     check(listeners() == base, "closed panel's session stopped listening (%d)" % listeners())
-    cmds.select("hero:spine1_ctrl_c", replace=True)
+    cmds.select("hero:spine1_00_M_CTRL", replace=True)
     pump(200)
     cmds.select(villain_ctrl, replace=True)
     pump(200)

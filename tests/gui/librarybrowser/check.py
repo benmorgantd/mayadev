@@ -29,14 +29,14 @@ def pump(milliseconds=400):
 def build(name):
     cmds.namespace(add="skel_" + name)
     cmds.select(clear=True)
-    spine1 = cmds.joint(name=":skel_%s:spine1_jnt" % name, position=(0, 10, 0))
+    spine1 = cmds.joint(name=":skel_%s:spine1_00_M_JNT" % name, position=(0, 10, 0))
     cmds.rigJointMarkup(spine1, usage="spine1", side="Center", export=True, skin=True)
-    spine2 = cmds.joint(name=":skel_%s:spine2_jnt" % name, position=(0, 12, 0))
+    spine2 = cmds.joint(name=":skel_%s:spine2_00_M_JNT" % name, position=(0, 12, 0))
     cmds.rigJointMarkup(spine2, usage="spine2", side="Center", export=True, skin=True)
     joints = [spine1, spine2]
     for side, x in (("Left", 2), ("Right", -2)):
         cmds.select(spine2, replace=True)
-        joint = cmds.joint(name=":skel_%s:arm_%s_jnt" % (name, side[0].lower()), position=(x, 12, 0))
+        joint = cmds.joint(name=":skel_%s:arm_00_%s_JNT" % (name, side[0]), position=(x, 12, 0))
         cmds.rigJointMarkup(joint, usage="arm", side=side, export=True, skin=True)
         joints.append(joint)
     cmds.createRigFromTemplate(*joints, template=os.environ["LIBRARY_TEMPLATE"], asset="shooter" + B + name, namespace=name)
