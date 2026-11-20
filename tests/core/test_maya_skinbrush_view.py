@@ -48,7 +48,8 @@ class FakeCommands:
 
     def skinBrushCtx(self, name, query=False, edit=False, **flags):
         if not query and not edit:
-            self.context = {"operation": "smooth", "radius": 5.0, "strength": 0.5, "falloff": "surface", "throughMesh": False}
+            self.context = {"operation": "smooth", "radius": 5.0, "strength": 0.5, "smoothness": 0.15, "falloff": "surface",
+                            "throughMesh": False}
             return name
         if query:
             return self.context[next(iter(flags))]
@@ -89,6 +90,14 @@ class SessionTest(unittest.TestCase):
         self.assertEqual(session.settings.falloff, "volume")
         self.assertEqual((session.settings.radius, session.settings.strength, session.settings.through_mesh), (12.0, 0.8, True))
 
+    def test_smoothness_is_written_and_read_back_and_zero_is_allowed(self):
+        session = self.session()
+        self.assertEqual(session.activate() and session.settings.smoothness, 0.15)
+        session.apply(smoothness=0.4)
+        self.assertEqual(self.fake.edits[-1], {"smoothness": 0.4})
+        session.apply(smoothness=0.0)
+        self.assertEqual(session.settings.smoothness, 0.0)
+
     def test_the_rest_match_operations_are_accepted(self):
         session = self.session()
         for operation in ("restDelta", "restEdge", "smooth"):
@@ -97,7 +106,8 @@ class SessionTest(unittest.TestCase):
 
     def test_values_that_are_not_valid_are_refused_before_maya_sees_them(self):
         session = self.session()
-        for changes in ({"strength": 0.0}, {"strength": 1.5}, {"radius": 0.0}, {"operation": "paint"}, {"falloff": "smooth"}):
+        for changes in ({"strength": 0.0}, {"strength": 1.5}, {"smoothness": -0.1}, {"smoothness": 1.5}, {"radius": 0.0},
+                        {"operation": "paint"}, {"falloff": "smooth"}):
             with self.assertRaises(ValueError):
                 session.apply(**changes)
         self.assertEqual(self.fake.edits, [])
@@ -177,6 +187,20 @@ class PanelTest(unittest.TestCase):
         combo.setCurrentIndex(2)
         combo.activated.emit(2)
         self.assertEqual(self.fake.edits[-1], {"operation": "restEdge"})
+
+    def test_the_smoothness_widgets_show_the_context_write_it_and_are_off_for_smooth(self):
+        self.assertAlmostEqual(self.panel.smoothness_box.value(), 0.15)
+        self.assertEqual(self.panel.smoothness_slider.value(), 15)
+        self.assertFalse(self.panel.smoothness_slider.isEnabled())     # the context starts on smooth
+        self.panel.smoothness_slider.setValue(40)
+        self.assertEqual(self.fake.edits[-1], {"smoothness": 0.4})
+        self.panel.smoothness_box.setValue(0.25)
+        self.panel.smoothness_box.editingFinished.emit()
+        self.assertEqual(self.fake.edits[-1], {"smoothness": 0.25})
+        self.fake.context["operation"] = "restEdge"
+        self.session.refresh()
+        self.assertTrue(self.panel.smoothness_slider.isEnabled())
+        self.assertTrue(self.panel.smoothness_box.isEnabled())
 
     def test_the_panel_shows_a_rest_operation_the_context_already_has(self):
         self.fake.context["operation"] = "restEdge"

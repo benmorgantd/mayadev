@@ -88,6 +88,18 @@ class SkinBrushPanel(QtWidgets.QWidget):
         self.strength_slider.setToolTip(tip)
         form.addRow("Strength", self._row(self.strength_slider, self.strength_box))
 
+        self.smoothness_box = QtWidgets.QDoubleSpinBox()
+        self.smoothness_box.setDecimals(2)
+        self.smoothness_box.setRange(0.0, 1.0)
+        self.smoothness_box.setSingleStep(0.05)
+        self.smoothness_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.smoothness_slider.setRange(0, STRENGTH_SLIDER_STEPS)
+        tip = ("Match Rest operations only. How much each vertex's change is blended with its neighbors' changes. "
+               "Raise it to calm a crunchy result, at the cost of a slower fit. 0 is none.")
+        self.smoothness_box.setToolTip(tip)
+        self.smoothness_slider.setToolTip(tip)
+        form.addRow("Smoothness", self._row(self.smoothness_slider, self.smoothness_box))
+
         self.through_check = QtWidgets.QCheckBox("Through mesh")
         self.through_check.setToolTip("Paint every surface the ray crosses, so the back of a mesh is painted with the front")
         self.section.content_layout.addWidget(self.through_check)
@@ -107,6 +119,8 @@ class SkinBrushPanel(QtWidgets.QWidget):
         self.radius_slider.valueChanged.connect(self._on_radius_slider)
         self.strength_box.editingFinished.connect(self._on_strength_box)
         self.strength_slider.valueChanged.connect(self._on_strength_slider)
+        self.smoothness_box.editingFinished.connect(self._on_smoothness_box)
+        self.smoothness_slider.valueChanged.connect(self._on_smoothness_slider)
         self.through_check.clicked.connect(self._on_through)
         self.activate_button.clicked.connect(self._on_activate)
 
@@ -129,7 +143,7 @@ class SkinBrushPanel(QtWidgets.QWidget):
         """Shows the session's settings. Setting a widget here is not the user changing it, so its signals are held."""
         settings = self.session.settings
         widgets = (self.operation_combo, self.falloff_combo, self.radius_box, self.radius_slider, self.strength_box, self.strength_slider,
-                   self.through_check)
+                   self.smoothness_box, self.smoothness_slider, self.through_check)
         for widget in widgets:
             widget.blockSignals(True)
         if settings is not None:
@@ -139,6 +153,12 @@ class SkinBrushPanel(QtWidgets.QWidget):
             self.radius_slider.setValue(radius_to_slider(settings.radius))
             self.strength_box.setValue(settings.strength)
             self.strength_slider.setValue(round(settings.strength * STRENGTH_SLIDER_STEPS))
+            self.smoothness_box.setValue(settings.smoothness)
+            self.smoothness_slider.setValue(round(settings.smoothness * STRENGTH_SLIDER_STEPS))
+            # Smooth has no use for it, so it is greyed out rather than hidden, to keep the layout still.
+            uses_smoothness = settings.operation != "smooth"
+            self.smoothness_box.setEnabled(uses_smoothness)
+            self.smoothness_slider.setEnabled(uses_smoothness)
             self.through_check.setChecked(settings.through_mesh)
         for widget in widgets:
             widget.blockSignals(False)
@@ -176,6 +196,12 @@ class SkinBrushPanel(QtWidgets.QWidget):
     def _on_strength_slider(self, position: int) -> None:
         self.run(strength=position / STRENGTH_SLIDER_STEPS)
 
+    def _on_smoothness_box(self) -> None:
+        self.run(smoothness=self.smoothness_box.value())
+
+    def _on_smoothness_slider(self, position: int) -> None:
+        self.run(smoothness=position / STRENGTH_SLIDER_STEPS)
+
     def _on_through(self, checked: bool) -> None:
         self.run(through_mesh=checked)
 
@@ -201,4 +227,4 @@ class SkinBrushPanel(QtWidgets.QWidget):
 def show_window() -> QtWidgets.QWidget:
     """Opens the skin brush settings panel, docked beside the Outliner in a GUI Maya."""
     return host.show(SkinBrushPanel(bmaya.maya.skinbrush.SkinBrushSession(), parent=host.parent_window()),
-                     object_name=OBJECT_NAME, dock=True, width=300, height=260, beside=DOCK_BESIDE)
+                     object_name=OBJECT_NAME, dock=True, width=300, height=290, beside=DOCK_BESIDE)

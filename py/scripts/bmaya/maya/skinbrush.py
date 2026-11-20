@@ -39,6 +39,7 @@ class BrushSettings:
     operation: str
     radius: float
     strength: float
+    smoothness: float
     falloff: str
     through_mesh: bool
 
@@ -73,7 +74,7 @@ class SkinBrushSession:
             self.changed.emit()
 
     def apply(self, *, operation: str | None = None, radius: float | None = None, strength: float | None = None,
-              falloff: str | None = None, through_mesh: bool | None = None) -> BrushSettings:
+              smoothness: float | None = None, falloff: str | None = None, through_mesh: bool | None = None) -> BrushSettings:
         """Writes the settings that are given, making the context first. Raises ValueError for one that is not valid
         and RuntimeError when Maya refuses it, leaving the old value."""
         if operation is not None and operation not in OPERATIONS:
@@ -84,9 +85,11 @@ class SkinBrushSession:
             raise ValueError(f"The brush radius must be at least {MIN_RADIUS}.")
         if strength is not None and not 0.0 < strength <= 1.0:
             raise ValueError("The brush strength must be above 0 and at most 1.")
+        if smoothness is not None and not 0.0 <= smoothness <= 1.0:
+            raise ValueError("The brush smoothness must be from 0 to 1.")
         name = self.ensure_context()
-        changes = {"operation": operation, "radius": radius, "strength": strength, "falloff": falloff,
-                   "throughMesh": through_mesh}
+        changes = {"operation": operation, "radius": radius, "strength": strength, "smoothness": smoothness,
+                   "falloff": falloff, "throughMesh": through_mesh}
         changes = {key: value for key, value in changes.items() if value is not None}
         if changes:
             self.commands.skinBrushCtx(name, edit=True, **changes)
@@ -105,5 +108,6 @@ class SkinBrushSession:
         return BrushSettings(operation=query(CONTEXT_NAME, query=True, operation=True),
                              radius=query(CONTEXT_NAME, query=True, radius=True),
                              strength=query(CONTEXT_NAME, query=True, strength=True),
+                             smoothness=query(CONTEXT_NAME, query=True, smoothness=True),
                              falloff=query(CONTEXT_NAME, query=True, falloff=True),
                              through_mesh=bool(query(CONTEXT_NAME, query=True, throughMesh=True)))
