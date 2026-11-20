@@ -54,7 +54,9 @@ class SkinBrushPanel(QtWidgets.QWidget):
         self.section.content_layout.addLayout(form)
 
         self.operation_combo = QtWidgets.QComboBox()
-        self.operation_combo.addItems(bmaya.maya.skinbrush.OPERATIONS)
+        for name, (label, tip) in bmaya.maya.skinbrush.OPERATION_INFO.items():
+            self.operation_combo.addItem(label, name)    # the context's name is the item's data
+            self.operation_combo.setItemData(self.operation_combo.count() - 1, tip, QtCore.Qt.ItemDataRole.ToolTipRole)
         self.operation_combo.setToolTip("What a dab does to the weights under the brush")
         form.addRow("Operation", self.operation_combo)
 
@@ -131,7 +133,7 @@ class SkinBrushPanel(QtWidgets.QWidget):
         for widget in widgets:
             widget.blockSignals(True)
         if settings is not None:
-            self.operation_combo.setCurrentText(settings.operation)
+            self.operation_combo.setCurrentIndex(max(self.operation_combo.findData(settings.operation), 0))
             self.falloff_combo.setCurrentText(settings.falloff)
             self.radius_box.setValue(settings.radius)
             self.radius_slider.setValue(radius_to_slider(settings.radius))
@@ -157,7 +159,7 @@ class SkinBrushPanel(QtWidgets.QWidget):
             self.reload()
 
     def _on_operation(self, index: int) -> None:
-        self.run(operation=self.operation_combo.itemText(index))
+        self.run(operation=self.operation_combo.itemData(index))
 
     def _on_falloff(self, index: int) -> None:
         self.run(falloff=self.falloff_combo.itemText(index))

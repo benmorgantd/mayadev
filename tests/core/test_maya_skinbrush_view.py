@@ -89,6 +89,12 @@ class SessionTest(unittest.TestCase):
         self.assertEqual(session.settings.falloff, "volume")
         self.assertEqual((session.settings.radius, session.settings.strength, session.settings.through_mesh), (12.0, 0.8, True))
 
+    def test_the_rest_match_operations_are_accepted(self):
+        session = self.session()
+        for operation in ("restDelta", "restEdge", "smooth"):
+            session.apply(operation=operation)
+            self.assertEqual(session.settings.operation, operation)
+
     def test_values_that_are_not_valid_are_refused_before_maya_sees_them(self):
         session = self.session()
         for changes in ({"strength": 0.0}, {"strength": 1.5}, {"radius": 0.0}, {"operation": "paint"}, {"falloff": "smooth"}):
@@ -148,12 +154,34 @@ class PanelTest(unittest.TestCase):
         self.addCleanup(self.panel.deleteLater)
 
     def test_it_shows_the_contexts_settings(self):
-        self.assertEqual(self.panel.operation_combo.currentText(), "smooth")
+        self.assertEqual(self.panel.operation_combo.currentText(), "Smooth")
         self.assertEqual(self.panel.falloff_combo.currentText(), "surface")
         self.assertEqual(self.panel.radius_box.value(), 5.0)
         self.assertEqual(self.panel.strength_box.value(), 0.5)
         self.assertEqual(self.panel.strength_slider.value(), 50)
         self.assertFalse(self.panel.through_check.isChecked())
+
+    def test_every_operation_is_offered_with_a_label_and_a_tool_tip(self):
+        from PySide6 import QtCore
+        combo = self.panel.operation_combo
+        self.assertEqual([combo.itemData(i) for i in range(combo.count())], ["smooth", "restDelta", "restEdge"])
+        self.assertEqual([combo.itemText(i) for i in range(combo.count())], ["Smooth", "Match Rest Deltas", "Match Rest Edges"])
+        for i in range(combo.count()):
+            self.assertTrue(combo.itemData(i, QtCore.Qt.ItemDataRole.ToolTipRole))
+
+    def test_choosing_a_rest_operation_writes_the_contexts_name_for_it(self):
+        combo = self.panel.operation_combo
+        combo.setCurrentIndex(1)
+        combo.activated.emit(1)
+        self.assertEqual(self.fake.edits[-1], {"operation": "restDelta"})
+        combo.setCurrentIndex(2)
+        combo.activated.emit(2)
+        self.assertEqual(self.fake.edits[-1], {"operation": "restEdge"})
+
+    def test_the_panel_shows_a_rest_operation_the_context_already_has(self):
+        self.fake.context["operation"] = "restEdge"
+        self.session.refresh()
+        self.assertEqual(self.panel.operation_combo.currentText(), "Match Rest Edges")
 
     def test_the_radius_slider_is_logarithmic_and_round_trips(self):
         for radius in (0.05, 1.0, 5.0, 250.0):

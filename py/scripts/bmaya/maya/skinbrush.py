@@ -16,9 +16,19 @@ import maya.cmds as cmds
 import bmaya.core.observable
 
 CONTEXT_NAME = "rigmodulesSkinBrushCtx"
-# The operations RigModules' skinBrushCtx accepts (its brushOperationNames). Add a name here when it adds a brush.
 FALLOFFS = ("surface", "volume")   # how the radius is measured: along the mesh, or in space
-OPERATIONS = ("smooth",)
+# The operations RigModules' skinBrushCtx accepts (its brushOperationNames), each with the label and tool tip the panel
+# shows. Add a name here when RigModules adds a brush. The rest-match ones are RigModules D66.
+OPERATION_INFO = {
+    "smooth": ("Smooth", "Average each vertex's weights with its neighbors'."),
+    "restDelta": ("Match Rest Deltas",
+                  "Pose the rig where the skin is wrong, then paint: the weights move so each vertex keeps its offset from its "
+                  "neighbors as the rest shape has it, like a delta mush, painted. Needs classic linear skinning."),
+    "restEdge": ("Match Rest Edges",
+                 "Pose the rig where the skin is wrong, then paint: the weights move so each edge goes back towards its rest "
+                 "length. Needs classic linear skinning."),
+}
+OPERATIONS = tuple(OPERATION_INFO)
 MIN_RADIUS = 0.001
 
 
