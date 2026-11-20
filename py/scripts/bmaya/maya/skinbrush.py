@@ -17,17 +17,19 @@ import bmaya.core.observable
 
 CONTEXT_NAME = "rigmodulesSkinBrushCtx"
 # The operations RigModules' skinBrushCtx accepts (its brushOperationNames). Add a name here when it adds a brush.
+FALLOFFS = ("surface", "volume")   # how the radius is measured: along the mesh, or in space
 OPERATIONS = ("smooth",)
 MIN_RADIUS = 0.001
 
 
 @dataclasses.dataclass(frozen=True)
 class BrushSettings:
-    """What the context holds. radius is a length over the mesh surface, strength is above 0 and at most 1."""
+    """What the context holds. radius is a length over the mesh surface (with the surface falloff), strength is above 0 and at most 1."""
 
     operation: str
     radius: float
     strength: float
+    falloff: str
     through_mesh: bool
 
 
@@ -61,17 +63,20 @@ class SkinBrushSession:
             self.changed.emit()
 
     def apply(self, *, operation: str | None = None, radius: float | None = None, strength: float | None = None,
-              through_mesh: bool | None = None) -> BrushSettings:
+              falloff: str | None = None, through_mesh: bool | None = None) -> BrushSettings:
         """Writes the settings that are given, making the context first. Raises ValueError for one that is not valid
         and RuntimeError when Maya refuses it, leaving the old value."""
         if operation is not None and operation not in OPERATIONS:
             raise ValueError(f"{operation} is not a brush operation: {', '.join(OPERATIONS)}.")
+        if falloff is not None and falloff not in FALLOFFS:
+            raise ValueError(f"{falloff} is not a falloff: {', '.join(FALLOFFS)}.")
         if radius is not None and radius < MIN_RADIUS:
             raise ValueError(f"The brush radius must be at least {MIN_RADIUS}.")
         if strength is not None and not 0.0 < strength <= 1.0:
             raise ValueError("The brush strength must be above 0 and at most 1.")
         name = self.ensure_context()
-        changes = {"operation": operation, "radius": radius, "strength": strength, "throughMesh": through_mesh}
+        changes = {"operation": operation, "radius": radius, "strength": strength, "falloff": falloff,
+                   "throughMesh": through_mesh}
         changes = {key: value for key, value in changes.items() if value is not None}
         if changes:
             self.commands.skinBrushCtx(name, edit=True, **changes)
@@ -90,4 +95,5 @@ class SkinBrushSession:
         return BrushSettings(operation=query(CONTEXT_NAME, query=True, operation=True),
                              radius=query(CONTEXT_NAME, query=True, radius=True),
                              strength=query(CONTEXT_NAME, query=True, strength=True),
+                             falloff=query(CONTEXT_NAME, query=True, falloff=True),
                              through_mesh=bool(query(CONTEXT_NAME, query=True, throughMesh=True)))

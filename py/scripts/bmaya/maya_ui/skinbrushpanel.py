@@ -1,6 +1,6 @@
 """The skin brush settings panel: widgets bound to a SkinBrushSession (RigModules D65). Qt only, no Maya (host.py docks it).
 
-Radius, strength, the brush operation and the through mesh switch, over the RigModules `skinBrushCtx` context. The
+The brush operation, the falloff (surface or volume), the radius, the strength and the through mesh switch, over the RigModules `skinBrushCtx` context. The
 context is the source of truth, so a Ctrl + drag resize in the viewport shows here: the panel reads the context again
 on a timer while it is showing, and writes it as the widgets change.
 """
@@ -58,6 +58,12 @@ class SkinBrushPanel(QtWidgets.QWidget):
         self.operation_combo.setToolTip("What a dab does to the weights under the brush")
         form.addRow("Operation", self.operation_combo)
 
+        self.falloff_combo = QtWidgets.QComboBox()
+        self.falloff_combo.addItems(bmaya.maya.skinbrush.FALLOFFS)
+        self.falloff_combo.setToolTip("Surface: the radius is a length along the mesh, so the brush never reaches across a gap.\n"
+                                      "Volume: the radius is a distance in space, so it also reaches a part of the mesh that is close but not connected.")
+        form.addRow("Falloff", self.falloff_combo)
+
         self.radius_box = QtWidgets.QDoubleSpinBox()
         self.radius_box.setDecimals(3)
         self.radius_box.setRange(bmaya.maya.skinbrush.MIN_RADIUS, 100000.0)
@@ -94,6 +100,7 @@ class SkinBrushPanel(QtWidgets.QWidget):
         self.section.content_layout.addWidget(self.status_label)
 
         self.operation_combo.activated.connect(self._on_operation)
+        self.falloff_combo.activated.connect(self._on_falloff)
         self.radius_box.editingFinished.connect(self._on_radius_box)
         self.radius_slider.valueChanged.connect(self._on_radius_slider)
         self.strength_box.editingFinished.connect(self._on_strength_box)
@@ -119,12 +126,13 @@ class SkinBrushPanel(QtWidgets.QWidget):
     def reload(self) -> None:
         """Shows the session's settings. Setting a widget here is not the user changing it, so its signals are held."""
         settings = self.session.settings
-        widgets = (self.operation_combo, self.radius_box, self.radius_slider, self.strength_box, self.strength_slider,
+        widgets = (self.operation_combo, self.falloff_combo, self.radius_box, self.radius_slider, self.strength_box, self.strength_slider,
                    self.through_check)
         for widget in widgets:
             widget.blockSignals(True)
         if settings is not None:
             self.operation_combo.setCurrentText(settings.operation)
+            self.falloff_combo.setCurrentText(settings.falloff)
             self.radius_box.setValue(settings.radius)
             self.radius_slider.setValue(radius_to_slider(settings.radius))
             self.strength_box.setValue(settings.strength)
@@ -150,6 +158,9 @@ class SkinBrushPanel(QtWidgets.QWidget):
 
     def _on_operation(self, index: int) -> None:
         self.run(operation=self.operation_combo.itemText(index))
+
+    def _on_falloff(self, index: int) -> None:
+        self.run(falloff=self.falloff_combo.itemText(index))
 
     def _on_radius_box(self) -> None:
         self.run(radius=self.radius_box.value())

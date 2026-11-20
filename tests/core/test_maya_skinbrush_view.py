@@ -48,7 +48,7 @@ class FakeCommands:
 
     def skinBrushCtx(self, name, query=False, edit=False, **flags):
         if not query and not edit:
-            self.context = {"operation": "smooth", "radius": 5.0, "strength": 0.5, "throughMesh": False}
+            self.context = {"operation": "smooth", "radius": 5.0, "strength": 0.5, "falloff": "surface", "throughMesh": False}
             return name
         if query:
             return self.context[next(iter(flags))]
@@ -84,13 +84,14 @@ class SessionTest(unittest.TestCase):
     def test_apply_writes_only_what_is_given_and_makes_the_context_first(self):
         session = self.session()
         session.apply(strength=0.8)
-        session.apply(radius=12.0, through_mesh=True)
-        self.assertEqual(self.fake.edits, [{"strength": 0.8}, {"radius": 12.0, "throughMesh": True}])
+        session.apply(radius=12.0, falloff="volume", through_mesh=True)
+        self.assertEqual(self.fake.edits, [{"strength": 0.8}, {"radius": 12.0, "falloff": "volume", "throughMesh": True}])
+        self.assertEqual(session.settings.falloff, "volume")
         self.assertEqual((session.settings.radius, session.settings.strength, session.settings.through_mesh), (12.0, 0.8, True))
 
     def test_values_that_are_not_valid_are_refused_before_maya_sees_them(self):
         session = self.session()
-        for changes in ({"strength": 0.0}, {"strength": 1.5}, {"radius": 0.0}, {"operation": "paint"}):
+        for changes in ({"strength": 0.0}, {"strength": 1.5}, {"radius": 0.0}, {"operation": "paint"}, {"falloff": "smooth"}):
             with self.assertRaises(ValueError):
                 session.apply(**changes)
         self.assertEqual(self.fake.edits, [])
@@ -148,6 +149,7 @@ class PanelTest(unittest.TestCase):
 
     def test_it_shows_the_contexts_settings(self):
         self.assertEqual(self.panel.operation_combo.currentText(), "smooth")
+        self.assertEqual(self.panel.falloff_combo.currentText(), "surface")
         self.assertEqual(self.panel.radius_box.value(), 5.0)
         self.assertEqual(self.panel.strength_box.value(), 0.5)
         self.assertEqual(self.panel.strength_slider.value(), 50)
@@ -169,6 +171,9 @@ class PanelTest(unittest.TestCase):
         self.panel.radius_box.setValue(12.5)
         self.panel.radius_box.editingFinished.emit()
         self.assertEqual(self.fake.edits[-1], {"radius": 12.5})
+        self.panel.falloff_combo.setCurrentIndex(1)
+        self.panel.falloff_combo.activated.emit(1)
+        self.assertEqual(self.fake.edits[-1], {"falloff": "volume"})
         self.panel.through_check.click()
         self.assertEqual(self.fake.edits[-1], {"throughMesh": True})
 
