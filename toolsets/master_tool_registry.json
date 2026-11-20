@@ -296,6 +296,18 @@
             "enabled": true
         },
         {
+            "id": "rigmodules.weights.brush_settings",
+            "name": "Skin Brush Settings",
+            "short_name": "Brush Settings",
+            "call": {
+                "module": "bmaya.maya_ui.skinbrushpanel",
+                "function": "show_window",
+                "kwargs": {}
+            },
+            "icon": null,
+            "enabled": true
+        },
+        {
             "id": "rigmodules.weights.load",
             "name": "Load Skin Weights...",
             "short_name": "Load Weights",

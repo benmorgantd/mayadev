@@ -139,6 +139,11 @@
                     "type": "tool",
                     "tool": "rigmodules.weights.brush",
                     "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "tool": "rigmodules.weights.brush_settings",
+                    "enabled": true
                 }
             ]
         },

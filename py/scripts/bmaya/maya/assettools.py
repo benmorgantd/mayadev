@@ -43,6 +43,7 @@ import bmaya.core.prompts
 import bmaya.maya.activerig
 import bmaya.maya.assethandlers
 import bmaya.maya.posetools
+import bmaya.maya.skinbrush
 
 SCENE_FILTER = "Maya ASCII (*.ma)"
 SHAPES_FILTER = "Shape files (*.json)"
@@ -599,25 +600,15 @@ def smooth_skin_weights(iterations: int = 3, strength: float = 1.0) -> int:
     return changed
 
 
-SKIN_BRUSH_CONTEXT = "rigmodulesSkinBrushCtx"
-
-
 def activate_skin_brush(operation: str | None = None, radius: float | None = None, strength: float | None = None) -> str:
     """Makes the RigModules skin brush the active tool and returns the context's name (RigModules D65). Drag over the
     selected skinned meshes to paint: the weights under the brush are smoothed, the radius is a length over the mesh
-    surface, Ctrl + drag resizes it, and one stroke is one undo step. The context is made the first time and kept, so
-    the radius and strength a user set stay between activations; the arguments change them. Needs a GUI Maya, because
-    Maya creates no contexts without one."""
-    if cmds.about(batch=True):
-        raise RuntimeError("The skin brush needs a GUI Maya: Maya creates no tool contexts in batch.")
-    if not cmds.contextInfo(SKIN_BRUSH_CONTEXT, exists=True):
-        cmds.skinBrushCtx(SKIN_BRUSH_CONTEXT)
-    settings = {"operation": operation, "radius": radius, "strength": strength}
-    settings = {name: value for name, value in settings.items() if value is not None}
-    if settings:
-        cmds.skinBrushCtx(SKIN_BRUSH_CONTEXT, edit=True, **settings)
-    cmds.setToolTo(SKIN_BRUSH_CONTEXT)
-    return SKIN_BRUSH_CONTEXT
+    surface, Ctrl + drag resizes it, holding still repeats the dab, and one stroke is one undo step. The context is
+    made the first time and kept, so the radius and strength a user set stay between activations; the arguments
+    change them. Needs a GUI Maya, because Maya creates no contexts without one."""
+    session = bmaya.maya.skinbrush.SkinBrushSession()
+    session.apply(operation=operation, radius=radius, strength=strength)
+    return session.activate()
 
 
 # ---- menu entry points ---------------------------------------------------------------------

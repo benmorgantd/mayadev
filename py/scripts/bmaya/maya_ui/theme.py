@@ -260,6 +260,32 @@ QComboBox QAbstractItemView
     selection-background-color: $selection;
 }
 
+QSlider::groove:horizontal
+{
+    height: 4px;
+    background: $border_strong;
+    border-radius: 2px;
+}
+
+QSlider::sub-page:horizontal
+{
+    background: $accent;
+    border-radius: 2px;
+}
+
+QSlider::handle:horizontal
+{
+    background: $text;
+    width: 12px;
+    margin: -4px 0;
+    border-radius: 6px;
+}
+
+QSlider::handle:horizontal:hover
+{
+    background: $accent_hover;
+}
+
 QSpinBox::up-button, QDoubleSpinBox::up-button
 {
     subcontrol-origin: border;

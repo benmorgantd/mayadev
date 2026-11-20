@@ -48,11 +48,12 @@ def find(object_name: str) -> QtWidgets.QWidget | None:
 
 
 def show(widget: QtWidgets.QWidget, *, object_name: str, dock: bool = False,
-         width: int = 385, height: int = 735) -> QtWidgets.QWidget:
+         width: int = 385, height: int = 735, beside: str = "AttributeEditor") -> QtWidgets.QWidget:
     """Shows a window, once: an open window with the same object name is closed first. When that window refuses to
     close (unsaved edits the user kept), it is raised instead and widget is discarded. Returns the window on screen.
 
-    dock puts the widget in a Maya workspace control beside the Attribute Editor. Outside Maya it is a plain window.
+    dock puts the widget in a Maya workspace control tabbed with the one named beside (the Attribute Editor by
+    default, and also when beside is not open). Outside Maya it is a plain window.
     """
     existing = find(object_name)
     if existing is not None and not existing.close():
@@ -62,7 +63,7 @@ def show(widget: QtWidgets.QWidget, *, object_name: str, dock: bool = False,
         return existing
     widget.setObjectName(object_name)
     theme.apply(widget)
-    if dock and _dock(widget, object_name, width, height):
+    if dock and _dock(widget, object_name, width, height, beside):
         return widget
     widget.show()
     return widget
@@ -73,7 +74,7 @@ def dock_control_name(object_name: str) -> str:
     return object_name + "WorkspaceControl"
 
 
-def _dock(widget: QtWidgets.QWidget, name: str, width: int, height: int) -> bool:
+def _dock(widget: QtWidgets.QWidget, name: str, width: int, height: int, beside: str = "AttributeEditor") -> bool:
     """Puts widget in a workspace control for the window called name. False outside a GUI Maya."""
     try:
         import maya.cmds as cmds
@@ -89,8 +90,10 @@ def _dock(widget: QtWidgets.QWidget, name: str, width: int, height: int) -> bool
     if cmds.workspaceControl(control_name, query=True, exists=True):
         cmds.workspaceControl(control_name, edit=True, close=True)
         cmds.deleteUI(control_name, control=True)
+    if not cmds.workspaceControl(beside, query=True, exists=True):
+        beside = "AttributeEditor"
     control = cmds.workspaceControl(
-        control_name, tabToControl=["AttributeEditor", -1], initialWidth=width, minimumWidth=True, initialHeight=height,
+        control_name, tabToControl=[beside, -1], initialWidth=width, minimumWidth=True, initialHeight=height,
         widthProperty="preferred", label=widget.windowTitle() or name)
     container = shiboken6.wrapInstance(int(omui.MQtUtil.findControl(control)), QtWidgets.QWidget)
     container.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)   # as the older, working dock code did

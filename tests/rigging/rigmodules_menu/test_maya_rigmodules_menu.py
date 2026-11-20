@@ -69,7 +69,7 @@ class MenuLayout(unittest.TestCase):
     def test_every_tool_is_in_the_menu_once(self):
         ids = [item.tool for item in _layout().tool_items()]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(len(ids), 47)
+        self.assertEqual(len(ids), 48)
 
     def test_the_asset_submenu_adds_rigs_looks_and_skeletons(self):
         # A variant became a rig and a look (RigModules D54), and a skeleton is saved and loaded as its skeleton file.
