@@ -76,7 +76,7 @@ class FileAction:
 
 class SkeletonAction(FileAction):
     key, label, owner_kind, saves, loads = "skeleton", "Skeleton", "skeleton", True, True
-    save_hint = "The selected joints, or every joint in the scene"
+    save_hint = "Every joint in the scene, whatever is selected"
 
     def save_blocked(self, model):
         return "" if model.joints() else "There are no joints in the scene."
@@ -179,8 +179,8 @@ class AssetFilesModel:
     """The files of the context's asset. changed emits with no arguments when rows or message changed.
 
     refresh() reads the disk and the scene again: the editor calls it when the context changes, a scene opens or is
-    new, and after every save and load. Selection changes do not refresh it, because Save reads the selection when it
-    runs."""
+    new, and after every save and load. Selection changes do not refresh it, because a model Save reads the selection
+    when it runs. A skeleton Save does not use the selection."""
 
     def __init__(self, context: bmaya.core.asset.context.AssetContext) -> None:
         self.context = context
@@ -212,8 +212,9 @@ class AssetFilesModel:
         return (owner is not None or action.owner_kind is None) and self.asset.file_exists(action.key, owner)
 
     def joints(self) -> list[str]:
-        """The selected joints, else every joint in the scene."""
-        return cmds.ls(selection=True, type="joint", long=True) or cmds.ls(type="joint", long=True) or []
+        """Every joint in the scene. The selection is not used: a stray selection once saved a skeleton of one joint
+        over the real one."""
+        return cmds.ls(type="joint", long=True) or []
 
     def meshes(self) -> list[str]:
         """The selected meshes, else every visible mesh in the scene."""

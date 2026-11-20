@@ -373,16 +373,16 @@ class SkeletonFiles(EditorBase):
         self.assertEqual((os.path.getmtime(self.hero.path("skeleton", "default")), files.row("skeleton").versions),
                          (before, 0))
 
-    def test_the_selected_joints_are_saved_not_the_whole_scene(self):
+    def test_the_whole_scene_is_saved_whatever_is_selected(self):
         self.tools.new_rig(HERO, self.template)
         joints = self.make_skeleton()
-        extra = self.cmds.joint(name="stray_00_M_JNT")
-        self.cmds.select(joints, replace=True)
+        self.cmds.select(joints[0], replace=True)
         files = self.session(HERO).files
         files.save("skeleton", self.answers())
         self.cmds.file(new=True, force=True)
         files.load("skeleton")
-        self.assertEqual(sorted(self.cmds.ls(type="joint")), ["spine_00_M_JNT", "spine_01_M_JNT"], extra)
+        self.assertEqual(sorted(self.cmds.ls(type="joint")), ["spine_00_M_JNT", "spine_01_M_JNT"],
+                         "a selected joint does not shrink the skeleton")
 
     def test_load_creates_the_joints_and_selects_them(self):
         self.tools.new_rig(HERO, self.template)
