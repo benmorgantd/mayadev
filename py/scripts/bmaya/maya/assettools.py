@@ -752,17 +752,15 @@ def load_skeleton_interactive(prompter: bmaya.core.prompts.Prompter | None = Non
 
 
 def save_model_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
-    """Asks for the asset and which of its looks, then saves the selected meshes, or every mesh in the scene when
-    none is selected, as that look's model."""
+    """Asks for the asset and which of its looks, then saves every visible mesh in the scene as that look's model.
+    The selection is not used: a stray selection once saved a model of one mesh over the real one."""
     prompter = _prompter(prompter)
     asset_id = _ask_asset_id(prompter, "Save Model")
     if not asset_id:
         return
     look = _choose_owner(prompter, "Save Model", asset_id, "look")
     if look:
-        selected = [mesh for mesh in cmds.ls(selection=True, long=True) or []
-                    if cmds.listRelatives(mesh, shapes=True, type="mesh", noIntermediate=True)]
-        save_model(asset_id, look, selected or None)
+        save_model(asset_id, look)
 
 
 def build_rig_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:

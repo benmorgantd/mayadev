@@ -384,6 +384,18 @@ class SkeletonFiles(EditorBase):
         self.assertEqual(sorted(self.cmds.ls(type="joint")), ["spine_00_M_JNT", "spine_01_M_JNT"],
                          "a selected joint does not shrink the skeleton")
 
+    def test_the_whole_model_is_saved_whatever_is_selected(self):
+        cmds = self.cmds
+        self.tools.new_look(HERO)
+        cmds.polyCube(name="box_geo", constructionHistory=False)
+        crate = cmds.polyCube(name="crate_geo", constructionHistory=False)[0]
+        cmds.select(crate, replace=True)
+        self.session(HERO).files.save("model", self.answers())
+        cmds.file(new=True, force=True)
+        cmds.file(self.hero.path("model", "default"), i=True, type="mayaAscii", namespace="look")
+        self.assertEqual(sorted(cmds.ls("look:*", type="transform")), ["look:box_geo", "look:crate_geo"],
+                         "a selected mesh does not shrink the model")
+
     def test_load_creates_the_joints_and_selects_them(self):
         self.tools.new_rig(HERO, self.template)
         self.make_skeleton()

@@ -94,7 +94,7 @@ class SkeletonAction(FileAction):
 
 class ModelAction(FileAction):
     key, label, owner_kind, saves, loads = "model", "Model", "look", True, True
-    save_hint = "The selected meshes, or every mesh in the scene"
+    save_hint = "Every mesh in the scene, whatever is selected"
 
     def save_blocked(self, model):
         if model.context.look is None:
@@ -179,8 +179,8 @@ class AssetFilesModel:
     """The files of the context's asset. changed emits with no arguments when rows or message changed.
 
     refresh() reads the disk and the scene again: the editor calls it when the context changes, a scene opens or is
-    new, and after every save and load. Selection changes do not refresh it, because a model Save reads the selection
-    when it runs. A skeleton Save does not use the selection."""
+    new, and after every save and load. No Save uses the selection: a skeleton is every joint in the scene and a
+    model every visible mesh."""
 
     def __init__(self, context: bmaya.core.asset.context.AssetContext) -> None:
         self.context = context
@@ -217,10 +217,9 @@ class AssetFilesModel:
         return cmds.ls(type="joint", long=True) or []
 
     def meshes(self) -> list[str]:
-        """The selected meshes, else every visible mesh in the scene."""
-        selected = [node for node in cmds.ls(selection=True, long=True) or []
-                    if cmds.listRelatives(node, shapes=True, type="mesh", noIntermediate=True)]
-        return selected or bmaya.maya.assethandlers.get_scene_meshes()
+        """Every visible mesh in the scene. The selection is not used: a stray selection once saved a model of one
+        mesh over the real one."""
+        return bmaya.maya.assethandlers.get_scene_meshes()
 
     def rig_blocked(self) -> str:
         """Why a command that needs the rig in the scene can't run, or ""."""

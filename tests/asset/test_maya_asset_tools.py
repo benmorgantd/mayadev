@@ -1167,7 +1167,7 @@ class AssetTools(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "has no skeletons. Add one with Save Skeleton first"):
             self.tools.load_skeleton_interactive(prompter=self.answers(VILLAIN))
 
-    def test_save_model_dialog_saves_the_selected_meshes(self):
+    def test_save_model_dialog_saves_every_mesh_whatever_is_selected(self):
         cmds = self.cmds
         self.tools.new_look(HERO)
         self.make_box()
@@ -1176,7 +1176,8 @@ class AssetTools(unittest.TestCase):
         self.tools.save_model_interactive(prompter=self.answers(HERO))        # one look: no question for it
         cmds.file(new=True, force=True)
         cmds.file(self.hero.path("model", "default"), i=True, type="mayaAscii", namespace="look")
-        self.assertEqual(cmds.ls("look:*", type="transform"), ["look:crate_geo"])
+        self.assertEqual(sorted(cmds.ls("look:*", type="transform")), ["look:box_geo", "look:crate_geo"],
+                         "a selected mesh does not shrink the model")
 
     def test_asset_id_dialog_starts_empty_without_a_rig(self):
         answers = self.answers(None)
