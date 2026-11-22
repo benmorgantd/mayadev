@@ -15,6 +15,7 @@ from bmaya.maya_ui import theme
 from bmaya.maya_ui.widgets import ListModel, menu_action
 
 FILE, NAME, STATUS, VERSIONS, SAVE, LOAD = range(6)
+ICON_SIZE = 32   # the Save and Load buttons show only an icon, so it fills the button
 COLUMNS = ("File", "Name", "Status", "Versions", "", "")
 
 
@@ -105,6 +106,7 @@ class FileStatusTable(QtWidgets.QTableView):
     load_by_name_requested = QtCore.Signal(str)
     restore_requested = QtCore.Signal(str)
     open_requested = QtCore.Signal(str)   # a folder row's Open Folder menu item
+    import_requested = QtCore.Signal(str)   # a folder row's Import Textures menu item
 
     def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
@@ -135,10 +137,17 @@ class FileStatusTable(QtWidgets.QTableView):
         has local versions, and Load by Name (off, with the reason as its tool tip, when Load is blocked) when its file
         type has it. None when it has none."""
         row = next((row for row in self.row_model.items if row.key == key), None)
-        if row is None or not (row.versions or row.loads_by_name or row.opens_folder):
+        if row is None or not (row.versions or row.loads_by_name or row.opens_folder or row.imports_images):
             return None
         menu = QtWidgets.QMenu(self)
         menu.setToolTipsVisible(True)
+        if row.imports_images:
+            action = menu_action(menu, "Import Textures...")
+            action.setEnabled(not row.save_blocked)
+            action.setToolTip(row.save_blocked or "Select the meshes that wear a material, then name it and pick its "
+                                                  "images. They are copied in and renamed "
+                                                  "<asset>_<look>_<material>_<kind>.")
+            action.triggered.connect(lambda checked=False: self.import_requested.emit(key))
         if row.opens_folder:
             action = menu_action(menu, "Open Folder")
             action.setEnabled(not row.open_blocked)
@@ -178,7 +187,8 @@ class FileStatusTable(QtWidgets.QTableView):
         if not has:
             return
         button = QtWidgets.QPushButton()
-        button.setIcon(theme.icon(name))
+        button.setIcon(theme.sized_icon(name, ICON_SIZE))
+        button.setIconSize(QtCore.QSize(ICON_SIZE, ICON_SIZE))
         button.setAccessibleName(name.capitalize())
         button.setEnabled(not blocked)
         button.setToolTip(blocked or ("Replaces the saved file. The old one is kept as a local version."

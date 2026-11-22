@@ -19,7 +19,7 @@ import bmaya.maya.markupmodel
 import bmaya.maya.shapemodel
 from bmaya.core.fieldset import FieldState
 from bmaya.maya_ui import host, theme
-from bmaya.maya_ui.assetwidgets import AssetPicker, FileStatusTable, MixedFieldForm, OwnerCombo
+from bmaya.maya_ui.assetwidgets import ICON_SIZE, AssetPicker, FileStatusTable, MixedFieldForm, OwnerCombo
 from bmaya.maya_ui.widgets import ListModel, menu_action
 
 OBJECT_NAME = "bmayaAssetEditor"
@@ -124,6 +124,7 @@ class AssetEditor(QtWidgets.QWidget):
         self.files_table = FileStatusTable()
         self.files_table.save_requested.connect(lambda key: self.run(lambda: self._save(key)))
         self.files_table.load_requested.connect(lambda key: self.run(lambda: self.session.files.load(key)))
+        self.files_table.import_requested.connect(lambda key: self.run(lambda: self._import(key)))
         self.files_table.open_requested.connect(lambda key: self.run(lambda: self.session.files.open_folder(key)))
         self.files_table.restore_requested.connect(lambda key: self.run(lambda: self._restore(key)))
         self.files_table.load_by_name_requested.connect(lambda key: self.run(lambda: self.session.files.load_by_name(key)))
@@ -234,12 +235,14 @@ class AssetEditor(QtWidgets.QWidget):
             row.addWidget(button)
             self.mirror_buttons[key] = button
         self.save_shapes_button = QtWidgets.QPushButton()
-        self.save_shapes_button.setIcon(theme.icon("save"))
+        self.save_shapes_button.setIcon(theme.sized_icon("save", ICON_SIZE))
+        self.save_shapes_button.setIconSize(QtCore.QSize(ICON_SIZE, ICON_SIZE))
         self.save_shapes_button.setAccessibleName("Save Shapes")
         self.save_shapes_button.setToolTip("Save the rig's control shapes to the asset")
         self.save_shapes_button.clicked.connect(lambda: self.run(lambda: self._save("shapes")))
         self.load_shapes_button = QtWidgets.QPushButton()
-        self.load_shapes_button.setIcon(theme.icon("load"))
+        self.load_shapes_button.setIcon(theme.sized_icon("load", ICON_SIZE))
+        self.load_shapes_button.setIconSize(QtCore.QSize(ICON_SIZE, ICON_SIZE))
         self.load_shapes_button.setAccessibleName("Load Shapes")
         self.load_shapes_button.setToolTip("Load the rig's control shapes from the asset")
         self.load_shapes_button.clicked.connect(lambda: self.run(lambda: self.session.files.load("shapes")))
@@ -273,6 +276,11 @@ class AssetEditor(QtWidgets.QWidget):
         path = self.session.files.save(key)
         if path:
             self.status_label.setText(f"Saved {path}")
+
+    def _import(self, key: str) -> None:
+        path = self.session.files.import_textures(key)
+        if path:
+            self.status_label.setText(f"Imported textures into {path}")
 
     def _restore(self, key: str) -> None:
         path = self.session.files.restore(key)

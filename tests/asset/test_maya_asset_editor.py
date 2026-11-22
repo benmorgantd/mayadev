@@ -371,6 +371,48 @@ class FileRows(EditorBase):
         self.assertIn("no rig", row.save_blocked)
         self.assertIn("no rig", row.load_blocked)
 
+    def test_the_textures_row_imports_textures_through_its_form_and_shades_the_rig(self):
+        cmds = self.cmds
+        self.make_buildable_hero()
+        self.tools.new_look(HERO)
+        files = self.session(HERO).files
+        files.build_rig()
+        cmds.setRigMeshId(cmds.polyCube(name="hero_game:box_geo", constructionHistory=False)[0])
+        cmds.select("hero_game:box_geo", replace=True)
+        self.assertTrue(files.row("textures").imports_images)
+        scans = os.path.join(self.temp, "scans")
+        os.makedirs(scans)
+        source = os.path.join(scans, "skin.png")
+        with open(source, "wb"):
+            pass
+        form = self.tools.TextureFiles(material="body", albedo=source)
+        folder = files.import_textures("textures", self.answers(form))
+        self.assertEqual(folder, self.hero.path("textures", "default"))
+        row = files.row("textures")
+        self.assertEqual((row.exists, row.file_count, row.note), (True, 1, "1 meshes mapped"))
+        self.assertEqual(os.listdir(folder).count("hero_default_body_albedo.png"), 1)
+
+    def test_cancelling_import_textures_returns_none(self):
+        self.make_buildable_hero()
+        self.tools.new_look(HERO)
+        files = self.session(HERO).files
+        files.build_rig()
+        mesh = self.cmds.polyCube(name="hero_game:box_geo", constructionHistory=False)[0]
+        self.cmds.setRigMeshId(mesh)
+        self.cmds.select(mesh, replace=True)
+        self.assertIsNone(files.import_textures("textures", self.answers(None)))
+        self.cmds.select(clear=True)
+        with self.assertRaisesRegex(RuntimeError, "Select the meshes"):
+            files.import_textures("textures", self.answers())
+
+    def test_import_textures_without_a_rig_says_why_and_other_rows_take_none(self):
+        self.tools.new_look(HERO)
+        files = self.session(HERO).files
+        with self.assertRaisesRegex(RuntimeError, "no rig"):
+            files.import_textures("textures", self.answers())
+        with self.assertRaisesRegex(RuntimeError, "takes no textures"):
+            files.import_textures("template", self.answers())
+
     def test_the_textures_row_is_blocked_without_a_look(self):
         files = self.session(HERO).files
         self.assertIn("no look", files.row("textures").open_blocked)

@@ -35,6 +35,7 @@ import maya.cmds as cmds
 import rigmodules.jointclip
 import rigmodules.skinweights
 
+import bmaya.core.asset.textures
 import bmaya.core.log
 
 from bmaya.core.asset import animproperties, handlers, library, sourcecontrol, versions
@@ -308,7 +309,7 @@ class RigSkinWeightsHandler(handlers.FileHandler):
         return mesh
 
 
-TEXTURE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".tga", ".exr", ".hdr", ".psd", ".bmp", ".tx")
+TEXTURE_EXTENSIONS = bmaya.core.asset.textures.IMAGE_EXTENSIONS
 
 
 class TexturesHandler(handlers.FileHandler):

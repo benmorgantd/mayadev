@@ -76,6 +76,10 @@ class FakeFiles:
     def load_by_name(self, key):
         self._record("load_by_name", key)
 
+    def import_textures(self, key, prompter=None):
+        self._record("import_textures", key)
+        return f"C:/projects/{key}"
+
     def open_folder(self, key):
         self._record("open_folder", key)
         return f"C:/projects/{key}"
@@ -319,6 +323,22 @@ class EditorView(unittest.TestCase):
         blocked = window.files_table.row_menu("more").actions()[0]
         self.assertFalse(blocked.isEnabled())
         self.assertEqual(blocked.toolTip(), "The asset has no look.")
+
+    def test_the_import_textures_menu_item_asks_the_files_model_and_says_where_it_went(self):
+        import dataclasses
+        window = self.window()
+        textures = dataclasses.replace(row("textures", "Textures", "look", "default"), opens_folder=True, imports_images=True,
+                                       versions=0)
+        blocked = dataclasses.replace(textures, key="more", save_blocked="The rig is not in the scene.")
+        window.files_table.set_rows([textures, blocked])
+        menu = window.files_table.row_menu("textures")
+        self.assertEqual([action.text() for action in menu.actions()], ["Import Textures...", "Open Folder"])
+        menu.actions()[0].trigger()
+        self.assertEqual(window.session.files.calls[-1], ("import_textures", "textures"))
+        self.assertIn("Imported textures into C:/projects/textures", window.status_label.text())
+        off = window.files_table.row_menu("more").actions()[0]
+        self.assertFalse(off.isEnabled())
+        self.assertEqual(off.toolTip(), "The rig is not in the scene.")
 
     def test_a_file_without_save_or_load_has_no_buttons(self):
         window = self.window()

@@ -383,6 +383,19 @@ A model file holds meshes and no shading, so the images a look uses are describe
 
 `assettools.load_textures(rig_root, look=None)` builds the shading from the file, and `apply_look` does the same after the meshes are in, so a look is always shaded by what the file says. It removes the shaders it built before and the material a mesh in the file currently wears (an engine another mesh still wears is kept), then builds each material and assigns it by `meshId`. A mesh with no entry keeps what it has, and the log lists it, the entries with no mesh, and image files that are not in the folder. A bad file is a warning when a look goes on, and the look is still applied. The constant colours of a shader are not recorded: only images are.
 
+### Importing textures
+
+Writing the file from a scene's shaders means building them by hand first. **Import Textures** (the Textures row's right-click menu, or `assettools.import_textures_interactive` for the active rig) starts from the image files instead. **Select the meshes that wear the material first** (the head, say, or the body and a prop that shares its shader). A form asks for the material's name, a plain name such as `body` or `head` (letters and digits, starting with a letter), and has a Browse button for each kind of image: `albedo`, `normal`, `rough`, `metal`, `emission` and `opacity` (the slots `baseColor`, `normal`, `roughness`, `metalness`, `emission` and `opacity`). Each image is copied into the look's textures folder under the naming convention, `<asset name>_<look>_<material>_<kind><extension>` (`hero_default_body_albedo.png`, `hero_default_head_normal.tga`), and the look's textures file gets the material `<asset name>_<look>_<material>`, worn by the selected meshes. Then the rig's shading is built from the file, as Load Textures does.
+
+A look has one material for each import, so the head and the body are two imports, each with its own meshes selected. An import changes only its own material:
+
+- The other materials, their images and the meshes that wear them are left as they are.
+- A mesh you select moves to this material if it wore another. A material that no mesh wears any more is dropped from the file, and its image files stay in the folder.
+- Importing the same material again adds to it: slots you leave empty keep their images, so a roughness map can be added later. Your original files are never moved, renamed or deleted: every image is copied, even one that is already in the textures folder, which then holds the original and the renamed copy.
+- A file the new name replaces is kept as a local version, and so is the old file of the same kind with another extension, which is removed.
+
+Everything is checked before a file is touched: a material name that isn't plain, an unknown kind, a file that isn't there or isn't an image type, a textures file that isn't valid, or no mesh selected changes nothing. `assettools.import_textures(rig_root, material, sources, look=None, meshes=None)` is the plain function (`sources` maps a kind to a file, `meshes` is every marked mesh of the rig when left out), and `bmaya.core.asset.textures.import_images` does the file work without Maya.
+
 ### Putting a rig in a look
 
 `bmaya.maya.assettools.apply_look(node, look)` swaps the look of the rig that `node` belongs to (RigModules D54 phase 5, `docs/looks.md` there). A look that isn't synced is synced first. It checks that the asset has the look, that its `look.json` names the rig's skeleton, and that it has a model. Then, as one undo step, it imports the model into the rig's namespace and calls `cmds.setRigLook`. RigModules matches each mesh to its file by `meshId`, deletes the previous look's meshes, names the new ones after their files and records the look on the rig. The new meshes then join the rig's mesh layer and group. A failed swap deletes everything the model import created.

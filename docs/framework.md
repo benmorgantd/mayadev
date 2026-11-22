@@ -188,7 +188,7 @@ Each window's `show_window()` is `host.show(Window(parent=host.parent_window()),
 
 | Name | Is |
 |---|---|
-| `field_widget(hint, on_change=None)` | One value's widget: a check box for `bool`, spin boxes for `int` and `float`, a line edit for `str`, a drop-down for `Literal` and `Enum`, JSON text for anything else. `X \| None` is `X`. `on_change()` is called when the user edits it |
+| `field_widget(hint, on_change=None)` | One value's widget: a check box for `bool`, spin boxes for `int` and `float`, a line with a Browse button for `bmaya.core.prompts.ImagePath` (a path to an image file), a line edit for `str`, a drop-down for `Literal` and `Enum`, JSON text for anything else. `X \| None` is `X`. `on_change()` is called when the user edits it |
 | `show_value(widget, hint, value)`, `read_value(widget, hint)` | Put a value in the widget and take it out. An `Enum` field takes a member or its value and reads back its member. `read_value` raises `ValueError` for JSON text that isn't JSON |
 | `DataclassForm(value)` | A labelled editor per field of a dataclass instance, with a `changed` signal. `value()` returns a copy with the edits, and raises `ValueError` naming a field whose JSON text isn't JSON |
 | `CollapsibleSection(title, expanded=True)` | A framed section with a bold title bar that folds it: a down chevron when open, a right chevron when folded (`header` is a `QPushButton` named `sectionHeader`, which the theme styles). Put widgets in `content_layout`. `set_expanded`, `is_expanded` and a `toggled(bool)` signal |

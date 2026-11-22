@@ -17,6 +17,11 @@ from typing import Protocol, TypeVar
 T = TypeVar("T")
 
 
+class ImagePath(str):
+    """A form field holding the path of an image file. A form shows it as a line with a Browse button; "" is no
+    image."""
+
+
 class PromptError(RuntimeError):
     """A question that nothing could answer."""
 

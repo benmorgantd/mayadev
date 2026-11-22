@@ -556,19 +556,23 @@ QProgressBar::chunk
 
 
 def _draw(path: pathlib.Path, size: int, scale: int, color: str, painter_fn) -> None:
+    _render(size, scale, color, painter_fn).save(str(path))
+
+
+def _render(size: int, scale: int, color: str, painter_fn, pen_width: float = 1.6) -> QtGui.QImage:
     image = QtGui.QImage(size * scale, size * scale, QtGui.QImage.Format.Format_ARGB32)
     image.fill(QtCore.Qt.GlobalColor.transparent)
     image.setDevicePixelRatio(scale)
     painter = QtGui.QPainter(image)
     painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
     qcolor = QtGui.QColor(color)
-    pen = QtGui.QPen(qcolor, 1.6)
+    pen = QtGui.QPen(qcolor, pen_width)
     pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
     pen.setJoinStyle(QtCore.Qt.PenJoinStyle.RoundJoin)
     painter.setPen(pen)
     painter_fn(painter, size, qcolor)
     painter.end()
-    image.save(str(path))
+    return image
 
 
 def _strokes(*lines: tuple[tuple[float, float], ...]):
@@ -657,6 +661,15 @@ def icon(name: str, palette: Palette = DARK) -> QtGui.QIcon:
     _ICONS: chevron_down, chevron_right, chevron_up, check, dot (the last two are white, for the accent colour), and,
     in the text colour, plus, minus, mirror, rotate, scale, translate, key, pose, module, save, load and folder."""
     return QtGui.QIcon(str(icon_folder(palette) / f"{name}.png"))
+
+
+def sized_icon(name: str, size: int, palette: Palette = DARK) -> QtGui.QIcon:
+    """A theme icon drawn at size x size pixels (twice that on a 2x screen), for a button that shows only the icon.
+    Set the same size with button.setIconSize, so the drawing is sharp, not a 16 pixel file stretched. The pen stays
+    1.6 px wide in the 16 grid, so it is scaled with the icon."""
+    field, painter_fn = _ICONS[name]
+    pixmap = QtGui.QPixmap.fromImage(_render(size, 2, getattr(palette, field), painter_fn, pen_width=1.6 * size / 16))
+    return QtGui.QIcon(pixmap)
 
 
 def stylesheet(palette: Palette = DARK) -> str:

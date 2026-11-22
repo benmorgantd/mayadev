@@ -17,6 +17,8 @@ from collections.abc import Callable
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from bmaya.core.asset.textures import IMAGE_EXTENSIONS
+from bmaya.core.prompts import ImagePath
 from bmaya.core.tool_registry import unwrap_optional
 from bmaya.maya_ui import theme
 
@@ -30,6 +32,28 @@ def menu_action(menu: QtWidgets.QMenu, text: str) -> QtGui.QAction:
     action = QtGui.QAction(text, menu)
     menu.addAction(action)
     return action
+
+
+class PathEdit(QtWidgets.QWidget):
+    """A line for a file's path with a Browse button, for an ImagePath field. line is the editable text."""
+
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
+        super().__init__(parent)
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.line = QtWidgets.QLineEdit()
+        self.line.setPlaceholderText("none")
+        self.browse_button = QtWidgets.QPushButton("Browse...")
+        self.browse_button.clicked.connect(self.browse)
+        layout.addWidget(self.line, 1)
+        layout.addWidget(self.browse_button)
+
+    def browse(self) -> None:
+        """Asks for an image file, starting beside the current one. Cancel changes nothing."""
+        patterns = " ".join("*" + extension for extension in IMAGE_EXTENSIONS)
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Pick an image", self.line.text(), f"Images ({patterns})")
+        if path:
+            self.line.setText(path)
 
 
 def _is_enum(hint: object) -> bool:
@@ -51,6 +75,9 @@ def field_widget(hint: object, on_change: Callable[[], None] | None = None) -> Q
         widget.setRange(-float(SPIN_LIMIT), float(SPIN_LIMIT))
         widget.setDecimals(6)
         signal = widget.valueChanged
+    elif hint is ImagePath:
+        widget = PathEdit()
+        signal = widget.line.textChanged
     elif hint is str:
         widget = QtWidgets.QLineEdit()
         signal = widget.textChanged
@@ -85,6 +112,8 @@ def show_value(widget: QtWidgets.QWidget, hint: object, value: object) -> None:
         widget.setValue(value if isinstance(value, (int, float)) and not isinstance(value, bool) else 0)
     elif isinstance(widget, QtWidgets.QComboBox):
         widget.setCurrentIndex(max(widget.findData(value), 0))
+    elif isinstance(widget, PathEdit):
+        widget.line.setText("" if value is None else str(value))
     elif hint is str:
         widget.setText("" if value is None else str(value))
     else:
@@ -101,6 +130,8 @@ def read_value(widget: QtWidgets.QWidget, hint: object) -> object:
         return widget.value()
     if isinstance(widget, QtWidgets.QComboBox):
         return hint(widget.currentData()) if _is_enum(hint) else widget.currentData()
+    if isinstance(widget, PathEdit):
+        return ImagePath(widget.line.text().strip())
     if hint is str:
         return widget.text()
     try:

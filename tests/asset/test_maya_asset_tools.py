@@ -1701,6 +1701,140 @@ class AssetTools(unittest.TestCase):
         self.assertTrue(cmds.objExists("hero_game:box_geo"))
 
 
+    # ---- import textures ----
+
+    def scans(self, **names):
+        folder = os.path.join(self.temp, "scans")
+        os.makedirs(folder, exist_ok=True)
+        paths = {}
+        for word, name in names.items():
+            paths[word] = os.path.join(folder, name)
+            with open(paths[word], "wb"):
+                pass
+        return paths
+
+    def built_rig(self):
+        self.make_buildable_asset()
+        self.make_look()
+        return self.tools.build_rig(HERO, "game")
+
+    def test_import_textures_names_maps_and_shades(self):
+        cmds = self.cmds
+        rig_root = self.built_rig()
+        report = self.tools.import_textures(rig_root, "body", self.scans(albedo="skin_BC.png", normal="skin_N.png", rough="skin_R.png"))
+        folder = self.hero.path("textures", "default")
+        self.assertEqual(sorted(os.listdir(folder)), ["hero_default_body_albedo.png", "hero_default_body_normal.png",
+                                                      "hero_default_body_rough.png", "textures.json"])
+        mesh_id = cmds.getAttr("hero_game:box_geo.meshId")
+        self.assertEqual(self.read_json(os.path.join(folder, "textures.json")), {
+            "formatVersion": 1,
+            "materials": {"hero_default_body": {"shader": "standardSurface", "slots": {
+                "baseColor": "hero_default_body_albedo.png", "normal": "hero_default_body_normal.png",
+                "roughness": "hero_default_body_rough.png"}}},
+            "meshes": {mesh_id: {"meshName": "box_geo", "material": "hero_default_body"}}})
+        self.assertEqual([cmds.ls(mesh)[0] for mesh in report.applied], ["hero_game:box_geo"])
+        self.assertEqual(cmds.listConnections("hero_game:box_geoShape", type="shadingEngine"), ["hero_game:hero_default_bodySG"])
+        node = cmds.listConnections("hero_game:hero_default_body.baseColor")[0]
+        self.assertEqual(cmds.getAttr(node + ".fileTextureName"), folder.replace("\\", "/") + "/hero_default_body_albedo.png")
+
+    def test_import_textures_on_chosen_meshes_leaves_the_others_alone(self):
+        cmds = self.cmds
+        rig_root = self.built_rig()
+        other = cmds.polyCube(name="hero_game:other_geo", constructionHistory=False)[0]
+        cmds.setRigMeshId(other)
+        self.tools.import_textures(rig_root, "prop", self.scans(albedo="a.png"), meshes=["hero_game:other_geo"])
+        self.assertEqual(cmds.listConnections("hero_game:other_geoShape", type="shadingEngine"), ["hero_game:hero_default_propSG"])
+        self.assertEqual(cmds.listConnections("hero_game:box_geoShape", type="shadingEngine"), ["initialShadingGroup"])
+
+    def test_a_mesh_without_a_mesh_id_is_refused_and_nothing_is_written(self):
+        cmds = self.cmds
+        rig_root = self.built_rig()
+        cmds.polyCube(name="hero_game:bare_geo", constructionHistory=False)
+        with self.assertRaisesRegex(RuntimeError, "not a marked mesh"):
+            self.tools.import_textures(rig_root, "body", self.scans(albedo="a.png"), meshes=["hero_game:bare_geo"])
+        self.assertFalse(os.path.exists(self.hero.path("textures", "default")))
+
+    def test_a_bad_image_changes_nothing(self):
+        rig_root = self.built_rig()
+        with self.assertRaisesRegex(RuntimeError, "not an image type"):
+            self.tools.import_textures(rig_root, "body", self.scans(albedo="notes.txt"))
+        self.assertFalse(os.path.exists(self.hero.path("textures", "default")))
+
+    def three_meshes(self):
+        """The built rig with a body, a head and a prop mesh, all marked (box_geo stands for the body)."""
+        cmds = self.cmds
+        rig_root = self.built_rig()
+        for name in ("head_geo", "prop_geo"):
+            cmds.setRigMeshId(cmds.polyCube(name="hero_game:" + name, constructionHistory=False)[0])
+        return rig_root
+
+    def import_form(self, rig_root, material, selection, **files):
+        cmds = self.cmds
+        paths = self.scans(**files)
+        cmds.select([f"hero_game:{name}" for name in selection], replace=True)
+        return self.tools.ask_and_import_textures(rig_root, prompter=self.answers(
+            self.tools.TextureFiles(material=material, **paths)))
+
+    def test_the_head_and_the_body_with_its_prop_are_imported_one_after_the_other(self):
+        cmds = self.cmds
+        rig_root = self.three_meshes()
+        self.import_form(rig_root, "body", ["box_geo", "prop_geo"], albedo="body_a.png", normal="body_n.png")
+        report = self.import_form(rig_root, "head", ["head_geo"], albedo="head_a.png", normal="head_n.png")
+        engines = {name: cmds.listConnections(f"hero_game:{name}Shape", type="shadingEngine")
+                   for name in ("box_geo", "prop_geo", "head_geo")}
+        self.assertEqual(engines, {"box_geo": ["hero_game:hero_default_bodySG"], "prop_geo": ["hero_game:hero_default_bodySG"],
+                                   "head_geo": ["hero_game:hero_default_headSG"]}, "the body's shader is still shared")
+        self.assertEqual(sorted(cmds.ls(mesh)[0] for mesh in report.applied), ["hero_game:box_geo", "hero_game:head_geo", "hero_game:prop_geo"])
+        folder = self.hero.path("textures", "default")
+
+        def image(material, plug):
+            node = cmds.listConnections(f"hero_game:hero_default_{material}.{plug}", source=True, destination=False)[0]
+            if cmds.nodeType(node) == "bump2d":
+                node = cmds.listConnections(node + ".bumpValue")[0]
+            return os.path.basename(cmds.getAttr(node + ".fileTextureName"))
+
+        self.assertEqual([image("body", "baseColor"), image("body", "normalCamera")],
+                         ["hero_default_body_albedo.png", "hero_default_body_normal.png"])
+        self.assertEqual([image("head", "baseColor"), image("head", "normalCamera")],
+                         ["hero_default_head_albedo.png", "hero_default_head_normal.png"])
+        self.assertEqual(sorted(os.listdir(folder)), [
+            "hero_default_body_albedo.png", "hero_default_body_normal.png", "hero_default_head_albedo.png",
+            "hero_default_head_normal.png", "textures.json"])
+
+    def test_a_later_import_adds_a_kind_to_a_material_and_keeps_the_rest(self):
+        cmds = self.cmds
+        rig_root = self.three_meshes()
+        self.import_form(rig_root, "body", ["box_geo"], albedo="body_a.png")
+        self.import_form(rig_root, "body", ["box_geo"], rough="body_r.png")
+        slots = self.read_json(os.path.join(self.hero.path("textures", "default"), "textures.json"))["materials"]["hero_default_body"]["slots"]
+        self.assertEqual(slots, {"baseColor": "hero_default_body_albedo.png", "roughness": "hero_default_body_rough.png"})
+
+    def test_a_mesh_moves_to_the_material_it_is_imported_into(self):
+        cmds = self.cmds
+        rig_root = self.three_meshes()
+        self.import_form(rig_root, "body", ["box_geo", "prop_geo"], albedo="body_a.png")
+        self.import_form(rig_root, "prop", ["prop_geo"], albedo="prop_a.png")
+        self.assertEqual(cmds.listConnections("hero_game:prop_geoShape", type="shadingEngine"), ["hero_game:hero_default_propSG"])
+        self.assertEqual(cmds.listConnections("hero_game:box_geoShape", type="shadingEngine"), ["hero_game:hero_default_bodySG"])
+
+    def test_the_form_needs_selected_meshes_and_a_material_name(self):
+        cmds = self.cmds
+        rig_root = self.three_meshes()
+        cmds.select(clear=True)
+        with self.assertRaisesRegex(RuntimeError, "Select the meshes"):
+            self.tools.ask_and_import_textures(rig_root, prompter=self.answers())   # refused before asking
+        with self.assertRaisesRegex(RuntimeError, "not a material name"):
+            self.import_form(rig_root, "", ["box_geo"], albedo="a.png")
+        self.assertFalse(os.path.exists(self.hero.path("textures", "default")))
+
+    def test_cancelling_the_form_changes_nothing(self):
+        cmds = self.cmds
+        rig_root = self.three_meshes()
+        cmds.select("hero_game:box_geo", replace=True)
+        self.assertIsNone(self.tools.ask_and_import_textures(rig_root, prompter=self.answers(None)))
+        self.assertFalse(os.path.exists(self.hero.path("textures", "default")))
+
+
 class MirrorJoints(unittest.TestCase):
     """mirror_joints: a flat set of ribbon and twist joints (which Maya's Mirror Joint can't mirror in place) onto the
     other side. The joints sit under shoulder_00_L_JNT, whose R counterpart exists."""

@@ -276,6 +276,26 @@ class FieldWidgetTest(MayaUiTest):
                 widgets.show_value(widget, hint, value)
                 self.assertEqual(widgets.read_value(widget, hint), value)
 
+    def test_an_image_path_field_is_a_line_with_a_browse_button(self):
+        import bmaya.core.prompts
+        import bmaya.maya_ui.widgets as widgets
+        from PySide6 import QtWidgets
+        calls = []
+        widget = widgets.field_widget(bmaya.core.prompts.ImagePath, lambda: calls.append(1))
+        self.assertIsInstance(widget, widgets.PathEdit)
+        widgets.show_value(widget, bmaya.core.prompts.ImagePath, bmaya.core.prompts.ImagePath("C:/scans/a.png"))
+        self.assertEqual(widget.line.text(), "C:/scans/a.png")
+        self.assertEqual(calls, [1])
+        value = widgets.read_value(widget, bmaya.core.prompts.ImagePath)
+        self.assertEqual((value, type(value)), ("C:/scans/a.png", bmaya.core.prompts.ImagePath))
+        with mock.patch.object(QtWidgets.QFileDialog, "getOpenFileName", return_value=("C:/scans/b.png", "")) as dialog:
+            widget.browse_button.click()
+        self.assertEqual(widget.line.text(), "C:/scans/b.png")
+        self.assertIn("*.png", dialog.call_args.args[3])
+        with mock.patch.object(QtWidgets.QFileDialog, "getOpenFileName", return_value=("", "")):
+            widget.browse_button.click()
+        self.assertEqual(widget.line.text(), "C:/scans/b.png", "Cancel changes nothing")
+
     def test_an_enum_field_shows_a_member_or_its_value(self):
         import bmaya.maya_ui.widgets as widgets
         widget = widgets.field_widget(Colour)

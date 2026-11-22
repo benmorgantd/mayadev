@@ -54,6 +54,7 @@ class FileRow:
     opens_folder: bool = False    # a folder the artist fills (textures): Open Folder makes it and shows it, no Save or Load
     file_count: int | None = None   # for such a folder: the files in it (None when it is not there yet)
     open_blocked: str = ""
+    imports_images: bool = False   # Import Textures... is on the row's menu (its blocked reason is save_blocked)
     note: str = ""   # said after the file count: how the folder's sidecar stands
 
 
@@ -75,6 +76,7 @@ class FileAction:
     loads = False
     loads_by_name = False   # has load_by_name, offered on the row's right-click menu
     save_hint = ""   # what Save writes, shown in the button's tool tip
+    imports_images = False   # the row's menu has Import Textures...
     opens_folder = False   # a folder of files the artist adds by hand: the row's menu has Open Folder
 
     def open_blocked(self, model: AssetFilesModel) -> str:
@@ -176,6 +178,7 @@ class TexturesAction(FileAction):
     the sidecar: Save records the rig's shading into it, and Load builds the shading from it."""
 
     key, label, owner_kind, saves, loads, opens_folder = "textures", "Textures", "look", True, True, True
+    imports_images = True
     save_hint = "The shading of every marked mesh in the rig's namespace: its images and what they are for"
 
     def path(self, model, owner):
@@ -359,7 +362,7 @@ class AssetFilesModel:
             modified=os.path.getmtime(path) if exists else None, versions=count, saves=action.saves, loads=action.loads,
             save_blocked=action.save_blocked(self) if action.saves else "",
             load_blocked=action.load_blocked(self) if action.loads else "", loads_by_name=action.loads_by_name,
-            opens_folder=action.opens_folder, open_blocked=action.open_blocked(self) if action.opens_folder else "",
+            opens_folder=action.opens_folder, imports_images=action.imports_images, open_blocked=action.open_blocked(self) if action.opens_folder else "",
             file_count=len(action.list_files(self)) if action.opens_folder and os.path.isdir(os.path.dirname(path)) else None,
             note=action.note(self) if action.opens_folder and has_owner else "")
 
@@ -411,6 +414,19 @@ class AssetFilesModel:
             raise RuntimeError(row.load_blocked)
         action.load(self)
         self.refresh()
+
+    def import_textures(self, key: str, prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
+        """Asks which images to bring into the row's folder (bmaya.maya.assettools.import_textures_interactive), puts
+        them in under the naming convention, and builds the rig's shading from them. Returns the folder, or None when
+        the user cancelled."""
+        action, row = self._action(key), self.row(key)
+        if not action.imports_images:
+            raise RuntimeError(f"{row.label} takes no textures.")
+        if row.save_blocked:
+            raise RuntimeError(row.save_blocked)
+        report = bmaya.maya.assettools.ask_and_import_textures(self.rig_root, self.context.look, prompter)
+        self.refresh()
+        return os.path.dirname(row.path) if report is not None else None
 
     def open_folder(self, key: str) -> str:
         """Makes the row's folder when it is missing (a textures folder is made when the artist first needs it) and

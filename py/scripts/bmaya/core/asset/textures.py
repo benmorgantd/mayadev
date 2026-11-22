@@ -24,7 +24,10 @@ from __future__ import annotations
 import dataclasses
 import os
 import posixpath
+import re
+import shutil
 
+from . import sourcecontrol, versions
 from .project import ProjectError, read_json, write_json
 
 FILE_NAME = "textures.json"
@@ -43,6 +46,19 @@ SHADERS = {
     },
 }
 DEFAULT_SHADER = "standardSurface"
+
+# The image files a textures folder holds.
+IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".tga", ".exr", ".hdr", ".psd", ".bmp", ".tx")
+
+# The slot word in an image's file name, <asset>_<look>_<word>.<extension>, and the shader slot it feeds.
+FILE_SLOTS = {
+    "albedo": "baseColor",
+    "normal": "normal",
+    "rough": "roughness",
+    "metal": "metalness",
+    "emission": "emission",
+    "opacity": "opacity",
+}
 
 
 class TexturesError(RuntimeError):
@@ -156,3 +172,84 @@ def write(path: str, texture_map: TextureMap) -> None:
         "meshes": {mesh_id: {"meshName": entry.name, "material": entry.material}
                    for mesh_id, entry in sorted(texture_map.meshes.items())},
     })
+
+
+MATERIAL_PART = re.compile(r"^[A-Za-z][A-Za-z0-9]*$")
+
+
+def material_name(asset_name: str, look: str, part: str) -> str:
+    """The material the import tool makes for a part of a look: <asset>_<look>_<part>, such as hero_default_body."""
+    return f"{asset_name}_{look}_{part}"
+
+
+def file_name(asset_name: str, look: str, part: str, word: str, extension: str) -> str:
+    """The name an imported image gets: <asset>_<look>_<part>_<word><extension>, such as hero_default_body_albedo.png."""
+    return f"{material_name(asset_name, look, part)}_{word}{extension.lower()}"
+
+
+def import_images(asset, look: str, part: str, sources: dict[str, str], meshes: dict[str, str]) -> TextureMap:
+    """Brings images into a look's textures folder under the naming convention (<asset>_<look>_<part>_<word>,
+    FILE_SLOTS), and returns the look's TextureMap with them in it: the material <asset>_<look>_<part>, worn by the
+    given meshes (meshId -> name). part names the material (body, head, ...): a look with several materials imports
+    each under its own. sources maps a slot word (albedo, normal, rough, ...) to an image file.
+
+    Every image is copied, never moved or renamed: the artist's own files are left where they are, even one that is
+    already in the textures folder. A file the new name replaces, and the
+    old file of the same word with another extension, are kept as local versions first. What the folder's existing
+    textures.json holds stays: the other materials, the meshes that wear them, and this material's slots that sources
+    doesn't name. A mesh given here moves to this material, and a material no mesh wears any more is dropped from the
+    file (its image files stay). The file is not written (assettextures.save_file does). Everything is checked before
+    a file is touched, and raises TexturesError for a part that isn't a plain name, an unknown word, a file that isn't
+    there or isn't an image, or a textures.json that isn't valid."""
+    if not MATERIAL_PART.match(part or ""):
+        raise TexturesError(f"{part!r} is not a material name: use letters and digits, starting with a letter "
+                            f"(body, head, prop).")
+    folder = asset.path("textures", look)
+    for word, source in sources.items():
+        if word not in FILE_SLOTS:
+            raise TexturesError(f"{word!r} is not an image kind. The kinds: {', '.join(FILE_SLOTS)}.")
+        if not os.path.isfile(source):
+            raise TexturesError(f"The {word} image {source!r} is not a file.")
+        if os.path.splitext(source)[1].lower() not in IMAGE_EXTENSIONS:
+            raise TexturesError(f"The {word} image {source!r} is not an image type: {', '.join(IMAGE_EXTENSIONS)}.")
+    if not sources:
+        raise TexturesError("Pick at least one image.")
+    sidecar = get_path(folder)
+    texture_map = read(sidecar) if os.path.isfile(sidecar) else TextureMap()
+
+    os.makedirs(folder, exist_ok=True)
+    name = material_name(asset.name, look, part)
+    slots = dict(texture_map.materials[name].slots) if name in texture_map.materials else {}
+    for word, source in sources.items():
+        target = os.path.join(folder, file_name(asset.name, look, part, word, os.path.splitext(source)[1]))
+        if not (os.path.exists(target) and os.path.samefile(source, target)):
+            _replace_file(asset, folder, source, target)
+        slots[FILE_SLOTS[word]] = os.path.basename(target)
+        prefix = file_name(asset.name, look, part, word, "")
+        for other in os.listdir(folder):   # the same word saved before under another extension
+            stem, extension = os.path.splitext(other)
+            if stem == prefix and other != os.path.basename(target) and extension.lower() in IMAGE_EXTENSIONS:
+                _remove_file(asset, os.path.join(folder, other))
+    texture_map.materials[name] = Material(DEFAULT_SHADER, slots)
+    for mesh_id, mesh_name in meshes.items():
+        texture_map.meshes[mesh_id] = MeshEntry(mesh_name, name)
+    worn = {entry.material for entry in texture_map.meshes.values()} | {name}
+    texture_map.materials = {key: value for key, value in texture_map.materials.items() if key in worn}
+    check(texture_map)
+    return texture_map
+
+
+def _replace_file(asset, folder: str, source: str, target: str) -> None:
+    existed = os.path.exists(target)
+    if existed:
+        versions.version(target, asset.root)
+        sourcecontrol.current().checkout(target)
+    shutil.copy2(source, target)   # a copy: the artist's original is never moved or deleted
+    if not existed:
+        sourcecontrol.current().add(target)
+
+
+def _remove_file(asset, path: str) -> None:
+    versions.version(path, asset.root)
+    sourcecontrol.current().checkout(path)
+    os.remove(path)

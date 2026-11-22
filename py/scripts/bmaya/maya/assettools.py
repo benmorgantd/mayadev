@@ -41,6 +41,7 @@ import bmaya.core.asset.library
 import bmaya.core.asset.textures
 import bmaya.core.log
 import bmaya.core.prompts
+from bmaya.core.prompts import ImagePath
 import bmaya.maya.activerig
 import bmaya.maya.assethandlers
 import bmaya.maya.assettextures
@@ -438,6 +439,85 @@ def save_textures(node: str, look: str | None = None, copy_in: bool = False) -> 
     path = bmaya.maya.assettextures.save_file(asset, look, texture_map)
     bmaya.core.log.info(f"Saved the textures of {asset.id} look {look!r}: {path}")
     return path
+
+
+def import_textures(node: str, material: str, sources: dict[str, str], look: str | None = None,
+                    meshes: list[str] | None = None) -> bmaya.maya.assettextures.ApplyReport:
+    """Brings images into the look's textures folder under the naming convention,
+    <asset>_<look>_<material>_<kind>.<extension> (bmaya.core.asset.textures.import_images), maps them in the look's
+    textures file and builds the rig's shading from it. material names the material (body, head, ...): a look with
+    several imports each under its own name. sources maps an image kind (albedo, normal, rough, metal, emission,
+    opacity) to a file. The material is worn by meshes (transforms in the rig's namespace, every marked mesh of the
+    rig when left out), and it keeps the slots sources doesn't name. Other materials and the meshes that wear them are
+    left as they are, and a mesh named here moves to this material. look is as in save_skin_weights. Raises
+    TexturesError before a file is touched for a bad image or material name, and AssetError for a mesh with no
+    meshId. Returns what load_textures does."""
+    info = rigmodules.query.get_rig_info(node)
+    asset = require_asset(info.asset_id)
+    look = _require_look(asset, info.rig_name, look, _worn_look(info))
+    in_rig = rigmodules.skinweights.get_meshes(info.namespace)
+    if meshes is None:
+        chosen = dict(in_rig)
+    else:
+        chosen = {}
+        for mesh in meshes:
+            mesh_id = rigmodules.skinweights.get_mesh_id(mesh)
+            if not mesh_id or mesh_id not in in_rig:
+                raise bmaya.core.asset.AssetError(f"{mesh} is not a marked mesh of the rig {info.rig_name!r}.")
+            chosen[mesh_id] = mesh
+    if not chosen:
+        raise bmaya.core.asset.AssetError(f"The rig {info.rig_name!r} has no marked mesh to put the images on.")
+    texture_map = bmaya.core.asset.textures.import_images(
+        asset, look, material, sources, {mesh_id: _short_node_name(mesh) for mesh_id, mesh in chosen.items()})
+    path = bmaya.maya.assettextures.save_file(asset, look, texture_map)
+    bmaya.core.log.info(f"Imported {len(sources)} image(s) as the material {material!r} of {asset.id} look {look!r}: "
+                        f"{path}")
+    return load_textures(node, look)
+
+
+@dataclasses.dataclass
+class TextureFiles:
+    """The form of Import Textures: the material's name, and a file for each kind of image. An empty file is left as it
+    is, so a later import can add a kind to a material."""
+
+    material: str = ""
+    albedo: ImagePath = ImagePath("")
+    normal: ImagePath = ImagePath("")
+    rough: ImagePath = ImagePath("")
+    metal: ImagePath = ImagePath("")
+    emission: ImagePath = ImagePath("")
+    opacity: ImagePath = ImagePath("")
+
+
+def ask_and_import_textures(rig_root: str, look: str | None = None,
+                            prompter: bmaya.core.prompts.Prompter | None = None
+                            ) -> bmaya.maya.assettextures.ApplyReport | None:
+    """Asks for the material's name and the image file of each slot (a form with a Browse button for each), then
+    import_textures them for the rig's selected meshes. The selection is the meshes that wear the material, so it is
+    required: the head and the body are imported one after the other, each with its own meshes selected. Returns None
+    when cancelled. Raises AssetError, before asking, when no mesh of the rig is selected."""
+    info = rigmodules.query.get_rig_info(rig_root)
+    chosen = set(cmds.ls(selection=True, long=True) or []) & set(rigmodules.skinweights.get_meshes(info.namespace).values())
+    if not chosen:
+        raise bmaya.core.asset.AssetError("Select the meshes that wear these textures first (the head, or the body and "
+                                          "its props), then import them.")
+    answer = _prompter(prompter).ask_form("Import Textures", TextureFiles())
+    if answer is None:
+        return None
+    sources = {word: str(path) for word, path in dataclasses.asdict(answer).items() if word != "material" and path}
+    return import_textures(rig_root, answer.material.strip(), sources, look, sorted(chosen))
+
+
+def import_textures_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
+    """Import Textures for the active rig: asks which look when the rig can wear several."""
+    rig = bmaya.maya.activerig.get_active_rig()
+    look, cancelled = _ask_rig_look(_prompter(prompter), "Import Textures", rig)
+    if not cancelled:
+        ask_and_import_textures(rig.rig_root, look, prompter)
+
+
+def _short_node_name(node: str) -> str:
+    return node.split("|")[-1].split(":")[-1]
 
 
 def load_textures(node: str, look: str | None = None) -> bmaya.maya.assettextures.ApplyReport:
