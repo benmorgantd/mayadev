@@ -846,6 +846,15 @@ def new_project_interactive(prompter: bmaya.core.prompts.Prompter | None = None)
 
 
 def new_asset_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
+def prune_to_max_influences(max_influences: int = 4) -> int:
+    """Limits every vertex of the selected skinned meshes to its `max_influences` largest weights and normalizes what
+    is left (RigModules `pruneToMaxInfluences`). Locked influences are pruned like any other, and the skinCluster's own
+    maximum is not changed. One undo step. Returns the number of vertices that changed."""
+    changed = cmds.pruneToMaxInfluences(maxInfluences=max_influences)
+    bmaya.core.log.info(f"Pruned {changed} vertex(es) to at most {max_influences} influences.")
+    return changed
+
+
     """Asks for the new asset's id and type and makes it. Returns the id, or None when cancelled. It never offers the
     Asset Editor's asset: the id is a new one."""
     prompter = _prompter(prompter)

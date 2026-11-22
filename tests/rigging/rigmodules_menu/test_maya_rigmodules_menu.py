@@ -69,7 +69,7 @@ class MenuLayout(unittest.TestCase):
     def test_every_tool_is_in_the_menu_once(self):
         ids = [item.tool for item in _layout().tool_items()]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(len(ids), 49)
+        self.assertEqual(len(ids), 50)
 
     def test_the_asset_submenu_adds_rigs_looks_and_skeletons(self):
         # A variant became a rig and a look (RigModules D54), and a skeleton is saved and loaded as its skeleton file.
@@ -496,6 +496,26 @@ class MenuScripts(unittest.TestCase):
             self.assertAlmostEqual(sum(row), 1.0, places=6)
         cmds.undo()
         self.assertEqual([cmds.skinPercent(cluster, f"{box}.vtx[{v}]", query=True, value=True) for v in range(8)], before)
+
+    def test_prune_to_max_influences_limits_the_selected_mesh_in_one_undo_step(self):
+        cmds = self.cmds
+        box = cmds.polyCube(name=":hero:prune_geo", constructionHistory=False)[0]
+        joints = ["hero:spine1_00_M_JNT", "hero:arm_00_L_JNT"]
+        cluster = cmds.skinCluster(*joints, box, toSelectedBones=True)[0]
+        cmds.skinPercent(cluster, f"{box}.vtx[0]", transformValue=[(joints[0], 0.5), (joints[1], 0.5)])
+        before = cmds.skinPercent(cluster, f"{box}.vtx[0]", query=True, value=True)
+        self.run_tool("Prune to Max Influences (4)", [box])
+        # two influences are already within the limit, so nothing is written
+        self.assertEqual(cmds.skinPercent(cluster, f"{box}.vtx[0]", query=True, value=True), before)
+        self.assertGreaterEqual(cmds.pruneToMaxInfluences(box, maxInfluences=1), 1)
+        row = cmds.skinPercent(cluster, f"{box}.vtx[0]", query=True, value=True)
+        self.assertEqual(sorted(row), [0.0, 1.0])
+        cmds.undo()
+        self.assertEqual(cmds.skinPercent(cluster, f"{box}.vtx[0]", query=True, value=True), before)
+
+    def test_prune_to_max_influences_needs_a_mesh(self):
+        with self.assertRaises(RuntimeError):
+            self.run_tool("Prune to Max Influences (4)", None)
 
     def test_the_skin_brush_needs_a_gui_maya(self):
         # Maya creates no contexts in batch, so mayapy can only check the refusal. The brush itself is checked by hand.

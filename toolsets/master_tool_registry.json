@@ -284,6 +284,20 @@
             "enabled": true
         },
         {
+            "id": "rigmodules.weights.prune_to_max_influences",
+            "name": "Prune to Max Influences (4)",
+            "short_name": "Prune to 4",
+            "call": {
+                "module": "bmaya.maya.assettools",
+                "function": "prune_to_max_influences",
+                "kwargs": {
+                    "max_influences": 4
+                }
+            },
+            "icon": null,
+            "enabled": true
+        },
+        {
             "id": "rigmodules.weights.brush",
             "name": "Skin Brush",
             "short_name": "Skin Brush",

@@ -39,6 +39,7 @@ The rig tools act on the **active rig**, so there is no need to select a rig roo
 | Mark Meshes with New Ids | meshes | The same, but replaces their ids. Use it on a duplicated mesh, which copied its source's id. The log reads "N mesh(es) given new ids" |
 | Save Skin Weights... / Load Skin Weights... | active rig | Saves every skinned mesh in the rig's namespace to the variant's `weights` folder, one file per mesh, or loads the folder onto the meshes, matched by `meshId`, as one undo step. Before the asset folder exists, uses a folder dialog |
 | Smooth Skin Weights | selection | Smooths the selected vertices' (or meshes') skin weights over their neighbors, one undo step |
+| Prune to Max Influences (4) | selection | Keeps the 4 largest weights on every vertex of the selected skinned meshes and normalizes, one undo step |
 | New Project... | nothing | Writes a `project.json` into a folder you pick |
 | New Asset... | nothing | Asks for an asset id and one of the project's asset types, then writes the asset's `asset.json` |
 | New Variant... | nothing | Copies a template you pick into the asset as the variant named by its `rigName` |

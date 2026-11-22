@@ -51,7 +51,7 @@ The mayadev tests use `unittest`. Most of them need nothing but Python, and the 
 | `tests/core/test_maya_batch.py` | 3 | A batch job in its own mayapy, started through `mayalaunch`: the results folder, the log, `root_dir`, `open_report` |
 | `tests/core/test_maya_ui_layer.py` | 38 | Both registration passes (batch and GUI), the order of the dev reload hooks, `field_widget`, `DataclassForm` and `SignatureForm`, `QtPrompter` with its dialogs replaced, `FormDialog` refusing an invalid value, `CollapsibleSection`, the theme (sheet filled in, icons drawn, applied by the windows and `host.show`, never to the application), `host` (one window per object name, a window that refuses to close, `defer`) |
 | `tests/core/test_maya_tool_editors.py` | 29 | Both editors offscreen: the tree and `Layout` round trip, the Registry Editor's widgets bound to its session (list, search, fields, call picker, status line, save, open, delete), `build_menus` with the drawing replaced |
-| `tests/rigging/rigmodules_menu/test_maya_rigmodules_menu.py` | 45 | The layout (nine submenus, 49 tools, the dev tools in the bmaya menu), `check_calls` over the repo registry, then each tool run through `run_tool` in Maya, including the joint tools |
+| `tests/rigging/rigmodules_menu/test_maya_rigmodules_menu.py` | 47 | The layout (nine submenus, 50 tools, the dev tools in the bmaya menu), `check_calls` over the repo registry, then each tool run through `run_tool` in Maya, including the joint tools |
 
 Not covered: the reload half of dev reload, the Qt classes other than the two tool editors, skinning, most joint tools and the generic utilities ([`../docs/status.md`](../docs/status.md#test-coverage) lists proposed tests).
 

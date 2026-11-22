@@ -142,6 +142,11 @@
                 },
                 {
                     "type": "tool",
+                    "tool": "rigmodules.weights.prune_to_max_influences",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
                     "tool": "rigmodules.weights.brush",
                     "enabled": true
                 },
