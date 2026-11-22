@@ -226,7 +226,16 @@ A rig and a look are published separately, each in a new folder under its own `p
 | `list_ids(asset, kind, name)`, `latest(asset, kind, name)` | Publish ids oldest first, and the last |
 | `info(asset, kind, name, id)` | The parsed `publish.json` |
 
-Not built yet: the publish step that builds the rig and writes the folder's contents. Only the folder, its id and `publish.json` exist.
+### The publish step and its gates
+
+`bmaya.core.asset.publishing` (plain Python) and `assettools.publish_rig` / `assettools.publish_look` (RigModules D70) make a publish: a new folder with `publish.json` and **copies of the inputs**. A rig's are `skeleton.json`, `template.json`, `rig.json`, `shapes.json` and `postops.py`, as far as they exist, and a look's are `look.json`, the model, `weights`, `textures` and `shaders`. The built rig scene is not written by this step yet. Strictness lives here and not in the build:
+
+| Gate | When | What it does |
+|---|---|---|
+| Look publish | Always (a draft or checked out) | `publish_look(rig_root, look=None)` refuses while the rig doesn't wear the look, the look wasn't applied in this session, or any mesh in the look status was `folded`, `rigid` or is stale. It raises `AssetError` naming each. Save Skin Weights (or skin the mesh and save) clears one. |
+| Rig breaking-change check | The rig has a publish (checked out) | `publish_rig(asset_id, rig, prompter)` compares the skeleton with the `skeleton.json` copy in the rig's latest publish. A removed joint, a changed parent, name, rest (to 1e-4, the skeleton hash's grid) or rotate order is breaking. It lists them, asks (`Publish Anyway`), and records them as `breakingChanges` in `publish.json`. Added joints are fine. A rig with no publish is a draft: nothing is compared or asked. |
+
+"Checked out" means a publish exists, computed from the files, not a source-control checkout. `save_skeleton` logs a warning naming each rig whose last publish the saved skeleton breaks, and the Asset Editor shows the same line under the files (computed on every refresh, never stored). A publish id is the second and the user, so two publishes in one second by one user collide.
 
 ## Local versions
 

@@ -1067,6 +1067,54 @@ class AssetTools(unittest.TestCase):
         self.assertEqual([(m.result, m.reasons, m.stale_skeleton) for m in status.meshes], [("loaded", (), False)])
         self.assertFalse(status.needs_save)
 
+    def test_a_look_with_a_rigid_mesh_cannot_be_published_until_its_weights_are_saved(self):
+        import bmaya.core.asset
+        self.make_two_looks()
+        weights = os.path.join(self.hero.folder, "looks", "winter", "weights", "ball_geo.json")
+        data = self.read_json(weights)
+        data["topologyHash"] = "0000000000000000"
+        with open(weights, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        self.tools.apply_look(rig_root, "winter")
+        with self.assertRaisesRegex(bmaya.core.asset.AssetError, "winter.*can't be published.*ball_geo was rigid.*topology"):
+            self.tools.publish_look(rig_root)
+        self.assertEqual(bmaya.core.asset.publishes.list_ids(self.hero, "look", "winter"), [])
+
+        self.tools.save_skin_weights(rig_root)
+        folder = self.tools.publish_look(rig_root)
+        self.assertTrue(os.path.isfile(os.path.join(folder, "weights", "ball_geo.json")))
+        record = bmaya.core.asset.publishes.info(self.hero, "look", "winter", os.path.basename(folder))
+        self.assertEqual(record["rig"], "game")
+
+    def test_a_look_cannot_be_published_from_a_rig_that_wears_another(self):
+        import bmaya.core.asset
+        self.make_two_looks()
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        with self.assertRaisesRegex(bmaya.core.asset.AssetError, "wears 'default', not 'winter'"):
+            self.tools.publish_look(rig_root, "winter")
+
+    def test_a_rig_publish_is_checked_against_the_last_one_and_asks_before_a_breaking_one(self):
+        import bmaya.core.asset
+        cmds = self.cmds
+        self.make_buildable_asset()
+        first = self.tools.publish_rig(HERO, "game")
+        self.assertTrue(os.path.isfile(os.path.join(first, "skeleton.json")), "a draft is published without a question")
+
+        joint = cmds.joint(name="spine1_00_M_JNT", position=(0, 0, 0))
+        cmds.rigJointMarkup(joint, usage="spine1", side="Center", export=True, skin=True)
+        with self.assertLogs("bmaya", level="WARNING") as logs:
+            self.tools.save_skeleton(HERO, joints=[joint])
+        self.assertRegex("\n".join(logs.output), r"breaks the last publish of the rig 'game'.*\[Center, spine2\] was removed")
+
+        import time
+        time.sleep(1.1)   # a publish id is the second and the user, so a publish in the same second would collide
+        self.assertIsNone(self.tools.publish_rig(HERO, "game", self.answers(False)), "declined")
+        self.assertEqual(len(bmaya.core.asset.publishes.list_ids(self.hero, "rig", "game")), 1)
+        second = self.tools.publish_rig(HERO, "game", self.answers(True))
+        record = bmaya.core.asset.publishes.info(self.hero, "rig", "game", os.path.basename(second))
+        self.assertEqual(record["breakingChanges"], ["[Center, spine2] was removed"])
+
     def test_a_scene_that_was_not_built_here_has_no_look_status(self):
         self.make_two_looks()
         rig_root = self.tools.build_rig(HERO, "game", "default")

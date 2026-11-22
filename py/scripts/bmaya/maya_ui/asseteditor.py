@@ -138,6 +138,9 @@ class AssetEditor(QtWidgets.QWidget):
         self.files_message = QtWidgets.QLabel()
         self.files_message.setWordWrap(True)
         layout.addWidget(self.files_message)
+        self.breaking_label = QtWidgets.QLabel()
+        self.breaking_label.setWordWrap(True)
+        layout.addWidget(self.breaking_label)
         layout.addWidget(self._build_look_status())
         row = QtWidgets.QHBoxLayout()
         self.build_button = QtWidgets.QPushButton("Build Rig")
@@ -145,6 +148,15 @@ class AssetEditor(QtWidgets.QWidget):
         self.build_button.clicked.connect(lambda: self.run(self.session.files.build_rig))
         row.addWidget(self.build_button)
         row.addStretch(1)
+        self.publish_rig_button = QtWidgets.QPushButton("Publish Rig")
+        self.publish_rig_button.setToolTip("Publish the chosen rig. A skeleton that breaks the last publish asks first.")
+        self.publish_rig_button.clicked.connect(lambda: self.run(self._publish_rig))
+        self.publish_look_button = QtWidgets.QPushButton("Publish Look")
+        self.publish_look_button.setToolTip("Publish the chosen look from the rig in the scene. A mesh that was folded, "
+                                            "bound rigid or is stale blocks it.")
+        self.publish_look_button.clicked.connect(lambda: self.run(self._publish_look))
+        row.addWidget(self.publish_rig_button)
+        row.addWidget(self.publish_look_button)
         layout.addLayout(row)
         return tab
 
@@ -355,6 +367,14 @@ class AssetEditor(QtWidgets.QWidget):
         if path:
             self.status_label.setText(f"Saved {path}")
 
+    def _publish_rig(self) -> None:
+        folder = self.session.files.publish_rig()
+        if folder:
+            self.status_label.setText(f"Published {folder}")
+
+    def _publish_look(self) -> None:
+        self.status_label.setText(f"Published {self.session.files.publish_look()}")
+
     def _import(self, key: str) -> None:
         path = self.session.files.import_textures(key)
         if path:
@@ -381,6 +401,11 @@ class AssetEditor(QtWidgets.QWidget):
         self.files_message.setText(files.message)
         self.files_message.setVisible(bool(files.message))
         self.build_button.setEnabled(bool(files.rows) and context.rig is not None)
+        breaking = [f"{rig}: " + "; ".join(changes) for rig, changes in files.breaking.items()]
+        self.breaking_label.setText("The saved skeleton breaks the last publish of " + " | ".join(breaking) + ". Publishing the rig asks you to accept it." if breaking else "")
+        self.breaking_label.setVisible(bool(breaking))
+        self.publish_rig_button.setEnabled(bool(files.rows) and context.rig is not None)
+        self.publish_look_button.setEnabled(bool(files.rows) and context.look is not None)
         self.reload_look_status()
         self.reload_shapes()   # Save Shapes and Load Shapes follow the files
 

@@ -39,6 +39,7 @@ import bmaya.core.asset.context
 import bmaya.core.asset.handlers
 import bmaya.core.asset.library
 import bmaya.core.asset.lookstatus
+import bmaya.core.asset.publishing
 import bmaya.core.asset.textures
 import bmaya.core.log
 import bmaya.core.prompts
@@ -134,6 +135,9 @@ def save_skeleton(asset_id: str, skeleton: str = DEFAULT_NAME, joints: list[str]
     bmaya.maya.assethandlers.register()
     path = bmaya.core.asset.handlers.save(asset, "skeleton", skeleton, joints=joints)
     bmaya.core.log.info(f"Saved the skeleton {skeleton!r} of {asset.id}: {path}")
+    for rig, changes in bmaya.core.asset.publishing.skeleton_breaking_changes(asset, skeleton).items():
+        bmaya.core.log.warning(f"The skeleton {skeleton!r} now breaks the last publish of the rig {rig!r} (RigModules D70): "
+                               + "; ".join(changes) + ". Publishing the rig needs this acknowledged.")
     return path
 
 
@@ -580,7 +584,7 @@ def _log_look_status(look: str, info: rigmodules.query.RigInfo, status: bmaya.co
     warning too, with what to do."""
     for mesh in status.meshes:
         if mesh.result != bmaya.core.asset.lookstatus.LOADED:
-            bmaya.core.log.warning(f"The look {look!r}: {mesh.mesh_name} was {mesh.result}. " + " ".join(f"{reason}." for reason in mesh.reasons)
+            bmaya.core.log.warning(f"The look {look!r}: {mesh.mesh_name} was {mesh.result}. " + " ".join(f"{reason[:1].upper()}{reason[1:]}." for reason in mesh.reasons)
                                    + " Skin it, then Save Skin Weights.")
     stale = [mesh.mesh_name for mesh in status.meshes if mesh.stale_skeleton]
     if stale:
@@ -775,6 +779,43 @@ def save_skin_weights(node: str, look: str | None = None,
 def _skinned_mesh_ids(info: rigmodules.query.RigInfo) -> set[str]:
     """The meshIds of the meshes skinned in the rig's namespace: the ones a weight save writes."""
     return {rigmodules.skinweights.get_mesh_id(mesh) for mesh in rigmodules.skinweights.get_skinned_meshes(info.namespace)}
+
+
+def publish_rig(asset_id: str, rig: str, prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
+    """Publishes the rig of the asset (RigModules D70): a new publish folder with copies of its inputs. A rig that was
+    published before is checked against that publish, its baseline, and a skeleton that removed a joint or changed a
+    parent, name, rest or rotate order is listed and needs the user to accept it. A rig with no publish is a draft and
+    is never refused. Returns the folder, or None when the user declined."""
+    asset = require_asset(asset_id)
+    changes = bmaya.core.asset.publishing.rig_breaking_changes(asset, rig)
+    if changes and not _prompter(prompter).confirm(
+            "Publish Rig", f"The skeleton of {rig!r} breaks the last publish. Animation, other rigs and exports may depend on it:\n"
+            + "\n".join(changes), accept="Publish Anyway"):
+        return None
+    scene_rig = next((info for info in rigmodules.query.get_rigs() if info.asset_id == asset.id and info.rig_name == rig), None)
+    data = {"pluginVersion": scene_rig.plugin_version, "rigVersion": scene_rig.rig_version} if scene_rig else {}
+    folder = bmaya.core.asset.publishing.publish_rig(asset, rig, acknowledged=True, data=data)
+    bmaya.core.log.info(f"Published the rig {rig!r} of {asset.id}: {folder}")
+    return folder
+
+
+def publish_look(rig_root: str, look: str | None = None) -> str:
+    """Publishes a look of the rig's asset from the rig in the scene (RigModules D70). The rig must wear the look, and
+    every mesh must read as loaded and not stale in the look status: a mesh that was folded, bound rigid or saved from
+    another skeleton blocks the publish until its weights are saved (or skinned and saved). Raises AssetError naming
+    every blocker, with nothing written. look is the rig's look when left out. Returns the folder."""
+    info = rigmodules.query.get_rig_info(rig_root)
+    asset = require_asset(info.asset_id)
+    look = look or (info.look.name if info.look else None)
+    if look is None:
+        raise bmaya.core.asset.AssetError(f"The rig {info.rig_name!r} wears no look, so there is none to publish.")
+    blockers = bmaya.core.asset.publishing.look_blockers(get_look_status(rig_root), info.look.name if info.look else None, look)
+    if blockers:
+        raise bmaya.core.asset.AssetError(f"The look {look!r} of {asset.id} can't be published: " + " ".join(blockers))
+    folder = bmaya.core.asset.publishing.publish_look(
+        asset, look, {"rig": info.rig_name, "skeletonHash": info.skeleton_hash, "pluginVersion": info.plugin_version})
+    bmaya.core.log.info(f"Published the look {look!r} of {asset.id}: {folder}")
+    return folder
 
 
 def _warn_unsaved_weights(folder: str, info: rigmodules.query.RigInfo) -> None:

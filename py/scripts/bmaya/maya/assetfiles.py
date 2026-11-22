@@ -24,6 +24,7 @@ import bmaya.core.asset
 import bmaya.core.asset.context
 import bmaya.core.asset.handlers
 import bmaya.core.asset.lookstatus
+import bmaya.core.asset.publishing
 import bmaya.core.asset.textures
 import bmaya.core.asset.versions
 import bmaya.core.log
@@ -302,6 +303,7 @@ class AssetFilesModel:
         self.rows: list[FileRow] = []
         self.message = ""
         self.rig_root: str | None = None
+        self.breaking: dict[str, list[str]] = {}   # per rig of the asset: what the saved skeleton breaks of its last publish
         self.opener: Callable[[str], object] = getattr(os, "startfile", lambda path: None)   # Windows: Explorer
         self.refresh()
 
@@ -354,13 +356,14 @@ class AssetFilesModel:
     def refresh(self) -> None:
         """Reads the asset's files and the scene's rig again."""
         self.rig_root = self._find_rig_root()
-        self.rows, self.message = [], ""
+        self.rows, self.message, self.breaking = [], "", {}
         if self.context.asset_id is None:
             self.message = "Pick an asset."
         elif not self._asset_exists():
             self.message = f"{self.asset_id} has no asset.json in the projects root. Create it with New > Asset."
         else:
             self.rows = [self._row(action) for action in ACTIONS]
+            self.breaking = self._breaking_changes()
         self.changed.emit()
 
     def row(self, key: str) -> FileRow:
@@ -368,6 +371,35 @@ class AssetFilesModel:
             if row.key == key:
                 return row
         raise RuntimeError(f"There is no {key!r} file row.")
+
+    def _breaking_changes(self) -> dict[str, list[str]]:
+        """What the chosen skeleton, as saved, breaks of the last publish of each rig built on it (RigModules D70).
+        Computed from the files on every refresh, never stored."""
+        skeleton = self.context.skeleton
+        if skeleton is None:
+            return {}
+        try:
+            return bmaya.core.asset.publishing.skeleton_breaking_changes(self.asset, skeleton)
+        except (bmaya.core.asset.AssetError, bmaya.core.asset.ProjectError, OSError) as error:
+            bmaya.core.log.warning(f"The skeleton could not be checked against the last publish: {error}")
+            return {}
+
+    def publish_rig(self, prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
+        """Publishes the chosen rig. Returns the folder, or None when the user declined the breaking changes."""
+        if self.context.rig is None:
+            raise RuntimeError("The asset has no rig. Add one with New > Rig.")
+        folder = bmaya.maya.assettools.publish_rig(self.asset_id, self.context.rig, prompter)
+        self.refresh()
+        return folder
+
+    def publish_look(self) -> str:
+        """Publishes the chosen look from the rig in the scene. Raises when a mesh blocks it."""
+        blocked = self.rig_blocked()
+        if blocked:
+            raise RuntimeError(blocked)
+        folder = bmaya.maya.assettools.publish_look(self.rig_root, self.context.look)
+        self.refresh()
+        return folder
 
     def _asset_exists(self) -> bool:
         try:

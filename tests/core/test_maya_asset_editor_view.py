@@ -57,6 +57,7 @@ class FakeFiles:
         self.calls = []
         self.error = None
         self.look_status = None
+        self.breaking = {}
 
     def _record(self, *call):
         if self.error:
@@ -84,6 +85,14 @@ class FakeFiles:
     def open_folder(self, key):
         self._record("open_folder", key)
         return f"C:/projects/{key}"
+
+    def publish_rig(self, prompter=None):
+        self._record("publish_rig")
+        return "C:/projects/publish/rig"
+
+    def publish_look(self):
+        self._record("publish_look")
+        return "C:/projects/publish/look"
 
     def build_rig(self):
         self._record("build_rig")
@@ -455,6 +464,20 @@ class EditorView(unittest.TestCase):
         window.session.files.look_status = status.saved({"id2"})
         window.session.changed.emit()
         self.assertFalse(window.resave_button.isEnabled(), "every mesh reads as loaded")
+
+    def test_the_publish_buttons_call_the_files_model_and_breaking_changes_are_shown(self):
+        window = self.window()
+        window.session.files.breaking = {"game": ["[Center, b] was removed"]}
+        window.session.changed.emit()
+        self.assertFalse(window.breaking_label.isHidden())
+        self.assertIn("[Center, b] was removed", window.breaking_label.text())
+        window.publish_rig_button.click()
+        window.publish_look_button.click()
+        self.assertEqual(window.session.files.calls[-2:], [("publish_rig",), ("publish_look",)])
+        self.assertIn("Published C:/projects/publish/look", window.status_label.text())
+        window.session.files.breaking = {}
+        window.session.changed.emit()
+        self.assertTrue(window.breaking_label.isHidden())
 
     def test_the_rows_follow_the_session_changing(self):
         session = FakeSession(self.root)
