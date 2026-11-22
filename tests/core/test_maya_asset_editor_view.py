@@ -84,8 +84,8 @@ class FakeFiles:
         self._record("open_folder", key)
         return f"C:/projects/{key}"
 
-    def build_rig(self):
-        self._record("build_rig")
+    def build_rig(self, ignore_skeleton_hash=False):
+        self._record("build_rig", ignore_skeleton_hash)
         return "hero_game:rigRootModule1"
 
     def refresh(self):
@@ -403,7 +403,10 @@ class EditorView(unittest.TestCase):
     def test_build_rig_calls_the_files_model_and_is_disabled_with_no_rig(self):
         window = self.window()
         window.build_button.click()
-        self.assertIn(("build_rig",), window.session.files.calls)
+        self.assertIn(("build_rig", False), window.session.files.calls)
+        window.ignore_hash_check.setChecked(True)
+        window.build_button.click()
+        self.assertEqual(window.session.files.calls[-1], ("build_rig", True))
         window.session.context.set_asset(VILLAIN)
         window.session.changed.emit()
         self.assertFalse(window.build_button.isEnabled())
@@ -538,7 +541,7 @@ class EditorView(unittest.TestCase):
         window.add_form.editors["usage"].setEditText("spine")
         window.add_form.editors["side"].setCurrentIndex(window.add_form.editors["side"].findText("Left"))
         window.add_form.editors["skin"].click()
-        window.number_check.setChecked(True)
+        self.assertTrue(window.number_check.isChecked(), "numbering is on by default")
         window.add_markup_button.click()
         self.assertEqual(session.markup.calls, [("add_markup", "spine", "Left", True, False, True)])
 
@@ -566,6 +569,14 @@ class EditorView(unittest.TestCase):
         self.assertIn("share side Center", window.markup_warnings.text())
 
     def test_selected_controls_are_listed_and_cannot_be_edited(self):
+        window.number_check.setChecked(False)
+        session.markup.changed.emit()
+        self.assertFalse(window.number_check.isChecked(), "a choice is kept while several joints stay selected")
+        session.markup.unmarked = ["|c"]
+        session.markup.changed.emit()
+        session.markup.unmarked = ["|c", "|d"]
+        session.markup.changed.emit()
+        self.assertTrue(window.number_check.isChecked(), "ticked again when several joints are selected")
         import rigmodules.query
         from PySide6 import QtWidgets
         session = FakeSession(self.root)

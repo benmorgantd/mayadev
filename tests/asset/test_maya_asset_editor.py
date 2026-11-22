@@ -653,6 +653,18 @@ class Creating(EditorBase):
 
     def test_create_asset_works_on_it(self):
         session = self.session()
+    def test_build_rig_passes_ignore_skeleton_hash_on(self):
+        """The weights check itself is tested in test_maya_asset_tools; this covers the editor's pass-through."""
+        import unittest.mock
+        self.make_buildable_hero()
+        files = self.session(HERO).files
+        real = self.tools.build_rig
+        with unittest.mock.patch.object(self.tools, "build_rig", side_effect=real) as build:
+            files.build_rig()
+            self.cmds.file(new=True, force=True)
+            files.build_rig(ignore_skeleton_hash=True)
+        self.assertEqual([call.kwargs["ignore_skeleton_hash"] for call in build.call_args_list], [False, True])
+
         asset_id = session.create_asset(self.answers(VILLAIN, "Character"))
         self.assertEqual((asset_id, session.context.asset_id), (VILLAIN, VILLAIN))
         self.assertIn(VILLAIN, session.asset_ids)

@@ -135,13 +135,18 @@ class AssetEditor(QtWidgets.QWidget):
         row = QtWidgets.QHBoxLayout()
         self.build_button = QtWidgets.QPushButton("Build Rig")
         self.build_button.setToolTip("Build the chosen rig in the scene, wearing the chosen look")
-        self.build_button.clicked.connect(lambda: self.run(self.session.files.build_rig))
+        self.build_button.clicked.connect(
+            lambda: self.run(lambda: self.session.files.build_rig(self.ignore_hash_check.isChecked())))
         row.addWidget(self.build_button)
         row.addStretch(1)
         layout.addLayout(row)
         return tab
 
     def _build_markup_tab(self) -> QtWidgets.QWidget:
+        self.ignore_hash_check = QtWidgets.QCheckBox("Ignore skeleton changes")
+        self.ignore_hash_check.setToolTip("Load the look's weight files even though they were saved from another "
+                                          "skeleton (a joint was added, say). Build, re-skin, then save the weights.")
+        row.addWidget(self.ignore_hash_check)
         """The selected joints' markup, edited across all of them, and the selected controls' markup, shown."""
         markup = bmaya.maya.markupmodel
         tab = QtWidgets.QWidget()
@@ -179,6 +184,7 @@ class AssetEditor(QtWidgets.QWidget):
         add_layout.addWidget(self.number_check)
         self.add_markup_button = QtWidgets.QPushButton("Add Markup")
         self.add_markup_button.clicked.connect(lambda: self.run(self._add_markup))
+        self.number_check.setChecked(True)
         add_layout.addWidget(self.add_markup_button)
         layout.addWidget(self.add_box)
 
@@ -317,9 +323,12 @@ class AssetEditor(QtWidgets.QWidget):
         self.mirror_joints_button.setEnabled(bool(markup.joints))
         self.add_box.setVisible(bool(markup.unmarked))
         self.add_markup_button.setText(f"Add Markup to {len(markup.unmarked)} Joint(s)")
-        self.number_check.setEnabled(len(markup.unmarked) > 1)
-        if len(markup.unmarked) <= 1:
-            self.number_check.setChecked(False)
+        can_number = len(markup.unmarked) > 1
+        if can_number != self.number_check.isEnabled():
+            # Off for one joint, and ticked again when several are selected: numbering is the usual wish. A choice
+            # made while several stay selected is kept.
+            self.number_check.setChecked(can_number)
+        self.number_check.setEnabled(can_number)
         self.markup_warnings.setText("\n".join(markup.warnings))
         self.markup_warnings.setVisible(bool(markup.warnings))
         self.controls_model.set_items(markup.controls)
