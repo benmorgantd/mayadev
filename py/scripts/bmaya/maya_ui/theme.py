@@ -665,10 +665,11 @@ def icon(name: str, palette: Palette = DARK) -> QtGui.QIcon:
 
 def sized_icon(name: str, size: int, palette: Palette = DARK) -> QtGui.QIcon:
     """A theme icon drawn at size x size pixels (twice that on a 2x screen), for a button that shows only the icon.
-    Set the same size with button.setIconSize, so the drawing is sharp, not a 16 pixel file stretched. The pen stays
-    1.6 px wide in the 16 grid, so it is scaled with the icon."""
+    Set the same size with button.setIconSize, so the drawing is sharp, not a 16 pixel file stretched. The pen is
+    1.2 px wide in the 16 grid (a quarter thinner than the 16 pixel icons, which a larger icon does not need), and is
+    scaled with the icon."""
     field, painter_fn = _ICONS[name]
-    pixmap = QtGui.QPixmap.fromImage(_render(size, 2, getattr(palette, field), painter_fn, pen_width=1.6 * size / 16))
+    pixmap = QtGui.QPixmap.fromImage(_render(size, 2, getattr(palette, field), painter_fn, pen_width=1.2 * size / 16))
     return QtGui.QIcon(pixmap)
 
 
