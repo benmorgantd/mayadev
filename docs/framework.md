@@ -52,14 +52,22 @@ changed.emit()
 | Method | Does |
 |---|---|
 | `connect(listener)`, `disconnect(listener)` | Add or remove a listener. Connecting the same one twice calls it once |
-| `emit(*args)` | Calls every live listener in the order they connected |
+| `emit(*args)` | Calls every live listener in the order they connected. A listener that raises doesn't stop the ones after it: the first error is raised once the last has run |
 | `listeners()` | The live listeners |
 
 A Python bound method is held weakly. A function, a lambda or a built-in method (`list.append`) is held strongly.
 
 ## Events registry
 
-`bmaya.maya.eventsregistry.EventsRegistry` is a singleton that owns the session's `OpenMaya` (API 2) callbacks, so each is tracked, can be paused, and is removed on exit. It registers its own `kMayaExiting` callback that unregisters everything.
+`bmaya.maya.eventsregistry.EventsRegistry` is a singleton that owns the session's `OpenMaya` (API 2) callbacks, so each is tracked, can be paused, and is removed on exit. Every Maya callback a bmaya tool needs goes through it: nothing in bmaya calls `MMessage` or `scriptJob` directly.
+
+What it guarantees, so one tool's callback can't crash Maya or starve another tool's:
+
+- **Guarded.** An exception in a callback is logged with its traceback and never reaches Maya. The other callbacks of the event still run.
+- **No recursion.** A callback that triggers its own event (a selection callback that selects) isn't called again until it returns.
+- **Safe removal.** A callback removed or paused while any registry callback is running stops being called at once, and is taken out of Maya after the outermost callback returns, never while Maya is calling it. Replacing a key mid-dispatch calls only the new function.
+- **Exiting.** The registry holds the one `kMayaExiting` callback. The closing callbacks run from it, in the order they were added, before anything is removed. Then every callback is removed.
+- **No order.** Maya doesn't promise an order among the callbacks of one event (it differs once Qt is up), so a callback must not depend on another having run first. Share state through an `Event` instead, as the active rig tracker does.
 
 ```python
 from bmaya.maya.eventsregistry import EventsRegistry
@@ -72,17 +80,17 @@ registry.unregister("my_tool_selection")
 
 | Method | Callback registered |
 |---|---|
-| `add_maya_closing_callback(key, fn)` | Maya is about to exit |
+| `add_maya_closing_callback(key, fn)` | Maya is about to exit. Run by the registry's own exiting callback, not registered with Maya |
 | `add_maya_new_scene_callback(key, fn)`, `add_maya_open_scene_callback(key, fn)` | After a new scene, and after a scene opens |
 | `add_selection_changed_callback(key, fn)` | The selection changed |
 | `add_node_added_callback(key, fn, node_type="dependNode")` | A node of the type was added |
 | `unregister(key)`, `unregister_all()` | Remove one or every callback |
-| `pause(key)`, `resume(key)` | Suspend and restore a callback without losing its registration. Both return whether they changed anything |
-| `callbacks`, `active_callbacks` | The registered keys' data, and the keys that aren't paused |
+| `pause(key)`, `resume(key)` | Suspend and restore a callback without losing its registration. Both return whether they changed anything. A resume that Maya refuses is logged and leaves the callback paused |
+| `callbacks`, `active_callbacks` | The registered keys' entries (`id`, `type`, `user_func`, `paused`; read only), and the keys that aren't paused |
 
 Every callback has a unique string `key`. Registering a key that exists logs a warning and replaces the old callback. The categories are the `EventType` constants: `MAYA_CLOSING`, `NODE_ADDED`, `SELECTION_CHANGED`, `SCENE_NEW`, `SCENE_OPEN`.
 
-`@pause_callbacks([EventType.NODE_ADDED])` pauses every callback of the listed categories while the decorated function runs and resumes them in a `finally`, so an error can't leave a callback paused. Use it around code that makes many nodes.
+`@pause_callbacks([EventType.NODE_ADDED])` pauses every callback of the listed categories while the decorated function runs and resumes them in a `finally`, so an error can't leave a callback paused, and one failed resume doesn't stop the rest. Use it around code that makes many nodes.
 
 `bmaya.maya.activerig.ActiveRigTracker` is the main client ([`tools.md`](tools.md#the-active-rig)).
 

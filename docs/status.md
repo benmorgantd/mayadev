@@ -68,13 +68,14 @@ The two guides under `py/scripts/docs/guides/` predate this folder:
 |---|---|
 | `bmaya.core.asset` | `tests/asset/test_asset_model.py` (44 tests) and `test_asset_animproperties.py` (16): plain Python |
 | Layer rules | `tests/core/test_core_layers.py` (7 tests): plain Python, reads the source |
-| Logger, prompts, `Event`, progress manager | `tests/core/test_core_slots.py` (14 tests): plain Python |
+| Logger, prompts, `Event`, progress manager | `tests/core/test_core_slots.py` (15 tests): plain Python |
+| Events registry | `tests/core/test_maya_eventsregistry.py` (12 tests): mayapy on real Maya callbacks, no plugin |
 | Registration passes, reload hooks, the Qt prompter and forms | `tests/core/test_maya_ui_layer.py` (14 tests): mayapy, offscreen, no plugin |
 | Handlers, tools, active rig | `tests/asset/test_maya_*.py` (21, 51 and 9 tests): mayapy with a plugin build, or skipped |
 | Tool registry, checks, `run_tool` | `tests/core/test_core_tool_registry.py` (54 tests): plain Python |
 | Editors, `build_menus` | `tests/core/test_maya_tool_editors.py` (28 tests): mayapy, offscreen, no plugin. `build_menus` runs with the menu drawing replaced, because standalone Maya has no `MayaWindow` |
 | Menu layout and tools | `tests/rigging/rigmodules_menu` (43 tests): the layout checks run in plain Python, `check_calls` over the repo registry needs mayapy, the tool runs need the plugin |
-| Nothing | `eventsregistry`, the reload half of `devreload`, `qtbase` apart from what the editors use, `rigging/` apart from the joint menu tools, `modeling/`, `util/`, `batch/` |
+| Nothing | The reload half of `devreload`, `qtbase` apart from what the editors use, `rigging/` apart from the joint menu tools, `modeling/`, `util/`, `batch/` |
 
 ## Proposed tests
 

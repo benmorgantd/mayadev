@@ -140,6 +140,23 @@ class Events(unittest.TestCase):
         event.emit(1, "x")
         self.assertEqual(calls, [("first", (1, "x")), ("second", (1, "x"))])
 
+    def test_a_raising_listener_does_not_stop_the_others_and_the_first_error_is_raised(self):
+        event, calls = Event(), []
+
+        def broken(value):
+            raise ValueError(f"first {value}")
+
+        def also_broken(value):
+            raise KeyError("second")
+
+        event.connect(broken)
+        event.connect(calls.append)
+        event.connect(also_broken)
+        event.connect(lambda value: calls.append(value * 10))
+        with self.assertRaisesRegex(ValueError, "first 1"):
+            event.emit(1)
+        self.assertEqual(calls, [1, 10])
+
     def test_connecting_twice_calls_once_and_disconnect_removes(self):
         event, calls = Event(), []
         listener = calls.append

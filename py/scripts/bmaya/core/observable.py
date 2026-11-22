@@ -11,7 +11,7 @@ from collections.abc import Callable
 class Event:
     """A list of listeners called in the order they connected. A Python bound method is held weakly, so a closed
     view drops out without disconnecting. Anything else (a function, a lambda, a built-in method) is held
-    strongly."""
+    strongly. A listener that raises doesn't stop the ones after it."""
 
     def __init__(self) -> None:
         self._listeners: list[weakref.WeakMethod | Callable[..., None]] = []
@@ -37,8 +37,17 @@ class Event:
         return live
 
     def emit(self, *args) -> None:
+        """Calls every listener, even after one raises, so one broken view can't leave the others stale. The first
+        error is raised again once the last listener has run."""
+        error: BaseException | None = None
         for listener in self.listeners():
-            listener(*args)
+            try:
+                listener(*args)
+            except Exception as raised:
+                if error is None:
+                    error = raised
+        if error is not None:
+            raise error
 
     @staticmethod
     def _resolve(entry: weakref.WeakMethod | Callable[..., None]) -> Callable[..., None] | None:
