@@ -813,6 +813,17 @@ class Versions(TempRoot):
     def test_nothing_to_version(self):
         self.assertIsNone(versions.version(self.path("missing.json"), self.root))
 
+    def test_version_if_changed_skips_a_file_that_is_the_newest_copy(self):
+        self.assertIsNone(versions.version_if_changed(self.path("missing.json"), self.root))
+        self.write(self.path(), "one")
+        self.assertTrue(versions.version_if_changed(self.path(), self.root).endswith("shapes.v001.json"))
+        self.assertIsNone(versions.version_if_changed(self.path(), self.root), "unchanged since the newest copy")
+        self.write(self.path(), "two")
+        self.assertTrue(versions.version_if_changed(self.path(), self.root).endswith("shapes.v002.json"))
+        self.write(self.path(), "one")
+        self.assertTrue(versions.version_if_changed(self.path(), self.root).endswith("shapes.v003.json"),
+                        "only the newest copy counts: going back to an older state is a change")
+
     def test_copies_go_outside_the_workspace(self):
         self.write(self.path(), "one")
         copy = versions.version(self.path(), self.root)
@@ -936,6 +947,21 @@ class Handlers(TempRoot):
         self.assertEqual([number for number, _ in found], [1, 2])
         self.assertEqual(self.read(found[1][1]), "second", "the replaced file is version 2, so the restore is undoable")
         self.assertEqual(self.source_control.calls, [("checkout", path)])
+
+    def test_save_restore_and_load_emit_changed_with_the_file_type_and_a_failure_does_not(self):
+        seen = []
+        handlers.changed.connect(seen.append)
+        self.addCleanup(handlers.changed.disconnect, seen.append)
+        handlers.save(self.hero, "shapes", "body", text="first")
+        handlers.save(self.hero, "shapes", "body", text="second")
+        handlers.restore(self.hero, "shapes", "body", 1)
+        handlers.load(self.hero, "shapes", "body")
+        self.assertEqual(seen, ["shapes"] * 4)
+        with self.assertRaises(ValueError):
+            handlers.restore(self.hero, "shapes", "body", 9)
+        with self.assertRaises(FileNotFoundError):
+            handlers.load(self.hero, "shapes", "missing")
+        self.assertEqual(len(seen), 4)
 
     def test_restore_of_an_unknown_version_changes_nothing(self):
         path = handlers.save(self.hero, "shapes", "body", text="first")

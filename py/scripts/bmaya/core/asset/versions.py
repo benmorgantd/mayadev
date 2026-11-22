@@ -82,6 +82,18 @@ def version(path: str, root: str) -> str | None:
     return target
 
 
+def version_if_changed(path: str, root: str) -> str | None:
+    """version(), unless path is a file that is byte for byte the newest copy already. Returns the new copy, or None
+    when there was nothing to copy or nothing new. For a file about to be edited by hand, so its state before the edit
+    is kept without a copy for every look at it."""
+    existing = list_versions(path, root)
+    if existing and os.path.isfile(path) and os.path.isfile(existing[-1][1]):
+        with open(path, "rb") as current, open(existing[-1][1], "rb") as newest:
+            if current.read() == newest.read():   # not filecmp: it caches by size and time, which an edit can keep
+                return None
+    return version(path, root)
+
+
 def find_version(path: str, root: str, number: int) -> str:
     """The copy that is version number of path. Raises ValueError for a number path has no copy of, naming the ones it
     has."""

@@ -12,8 +12,14 @@ from __future__ import annotations
 
 import os
 
+import bmaya.core.observable
+
 from . import sourcecontrol, versions
 from .asset import Asset
+
+# Emits the file type after every save, restore and load, so a tool that shows the files can read them again
+# without the code that saved or loaded knowing about it. bmaya.maya.assethandlers turns it into a Maya user event.
+changed = bmaya.core.observable.Event()
 
 
 class FileHandler:
@@ -59,6 +65,7 @@ def save(asset: Asset, file_type: str, owner: str | None = None, **context) -> s
     handler.save(asset, path, owner=owner, **context)
     if not existed:
         sourcecontrol.current().add(path)
+    changed.emit(file_type)
     return path
 
 
@@ -76,6 +83,7 @@ def restore(asset: Asset, file_type: str, owner: str | None, number: int) -> str
     versions.restore(path, asset.root, number)
     if not existed:
         sourcecontrol.current().add(path)
+    changed.emit(file_type)
     return path
 
 
@@ -85,4 +93,6 @@ def load(asset: Asset, file_type: str, owner: str | None = None, **context) -> o
     path = asset.path(file_type, owner)
     if not os.path.exists(path):
         raise FileNotFoundError(f"{asset.id} has no {file_type} file at {path}.")
-    return handler.load(asset, path, owner=owner, **context)
+    loaded = handler.load(asset, path, owner=owner, **context)
+    changed.emit(file_type)
+    return loaded

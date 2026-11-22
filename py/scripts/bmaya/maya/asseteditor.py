@@ -7,6 +7,10 @@ and its listeners. Closing is the only thing that clears the asset: a new, opene
 
 Maya callbacks it registers, all under keys that carry the session's id:
     new scene, open scene   read the scene-derived state again (the rigs, the file rows). The asset stays.
+    rig built               read the scene-derived state again, like a new scene (the user event assettools.build_rig
+                            posts, eventsregistry.RIG_BUILT_EVENT)
+    files changed           the same, after any asset file is saved, restored or loaded, from the editor or not (the user
+                            event bmaya.maya.assethandlers posts from the core handlers' changed event)
     maya exiting            close the session
     selection changed       only while a view is showing (watch_selection), for the markup and shape models
 """
@@ -26,11 +30,11 @@ import bmaya.maya.activerig
 import bmaya.maya.assetfiles
 import bmaya.maya.assettools
 import bmaya.maya.markupmodel
+import bmaya.maya.namingmodel
 import bmaya.maya.shapemodel
 import bmaya.maya.eventsregistry
 
 LAST_ASSET_OPTION = "bmayaAssetEditorLastAsset"
-import bmaya.maya.namingmodel
 CALLBACK_PREFIX = "asset_editor"
 
 
@@ -62,6 +66,8 @@ class AssetEditorSession:
             "new": f"{CALLBACK_PREFIX}_{id(self)}_scene_new",
             "open": f"{CALLBACK_PREFIX}_{id(self)}_scene_open",
             "exit": f"{CALLBACK_PREFIX}_{id(self)}_maya_exit",
+            "rig_built": f"{CALLBACK_PREFIX}_{id(self)}_rig_built",
+            "files": f"{CALLBACK_PREFIX}_{id(self)}_files",
             "selection": f"{CALLBACK_PREFIX}_{id(self)}_selection",
         }
 
@@ -70,14 +76,18 @@ class AssetEditorSession:
         self.files = bmaya.maya.assetfiles.AssetFilesModel(self.context)
         self.markup = bmaya.maya.markupmodel.MarkupModel(self.selection_changed)
         self.shapes = bmaya.maya.shapemodel.ShapeModel(self.selection_changed)
+        self.naming = bmaya.maya.namingmodel.NamingModel(self.selection_changed)
         self.context.changed.connect(self._on_context_changed)
         bmaya.maya.activerig.ActiveRigTracker.changed.connect(self._on_active_rig_changed)
 
         registry = bmaya.maya.eventsregistry.EventsRegistry()
         registry.add_maya_new_scene_callback(self._keys["new"], self._on_scene_changed)
         registry.add_maya_open_scene_callback(self._keys["open"], self._on_scene_changed)
-        self.naming = bmaya.maya.namingmodel.NamingModel(self.selection_changed)
         registry.add_maya_closing_callback(self._keys["exit"], self._on_maya_exiting)
+        registry.add_user_event_callback(self._keys["rig_built"], bmaya.maya.eventsregistry.RIG_BUILT_EVENT,
+                                         self._on_scene_changed)
+        registry.add_user_event_callback(self._keys["files"], bmaya.maya.eventsregistry.ASSET_FILES_CHANGED_EVENT,
+                                         self._on_scene_changed)
         self.refresh_asset_ids()
 
     # ---- life ------------------------------------------------------------------------------

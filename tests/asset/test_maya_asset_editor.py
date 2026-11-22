@@ -177,6 +177,32 @@ class Context(EditorBase):
         self.assertIsNone(session.files.rig_root)
         self.assertTrue(calls)
 
+    def test_building_a_rig_reads_the_scene_again(self):
+        self.make_buildable_hero()
+        session = self.session(HERO)
+        self.assertIsNone(session.files.rig_root)
+        calls = []
+        session.changed.connect(lambda: calls.append(1))
+        self.tools.build_rig(HERO, "game")   # not through the editor's own button
+        self.assertIsNotNone(session.files.rig_root)
+        self.assertTrue(calls)
+
+    def test_saving_and_loading_a_file_outside_the_editor_reads_the_files_again(self):
+        self.tools.new_rig(HERO, self.template)
+        joints = self.make_skeleton()
+        session = self.session(HERO)
+        self.assertFalse(session.files.row("skeleton").exists)
+        calls = []
+        session.changed.connect(lambda: calls.append(1))
+        self.tools.save_skeleton(HERO, joints=joints)   # not through the editor's own button
+        self.assertTrue(session.files.row("skeleton").exists)
+        self.assertTrue(calls)
+        del calls[:]
+        self.cmds.file(new=True, force=True)
+        del calls[:]
+        self.tools.load_skeleton(HERO)
+        self.assertTrue(calls)
+
     def test_another_assets_active_rig_is_shown_but_not_followed(self):
         self.make_buildable_hero()
         self.asset_module.Asset.create(VILLAIN, "Character")
@@ -228,7 +254,7 @@ class Closing(EditorBase):
     def test_close_removes_every_callback_and_clears_the_context(self):
         session = self.session(HERO)
         session.watch_selection(True)
-        self.assertEqual(len(self.callback_keys()), 4)
+        self.assertEqual(len(self.callback_keys()), 6)
         session.close()
         self.assertEqual(self.callback_keys(), [])
         self.assertIsNone(self.context_module.AssetContext.current())
@@ -264,23 +290,23 @@ class Closing(EditorBase):
 
     def test_two_sessions_keep_their_own_callbacks(self):
         first, second = self.session(HERO), self.session(HERO)
-        self.assertEqual(len(self.callback_keys()), 6)
+        self.assertEqual(len(self.callback_keys()), 10)
         first.close()
-        self.assertEqual(len(self.callback_keys()), 3)
+        self.assertEqual(len(self.callback_keys()), 5)
         self.assertIs(self.context_module.AssetContext.current(), second.context)
 
     def test_the_selection_callback_exists_only_while_watching(self):
         session = self.session(HERO)
-        self.assertEqual(len(self.callback_keys()), 3)
+        self.assertEqual(len(self.callback_keys()), 5)
         session.watch_selection(True)
         session.watch_selection(True)
-        self.assertEqual(len(self.callback_keys()), 4)
+        self.assertEqual(len(self.callback_keys()), 6)
         selections = []
         session.selection_changed.connect(lambda: selections.append(1))
         self.cmds.polyCube()
         self.assertTrue(selections)
         session.watch_selection(False)
-        self.assertEqual(len(self.callback_keys()), 3)
+        self.assertEqual(len(self.callback_keys()), 5)
 
     def test_watching_a_closed_session_registers_nothing(self):
         session = self.session(HERO)
@@ -298,7 +324,7 @@ class FileRows(EditorBase):
         skeleton = files.row("skeleton")
         self.assertEqual((skeleton.owner, skeleton.exists, skeleton.versions), ("default", False, 0))
         self.assertTrue(files.row("template").exists)
-        self.assertEqual((files.row("template").saves, files.row("template").loads), (False, False))
+        self.assertEqual((files.row("template").saves, files.row("template").loads), (True, True))
 
     def test_a_missing_asset_has_a_message_and_no_rows(self):
         files = self.session("shooter\\main\\characters\\ghost").files
@@ -437,13 +463,74 @@ class FileRows(EditorBase):
             pass
         self.assertEqual(self.asset_module.handlers.load(hero, "textures", look), [os.path.join(path, "a.png")])
 
-    def test_a_template_has_no_save_or_load(self):
+    def template_files(self):
+        """The files model on a hero with one rig, whose opener records the paths it was asked to open."""
         self.tools.new_rig(HERO, self.template)
         files = self.session(HERO).files
-        with self.assertRaisesRegex(RuntimeError, "not saved from here"):
+        files.opened = []
+        files.opener = files.opened.append
+        return files
+
+    def edit_template(self, files, **changes):
+        path = files.row("template").path
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+        data.update(changes)
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+
+    def test_loading_a_template_opens_it_in_the_os_application_and_keeps_its_state_as_a_version(self):
+        files = self.template_files()
+        path = files.row("template").path
+        files.load("template")
+        self.assertEqual(files.opened, [path])
+        self.assertEqual(files.row("template").versions, 1)
+        files.load("template")
+        self.assertEqual(files.row("template").versions, 1, "looking again at an unchanged file adds no copy")
+
+    def test_saving_an_edited_template_keeps_a_version_and_restoring_it_brings_the_old_one_back(self):
+        files = self.template_files()
+        files.load("template")   # the state before the hand edit: version 1
+        self.edit_template(files, marker="edited")
+        prompter = self.answers()
+        path = files.save("template", prompter)
+        self.assertEqual(path, files.row("template").path)
+        self.assertEqual(prompter.asked, [], "a template Save asks nothing")
+        self.assertEqual(files.row("template").versions, 2)
+        with open(path, encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle)["marker"], "edited")
+        files.restore("template", self.answers(self.asset_module_restore_choice(1)))
+        with open(path, encoding="utf-8") as handle:
+            self.assertNotIn("marker", json.load(handle))
+
+    def test_saving_a_template_sets_its_rig_name(self):
+        files = self.template_files()
+        self.edit_template(files, rigName="somethingElse")
+        path = files.save("template", self.answers())
+        with open(path, encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle)["rigName"], files.context.rig)
+
+    def test_saving_a_template_that_is_not_json_changes_nothing_and_makes_no_version(self):
+        files = self.template_files()
+        path = files.row("template").path
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write("{ not json")
+        with self.assertRaisesRegex(ValueError, "not valid JSON"):
             files.save("template", self.answers())
-        with self.assertRaisesRegex(RuntimeError, "not loaded from here"):
+        with open(path, encoding="utf-8") as handle:
+            self.assertEqual(handle.read(), "{ not json")
+        self.assertEqual(files.row("template").versions, 0)
+
+    def test_a_template_row_is_blocked_without_a_rig(self):
+        files = self.session(HERO).files
+        self.assertIn("no rig", files.row("template").save_blocked)
+        self.assertIn("no rig", files.row("template").load_blocked)
+        with self.assertRaisesRegex(RuntimeError, "no rig"):
             files.load("template")
+
+    def asset_module_restore_choice(self, version):
+        import bmaya.maya.assetfiles
+        return bmaya.maya.assetfiles.RestoreChoice(version=version)
 
 
 class SkeletonFiles(EditorBase):
@@ -566,6 +653,18 @@ class RigFiles(EditorBase):
         self.assertEqual(self.cmds.ls(selection=True), [rig_root])
         self.assertEqual((files.row("rig").save_blocked, files.row("shapes").save_blocked), ("", ""))
 
+    def test_build_rig_passes_ignore_skeleton_hash_on(self):
+        """The weights check itself is tested in test_maya_asset_tools; this covers the editor's pass-through."""
+        import unittest.mock
+        self.make_buildable_hero()
+        files = self.session(HERO).files
+        real = self.tools.build_rig
+        with unittest.mock.patch.object(self.tools, "build_rig", side_effect=real) as build:
+            files.build_rig()
+            self.cmds.file(new=True, force=True)
+            files.build_rig(ignore_skeleton_hash=True)
+        self.assertEqual([call.kwargs["ignore_skeleton_hash"] for call in build.call_args_list], [False, True])
+
     def test_build_rig_without_a_rig_says_so(self):
         with self.assertRaisesRegex(RuntimeError, "no rig"):
             self.session(HERO).files.build_rig()
@@ -653,18 +752,6 @@ class Creating(EditorBase):
 
     def test_create_asset_works_on_it(self):
         session = self.session()
-    def test_build_rig_passes_ignore_skeleton_hash_on(self):
-        """The weights check itself is tested in test_maya_asset_tools; this covers the editor's pass-through."""
-        import unittest.mock
-        self.make_buildable_hero()
-        files = self.session(HERO).files
-        real = self.tools.build_rig
-        with unittest.mock.patch.object(self.tools, "build_rig", side_effect=real) as build:
-            files.build_rig()
-            self.cmds.file(new=True, force=True)
-            files.build_rig(ignore_skeleton_hash=True)
-        self.assertEqual([call.kwargs["ignore_skeleton_hash"] for call in build.call_args_list], [False, True])
-
         asset_id = session.create_asset(self.answers(VILLAIN, "Character"))
         self.assertEqual((asset_id, session.context.asset_id), (VILLAIN, VILLAIN))
         self.assertIn(VILLAIN, session.asset_ids)
@@ -1244,8 +1331,6 @@ class Shapes(EditorBase):
         self.assertTrue(self.cmds.getAttr(right + ".filled"))
 
 
-if __name__ == "__main__":
-    unittest.main()
 class Naming(EditorBase):
 
     def joints(self, *names):
@@ -1343,3 +1428,5 @@ class Naming(EditorBase):
         self.assertEqual(session.naming.base, "arm")
 
 
+if __name__ == "__main__":
+    unittest.main()

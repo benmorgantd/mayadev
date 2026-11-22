@@ -201,6 +201,25 @@ class RegistryTests(unittest.TestCase):
         self.cmds.createNode("transform")
         self.assertEqual(len(made), 1)
 
+    # ---- user events -------------------------------------------------------------------
+
+    def test_a_posted_user_event_calls_its_listeners_until_they_are_removed_or_paused(self):
+        calls = []
+        self.registry.add_user_event_callback("listener", "bmayaTestEvent", lambda *args: calls.append(1))
+        self.module.post_user_event("bmayaTestEvent")
+        self.assertEqual(calls, [1])
+        self.registry.pause("listener")
+        self.module.post_user_event("bmayaTestEvent")
+        self.assertEqual(calls, [1])
+        self.registry.resume("listener")
+        self.module.post_user_event("bmayaTestEvent")
+        self.registry.unregister("listener")
+        self.module.post_user_event("bmayaTestEvent")
+        self.assertEqual(calls, [1, 1])
+
+    def test_posting_an_event_nobody_listens_to_is_harmless(self):
+        self.module.post_user_event("bmayaNobodyListens")
+
     # ---- exiting -----------------------------------------------------------------------
 
     def test_closing_callbacks_run_in_order_before_anything_is_removed(self):

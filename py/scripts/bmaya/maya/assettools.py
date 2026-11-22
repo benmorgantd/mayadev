@@ -45,6 +45,7 @@ from bmaya.core.prompts import ImagePath
 import bmaya.maya.activerig
 import bmaya.maya.assethandlers
 import bmaya.maya.assettextures
+import bmaya.maya.eventsregistry
 import bmaya.maya.posetools
 import bmaya.maya.skinbrush
 
@@ -178,7 +179,10 @@ def build_rig(asset_id: str, rig: str, look: str | None = None, namespace: str |
     built first with its own default look (and its own parent before it), and several raise an error that names them.
     The parent stays in the scene when the attachment fails to build. ignore_skeleton_hash is apply_look's, for this
     rig's look only. Returns the rig root."""
-    return _build_rig(asset_id, rig, look, namespace, parent_rig_root, (), ignore_skeleton_hash)
+    rig_root = _build_rig(asset_id, rig, look, namespace, parent_rig_root, (), ignore_skeleton_hash)
+    # Posted once for the whole build, a built parent included, so a listener (the Asset Editor) reads the scene once.
+    bmaya.maya.eventsregistry.post_user_event(bmaya.maya.eventsregistry.RIG_BUILT_EVENT)
+    return rig_root
 
 
 def _build_rig(asset_id: str, rig: str, look: str | None, namespace: str | None, parent_rig_root: str | None,
@@ -296,10 +300,10 @@ def apply_look(node: str, look: str, ignore_skeleton_hash: bool = False) -> str 
     - a weight file with no mesh in the model is skipped, with a warning that points to load_skin_weights_by_name.
     A look whose model has no marked mesh is imported that way and records no look, and None is returned.
 
-    A weight file saved from another skeleton (its skeletonHash is not the rig's, as after joints were added) raises
-    AssetError before the scene is touched, naming the files. ignore_skeleton_hash=True loads them anyway with a
-    warning; save the weights again afterwards so the files carry the new hash. A failed swap deletes everything the
-    model import created. Raises AssetError for a look the asset doesn't have, one that doesn't fit the rig's skeleton,
+    A weight file that would load but was saved from another skeleton (its skeletonHash is not the rig's, as after
+    joints were added) raises AssetError, naming the files. A file with no mesh in the model is skipped, so its hash
+    is not checked. ignore_skeleton_hash=True loads them anyway with a warning; save the weights again afterwards so
+    the files carry the new hash. A failed swap, this one included, deletes everything the model import created. Raises AssetError for a look the asset doesn't have, one that doesn't fit the rig's skeleton,
     or one with no model.
 
     A look can name several skeletons (a body and its attachment, RigModules D55), with one model and one weights
@@ -323,8 +327,6 @@ def apply_look(node: str, look: str, ignore_skeleton_hash: bool = False) -> str 
     spans = len(asset.look(look).skeletons) > 1
     if spans and files:
         files = _weight_files_of_rig(asset, look, info, files)
-    elif files:
-        _check_weight_skeleton(asset, look, info, files, ignore_skeleton_hash)
     file_ids = {rigmodules.skinweights.read_file_mesh_id(path): path for path in files}
 
     bmaya.maya.assethandlers.register()
@@ -340,6 +342,10 @@ def apply_look(node: str, look: str, ignore_skeleton_hash: bool = False) -> str 
             weighted = [mesh_id for mesh_id in marked if mesh_id in file_ids]
             unweighted = [mesh_id for mesh_id in marked if mesh_id not in file_ids]
             orphans = sorted(set(file_ids) - set(marked))
+            if not spans:
+                # Only the files that will load: an orphan is skipped below, so its old hash can't hurt the rig.
+                _check_weight_skeleton(asset, look, info, [file_ids[mesh_id] for mesh_id in weighted],
+                                       ignore_skeleton_hash)
             bare = []   # imported outside the look, like unmarked meshes, but with nothing to warn about
             if spans and file_ids:
                 # A marked mesh with no file of this rig's may be the other rig's, and can't be bound: it goes.
@@ -542,7 +548,7 @@ def load_textures(node: str, look: str | None = None) -> bmaya.maya.assettexture
 
 def _check_weight_skeleton(asset: bmaya.core.asset.Asset, look: str, info: rigmodules.query.RigInfo,
                            files: list[str], ignore_skeleton_hash: bool) -> None:
-    """Fails, before the scene is touched, when a look's weight files were saved from another skeleton than the rig's.
+    """Fails when weight files that are about to load were saved from another skeleton than the rig's.
     That is what adding or moving a joint does (RigModules D54: the hash covers names, parents and rests), so the
     message says so. A file with no hash is not checked here: setRigLook warns about it."""
     stale = [path for path in files
@@ -727,13 +733,34 @@ def save_skin_weights(node: str, look: str | None = None,
     handler = bmaya.maya.assethandlers.RigSkinWeightsHandler()
     if asset is None:
         folder = _ask_folder(_prompter(prompter), "Save Skin Weights: pick the weights folder")
-        return handler.save(None, folder, namespace=info.namespace) if folder else None
+        if not folder:
+            return None
+        written = handler.save(None, folder, namespace=info.namespace)
+        _warn_unsaved_weights(folder, info)
+        return written
 
     look = _require_look(asset, info.rig_name, look, _worn_look(info))
     bmaya.maya.assethandlers.register()
     path = bmaya.core.asset.handlers.save(asset, "weights", look, namespace=info.namespace)
     bmaya.core.log.info(f"Saved the skin weights of {asset.id} look {look!r}: {path}")
-    return handler.files(path)
+    written = handler.files(path)
+    _warn_unsaved_weights(path, info)
+    return written
+
+
+def _warn_unsaved_weights(folder: str, info: rigmodules.query.RigInfo) -> None:
+    """Warns about weight files in the folder that the save did not write (their mesh is not skinned in the rig) and
+    that carry another skeleton's hash: they stay stale, and fail the next load of the look. Nothing is deleted, since
+    the mesh may be skinned in another rig of a look that spans several."""
+    saved_ids = {rigmodules.skinweights.get_mesh_id(mesh) for mesh in rigmodules.skinweights.get_skinned_meshes(info.namespace)}
+    stale = [path for path in bmaya.maya.assethandlers.RigSkinWeightsHandler.files(folder)
+             if rigmodules.skinweights.read_file_mesh_id(path) not in saved_ids
+             and rigmodules.skinweights.read_file_skeleton_hash(path) not in ("", None, info.skeleton_hash)]
+    if stale:
+        bmaya.core.log.warning(
+            f"These weight files were not saved, because their meshes are not skinned in the rig {info.rig_name!r}, and "
+            f"they carry another skeleton's hash: {', '.join(os.path.basename(path) for path in stale)}. Skin the "
+            f"meshes and save again, or delete the files if they are not needed.")
 
 
 def load_skin_weights(node: str, look: str | None = None,
@@ -819,6 +846,15 @@ def smooth_skin_weights(iterations: int = 3, strength: float = 1.0) -> int:
     return changed
 
 
+def prune_to_max_influences(max_influences: int = 4) -> int:
+    """Limits every vertex of the selected skinned meshes to its `max_influences` largest weights and normalizes what
+    is left (RigModules `pruneToMaxInfluences`). Locked influences are pruned like any other, and the skinCluster's own
+    maximum is not changed. One undo step. Returns the number of vertices that changed."""
+    changed = cmds.pruneToMaxInfluences(maxInfluences=max_influences)
+    bmaya.core.log.info(f"Pruned {changed} vertex(es) to at most {max_influences} influences.")
+    return changed
+
+
 def activate_skin_brush(operation: str | None = None, radius: float | None = None, strength: float | None = None) -> str:
     """Makes the RigModules skin brush the active tool and returns the context's name (RigModules D65). Drag over the
     selected skinned meshes to paint: the weights under the brush are smoothed, the radius is a length over the mesh
@@ -846,15 +882,6 @@ def new_project_interactive(prompter: bmaya.core.prompts.Prompter | None = None)
 
 
 def new_asset_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
-def prune_to_max_influences(max_influences: int = 4) -> int:
-    """Limits every vertex of the selected skinned meshes to its `max_influences` largest weights and normalizes what
-    is left (RigModules `pruneToMaxInfluences`). Locked influences are pruned like any other, and the skinCluster's own
-    maximum is not changed. One undo step. Returns the number of vertices that changed."""
-    changed = cmds.pruneToMaxInfluences(maxInfluences=max_influences)
-    bmaya.core.log.info(f"Pruned {changed} vertex(es) to at most {max_influences} influences.")
-    return changed
-
-
     """Asks for the new asset's id and type and makes it. Returns the id, or None when cancelled. It never offers the
     Asset Editor's asset: the id is a new one."""
     prompter = _prompter(prompter)

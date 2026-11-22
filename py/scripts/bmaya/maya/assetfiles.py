@@ -13,6 +13,7 @@ shaders, tracked high-res files) is a FileAction and a handler, with no change t
 from __future__ import annotations
 
 import dataclasses
+import json
 import os
 from collections.abc import Callable
 
@@ -76,6 +77,7 @@ class FileAction:
     loads = False
     loads_by_name = False   # has load_by_name, offered on the row's right-click menu
     save_hint = ""   # what Save writes, shown in the button's tool tip
+    confirms = True   # Save asks before it replaces a file that exists
     imports_images = False   # the row's menu has Import Textures...
     opens_folder = False   # a folder of files the artist adds by hand: the row's menu has Open Folder
 
@@ -243,9 +245,43 @@ class ShapesAction(FileAction):
 
 
 class TemplateAction(FileAction):
-    """The rig's template: shown for its status. It is written by the template tool, so there is no Save here."""
+    """The rig's template, edited by hand in the OS's default application for .json files. Load keeps a local version
+    of the file as it is (unless that is already the newest) and opens it there. Save, after the edit, checks that it
+    is a template and writes it through the template handler, which keeps a local version and sets its rigName. So
+    every state before a hand edit and every saved edit can be restored. A template is not in the scene, so Load
+    changes nothing there and Save asks nothing."""
 
-    key, label, owner_kind = "template", "Template", "rig"
+    key, label, owner_kind, saves, loads = "template", "Template", "rig", True, True
+    confirms = False
+    save_hint = "Checks the hand-edited template and keeps a local version of it"
+
+    def _blocked(self, model):
+        if model.context.rig is None:
+            return "The asset has no rig. Add one with New > Rig."
+        return "" if model.file_exists(self) else "The rig has no template file."
+
+    def save_blocked(self, model):
+        return self._blocked(model)
+
+    def load_blocked(self, model):
+        return self._blocked(model)
+
+    def save(self, model):
+        path = self.path(model, model.owner(self))
+        try:
+            with open(path, encoding="utf-8") as handle:
+                data = json.load(handle)
+        except ValueError as error:   # JSONDecodeError and UnicodeDecodeError. Checked before a version is made
+            raise ValueError(f"{path} is not valid JSON, so it was not saved: {error}") from error
+        if not isinstance(data, dict):
+            raise ValueError(f"{path} is not a rig template: it is not a JSON object, so it was not saved.")
+        bmaya.maya.assethandlers.register()
+        return bmaya.core.asset.handlers.save(model.asset, "template", model.owner(self), source=path)
+
+    def load(self, model):
+        path = self.path(model, model.owner(self))
+        bmaya.core.asset.versions.version_if_changed(path, model.asset.root)
+        model.opener(path)
 
 
 ACTIONS: tuple[FileAction, ...] = (SkeletonAction(), ModelAction(), WeightsAction(), TexturesAction(), RigSceneAction(),
@@ -377,7 +413,7 @@ class AssetFilesModel:
         if row.save_blocked:
             raise RuntimeError(row.save_blocked)
         prompter = prompter or bmaya.core.prompts.current()
-        if row.exists and not prompter.confirm(f"Save {row.label}", f"The {row.label.lower()} of {self.asset_id} "
+        if row.exists and action.confirms and not prompter.confirm(f"Save {row.label}", f"The {row.label.lower()} of {self.asset_id} "
                                                "exists. Replace it? The old file is kept as a local version.",
                                                accept="Replace"):
             return None

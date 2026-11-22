@@ -37,6 +37,7 @@ import rigmodules.skinweights
 
 import bmaya.core.asset.textures
 import bmaya.core.log
+import bmaya.maya.eventsregistry
 
 from bmaya.core.asset import animproperties, handlers, library, sourcecontrol, versions
 from bmaya.core.asset.asset import Asset
@@ -646,7 +647,12 @@ def _require_rig_root(rig_root: str | None) -> str:
     return rig_root
 
 
+def _post_files_changed(file_type: str) -> None:
+    bmaya.maya.eventsregistry.post_user_event(bmaya.maya.eventsregistry.ASSET_FILES_CHANGED_EVENT)
+
+
 def register() -> None:
+    handlers.changed.connect(_post_files_changed)   # connecting twice is a no-op
     handlers.register("skeleton", RigSkeletonHandler())
     handlers.register("model", ModelHandler())
     handlers.register("rig", MayaSceneHandler())

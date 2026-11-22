@@ -569,6 +569,14 @@ class EditorView(unittest.TestCase):
         self.assertTrue(window.number_check.isChecked(), "numbering is on by default")
         window.add_markup_button.click()
         self.assertEqual(session.markup.calls, [("add_markup", "spine", "Left", True, False, True)])
+        window.number_check.setChecked(False)
+        session.markup.changed.emit()
+        self.assertFalse(window.number_check.isChecked(), "a choice is kept while several joints stay selected")
+        session.markup.unmarked = ["|c"]
+        session.markup.changed.emit()
+        session.markup.unmarked = ["|c", "|d"]
+        session.markup.changed.emit()
+        self.assertTrue(window.number_check.isChecked(), "ticked again when several joints are selected")
 
     def test_the_number_box_is_off_for_one_joint(self):
         window = self.window()
@@ -594,14 +602,6 @@ class EditorView(unittest.TestCase):
         self.assertIn("share side Center", window.markup_warnings.text())
 
     def test_selected_controls_are_listed_and_cannot_be_edited(self):
-        window.number_check.setChecked(False)
-        session.markup.changed.emit()
-        self.assertFalse(window.number_check.isChecked(), "a choice is kept while several joints stay selected")
-        session.markup.unmarked = ["|c"]
-        session.markup.changed.emit()
-        session.markup.unmarked = ["|c", "|d"]
-        session.markup.changed.emit()
-        self.assertTrue(window.number_check.isChecked(), "ticked again when several joints are selected")
         import rigmodules.query
         from PySide6 import QtWidgets
         session = FakeSession(self.root)

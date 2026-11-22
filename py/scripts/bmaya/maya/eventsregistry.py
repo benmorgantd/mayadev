@@ -31,6 +31,21 @@ class EventType(object):
     SELECTION_CHANGED = "selection_changed"
     SCENE_NEW = "scene_new"
     SCENE_OPEN = "scene_open"
+    USER_EVENT = "user_event"
+
+
+# User events (MUserEventMessage) that bmaya tools post for each other. A name here is public: a listener
+# registers by it.
+RIG_BUILT_EVENT = "bmayaRigBuilt"   # a rig was built into the scene by assettools.build_rig
+ASSET_FILES_CHANGED_EVENT = "bmayaAssetFilesChanged"   # an asset file was saved, restored or loaded (core handlers)
+
+
+def post_user_event(event: str) -> None:
+    """Posts a user event, registering its name first when nothing has. Listeners added with
+    add_user_event_callback run before this returns."""
+    if not om.MUserEventMessage.isUserEvent(event):
+        om.MUserEventMessage.registerUserEvent(event)
+    om.MUserEventMessage.postUserEvent(event)
 
 
 class EventsRegistry(object):
@@ -158,6 +173,15 @@ class EventsRegistry(object):
         return self._register_core(
             key, EventType.SELECTION_CHANGED, callback_func,
             lambda guarded: om.MEventMessage.addEventCallback("SelectionChanged", guarded))
+
+    def add_user_event_callback(self, key, event, callback_func):
+        """MUserEventMessage: a bmaya tool posted the user event (post_user_event). The event is registered with
+        Maya here when it isn't yet, so a listener may be added before anything posts."""
+        if not om.MUserEventMessage.isUserEvent(event):
+            om.MUserEventMessage.registerUserEvent(event)
+        return self._register_core(
+            key, EventType.USER_EVENT, callback_func,
+            lambda guarded: om.MUserEventMessage.addUserEventCallback(event, guarded))
 
     def add_node_added_callback(self, key, callback_func, node_type="dependNode"):
         """MDGMessage: a node of node_type was added to the dependency graph."""

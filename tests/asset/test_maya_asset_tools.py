@@ -1042,11 +1042,48 @@ class AssetTools(unittest.TestCase):
             self.tools.apply_look(rig_root, "winter")
         self.assertEqual(self.look_of(rig_root).name, "default")
         self.assertTrue(cmds.objExists("hero_game:box_geo"))
-        self.assertFalse(cmds.objExists("hero_game:ball_geo"), "checked before the model is imported")
+        self.assertFalse(cmds.objExists("hero_game:ball_geo"), "the failed swap deletes what the import made")
 
         self.tools.apply_look(rig_root, "winter", ignore_skeleton_hash=True)
         self.assertEqual(self.look_of(rig_root).name, "winter")
         self.assertTrue(cmds.ls(cmds.listHistory("hero_game:ball_geo"), type="skinCluster"))
+
+    def test_apply_look_ignores_the_hash_of_a_weight_file_with_no_mesh_in_the_model(self):
+        cmds = self.cmds
+        self.make_two_looks()
+        folder = os.path.join(self.hero.folder, "looks", "winter", "weights")
+        data = self.read_json(os.path.join(folder, "ball_geo.json"))
+        data["skeletonHash"] = "0000000000000000"
+        data["meshId"] = "no-such-mesh"
+        data["meshName"] = "L_Blink"
+        with open(os.path.join(folder, "L_Blink.json"), "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        with self.assertLogs("bmaya", level="WARNING") as logs:
+            self.tools.apply_look(rig_root, "winter")
+        self.assertIn("L_Blink.json", "\n".join(logs.output), "skipped as an orphan, with a warning")
+        self.assertEqual(self.look_of(rig_root).name, "winter")
+        self.assertTrue(cmds.ls(cmds.listHistory("hero_game:ball_geo"), type="skinCluster"))
+
+    def test_save_skin_weights_warns_about_a_stale_file_it_did_not_write(self):
+        cmds = self.cmds
+        self.tools.new_look(HERO)
+        rig_root = self.build_outside_the_asset(HERO)
+        box = self.make_box("hero")
+        cmds.setRigMeshId(box)
+        self.skin_box(box)
+        folder = os.path.join(self.hero.folder, "looks", "default", "weights")
+        files = self.tools.save_skin_weights(rig_root)
+        data = self.read_json(files[0])
+        data["skeletonHash"] = "0000000000000000"
+        data["meshId"] = "unskinned-mesh"
+        stale = os.path.join(folder, "L_Blink.json")
+        with open(stale, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+        with self.assertLogs("bmaya", level="WARNING") as logs:
+            self.tools.save_skin_weights(rig_root)
+        self.assertRegex("\n".join(logs.output), "not saved.*L_Blink.json")
+        self.assertTrue(os.path.isfile(stale), "nothing is deleted")
 
     def test_build_rig_passes_ignore_skeleton_hash_to_the_look(self):
         cmds = self.cmds

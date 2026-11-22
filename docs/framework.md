@@ -84,11 +84,12 @@ registry.unregister("my_tool_selection")
 | `add_maya_new_scene_callback(key, fn)`, `add_maya_open_scene_callback(key, fn)` | After a new scene, and after a scene opens |
 | `add_selection_changed_callback(key, fn)` | The selection changed |
 | `add_node_added_callback(key, fn, node_type="dependNode")` | A node of the type was added |
+| `add_user_event_callback(key, event, fn)` | A bmaya tool posted the user event. `post_user_event(event)` posts one. `RIG_BUILT_EVENT` is posted when `assettools.build_rig` finishes, `ASSET_FILES_CHANGED_EVENT` is posted after every asset file save, restore or load (from `bmaya.core.asset.handlers.changed`, bridged in `assethandlers.register()`). The Asset Editor listens for both to read the scene and files again |
 | `unregister(key)`, `unregister_all()` | Remove one or every callback |
 | `pause(key)`, `resume(key)` | Suspend and restore a callback without losing its registration. Both return whether they changed anything. A resume that Maya refuses is logged and leaves the callback paused |
 | `callbacks`, `active_callbacks` | The registered keys' entries (`id`, `type`, `user_func`, `paused`; read only), and the keys that aren't paused |
 
-Every callback has a unique string `key`. Registering a key that exists logs a warning and replaces the old callback. The categories are the `EventType` constants: `MAYA_CLOSING`, `NODE_ADDED`, `SELECTION_CHANGED`, `SCENE_NEW`, `SCENE_OPEN`.
+Every callback has a unique string `key`. Registering a key that exists logs a warning and replaces the old callback. The categories are the `EventType` constants: `MAYA_CLOSING`, `NODE_ADDED`, `SELECTION_CHANGED`, `SCENE_NEW`, `SCENE_OPEN`, `USER_EVENT`.
 
 `@pause_callbacks([EventType.NODE_ADDED])` pauses every callback of the listed categories while the decorated function runs and resumes them in a `finally`, so an error can't leave a callback paused, and one failed resume doesn't stop the rest. Use it around code that makes many nodes.
 

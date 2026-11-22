@@ -143,15 +143,15 @@ class AssetEditor(QtWidgets.QWidget):
         self.build_button.clicked.connect(
             lambda: self.run(lambda: self.session.files.build_rig(self.ignore_hash_check.isChecked())))
         row.addWidget(self.build_button)
+        self.ignore_hash_check = QtWidgets.QCheckBox("Ignore skeleton changes")
+        self.ignore_hash_check.setToolTip("Load the look's weight files even though they were saved from another "
+                                          "skeleton (a joint was added, say). Build, re-skin, then save the weights.")
+        row.addWidget(self.ignore_hash_check)
         row.addStretch(1)
         layout.addLayout(row)
         return tab
 
     def _build_markup_tab(self) -> QtWidgets.QWidget:
-        self.ignore_hash_check = QtWidgets.QCheckBox("Ignore skeleton changes")
-        self.ignore_hash_check.setToolTip("Load the look's weight files even though they were saved from another "
-                                          "skeleton (a joint was added, say). Build, re-skin, then save the weights.")
-        row.addWidget(self.ignore_hash_check)
         """The selected joints' markup, edited across all of them, and the selected controls' markup, shown."""
         markup = bmaya.maya.markupmodel
         tab = QtWidgets.QWidget()
@@ -184,12 +184,12 @@ class AssetEditor(QtWidgets.QWidget):
                                   "export": FieldState(True, False, 1), "skin": FieldState(True, False, 1)})
         add_layout.addWidget(self.add_form)
         self.number_check = QtWidgets.QCheckBox("Number them")
+        self.number_check.setChecked(True)
         self.number_check.setToolTip("Name the usages usage_00, usage_01 and so on, in selection order. "
                                      "Two joints may not share a side and usage.")
         add_layout.addWidget(self.number_check)
         self.add_markup_button = QtWidgets.QPushButton("Add Markup")
         self.add_markup_button.clicked.connect(lambda: self.run(self._add_markup))
-        self.number_check.setChecked(True)
         add_layout.addWidget(self.add_markup_button)
         layout.addWidget(self.add_box)
 
