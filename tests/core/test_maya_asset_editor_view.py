@@ -69,6 +69,13 @@ class FakeFiles:
     def load(self, key):
         self._record("load", key)
 
+    def restore(self, key, prompter=None):
+        self._record("restore", key)
+        return f"C:/projects/{key}"
+
+    def load_by_name(self, key):
+        self._record("load_by_name", key)
+
     def build_rig(self):
         self._record("build_rig")
         return "hero_game:rigRootModule1"
@@ -316,6 +323,32 @@ class EditorView(unittest.TestCase):
         window = self.window()
         window.files_table.buttons[("skeleton", "save")].click()
         self.assertIn("C:/projects/skeleton", window.status_label.text())
+
+    def test_the_row_menu_restores_through_the_files_model(self):
+        window = self.window()
+        menu = window.files_table.row_menu("skeleton")
+        self.assertEqual([action.text() for action in menu.actions()], ["Restore Version..."])
+        menu.actions()[0].trigger()
+        self.assertEqual(window.session.files.calls[-1], ("restore", "skeleton"))
+        self.assertIn("Restored C:/projects/skeleton", window.status_label.text())
+
+    def test_a_row_without_versions_or_load_by_name_has_no_menu(self):
+        window = self.window()
+        self.assertIsNone(window.files_table.row_menu("model"))
+        self.assertIsNone(window.files_table.row_menu("nothing"))
+
+    def test_load_by_name_is_on_the_row_menu_and_off_when_load_is_blocked(self):
+        import dataclasses
+        window = self.window()
+        weights = dataclasses.replace(row("weights", "Skin weights", "look", "default"), versions=0, loads_by_name=True)
+        blocked = dataclasses.replace(weights, key="other", load_blocked="The rig is not in the scene.")
+        window.files_table.set_rows([weights, blocked])
+        menu = window.files_table.row_menu("weights")
+        self.assertEqual([action.text() for action in menu.actions()], ["Load by Name"])
+        menu.actions()[0].trigger()
+        self.assertEqual(window.session.files.calls[-1], ("load_by_name", "weights"))
+        action = window.files_table.row_menu("other").actions()[0]
+        self.assertEqual((action.isEnabled(), action.toolTip()), (False, "The rig is not in the scene."))
 
     def test_build_rig_calls_the_files_model_and_is_disabled_with_no_rig(self):
         window = self.window()

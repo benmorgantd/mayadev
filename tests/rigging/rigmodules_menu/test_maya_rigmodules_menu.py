@@ -69,7 +69,7 @@ class MenuLayout(unittest.TestCase):
     def test_every_tool_is_in_the_menu_once(self):
         ids = [item.tool for item in _layout().tool_items()]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(len(ids), 48)
+        self.assertEqual(len(ids), 49)
 
     def test_the_asset_submenu_adds_rigs_looks_and_skeletons(self):
         # A variant became a rig and a look (RigModules D54), and a skeleton is saved and loaded as its skeleton file.
@@ -471,6 +471,20 @@ class MenuScripts(unittest.TestCase):
             cmds.delete(cluster)
             self.run_tool("Load Skin Weights...", self.root)
         self.assertTrue(cmds.ls(cmds.listHistory(box), type="skinCluster"))
+
+    def test_load_skin_weights_by_name_takes_the_files_mesh_id(self):
+        cmds = self.cmds
+        box, cluster = self.make_skinned_box()
+        self.run_tool("Mark Meshes for Skinning", [box])
+        saved_id = cmds.getAttr(box + ".meshId")
+        folder = os.path.join(self.temp, "weights")
+        with self.answers(folder, folder):
+            self.run_tool("Save Skin Weights...", self.root)
+            cmds.delete(cluster)
+            self.run_tool("Mark Meshes with New Ids", [box])
+            self.run_tool("Load Skin Weights by Name...", self.root)
+        self.assertTrue(cmds.ls(cmds.listHistory(box), type="skinCluster"))
+        self.assertEqual(cmds.getAttr(box + ".meshId"), saved_id)
 
     def test_smooth_skin_weights_smooths_the_selected_vertices_in_one_undo_step(self):
         cmds = self.cmds

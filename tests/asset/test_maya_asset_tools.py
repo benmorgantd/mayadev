@@ -611,9 +611,20 @@ class AssetTools(unittest.TestCase):
         return box
 
     def skin_box(self, box, namespace="hero"):
+        """Skins the box to both spine joints with vertex 0 at 0.25 and 0.75. A box a built look bound to the top skin
+        joint (RigModules D68) keeps its skinCluster and takes the other joint as a new influence, as a rigger
+        painting it would."""
         cmds = self.cmds
         joints = [f"{namespace}:spine1_00_M_JNT", f"{namespace}:spine2_00_M_JNT"]
-        cluster = cmds.skinCluster(*joints, box, toSelectedBones=True)[0]
+        existing = cmds.ls(cmds.listHistory(box), type="skinCluster")
+        if existing:
+            cluster = existing[0]
+            bound = {name.split("|")[-1] for name in cmds.skinCluster(cluster, query=True, influence=True)}
+            for joint in joints:
+                if joint not in bound:
+                    cmds.skinCluster(cluster, edit=True, addInfluence=joint, weight=0.0)
+        else:
+            cluster = cmds.skinCluster(*joints, box, toSelectedBones=True)[0]
         cmds.skinPercent(cluster, box + ".vtx[0]", transformValue=[(joints[0], 0.25), (joints[1], 0.75)])
         return cluster
 
@@ -851,7 +862,9 @@ class AssetTools(unittest.TestCase):
         self.make_look(material=True)
 
         rig_root = self.tools.build_rig(HERO, "game")     # no look named: the asset's "default"
-        self.assertEqual(cmds.ls(cmds.listHistory("hero_game:box_geo"), type="skinCluster"), [], "a model is only meshes")
+        cluster = cmds.ls(cmds.listHistory("hero_game:box_geo"), type="skinCluster")
+        self.assertEqual(cmds.skinCluster(cluster[0], query=True, influence=True), ["hero_game:spine1_00_M_JNT"],
+                         "a marked mesh with no weight file yet is bound to the top skin joint (RigModules D68)")
         self.assertEqual(cmds.listConnections("hero_game:box_geoShape", type="shadingEngine"), ["hero_game:red_matSG"])
         self.skin_box("hero_game:box_geo", namespace="hero_game")
         saved = self.spine2_weights("hero_game:box_geo", namespace="hero_game")
@@ -900,7 +913,7 @@ class AssetTools(unittest.TestCase):
         self.tools.save_model(HERO, "winter")
         for look, mesh in (("default", "hero_game:box_geo"), ("winter", "hero_game:ball_geo")):
             cmds.file(new=True, force=True)
-            rig_root = self.tools.build_rig(HERO, "game", look)   # a model with no weights yet: the meshes only
+            rig_root = self.tools.build_rig(HERO, "game", look)   # no weights yet: bound to the top skin joint
             self.skin_box(mesh, namespace="hero_game")
             self.tools.save_skin_weights(rig_root, look)
         cmds.file(new=True, force=True)
@@ -914,7 +927,9 @@ class AssetTools(unittest.TestCase):
         self.make_buildable_asset()
         self.make_look()
         rig_root = self.tools.build_rig(HERO, "game")
-        self.assertIsNone(self.look_of(rig_root), "a model with no weights is imported bare, and records no look")
+        look = self.look_of(rig_root)
+        self.assertEqual((look.asset_id, look.name), (HERO, "default"),
+                         "a model with no weights yet still records the look: its marked meshes are bound rigidly")
         self.skin_box("hero_game:box_geo", namespace="hero_game")
         self.tools.save_skin_weights(rig_root)
         cmds.file(new=True, force=True)
@@ -1047,25 +1062,52 @@ class AssetTools(unittest.TestCase):
         rig_root = self.tools.build_rig(HERO, "game", "default", ignore_skeleton_hash=True)
         self.assertEqual(self.look_of(rig_root).name, "default")
 
-    def test_apply_look_drops_a_mesh_with_no_weight_file(self):
+    def add_to_winter_model(self, marked):
+        """Adds target_geo to the winter look's model, with a meshId when marked, and saves the model."""
         cmds = self.cmds
-        self.make_two_looks()
         import bmaya.core.asset
         import bmaya.maya.assethandlers
         bmaya.maya.assethandlers.register()
         bmaya.core.asset.handlers.load(self.hero, "model", "winter")
         target = cmds.polyCube(name="target_geo", constructionHistory=False)[0]
-        cmds.setRigMeshId(target)
+        if marked:
+            cmds.setRigMeshId(target)
         self.tools.save_model(HERO, "winter")
         cmds.file(new=True, force=True)
 
-        rig_root = self.tools.build_rig(HERO, "game", "default")
-        self.tools.apply_look(rig_root, "winter")
-        self.assertEqual(self.look_of(rig_root).name, "winter")
-        self.assertTrue(cmds.objExists("hero_game:ball_geo"))
-        self.assertFalse(cmds.ls("hero_game:target_geo*"), "a mesh with no weight file is not left behind")
+    def look_members(self):
+        return sorted(self.cmds.listConnections("hero_game:lookRoot.lookMembers", source=True, destination=False) or [])
 
-    def test_apply_look_with_a_weight_file_for_a_missing_mesh_fails_and_cleans_up(self):
+    def test_apply_look_binds_a_marked_mesh_with_no_weight_file_to_the_top_skin_joint(self):
+        cmds = self.cmds
+        self.make_two_looks()
+        self.add_to_winter_model(marked=True)
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        with self.assertLogs("bmaya", level="WARNING") as logs:
+            self.tools.apply_look(rig_root, "winter")
+        self.assertIn("bound to the rig's top skin joint", "\n".join(logs.output))
+        self.assertEqual(self.look_of(rig_root).name, "winter")
+        self.assertEqual(self.look_members(), ["hero_game:ball_geo", "hero_game:target_geo"])
+        cluster = cmds.ls(cmds.listHistory("hero_game:target_geo"), type="skinCluster")[0]
+        self.assertEqual(cmds.skinCluster(cluster, query=True, influence=True), ["hero_game:spine1_00_M_JNT"])
+        self.assertTrue(cmds.listRelatives("hero_game:target_geo", parent=True), "it joins the rig's mesh group")
+        files = self.tools.save_skin_weights(rig_root)
+        self.assertIn("target_geo.json", [os.path.basename(path) for path in files],
+                      "a weight save writes the bound mesh's first file")
+
+    def test_apply_look_keeps_an_unmarked_mesh_out_of_the_look(self):
+        cmds = self.cmds
+        self.make_two_looks()
+        self.add_to_winter_model(marked=False)
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        with self.assertLogs("bmaya", level="WARNING") as logs:
+            self.tools.apply_look(rig_root, "winter")
+        self.assertIn("have no meshId, so they are not part of the look", "\n".join(logs.output))
+        self.assertEqual(self.look_members(), ["hero_game:ball_geo"])
+        self.assertTrue(cmds.objExists("hero_game:target_geo"), "kept in the scene, so it can be marked and skinned")
+        self.assertFalse(cmds.ls(cmds.listHistory("hero_game:target_geo"), type="skinCluster"))
+
+    def test_apply_look_skips_a_weight_file_for_a_missing_mesh_with_a_warning(self):
         cmds = self.cmds
         self.make_two_looks()
         folder = os.path.join(self.hero.folder, "looks", "winter", "weights")
@@ -1074,11 +1116,47 @@ class AssetTools(unittest.TestCase):
         with open(os.path.join(folder, "gone_geo.json"), "w", encoding="utf-8") as handle:
             json.dump(data, handle)
         rig_root = self.tools.build_rig(HERO, "game", "default")
-        import bmaya.core.asset
-        with self.assertRaisesRegex(bmaya.core.asset.AssetError, "meshes its model doesn't have"):
+        with self.assertLogs("bmaya", level="WARNING") as logs:
             self.tools.apply_look(rig_root, "winter")
-        self.assertEqual(self.look_of(rig_root).name, "default")
-        self.assertFalse(cmds.ls("hero_game:ball_geo*"), "everything the import made is removed again")
+        self.assertIn("gone_geo.json (meshId 00000000-0000-0000-0000-000000000000)", "\n".join(logs.output))
+        self.assertIn("Load Skin Weights by Name", "\n".join(logs.output))
+        self.assertEqual(self.look_of(rig_root).name, "winter")
+        self.assertTrue(cmds.objExists("hero_game:ball_geo"))
+
+    def test_load_skin_weights_by_name_repairs_a_changed_mesh_id(self):
+        cmds = self.cmds
+        self.make_two_looks()
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        saved = self.spine2_weights("hero_game:box_geo", namespace="hero_game")
+        old_id = cmds.getAttr("hero_game:box_geo.meshId")
+        cmds.setRigMeshId("hero_game:box_geo", newId=True)   # the mesh was marked again somewhere
+        cmds.skinCluster("hero_game:box_geo", edit=True, unbind=True)
+        with self.assertLogs("bmaya", level="WARNING"):
+            self.assertEqual(self.tools.load_skin_weights(rig_root), [], "by meshId, the file finds no mesh")
+        with self.assertLogs("bmaya", level="WARNING") as logs:
+            loaded = self.tools.load_skin_weights(rig_root, by_name=True)
+        self.assertEqual([mesh.split("|")[-1] for mesh in loaded], ["hero_game:box_geo"])
+        self.assertEqual(cmds.getAttr("hero_game:box_geo.meshId"), old_id, "the mesh takes the file's id")
+        self.assertIn("Save the model", "\n".join(logs.output))
+        self.assertEqual(self.spine2_weights("hero_game:box_geo", namespace="hero_game"), saved)
+
+        self.tools.save_model(HERO, "default")   # the repaired id goes into the model: the next build matches by id
+        cmds.file(new=True, force=True)
+        self.tools.build_rig(HERO, "game", "default")
+        self.assertEqual(self.spine2_weights("hero_game:box_geo", namespace="hero_game"), saved)
+
+    def test_load_by_name_skips_a_file_whose_id_another_mesh_has(self):
+        cmds = self.cmds
+        self.make_two_looks()
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        old_id = cmds.getAttr("hero_game:box_geo.meshId")
+        cmds.rename("hero_game:box_geo", "hero_game:crate_geo")
+        decoy = cmds.polyCube(name="hero_game:box_geo", constructionHistory=False)[0]
+        with self.assertLogs("bmaya", level="WARNING") as logs:
+            self.assertEqual(self.tools.load_skin_weights(rig_root, by_name=True), [])
+        self.assertIn("already has meshId", "\n".join(logs.output))
+        self.assertFalse(cmds.attributeQuery("meshId", node=decoy, exists=True))
+        self.assertEqual(cmds.getAttr("hero_game:crate_geo.meshId"), old_id)
 
     def test_apply_look_needs_a_model_and_weights(self):
         import bmaya.core.asset

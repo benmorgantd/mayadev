@@ -48,6 +48,14 @@ class FileRow:
     loads: bool
     save_blocked: str = ""
     load_blocked: str = ""
+    loads_by_name: bool = False   # Load by Name is offered (skin weights, RigModules D68); load_blocked applies to it
+
+
+@dataclasses.dataclass(frozen=True)
+class RestoreChoice:
+    """The answer to Restore: which local version to put back. The prompter shows it as a spin box."""
+
+    version: int
 
 
 class FileAction:
@@ -59,6 +67,7 @@ class FileAction:
     owner_kind: str | None = None
     saves = False
     loads = False
+    loads_by_name = False   # has load_by_name, offered on the row's right-click menu
     save_hint = ""   # what Save writes, shown in the button's tool tip
 
     def save_blocked(self, model: AssetFilesModel) -> str:
@@ -116,6 +125,7 @@ class ModelAction(FileAction):
 
 class WeightsAction(FileAction):
     key, label, owner_kind, saves, loads = "weights", "Skin weights", "look", True, True
+    loads_by_name = True
     save_hint = "Every skinned mesh in the rig's namespace"
 
     def _blocked(self, model):
@@ -135,6 +145,9 @@ class WeightsAction(FileAction):
 
     def load(self, model):
         bmaya.maya.assettools.load_skin_weights(model.rig_root, model.context.look)
+
+    def load_by_name(self, model):
+        bmaya.maya.assettools.load_skin_weights(model.rig_root, model.context.look, by_name=True)
 
 
 class RigSceneAction(FileAction):
@@ -282,7 +295,7 @@ class AssetFilesModel:
             key=action.key, label=action.label, owner_kind=action.owner_kind, owner=owner, path=path, exists=exists,
             modified=os.path.getmtime(path) if exists else None, versions=count, saves=action.saves, loads=action.loads,
             save_blocked=action.save_blocked(self) if action.saves else "",
-            load_blocked=action.load_blocked(self) if action.loads else "")
+            load_blocked=action.load_blocked(self) if action.loads else "", loads_by_name=action.loads_by_name)
 
     # ---- commands --------------------------------------------------------------------------
 
@@ -304,6 +317,25 @@ class AssetFilesModel:
         self.refresh()
         return path
 
+    def restore(self, key: str, prompter: bmaya.core.prompts.Prompter | None = None) -> str | None:
+        """Asks which local version copy of the row's file to restore (the newest, offered), and copies it over the
+        file. The file it replaces is kept as a new version, so restoring that one undoes it. The scene is not
+        touched: load the file to see it. Returns the path, or None when the user cancelled."""
+        row = self.row(key)
+        if not row.versions:
+            raise RuntimeError(f"The {row.label.lower()} of {self.asset_id} has no local versions.")
+        numbers = [number for number, _ in bmaya.core.asset.versions.list_versions(row.path, self.asset.root)]
+        prompter = prompter or bmaya.core.prompts.current()
+        answer = prompter.ask_form(f"Restore {row.label} (versions {numbers[0]} to {numbers[-1]})",
+                                   RestoreChoice(version=numbers[-1]))
+        if answer is None:
+            return None
+        path = bmaya.core.asset.handlers.restore(self.asset, key, row.owner, answer.version)
+        bmaya.core.log.info(f"Restored version {answer.version} of the {row.label.lower()} of {self.asset_id}: {path}")
+        self.context.refresh()   # a restored skeleton or rig can be a new owner to choose
+        self.refresh()
+        return path
+
     def load(self, key: str) -> None:
         """Loads the file of the row into the scene."""
         action, row = self._action(key), self.row(key)
@@ -312,6 +344,17 @@ class AssetFilesModel:
         if row.load_blocked:
             raise RuntimeError(row.load_blocked)
         action.load(self)
+        self.refresh()
+
+    def load_by_name(self, key: str) -> None:
+        """Loads the row's file matched by mesh name (skin weights: RigModules D68), giving each mesh its file's
+        meshId. Save the model afterwards so the next build matches by meshId."""
+        action, row = self._action(key), self.row(key)
+        if not action.loads_by_name:
+            raise RuntimeError(f"{row.label} has no Load by Name.")
+        if row.load_blocked:
+            raise RuntimeError(row.load_blocked)
+        action.load_by_name(self)
         self.refresh()
 
     def build_rig(self) -> str:

@@ -132,6 +132,11 @@
                 },
                 {
                     "type": "tool",
+                    "tool": "rigmodules.weights.load_by_name",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
                     "tool": "rigmodules.weights.smooth",
                     "enabled": true
                 },

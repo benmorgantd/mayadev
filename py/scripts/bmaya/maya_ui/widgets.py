@@ -15,13 +15,21 @@ import json
 import typing
 from collections.abc import Callable
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from bmaya.core.tool_registry import unwrap_optional
 from bmaya.maya_ui import theme
 
 SPIN_LIMIT = 1_000_000_000
 ERROR_STYLE = f"color: {theme.DARK.error};"
+
+
+def menu_action(menu: QtWidgets.QMenu, text: str) -> QtGui.QAction:
+    """A new action of the menu. It is made here and parented to the menu, because the action addAction(text) makes was
+    found deleted in a GUI Maya while the window still held it."""
+    action = QtGui.QAction(text, menu)
+    menu.addAction(action)
+    return action
 
 
 def _is_enum(hint: object) -> bool:

@@ -5,7 +5,7 @@ whatever code owns the format (bmaya.maya.assethandlers registers the Maya ones)
 imports a handler, so it stays usable without Maya.
 
 save() keeps a local version copy of the old file, makes the parent folders, and tells source control,
-so a handler only writes its format.
+so a handler only writes its format. restore() puts a version copy back, keeping the replaced file as a version.
 """
 
 from __future__ import annotations
@@ -57,6 +57,23 @@ def save(asset: Asset, file_type: str, owner: str | None = None, **context) -> s
     folder = path if asset.project.file_type(file_type).folder else os.path.dirname(path)
     os.makedirs(folder, exist_ok=True)
     handler.save(asset, path, owner=owner, **context)
+    if not existed:
+        sourcecontrol.current().add(path)
+    return path
+
+
+def restore(asset: Asset, file_type: str, owner: str | None, number: int) -> str:
+    """Puts a local version copy of a file type back in place of the file and returns the path. The file it replaces
+    is kept as a new version first, so a restore is undone by restoring that one, and source control checks out an
+    existing path or adds a new one, as save() does. Nothing in the scene changes: load the file to see it. Raises
+    ValueError for a version the file has no copy of."""
+    path = asset.path(file_type, owner)
+    versions.find_version(path, asset.root, number)   # an unknown version raises before anything changes
+    existed = os.path.exists(path)
+    if existed:
+        versions.version(path, asset.root)
+        sourcecontrol.current().checkout(path)
+    versions.restore(path, asset.root, number)
     if not existed:
         sourcecontrol.current().add(path)
     return path

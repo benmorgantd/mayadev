@@ -100,7 +100,7 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `core/fieldset.py` | `FieldSpec`, `FieldState` and `combine`: fields edited across a selection, and a field's one value or "mixed" over it. The Asset Editor's markup and shape tabs share it |
 | `core/asset/catalog.py` | `project_folders` and `asset_ids`: every project and asset below the projects root, for the Asset Editor's list |
 | `core/asset/publishes.py` | `make_id`, `list_ids`, `latest`, `info`, `create` |
-| `core/asset/versions.py` | Local version copies: `version`, `list_versions`, `versions_root` |
+| `core/asset/versions.py` | Local version copies: `version`, `list_versions`, `find_version`, `restore`, `versions_root` |
 | `core/asset/sourcecontrol.py` | `SourceControl` (does nothing), `current`, `set_current` |
 | `core/asset/handlers.py` | `FileHandler`, `register`, `save`, `load` |
 | `core/asset/library.py` | The pose and animation library on disk, no Maya: sources (Approved, Shared, User), listing, `Index`, search, masks, rename and delete ([`assets.md`](assets.md#library)) |

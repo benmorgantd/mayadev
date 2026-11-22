@@ -18,7 +18,7 @@ import bmaya.core.log
 import bmaya.core.prompts
 import bmaya.maya.librarybrowser
 from bmaya.maya_ui import host, prompter, theme
-from bmaya.maya_ui.widgets import ListModel, TagsEdit
+from bmaya.maya_ui.widgets import ListModel, TagsEdit, menu_action
 
 LIBRARY = bmaya.core.asset.library
 SESSION = bmaya.maya.librarybrowser
@@ -35,13 +35,6 @@ def source_label(key: str) -> str:
     """The text of a source in the Source column and on its chip."""
     return key.capitalize()
 
-
-def menu_action(menu: QtWidgets.QMenu, text: str) -> QtGui.QAction:
-    """A new action of the menu. It is made here and parented to the menu, because the action addAction(text) makes was
-    found deleted in a GUI Maya while the window still held it."""
-    action = QtGui.QAction(text, menu)
-    menu.addAction(action)
-    return action
 
 
 def _show_text(label: QtWidgets.QLabel, text: str) -> None:

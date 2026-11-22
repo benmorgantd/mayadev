@@ -853,6 +853,41 @@ class Versions(TempRoot):
         with self.assertRaises(ValueError):
             versions.versions_folder(os.path.join(os.path.dirname(self.root), "elsewhere", "x.json"), self.root)
 
+    def test_restore_copies_a_version_back_dated_now(self):
+        self.write(self.path(), "one")
+        copy = versions.version(self.path(), self.root)
+        os.utime(copy, (1_000_000_000, 1_000_000_000))
+        self.write(self.path(), "two")
+        self.assertEqual(versions.restore(self.path(), self.root, 1), self.path())
+        self.assertEqual(self.read(self.path()), "one")
+        self.assertGreater(os.path.getmtime(self.path()), 1_000_000_000, "a restore is dated like a save")
+        self.assertEqual(len(versions.list_versions(self.path(), self.root)), 1, "restore alone keeps no version")
+
+    def test_restore_brings_back_a_deleted_file(self):
+        self.write(self.path(), "one")
+        versions.version(self.path(), self.root)
+        os.remove(self.path())
+        versions.restore(self.path(), self.root, 1)
+        self.assertEqual(self.read(self.path()), "one")
+
+    def test_restore_replaces_a_folder_whole(self):
+        folder = self.path("weights")
+        self.write(os.path.join(folder, "body.json"), "old")
+        versions.version(folder, self.root)
+        self.write(os.path.join(folder, "body.json"), "new")
+        self.write(os.path.join(folder, "prop.json"), "added later")
+        versions.restore(folder, self.root, 1)
+        self.assertEqual(sorted(os.listdir(folder)), ["body.json"])
+        self.assertEqual(self.read(os.path.join(folder, "body.json")), "old")
+
+    def test_restore_of_a_missing_version_names_the_ones_there_are(self):
+        self.write(self.path(), "one")
+        versions.version(self.path(), self.root)
+        versions.version(self.path(), self.root)
+        with self.assertRaisesRegex(ValueError, "no local version 7. It has: 1, 2"):
+            versions.restore(self.path(), self.root, 7)
+        self.assertEqual(self.read(self.path()), "one")
+
 
 class RecordingHandler(handlers.FileHandler):
     def __init__(self):
@@ -890,6 +925,26 @@ class Handlers(TempRoot):
         self.assertEqual(self.read(versions.list_versions(path, self.root)[0][1]), "first")
         self.assertEqual(self.source_control.calls, [("add", path), ("checkout", path)])
         self.assertEqual(self.handler.calls[0][2], {"owner": "body", "text": "first", "rig_root": "hero:rigRootModule1"})
+
+    def test_restore_keeps_the_replaced_file_as_a_version_and_checks_it_out(self):
+        path = handlers.save(self.hero, "shapes", "body", text="first")
+        handlers.save(self.hero, "shapes", "body", text="second")   # version 1 is "first"
+        self.source_control.calls.clear()
+        self.assertEqual(handlers.restore(self.hero, "shapes", "body", 1), path)
+        self.assertEqual(self.read(path), "first")
+        found = versions.list_versions(path, self.root)
+        self.assertEqual([number for number, _ in found], [1, 2])
+        self.assertEqual(self.read(found[1][1]), "second", "the replaced file is version 2, so the restore is undoable")
+        self.assertEqual(self.source_control.calls, [("checkout", path)])
+
+    def test_restore_of_an_unknown_version_changes_nothing(self):
+        path = handlers.save(self.hero, "shapes", "body", text="first")
+        handlers.save(self.hero, "shapes", "body", text="second")
+        self.source_control.calls.clear()
+        with self.assertRaises(ValueError):
+            handlers.restore(self.hero, "shapes", "body", 5)
+        self.assertEqual((self.read(path), len(versions.list_versions(path, self.root)), self.source_control.calls),
+                         ("second", 1, []))
 
     def test_load_returns_the_handler_result(self):
         handlers.save(self.hero, "shapes", "body", text="data")

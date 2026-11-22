@@ -11,7 +11,7 @@ import datetime
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from bmaya.core.fieldset import FieldSpec, FieldState
-from bmaya.maya_ui.widgets import ListModel
+from bmaya.maya_ui.widgets import ListModel, menu_action
 
 FILE, NAME, STATUS, VERSIONS, SAVE, LOAD = range(6)
 COLUMNS = ("File", "Name", "Status", "Versions", "", "")
@@ -91,11 +91,15 @@ def _status(row) -> str:
 
 class FileStatusTable(QtWidgets.QTableView):
     """A table of FileRow, one per file, with a Save and a Load button in each row that has the command. A button is
-    disabled when the row says it is blocked, and its tool tip says why. save_requested and load_requested emit the
-    row's key. set_rows replaces the rows."""
+    disabled when the row says it is blocked, and its tool tip says why. Right-clicking a row (its Versions cell, say)
+    offers Restore Version... when it has local versions, and Load by Name when its file type has it.
+    save_requested, load_requested, load_by_name_requested and restore_requested emit the row's key. set_rows replaces
+    the rows."""
 
     save_requested = QtCore.Signal(str)
     load_requested = QtCore.Signal(str)
+    load_by_name_requested = QtCore.Signal(str)
+    restore_requested = QtCore.Signal(str)
 
     def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
@@ -104,7 +108,7 @@ class FileStatusTable(QtWidgets.QTableView):
             columns=[(COLUMNS[FILE], lambda row: row.label),
                      (COLUMNS[NAME], lambda row: row.owner or ""),
                      (COLUMNS[STATUS], _status),
-                     (COLUMNS[VERSIONS], lambda row: str(row.versions) if row.exists else ""),
+                     (COLUMNS[VERSIONS], lambda row: str(row.versions) if row.versions else ""),
                      (COLUMNS[SAVE], lambda row: ""),
                      (COLUMNS[LOAD], lambda row: "")],
             parent=self)
@@ -118,6 +122,36 @@ class FileStatusTable(QtWidgets.QTableView):
         header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(STATUS, QtWidgets.QHeaderView.ResizeMode.Stretch)
         self.setShowGrid(False)
+        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self._on_context_menu)
+
+    def row_menu(self, key: str) -> QtWidgets.QMenu | None:
+        """A row's right-click menu: Restore Version... when it has local versions, and Load by Name (off, with the
+        reason as its tool tip, when Load is blocked) when its file type has it. None when it has neither."""
+        row = next((row for row in self.row_model.items if row.key == key), None)
+        if row is None or not (row.versions or row.loads_by_name):
+            return None
+        menu = QtWidgets.QMenu(self)
+        menu.setToolTipsVisible(True)
+        if row.versions:
+            action = menu_action(menu, "Restore Version...")
+            action.setToolTip("Copies a local version over the file. The file it replaces is kept as a new version.")
+            action.triggered.connect(lambda checked=False: self.restore_requested.emit(key))
+        if row.loads_by_name:
+            action = menu_action(menu, "Load by Name")
+            action.setEnabled(not row.load_blocked)
+            action.setToolTip(row.load_blocked or "Matches each file to the mesh with its name and gives the mesh the "
+                                                  "file's meshId. Save the model afterwards.")
+            action.triggered.connect(lambda checked=False: self.load_by_name_requested.emit(key))
+        return menu
+
+    def _on_context_menu(self, position: QtCore.QPoint) -> None:
+        index = self.indexAt(position)
+        if not index.isValid():
+            return
+        menu = self.row_menu(self.row_model.item(index.row()).key)
+        if menu is not None:
+            menu.exec(self.viewport().mapToGlobal(position))
 
     def set_rows(self, rows: list) -> None:
         self.row_model.set_items(rows)

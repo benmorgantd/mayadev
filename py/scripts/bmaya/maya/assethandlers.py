@@ -235,8 +235,9 @@ class RigTemplateHandler(handlers.FileHandler):
 
 class RigSkinWeightsHandler(handlers.FileHandler):
     """A look's skin weights: a folder with one RigModules weight file per skinned mesh, named after the mesh.
-    Files are matched to meshes by the meshId inside them, never by name, so a renamed mesh still loads. Needs
-    the namespace the meshes are in."""
+    Files are matched to meshes by the meshId inside them, not by name, so a renamed mesh still loads. load(by_name=True)
+    is the one exception, the repair for meshes whose ids changed (RigModules D68). Needs the namespace the meshes are
+    in."""
 
     @staticmethod
     def files(folder: str) -> list[str]:
@@ -266,9 +267,15 @@ class RigSkinWeightsHandler(handlers.FileHandler):
                 os.remove(stale)
         return sorted(written.values())
 
-    def load(self, asset: Asset | None, path: str, namespace: str | None = None, **context) -> list[str]:
+    def load(self, asset: Asset | None, path: str, namespace: str | None = None, by_name: bool = False,
+             **context) -> list[str]:
         """Loads every weight file in the folder at path onto the mesh in namespace with its meshId, as one undo
-        step. A file whose mesh isn't in the scene is skipped with a warning. Returns the meshes loaded."""
+        step. A file whose mesh isn't in the scene is skipped with a warning. Returns the meshes loaded.
+
+        by_name matches each file to the mesh named as the file's meshName instead (RigModules D68), for meshes whose
+        ids changed since the weights were saved, and gives that mesh the file's meshId so the weights load. The ids
+        it changed are logged: save the model so the next build matches them by meshId. A file whose mesh has another
+        mesh's id taken already is skipped with a warning."""
         namespace = _require_namespace(namespace)
         files: dict[str, str] = {}
         for file_path in self.files(path):
@@ -277,20 +284,52 @@ class RigSkinWeightsHandler(handlers.FileHandler):
                 raise RuntimeError(f"{files[mesh_id]} and {file_path} are both for meshId {mesh_id}. Remove the old one.")
             files[mesh_id] = file_path
         meshes = rigmodules.skinweights.get_meshes(namespace)
+        by_names = rigmodules.skinweights.get_meshes_by_name(namespace) if by_name else {}
 
-        loaded = []
-        cmds.undoInfo(openChunk=True, chunkName="Load Skin Weights")
+        loaded, changed = [], []
+        cmds.undoInfo(openChunk=True, chunkName="Load Skin Weights by Name" if by_name else "Load Skin Weights")
         try:
             for mesh_id, file_path in sorted(files.items(), key=lambda item: item[1]):
-                mesh = meshes.get(mesh_id)
+                if by_name:
+                    mesh = self._take_id_by_name(file_path, mesh_id, namespace, meshes, by_names, changed)
+                else:
+                    mesh = meshes.get(mesh_id)
+                    if mesh is None:
+                        bmaya.core.log.warning(f"No mesh in namespace {namespace!r} has meshId {mesh_id}: skipped {file_path}")
                 if mesh is None:
-                    bmaya.core.log.warning(f"No mesh in namespace {namespace!r} has meshId {mesh_id}: skipped {file_path}")
                     continue
                 cmds.loadRigSkinWeights(mesh, file=file_path.replace("\\", "/"))
                 loaded.append(mesh)
         finally:
             cmds.undoInfo(closeChunk=True)
+        if changed:
+            bmaya.core.log.warning("These meshes took their weight file's meshId: " + ", ".join(changed)
+                                   + ". Save the model so the next build matches them by meshId.")
         return loaded
+
+    @staticmethod
+    def _take_id_by_name(file_path: str, mesh_id: str, namespace: str, meshes: dict[str, str],
+                         by_names: dict[str, str], changed: list[str]) -> str | None:
+        """The mesh named as the weight file's meshName, given the file's meshId when it has another (meshes, the id
+        map, follows). None, with a warning, when there is no such mesh or another mesh has the id already."""
+        name = rigmodules.skinweights.read_file_mesh_name(file_path)
+        mesh = by_names.get(name)
+        if mesh is None:
+            bmaya.core.log.warning(f"No mesh in namespace {namespace!r} is named {name!r}: skipped {file_path}")
+            return None
+        current = rigmodules.skinweights.get_mesh_id(mesh)
+        if current == mesh_id:
+            return mesh
+        holder = meshes.get(mesh_id)
+        if holder is not None:
+            bmaya.core.log.warning(f"{_short_name(holder)} already has meshId {mesh_id}, so {_short_name(mesh)} can't "
+                                   f"take it: skipped {file_path}")
+            return None
+        rigmodules.skinweights.set_mesh_id(mesh, mesh_id)
+        meshes.pop(current, None)
+        meshes[mesh_id] = mesh
+        changed.append(f"{_short_name(mesh)} ({current or 'no id'} -> {mesh_id})")
+        return mesh
 
 
 @dataclasses.dataclass(frozen=True)

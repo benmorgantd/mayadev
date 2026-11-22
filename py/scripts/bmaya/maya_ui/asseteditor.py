@@ -20,8 +20,7 @@ import bmaya.maya.shapemodel
 from bmaya.core.fieldset import FieldState
 from bmaya.maya_ui import host, theme
 from bmaya.maya_ui.assetwidgets import AssetPicker, FileStatusTable, MixedFieldForm, OwnerCombo
-from bmaya.maya_ui.librarybrowser import menu_action
-from bmaya.maya_ui.widgets import ListModel
+from bmaya.maya_ui.widgets import ListModel, menu_action
 
 OBJECT_NAME = "bmayaAssetEditor"
 FILES_TAB = "Files"
@@ -125,6 +124,8 @@ class AssetEditor(QtWidgets.QWidget):
         self.files_table = FileStatusTable()
         self.files_table.save_requested.connect(lambda key: self.run(lambda: self._save(key)))
         self.files_table.load_requested.connect(lambda key: self.run(lambda: self.session.files.load(key)))
+        self.files_table.restore_requested.connect(lambda key: self.run(lambda: self._restore(key)))
+        self.files_table.load_by_name_requested.connect(lambda key: self.run(lambda: self.session.files.load_by_name(key)))
         layout.addWidget(self.files_table, 1)
         self.files_message = QtWidgets.QLabel()
         self.files_message.setWordWrap(True)
@@ -267,6 +268,11 @@ class AssetEditor(QtWidgets.QWidget):
         path = self.session.files.save(key)
         if path:
             self.status_label.setText(f"Saved {path}")
+
+    def _restore(self, key: str) -> None:
+        path = self.session.files.restore(key)
+        if path:
+            self.status_label.setText(f"Restored {path}")
 
     def reload(self) -> None:
         """Shows the session's asset, owners, mismatch strip and files."""

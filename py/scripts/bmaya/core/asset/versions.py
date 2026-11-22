@@ -80,3 +80,28 @@ def version(path: str, root: str) -> str | None:
     else:
         shutil.copy2(path, target)
     return target
+
+
+def find_version(path: str, root: str, number: int) -> str:
+    """The copy that is version number of path. Raises ValueError for a number path has no copy of, naming the ones it
+    has."""
+    copies = dict(list_versions(path, root))
+    if number not in copies:
+        have = ", ".join(str(found) for found in copies) or "none"
+        raise ValueError(f"{os.path.basename(os.path.normpath(path))} has no local version {number}. It has: {have}.")
+    return copies[number]
+
+
+def restore(path: str, root: str, number: int) -> str:
+    """Copies version number of path back over path, replacing it, and returns path. A folder is replaced whole. The
+    restored file is dated now, like a save, not by the copy it came from. Keep a version of path first (version())
+    when it should survive. Raises ValueError as find_version does."""
+    source = find_version(path, root, number)
+    if os.path.isdir(source):
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        shutil.copytree(source, path, copy_function=shutil.copy)
+    else:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        shutil.copy(source, path)
+    return path

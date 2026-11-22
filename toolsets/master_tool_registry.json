@@ -320,6 +320,18 @@
             "enabled": true
         },
         {
+            "id": "rigmodules.weights.load_by_name",
+            "name": "Load Skin Weights by Name...",
+            "short_name": "Load Weights by Name",
+            "call": {
+                "module": "bmaya.maya.assettools",
+                "function": "load_skin_weights_by_name_interactive",
+                "kwargs": {}
+            },
+            "icon": null,
+            "enabled": true
+        },
+        {
             "id": "rigmodules.asset.new_project",
             "name": "New Project...",
             "short_name": "New Project",

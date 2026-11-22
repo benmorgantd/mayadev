@@ -396,6 +396,39 @@ class SkeletonFiles(EditorBase):
         self.assertEqual(sorted(cmds.ls("look:*", type="transform")), ["look:box_geo", "look:crate_geo"],
                          "a selected mesh does not shrink the model")
 
+    def test_restore_puts_a_version_back_and_keeps_the_replaced_file(self):
+        import bmaya.maya.assetfiles
+        cmds = self.cmds
+        self.tools.new_look(HERO)
+        cmds.polyCube(name="box_geo", constructionHistory=False)
+        files = self.session(HERO).files
+        files.save("model", self.answers())                   # only box_geo
+        cmds.polyCube(name="crate_geo", constructionHistory=False)
+        files.save("model", self.answers(True))               # box_geo and crate_geo; version 1 is box_geo alone
+        prompter = self.answers(bmaya.maya.assetfiles.RestoreChoice(version=1))
+        path = files.restore("model", prompter)
+        self.assertEqual([(q.kind, q.title, q.default) for q in prompter.asked],
+                         [("ask_form", "Restore Model (versions 1 to 1)", bmaya.maya.assetfiles.RestoreChoice(1))])
+        self.assertEqual(files.row("model").versions, 2, "the replaced model is kept, so the restore can be undone")
+        self.assertEqual(sorted(cmds.ls("*_geo", type="transform")), ["box_geo", "crate_geo"], "the scene is not touched")
+        cmds.file(new=True, force=True)
+        cmds.file(path, i=True, type="mayaAscii", namespace="look")
+        self.assertEqual(cmds.ls("look:*", type="transform"), ["look:box_geo"])
+
+    def test_restore_cancelled_or_without_versions_changes_nothing(self):
+        cmds = self.cmds
+        self.tools.new_look(HERO)
+        cmds.polyCube(name="box_geo", constructionHistory=False)
+        files = self.session(HERO).files
+        files.save("model", self.answers())
+        with self.assertRaisesRegex(RuntimeError, "no local versions"):
+            files.restore("model", self.answers())
+        files.save("model", self.answers(True))
+        before = os.path.getmtime(self.hero.path("model", "default"))
+        self.assertIsNone(files.restore("model", self.answers(None)))
+        self.assertEqual((os.path.getmtime(self.hero.path("model", "default")), files.row("model").versions),
+                         (before, 1))
+
     def test_load_creates_the_joints_and_selects_them(self):
         self.tools.new_rig(HERO, self.template)
         self.make_skeleton()

@@ -238,7 +238,9 @@ Saving through `bmaya.core.asset.handlers.save` first copies the old file to the
 
 A folder such as `weights\` becomes `weights.v003\`. The next number is the highest existing number plus one, so deleting an old copy never reuses a number. This is the undo for a save between source control submits, and the only one without source control.
 
-The versions root is `%LOCALAPPDATA%\bmaya\versions`, private to the machine and never submitted. Set `BMAYA_VERSIONS_DIR` to put it somewhere else, such as a synced drive. `bmaya.core.asset.versions.list_versions(path, root)` lists the copies as `(number, path)`.
+The versions root is `%LOCALAPPDATA%\bmaya\versions`, private to the machine and never submitted. Set `BMAYA_VERSIONS_DIR` to put it somewhere else, such as a synced drive. `bmaya.core.asset.versions.list_versions(path, root)` lists the copies as `(number, path)`, `find_version(path, root, number)` returns one (a `ValueError` naming the numbers there are for one that isn't), and `restore(path, root, number)` copies one back over the file, dated now. A folder is replaced whole.
+
+To put a version back, use `bmaya.core.asset.handlers.restore(asset, file_type, owner, number)`, or right-click the Versions cell in the Asset Editor's Files tab ([`tools.md`](tools.md#the-asset-editor)). It keeps the file it replaces as a new version first, so restoring that one undoes the restore, and checks the file out. The scene is not touched: load the file afterwards to see it.
 
 `bmaya.core.util.fileUtils.version_file` is an older, separate scheme (a `<name>.Versions` folder beside the file) that the asset code does not use.
 
@@ -252,7 +254,7 @@ Ask the Perforce admin for `+l` (exclusive lock) on files that can't be merged, 
 
 ## Saving and loading
 
-`bmaya.core.asset.handlers` dispatches by file type key to a registered `FileHandler`. `save(asset, file_type, owner=None, **context)` keeps a local version of the old file, checks it out (or adds it after a write), makes the folders and calls the handler with the path. `load(asset, file_type, owner=None, **context)` raises `FileNotFoundError` for a missing path and returns whatever the handler returns. `owner` is the skeleton, rig or look the file belongs to, and the handler gets it as `owner=`. `context` is the handler's own keyword arguments. A file type with no handler raises `NotImplementedError`.
+`bmaya.core.asset.handlers` dispatches by file type key to a registered `FileHandler`. `save(asset, file_type, owner=None, **context)` keeps a local version of the old file, checks it out (or adds it after a write), makes the folders and calls the handler with the path. `restore(asset, file_type, owner, number)` puts a local version back the same way, with no handler (see Local versions). `load(asset, file_type, owner=None, **context)` raises `FileNotFoundError` for a missing path and returns whatever the handler returns. `owner` is the skeleton, rig or look the file belongs to, and the handler gets it as `owner=`. `context` is the handler's own keyword arguments. A file type with no handler raises `NotImplementedError`.
 
 The Maya handlers are registered by `bmaya.maya.assethandlers.register()`:
 
@@ -344,7 +346,7 @@ library.filter_entries(entries, library.parse_query("tag:fist hand"))
 4. Finds the parent when the rig has one (below).
 5. Creates the skeleton's joints from its `skeleton.json` in the namespace (`cmds.loadRigSkeleton`).
 6. Builds: `cmds.createRigFromTemplate(*joints, template=..., asset=asset.id, namespace=..., parentRig=...)`, with `parentRig` only for an attachment.
-7. Loads the rig's shape file when it has one. Then the look, through `apply_look` (below) when it has a model and weight files, which records it on the rig. A look with a model and no weights yet has its meshes imported bare, and the rig records no look.
+7. Loads the rig's shape file when it has one. Then the look, through `apply_look` (below) when it has a model, with or without weight files, which records it on the rig when the model has a marked mesh.
 8. Clears the selection and returns the rig root.
 
 A built rig carries its own asset id and rig name (the rig root's `assetId` and `rigName`) and the look it wears (`RigInfo.look`, from its `lookRoot`), which the other tools read through `rigmodules.query`. Nothing parses node names. `save_skin_weights` and `load_skin_weights` use the look the rig wears, and `look` overrides it. For a rig that wears none they use the one look it can wear, and raise when there are several.
@@ -361,7 +363,20 @@ The attachment builds into `{asset name}_{rig}` as ever, with `parentRig` set. R
 
 ### Putting a rig in a look
 
-`bmaya.maya.assettools.apply_look(node, look)` swaps the look of the rig that `node` belongs to (RigModules D54 phase 5, `docs/looks.md` there). A look that isn't synced is synced first. It checks that the asset has the look, that its `look.json` names the rig's skeleton, and that it has a model and weight files. Then, as one undo step, it imports the model into the rig's namespace and calls `cmds.setRigLook` with the imported meshes and the weight files. RigModules matches each mesh to its file by `meshId`, deletes the previous look's meshes, names the new ones after their files and records the look on the rig. The new meshes then join the rig's mesh layer and group. An imported mesh with a `meshId` but no weight file (a blend shape target, a prop) is deleted with a warning, and a weight file whose mesh the model doesn't have is an error. A failed swap deletes everything the model import created.
+`bmaya.maya.assettools.apply_look(node, look)` swaps the look of the rig that `node` belongs to (RigModules D54 phase 5, `docs/looks.md` there). A look that isn't synced is synced first. It checks that the asset has the look, that its `look.json` names the rig's skeleton, and that it has a model. Then, as one undo step, it imports the model into the rig's namespace and calls `cmds.setRigLook`. RigModules matches each mesh to its file by `meshId`, deletes the previous look's meshes, names the new ones after their files and records the look on the rig. The new meshes then join the rig's mesh layer and group. A failed swap deletes everything the model import created.
+
+**Missing or mismatched weights never fail it** (RigModules D68):
+
+| Mesh in the model | What `apply_look` does |
+|---|---|
+| Marked (has a `meshId`), with a weight file | Loads the file |
+| Marked, no weight file | Binds it whole to the rig's topmost skin joint (`setRigLook(rigidMesh=...)`), with a warning. It is part of the look: paint it in the rig, and Save Skin Weights writes its first file |
+| Not marked | Leaves it in the scene, in the mesh layer and group but outside the look, with a warning: mark it and save the model to track it |
+| A weight file with no mesh in the model | Skips the file with a warning that points to Load Skin Weights by Name |
+
+A model with no marked mesh records no look, and `apply_look` returns `None`.
+
+**When meshIds change.** A `meshId` lives on the scene node. Marking a mesh in a scene that wasn't loaded from the model (a re-import, the art source) gives that node a new id, and the weights saved before no longer find it. `load_skin_weights(node, by_name=True)` (Load Skin Weights by Name) matches each file to the mesh with its `meshName` instead and gives the mesh the file's `meshId`. It logs the ids it changed. Save the model afterwards so the next build matches them by `meshId`.
 
 **When the skeleton changed.** Adding or moving a joint changes the skeleton's hash (RigModules D54), so weight files saved before it no longer match the rig. `apply_look` checks every file's `skeletonHash` against the rig's before it imports anything, and fails with the files' names and what to do. `apply_look(node, look, ignore_skeleton_hash=True)`, and `build_rig(..., ignore_skeleton_hash=True)` for the look a build puts on, load them anyway with a warning (`cmds.setRigLook(..., ignoreSkeletonHash=True)`). Save the weights again afterwards so the files carry the new hash. The controls and the animation are not touched. Materials of the previous look stay in the scene.
 
