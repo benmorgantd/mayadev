@@ -28,6 +28,7 @@ MARKUP_TAB = "Markup"
 SHAPES_TAB = "Shapes"
 NAMING_TAB = "Naming"
 CONTROL_COLUMNS = ("Control", "Module", "Side", "Usage", "Mirror")
+LOOK_COLUMNS = ("Mesh", "Result", "Why")
 
 
 class AssetEditor(QtWidgets.QWidget):
@@ -137,6 +138,7 @@ class AssetEditor(QtWidgets.QWidget):
         self.files_message = QtWidgets.QLabel()
         self.files_message.setWordWrap(True)
         layout.addWidget(self.files_message)
+        layout.addWidget(self._build_look_status())
         row = QtWidgets.QHBoxLayout()
         self.build_button = QtWidgets.QPushButton("Build Rig")
         self.build_button.setToolTip("Build the chosen rig in the scene, wearing the chosen look")
@@ -145,6 +147,33 @@ class AssetEditor(QtWidgets.QWidget):
         row.addStretch(1)
         layout.addLayout(row)
         return tab
+
+    def _build_look_status(self) -> QtWidgets.QGroupBox:
+        """What the last look did with each mesh (RigModules D70): loaded as saved, folded into a parent joint, or bound
+        rigid. A rigid mesh exports skinned to the root, so the table is how that shows."""
+        box = QtWidgets.QGroupBox("Look status")
+        layout = QtWidgets.QVBoxLayout(box)
+        self.look_summary = QtWidgets.QLabel()
+        self.look_summary.setWordWrap(True)
+        layout.addWidget(self.look_summary)
+        self.look_table = QtWidgets.QTableView()
+        self.look_model = ListModel(
+            {}, columns=[(LOOK_COLUMNS[0], lambda mesh: mesh.mesh_name), (LOOK_COLUMNS[1], lambda mesh: mesh.result),
+                         (LOOK_COLUMNS[2], lambda mesh: mesh.text)], parent=self.look_table)
+        self.look_table.setModel(self.look_model)
+        self.look_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.look_table.verticalHeader().setVisible(False)
+        self.look_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self.look_table.setMaximumHeight(140)
+        layout.addWidget(self.look_table)
+        self.resave_button = QtWidgets.QPushButton("Save Weights As They Are")
+        self.resave_button.setToolTip("Write the skin weights of the meshes in the rig as they are now: the files get the rig's "
+                                      "skeleton hash and structure, and the meshes read as loaded")
+        self.resave_button.clicked.connect(lambda: self.run(lambda: self._save("weights")))
+        layout.addWidget(self.resave_button)
+        box.setVisible(False)
+        self.look_box = box
+        return box
 
     def _build_markup_tab(self) -> QtWidgets.QWidget:
         """The selected joints' markup, edited across all of them, and the selected controls' markup, shown."""
@@ -352,7 +381,23 @@ class AssetEditor(QtWidgets.QWidget):
         self.files_message.setText(files.message)
         self.files_message.setVisible(bool(files.message))
         self.build_button.setEnabled(bool(files.rows) and context.rig is not None)
+        self.reload_look_status()
         self.reload_shapes()   # Save Shapes and Load Shapes follow the files
+
+    def reload_look_status(self) -> None:
+        """Shows what the rig's last look did with each mesh. Hidden until a look was applied in this session."""
+        files = self.session.files
+        status = files.look_status
+        self.look_box.setVisible(status is not None and bool(status.meshes))
+        if status is None:
+            self.look_model.set_items([])
+            return
+        self.look_summary.setText(status.summary + (". The look's skeleton file is not the rig's." if status.skeleton_stale else ""))
+        self.look_model.set_items(status.meshes)
+        save_blocked = next((row.save_blocked for row in files.rows if row.key == "weights"), "The weights row is missing.")
+        self.resave_button.setEnabled(status.needs_save and not save_blocked)
+        self.resave_button.setToolTip(save_blocked or "Write the skin weights of the meshes in the rig as they are now: "
+                                      "the files get the rig's skeleton hash and structure, and the meshes read as loaded")
 
     def reload_markup(self) -> None:
         """Shows the markup model: the selected joints' fields, the add box, the warnings and the controls."""

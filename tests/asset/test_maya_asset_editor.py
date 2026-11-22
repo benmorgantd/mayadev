@@ -653,6 +653,14 @@ class RigFiles(EditorBase):
         self.assertEqual(self.cmds.ls(selection=True), [rig_root])
         self.assertEqual((files.row("rig").save_blocked, files.row("shapes").save_blocked), ("", ""))
 
+    def test_the_files_model_has_no_look_status_until_a_look_is_applied(self):
+        """The status itself is tested with apply_look in test_maya_asset_tools; this is the model's read of it."""
+        self.make_buildable_hero()
+        files = self.session(HERO).files
+        self.assertIsNone(files.look_status, "no rig in the scene")
+        files.build_rig()
+        self.assertIsNone(files.look_status, "the hero has no look model, so the build recorded no look")
+
     def test_build_rig_without_a_rig_says_so(self):
         with self.assertRaisesRegex(RuntimeError, "no rig"):
             self.session(HERO).files.build_rig()

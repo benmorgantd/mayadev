@@ -23,6 +23,7 @@ import rigmodules.query
 import bmaya.core.asset
 import bmaya.core.asset.context
 import bmaya.core.asset.handlers
+import bmaya.core.asset.lookstatus
 import bmaya.core.asset.textures
 import bmaya.core.asset.versions
 import bmaya.core.log
@@ -334,6 +335,11 @@ class AssetFilesModel:
         """Every visible mesh in the scene. The selection is not used: a stray selection once saved a model of one
         mesh over the real one."""
         return bmaya.maya.assethandlers.get_scene_meshes()
+
+    @property
+    def look_status(self) -> bmaya.core.asset.lookstatus.LookStatus | None:
+        """What the rig's last look did with each mesh (RigModules D70), None before one was applied in this session."""
+        return bmaya.maya.assettools.get_look_status(self.rig_root) if self.rig_root else None
 
     def rig_blocked(self) -> str:
         """Why a command that needs the rig in the scene can't run, or ""."""

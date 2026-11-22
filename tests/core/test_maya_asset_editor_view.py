@@ -56,6 +56,7 @@ class FakeFiles:
         self.message = ""
         self.calls = []
         self.error = None
+        self.look_status = None
 
     def _record(self, *call):
         if self.error:
@@ -433,6 +434,27 @@ class EditorView(unittest.TestCase):
         window.session.context.set_asset(VILLAIN)
         window.session.changed.emit()
         self.assertFalse(window.build_button.isEnabled())
+
+    def test_the_look_status_shows_each_mesh_and_enables_the_resave_only_when_something_needs_it(self):
+        import bmaya.core.asset.lookstatus as lookstatus
+        window = self.window()
+        window.session.changed.emit()
+        self.assertTrue(window.look_box.isHidden(), "no look was applied in this session")
+        window.session.files.rows.append(row("weights", "Skin weights", "look", "default"))
+        status = lookstatus.LookStatus("hero:lookRoot", False, (
+            lookstatus.MeshStatus("id1", "body_geo", "loaded", (), False),
+            lookstatus.MeshStatus("id2", "hat_geo", "rigid", ("the topology changed",), True)))
+        window.session.files.look_status = status
+        window.session.changed.emit()
+        self.assertFalse(window.look_box.isHidden())
+        self.assertEqual(window.look_model.rowCount(), 2)
+        self.assertIn("1 rigid", window.look_summary.text())
+        self.assertTrue(window.resave_button.isEnabled())
+        window.resave_button.click()
+        self.assertIn(("save", "weights"), window.session.files.calls)
+        window.session.files.look_status = status.saved({"id2"})
+        window.session.changed.emit()
+        self.assertFalse(window.resave_button.isEnabled(), "every mesh reads as loaded")
 
     def test_the_rows_follow_the_session_changing(self):
         session = FakeSession(self.root)

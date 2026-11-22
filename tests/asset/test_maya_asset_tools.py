@@ -1044,6 +1044,37 @@ class AssetTools(unittest.TestCase):
         self.assertEqual(self.look_of(rig_root).name, "winter")
         self.assertTrue(cmds.ls(cmds.listHistory("hero_game:ball_geo"), type="skinCluster"))
 
+    def test_the_look_status_is_kept_for_the_editor_and_a_weight_save_clears_it(self):
+        self.make_two_looks()
+        weights = os.path.join(self.hero.folder, "looks", "winter", "weights", "ball_geo.json")
+        data = self.read_json(weights)
+        data["topologyHash"] = "0000000000000000"
+        data["skeletonHash"] = "0000000000000000"
+        with open(weights, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        self.assertTrue(self.tools.get_look_status(rig_root).meshes, "building the default look recorded its status")
+        self.assertFalse(self.tools.get_look_status(rig_root).needs_save)
+        self.tools.apply_look(rig_root, "winter")
+        status = self.tools.get_look_status(rig_root)
+        (ball,) = status.meshes
+        self.assertEqual((ball.mesh_name, ball.result, ball.stale_skeleton), ("ball_geo", "rigid", True))
+        self.assertIn("topology", ball.text)
+        self.assertTrue(status.needs_save)
+
+        self.tools.save_skin_weights(rig_root)
+        status = self.tools.get_look_status(rig_root)
+        self.assertEqual([(m.result, m.reasons, m.stale_skeleton) for m in status.meshes], [("loaded", (), False)])
+        self.assertFalse(status.needs_save)
+
+    def test_a_scene_that_was_not_built_here_has_no_look_status(self):
+        self.make_two_looks()
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        self.assertIsNotNone(self.tools.get_look_status(rig_root))
+        self.cmds.file(new=True, force=True)
+        self.assertIsNone(self.tools.get_look_status(rig_root), "the rig is gone")
+        self.assertIsNone(self.tools.get_look_status("nothing:rigRootModule1"))
+
     def test_apply_look_binds_a_mesh_whose_topology_changed_rigid_and_says_so(self):
         cmds = self.cmds
         self.make_two_looks()

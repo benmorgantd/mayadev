@@ -20,7 +20,6 @@ prompter too.
 from __future__ import annotations
 
 import dataclasses
-import json
 import os
 import re
 import tempfile
@@ -39,6 +38,7 @@ import bmaya.core.asset.animproperties
 import bmaya.core.asset.context
 import bmaya.core.asset.handlers
 import bmaya.core.asset.library
+import bmaya.core.asset.lookstatus
 import bmaya.core.asset.textures
 import bmaya.core.log
 import bmaya.core.prompts
@@ -374,9 +374,11 @@ def apply_look(node: str, look: str) -> str | None:
                 if weighted:
                     flags["mesh"] = [marked[mesh_id] for mesh_id in weighted]
                     flags["file"] = [file_ids[mesh_id].replace("\\", "/") for mesh_id in weighted]
-                report = json.loads(cmds.setRigLook(info.rig_root, asset=asset.id, look=look, **flags))
-                look_root = report["lookRoot"]
-                _log_look_report(look, info, report)
+                status = bmaya.core.asset.lookstatus.LookStatus.parse(
+                    cmds.setRigLook(info.rig_root, asset=asset.id, look=look, **flags))
+                look_root = status.look_root
+                _remember_look_status(info.rig_root, status)
+                _log_look_status(look, info, status)
             elif not bare:
                 bmaya.core.log.warning(f"The model of the look {look!r} has no mesh with a meshId"
                                        + (f" for the rig {info.rig_name!r}" if spans else "")
@@ -543,15 +545,44 @@ def load_textures(node: str, look: str | None = None) -> bmaya.maya.assettexture
     return report
 
 
-def _log_look_report(look: str, info: rigmodules.query.RigInfo, report: dict) -> None:
+# What the last apply_look did with each mesh, per rig, for the Asset Editor (RigModules D70). Memory only: the status is
+# computed by each build and never saved (D44), so a scene that was not built here shows none. Keyed by the rig root's
+# uuid, which survives a rename and is new in a new scene.
+_LOOK_STATUS: dict[str, bmaya.core.asset.lookstatus.LookStatus] = {}
+
+
+def _status_key(rig_root: str) -> str:
+    return cmds.ls(rig_root, uuid=True)[0]
+
+
+def _remember_look_status(rig_root: str, status: bmaya.core.asset.lookstatus.LookStatus) -> None:
+    _LOOK_STATUS[_status_key(rig_root)] = status
+
+
+def get_look_status(rig_root: str) -> bmaya.core.asset.lookstatus.LookStatus | None:
+    """What the last apply_look did with each of the rig's meshes, less the meshes whose weights were saved since, or
+    None when the rig was not put in a look in this session."""
+    if not cmds.objExists(rig_root):
+        return None
+    return _LOOK_STATUS.get(_status_key(rig_root))
+
+
+def _forget_saved_meshes(rig_root: str, mesh_ids: set[str]) -> None:
+    """A weight save wrote these meshes' files from the scene, so they match them again."""
+    status = get_look_status(rig_root)
+    if status is not None:
+        _remember_look_status(rig_root, status.saved(mesh_ids))
+
+
+def _log_look_status(look: str, info: rigmodules.query.RigInfo, status: bmaya.core.asset.lookstatus.LookStatus) -> None:
     """Logs what cmds.setRigLook did with each mesh (RigModules D70). A mesh that is not "loaded" is a warning with its
     reasons, because "rigid" is a quiet failure: the mesh exports skinned to the root. A stale file or look is a
     warning too, with what to do."""
-    for mesh in report["meshes"]:
-        if mesh["result"] != "loaded":
-            bmaya.core.log.warning(f"The look {look!r}: {mesh['meshName']} was {mesh['result']}. " + " ".join(f"{reason}." for reason in mesh["reasons"])
+    for mesh in status.meshes:
+        if mesh.result != bmaya.core.asset.lookstatus.LOADED:
+            bmaya.core.log.warning(f"The look {look!r}: {mesh.mesh_name} was {mesh.result}. " + " ".join(f"{reason}." for reason in mesh.reasons)
                                    + " Skin it, then Save Skin Weights.")
-    stale = [mesh["meshName"] for mesh in report["meshes"] if mesh["staleSkeleton"]]
+    stale = [mesh.mesh_name for mesh in status.meshes if mesh.stale_skeleton]
     if stale:
         bmaya.core.log.warning(f"The look {look!r} has weight files saved from another skeleton than the rig {info.rig_name!r} "
                                f"(skeleton hash {info.skeleton_hash}): {', '.join(stale)}. Save Skin Weights to clear this.")
@@ -728,6 +759,7 @@ def save_skin_weights(node: str, look: str | None = None,
             return None
         written = handler.save(None, folder, namespace=info.namespace)
         _warn_unsaved_weights(folder, info)
+        _forget_saved_meshes(info.rig_root, _skinned_mesh_ids(info))
         return written
 
     look = _require_look(asset, info.rig_name, look, _worn_look(info))
@@ -736,14 +768,20 @@ def save_skin_weights(node: str, look: str | None = None,
     bmaya.core.log.info(f"Saved the skin weights of {asset.id} look {look!r}: {path}")
     written = handler.files(path)
     _warn_unsaved_weights(path, info)
+    _forget_saved_meshes(info.rig_root, _skinned_mesh_ids(info))
     return written
+
+
+def _skinned_mesh_ids(info: rigmodules.query.RigInfo) -> set[str]:
+    """The meshIds of the meshes skinned in the rig's namespace: the ones a weight save writes."""
+    return {rigmodules.skinweights.get_mesh_id(mesh) for mesh in rigmodules.skinweights.get_skinned_meshes(info.namespace)}
 
 
 def _warn_unsaved_weights(folder: str, info: rigmodules.query.RigInfo) -> None:
     """Warns about weight files in the folder that the save did not write (their mesh is not skinned in the rig) and
     that carry another skeleton's hash: they stay stale, and fail the next load of the look. Nothing is deleted, since
     the mesh may be skinned in another rig of a look that spans several."""
-    saved_ids = {rigmodules.skinweights.get_mesh_id(mesh) for mesh in rigmodules.skinweights.get_skinned_meshes(info.namespace)}
+    saved_ids = _skinned_mesh_ids(info)
     stale = [path for path in bmaya.maya.assethandlers.RigSkinWeightsHandler.files(folder)
              if rigmodules.skinweights.read_file_mesh_id(path) not in saved_ids
              and rigmodules.skinweights.read_file_skeleton_hash(path) not in ("", None, info.skeleton_hash)]
