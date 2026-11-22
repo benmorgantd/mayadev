@@ -26,6 +26,7 @@ OBJECT_NAME = "bmayaAssetEditor"
 FILES_TAB = "Files"
 MARKUP_TAB = "Markup"
 SHAPES_TAB = "Shapes"
+NAMING_TAB = "Naming"
 CONTROL_COLUMNS = ("Control", "Module", "Side", "Usage", "Mirror")
 
 
@@ -63,6 +64,8 @@ class AssetEditor(QtWidgets.QWidget):
         self.tabs.addTab(self.markup_tab, MARKUP_TAB)
         self.shapes_tab = self._build_shapes_tab()
         self.tabs.addTab(self.shapes_tab, SHAPES_TAB)
+        self.naming_tab = self._build_naming_tab()
+        self.tabs.addTab(self.naming_tab, NAMING_TAB)
         self.tabs.currentChanged.connect(lambda index: self._sync_active())
         layout.addWidget(self.tabs, 1)
         self.status_label = QtWidgets.QLabel()
@@ -72,9 +75,11 @@ class AssetEditor(QtWidgets.QWidget):
         self.session.changed.connect(self.reload)
         self.session.markup.changed.connect(self.reload_markup)
         self.session.shapes.changed.connect(self.reload_shapes)
+        self.session.naming.changed.connect(self.reload_naming)
         self.reload()
         self.reload_markup()
         self.reload_shapes()
+        self.reload_naming()
 
     # ---- building --------------------------------------------------------------------------
 
@@ -258,6 +263,49 @@ class AssetEditor(QtWidgets.QWidget):
         layout.addStretch(1)
         return tab
 
+    def _build_naming_tab(self) -> QtWidgets.QWidget:
+        """Renames the selection into the naming convention: a name root, a side and the number to start from."""
+        naming = bmaya.maya.namingmodel
+        tab = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(tab)
+        self.naming_summary = QtWidgets.QLabel()
+        layout.addWidget(self.naming_summary)
+
+        form = QtWidgets.QFormLayout()
+        self.naming_base_edit = QtWidgets.QLineEdit()
+        self.naming_base_edit.setPlaceholderText("upperArm")
+        self.naming_base_edit.setToolTip("The name root: a lowercase letter, then letters and digits (upperArm, spine1).")
+        self.naming_side_combo = QtWidgets.QComboBox()
+        for side in naming.SIDES:
+            self.naming_side_combo.addItem(side, side)
+        self.naming_start_spin = QtWidgets.QSpinBox()
+        self.naming_start_spin.setRange(0, 999)
+        self.naming_start_spin.setValue(0)
+        self.naming_start_spin.setToolTip("The number of the first node. Each node after it gets one more, in selection order.")
+        form.addRow("Name", self.naming_base_edit)
+        form.addRow("Side", self.naming_side_combo)
+        form.addRow("Start at", self.naming_start_spin)
+        layout.addLayout(form)
+
+        row = QtWidgets.QHBoxLayout()
+        self.rename_button = QtWidgets.QPushButton("Rename")
+        self.rename_button.setToolTip("Rename the selected joints, controls, modules, constraints and meshes, in selection order")
+        self.rename_button.clicked.connect(lambda: self.run(self._rename))
+        self.naming_mirror_button = QtWidgets.QPushButton("Mirror Names")
+        self.naming_mirror_button.setIcon(theme.icon("mirror"))
+        self.naming_mirror_button.setToolTip("Swap Left and Right in each selected name, keeping its root and number")
+        self.naming_mirror_button.clicked.connect(lambda: self.run(self.session.naming.mirror))
+        row.addWidget(self.rename_button)
+        row.addWidget(self.naming_mirror_button)
+        layout.addLayout(row)
+        layout.addStretch(1)
+        return tab
+
+    def _rename(self) -> None:
+        names = self.session.naming.rename(self.naming_base_edit.text(), self.naming_side_combo.currentData(),
+                                           self.naming_start_spin.value())
+        self.status_label.setText(f"Renamed {len(names)} node(s)")
+
     def _edit_shape(self, name: str, value: object) -> None:
         mode = self.shape_mode_combo.currentData()
         self.run(lambda: self.session.shapes.set_field(name, value, mode))
@@ -352,11 +400,23 @@ class AssetEditor(QtWidgets.QWidget):
             button.setEnabled(not blocked)
             button.setToolTip(blocked or default)
 
+    def reload_naming(self) -> None:
+        """Shows the naming model: the summary, and the root, side and start number it filled from the selection."""
+        naming = self.session.naming
+        self.naming_summary.setText(naming.summary)
+        self.naming_base_edit.setText(naming.base)
+        self.naming_side_combo.setCurrentIndex(max(0, self.naming_side_combo.findData(naming.side)))
+        self.naming_start_spin.setValue(naming.start_index)
+        has_nodes = bool(naming.nodes)
+        self.rename_button.setEnabled(has_nodes)
+        self.naming_mirror_button.setEnabled(has_nodes)
+
     def _sync_active(self) -> None:
-        """The markup and shape models read the scene only while their tab is showing."""
+        """The markup, shape and naming models read the scene only while their tab is showing."""
         showing = self.isVisible()
         self.session.markup.set_active(showing and self.tabs.currentWidget() is self.markup_tab)
         self.session.shapes.set_active(showing and self.tabs.currentWidget() is self.shapes_tab)
+        self.session.naming.set_active(showing and self.tabs.currentWidget() is self.naming_tab)
 
     # ---- window events ---------------------------------------------------------------------
 
@@ -373,6 +433,7 @@ class AssetEditor(QtWidgets.QWidget):
         self.session.watch_selection(False)
         self.session.markup.set_active(False)
         self.session.shapes.set_active(False)
+        self.session.naming.set_active(False)
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Closing the window ends the session: its callbacks go and the asset is cleared."""

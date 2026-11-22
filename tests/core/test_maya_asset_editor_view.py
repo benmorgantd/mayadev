@@ -157,6 +157,30 @@ class FakeShapes:
     def mirror(self, left_to_right, fallback_rig_root=None): self._record("mirror", left_to_right, fallback_rig_root)
 
 
+class FakeNaming:
+    """The NamingModel surface the Naming tab reads and calls. Every command is recorded."""
+
+    def __init__(self):
+        import bmaya.core.observable
+        self.changed = bmaya.core.observable.Event()
+        self.summary = "3 node(s): finger_00_L_JNT and 2 more"
+        self.nodes = ["|a", "|b", "|c"]
+        self.base, self.side, self.start_index = "finger", "Left", 4
+        self.active = []
+        self.calls = []
+        self.error = None
+
+    def _record(self, *call):
+        if self.error:
+            raise RuntimeError(self.error)
+        self.calls.append(call)
+        return ["x"] * len(self.nodes)
+
+    def set_active(self, active): self.active.append(active)
+    def rename(self, base, side, start_index): return self._record("rename", base, side, start_index)
+    def mirror(self): return self._record("mirror")
+
+
 class FakeSession:
     """The AssetEditorSession surface the window reads and calls. Every command is recorded."""
 
@@ -171,6 +195,7 @@ class FakeSession:
         self.files = FakeFiles()
         self.markup = FakeMarkup()
         self.shapes = FakeShapes()
+        self.naming = FakeNaming()
         self.mismatch = ""
         self.rig = object()
         self.watching = []
@@ -608,9 +633,65 @@ class EditorView(unittest.TestCase):
         window.show()
         window.tabs.setCurrentWidget(window.shapes_tab)
 
-    def test_the_tabs_are_files_markup_and_shapes(self):
+    def test_the_tabs_are_files_markup_shapes_and_naming(self):
         window = self.window()
-        self.assertEqual([window.tabs.tabText(i) for i in range(window.tabs.count())], ["Files", "Markup", "Shapes"])
+        self.assertEqual([window.tabs.tabText(i) for i in range(window.tabs.count())],
+                         ["Files", "Markup", "Shapes", "Naming"])
+
+    # ---- the Naming tab ----
+
+    def test_the_naming_tab_shows_the_models_root_side_and_start_number(self):
+        window = self.window()
+        self.assertEqual(window.naming_base_edit.text(), "finger")
+        self.assertEqual([window.naming_side_combo.itemText(i) for i in range(3)], ["Left", "Right", "Center"])
+        self.assertEqual(window.naming_side_combo.currentText(), "Left")
+        self.assertEqual(window.naming_start_spin.value(), 4)
+        self.assertIn("3 node(s)", window.naming_summary.text())
+
+    def test_the_start_number_defaults_to_zero_and_the_side_is_a_combo(self):
+        session = FakeSession(self.root)
+        session.naming.base, session.naming.side, session.naming.start_index = "", "Center", 0
+        window = self.window(session)
+        self.assertEqual((window.naming_start_spin.value(), window.naming_side_combo.currentText()), (0, "Center"))
+
+    def test_rename_sends_the_root_side_and_start_number(self):
+        session = FakeSession(self.root)
+        window = self.window(session)
+        window.naming_base_edit.setText("toe")
+        window.naming_side_combo.setCurrentIndex(window.naming_side_combo.findData("Right"))
+        window.naming_start_spin.setValue(2)
+        window.rename_button.click()
+        self.assertEqual(session.naming.calls, [("rename", "toe", "Right", 2)])
+        self.assertEqual(window.status_label.text(), "Renamed 3 node(s)")
+
+    def test_mirror_names_calls_the_model(self):
+        session = FakeSession(self.root)
+        window = self.window(session)
+        window.naming_mirror_button.click()
+        self.assertEqual(session.naming.calls, [("mirror",)])
+
+    def test_naming_buttons_are_off_with_no_selection(self):
+        session = FakeSession(self.root)
+        session.naming.nodes = []
+        window = self.window(session)
+        session.naming.changed.emit()
+        self.assertFalse(window.rename_button.isEnabled())
+        self.assertFalse(window.naming_mirror_button.isEnabled())
+
+    def test_a_naming_error_goes_to_the_status_line(self):
+        session = FakeSession(self.root)
+        window = self.window(session)
+        session.naming.error = "arm_00_R_JNT is taken."
+        window.rename_button.click()
+        self.assertEqual(window.status_label.text(), "arm_00_R_JNT is taken.")
+
+    def test_only_the_showing_naming_tab_reads_the_scene(self):
+        session = FakeSession(self.root)
+        window = self.window(session)
+        window.show()
+        window.tabs.setCurrentWidget(window.naming_tab)
+        window.hide()
+        self.assertEqual(session.naming.active, [False, True, False])
 
     def test_only_the_showing_tab_reads_the_scene(self):
         session = FakeSession(self.root)

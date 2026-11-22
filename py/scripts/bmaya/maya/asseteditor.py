@@ -30,6 +30,7 @@ import bmaya.maya.shapemodel
 import bmaya.maya.eventsregistry
 
 LAST_ASSET_OPTION = "bmayaAssetEditorLastAsset"
+import bmaya.maya.namingmodel
 CALLBACK_PREFIX = "asset_editor"
 
 
@@ -75,6 +76,7 @@ class AssetEditorSession:
         registry = bmaya.maya.eventsregistry.EventsRegistry()
         registry.add_maya_new_scene_callback(self._keys["new"], self._on_scene_changed)
         registry.add_maya_open_scene_callback(self._keys["open"], self._on_scene_changed)
+        self.naming = bmaya.maya.namingmodel.NamingModel(self.selection_changed)
         registry.add_maya_closing_callback(self._keys["exit"], self._on_maya_exiting)
         self.refresh_asset_ids()
 

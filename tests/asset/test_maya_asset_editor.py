@@ -1246,3 +1246,100 @@ class Shapes(EditorBase):
 
 if __name__ == "__main__":
     unittest.main()
+class Naming(EditorBase):
+
+    def joints(self, *names):
+        made = []
+        for index, name in enumerate(names):
+            self.cmds.select(clear=True)
+            made.append(self.cmds.joint(name=name, position=(index, 0, 0)))
+        return made
+
+    def model(self, *selected):
+        session = self.session(HERO)
+        self.cmds.select(list(selected), replace=True) if selected else self.cmds.select(clear=True)
+        session.naming.set_active(True)
+        return session.naming
+
+    def test_with_no_selection_it_says_what_to_select(self):
+        self.assertIn("Select", self.model().summary)
+
+    def test_the_root_side_and_start_number_come_from_the_first_named_node(self):
+        a, b = self.joints("junk", "finger_03_R_JNT")
+        model = self.model(a, b)
+        self.assertEqual((model.base, model.side, model.start_index), ("finger", "Right", 3))
+
+    def test_activating_turns_on_selection_order_tracking(self):
+        self.cmds.selectPref(trackSelectionOrder=False)
+        self.model()
+        self.assertTrue(self.cmds.selectPref(query=True, trackSelectionOrder=True))
+
+    def test_rename_numbers_from_the_start_in_selection_order(self):
+        a, b, c = self.joints("a", "b", "c")
+        model = self.model(c, a, b)
+        names = model.rename("finger", "Left", 2)
+        self.assertEqual(names, ["finger_02_L_JNT", "finger_03_L_JNT", "finger_04_L_JNT"])
+        self.assertTrue(self.cmds.objExists("finger_02_L_JNT"))
+
+    def test_rename_is_one_undo_step(self):
+        a, b = self.joints("a", "b")
+        self.model(a, b).rename("toe", "Center", 0)
+        self.cmds.undo()
+        self.assertTrue(self.cmds.objExists("a"))
+        self.assertTrue(self.cmds.objExists("b"))
+
+    def test_rename_refuses_an_empty_selection_a_blank_root_and_a_bad_side(self):
+        with self.assertRaisesRegex(RuntimeError, "Select"):
+            self.model().rename("toe", "Left", 0)
+        [a] = self.joints("a")
+        model = self.model(a)
+        with self.assertRaisesRegex(RuntimeError, "name root"):
+            model.rename("  ", "Left", 0)
+        with self.assertRaisesRegex(RuntimeError, "side"):
+            model.rename("toe", "Up", 0)
+
+    def test_rename_to_a_taken_name_fails_and_changes_nothing(self):
+        a, b = self.joints("a", "toe_01_M_JNT")
+        with self.assertRaises(RuntimeError):
+            self.model(a).rename("toe", "Center", 1)
+        self.assertTrue(self.cmds.objExists("a"))
+
+    def test_mirror_swaps_left_and_right_keeping_root_and_number(self):
+        a, b = self.joints("arm_01_L_JNT", "leg_04_R_JNT")
+        names = self.model(a, b).mirror()
+        self.assertEqual(names, ["arm_01_R_JNT", "leg_04_L_JNT"])
+
+    def test_mirror_refuses_centre_and_unnamed_nodes_before_renaming_anything(self):
+        a, b = self.joints("arm_01_L_JNT", "spine_00_M_JNT")
+        with self.assertRaisesRegex(RuntimeError, "Center"):
+            self.model(a, b).mirror()
+        self.assertTrue(self.cmds.objExists("arm_01_L_JNT"))
+        [c] = self.joints("junk")
+        with self.assertRaisesRegex(RuntimeError, "naming convention"):
+            self.model(c).mirror()
+
+    def test_mirror_into_a_taken_name_rolls_the_whole_selection_back(self):
+        a, b, taken = self.joints("arm_00_L_JNT", "leg_00_L_JNT", "leg_00_R_JNT")
+        with self.assertRaises(RuntimeError):
+            self.model(a, b).mirror()
+        for name in ("arm_00_L_JNT", "leg_00_L_JNT", "leg_00_R_JNT"):
+            self.assertTrue(self.cmds.objExists(name), name)
+        self.assertFalse(self.cmds.objExists("arm_00_R_JNT"))
+
+    def test_a_mesh_is_renamed_with_geo_and_mirrored(self):
+        cube = self.cmds.polyCube(name="box")[0]
+        model = self.model(cube)
+        self.assertEqual(model.rename("body", "Left", 1), ["body_01_L_GEO"])
+        self.assertEqual(model.mirror(), ["body_01_R_GEO"])
+        self.assertEqual((model.base, model.side, model.start_index), ("body", "Right", 1))
+
+    def test_an_inactive_model_does_not_follow_the_selection(self):
+        session = self.session(HERO)
+        session.watch_selection(True)
+        [a] = self.joints("arm_00_L_JNT")
+        self.cmds.select(a, replace=True)
+        self.assertEqual(session.naming.nodes, [])
+        session.naming.set_active(True)
+        self.assertEqual(session.naming.base, "arm")
+
+
