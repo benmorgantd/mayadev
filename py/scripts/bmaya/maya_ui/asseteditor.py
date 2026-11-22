@@ -140,13 +140,8 @@ class AssetEditor(QtWidgets.QWidget):
         row = QtWidgets.QHBoxLayout()
         self.build_button = QtWidgets.QPushButton("Build Rig")
         self.build_button.setToolTip("Build the chosen rig in the scene, wearing the chosen look")
-        self.build_button.clicked.connect(
-            lambda: self.run(lambda: self.session.files.build_rig(self.ignore_hash_check.isChecked())))
+        self.build_button.clicked.connect(lambda: self.run(self.session.files.build_rig))
         row.addWidget(self.build_button)
-        self.ignore_hash_check = QtWidgets.QCheckBox("Ignore skeleton changes")
-        self.ignore_hash_check.setToolTip("Load the look's weight files even though they were saved from another "
-                                          "skeleton (a joint was added, say). Build, re-skin, then save the weights.")
-        row.addWidget(self.ignore_hash_check)
         row.addStretch(1)
         layout.addLayout(row)
         return tab

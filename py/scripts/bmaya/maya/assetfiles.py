@@ -489,18 +489,16 @@ class AssetFilesModel:
         action.load_by_name(self)
         self.refresh()
 
-    def build_rig(self, ignore_skeleton_hash: bool = False) -> str:
+    def build_rig(self) -> str:
         """Builds the chosen rig, wearing the chosen look when it fits, and selects its rig root. Returns the root.
 
-        ignore_skeleton_hash loads weight files saved from another skeleton anyway (assettools.apply_look), so a rig
-        can be built after a skeleton change to be re-skinned."""
+        A weight file that no longer fits does not fail the build: apply_look folds or binds rigid and logs it."""
         context = self.context
         if context.rig is None:
             raise RuntimeError("The asset has no rig. Add one with New > Rig.")
         looks = bmaya.maya.assettools.get_rig_looks(self.asset, context.rig)
         look = context.look if context.look in looks else (looks[0] if len(looks) == 1 else None)
-        rig_root = bmaya.maya.assettools.build_rig(self.asset_id, context.rig, look,
-                                                     ignore_skeleton_hash=ignore_skeleton_hash)
+        rig_root = bmaya.maya.assettools.build_rig(self.asset_id, context.rig, look)
         cmds.select(rig_root, replace=True)
         self.refresh()
         return rig_root

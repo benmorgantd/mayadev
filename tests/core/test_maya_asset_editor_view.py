@@ -84,8 +84,8 @@ class FakeFiles:
         self._record("open_folder", key)
         return f"C:/projects/{key}"
 
-    def build_rig(self, ignore_skeleton_hash=False):
-        self._record("build_rig", ignore_skeleton_hash)
+    def build_rig(self):
+        self._record("build_rig")
         return "hero_game:rigRootModule1"
 
     def refresh(self):
@@ -428,10 +428,8 @@ class EditorView(unittest.TestCase):
     def test_build_rig_calls_the_files_model_and_is_disabled_with_no_rig(self):
         window = self.window()
         window.build_button.click()
-        self.assertIn(("build_rig", False), window.session.files.calls)
-        window.ignore_hash_check.setChecked(True)
-        window.build_button.click()
-        self.assertEqual(window.session.files.calls[-1], ("build_rig", True))
+        self.assertIn(("build_rig",), window.session.files.calls)
+        self.assertFalse(hasattr(window, "ignore_hash_check"), "the fallback is always on (RigModules D70)")
         window.session.context.set_asset(VILLAIN)
         window.session.changed.emit()
         self.assertFalse(window.build_button.isEnabled())

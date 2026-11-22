@@ -1028,7 +1028,8 @@ class AssetTools(unittest.TestCase):
         self.assertTrue(cmds.objExists("hero_game:box_geo"))
         self.assertFalse(cmds.objExists("hero_game:ball_geo"))
 
-    def test_apply_look_with_another_skeletons_weights_fails_and_leaves_the_rig_alone(self):
+    def test_apply_look_with_another_skeletons_weights_loads_them_and_warns(self):
+        """The skeleton hash is a status, not a gate (RigModules D70): the look goes on, the file is reported stale."""
         cmds = self.cmds
         self.make_two_looks()
         weights = os.path.join(self.hero.folder, "looks", "winter", "weights", "ball_geo.json")
@@ -1037,14 +1038,24 @@ class AssetTools(unittest.TestCase):
         with open(weights, "w", encoding="utf-8") as handle:
             json.dump(data, handle)
         rig_root = self.tools.build_rig(HERO, "game", "default")
-        import bmaya.core.asset
-        with self.assertRaisesRegex(bmaya.core.asset.AssetError, "saved from another skeleton.*ball_geo.json.*ignore_skeleton_hash"):
+        with self.assertLogs("bmaya", level="WARNING") as logs:
             self.tools.apply_look(rig_root, "winter")
-        self.assertEqual(self.look_of(rig_root).name, "default")
-        self.assertTrue(cmds.objExists("hero_game:box_geo"))
-        self.assertFalse(cmds.objExists("hero_game:ball_geo"), "the failed swap deletes what the import made")
+        self.assertRegex("\n".join(logs.output), "another skeleton.*ball_geo")
+        self.assertEqual(self.look_of(rig_root).name, "winter")
+        self.assertTrue(cmds.ls(cmds.listHistory("hero_game:ball_geo"), type="skinCluster"))
 
-        self.tools.apply_look(rig_root, "winter", ignore_skeleton_hash=True)
+    def test_apply_look_binds_a_mesh_whose_topology_changed_rigid_and_says_so(self):
+        cmds = self.cmds
+        self.make_two_looks()
+        weights = os.path.join(self.hero.folder, "looks", "winter", "weights", "ball_geo.json")
+        data = self.read_json(weights)
+        data["topologyHash"] = "0000000000000000"
+        with open(weights, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+        rig_root = self.tools.build_rig(HERO, "game", "default")
+        with self.assertLogs("bmaya", level="WARNING") as logs:
+            self.tools.apply_look(rig_root, "winter")
+        self.assertRegex("\n".join(logs.output), "ball_geo was rigid.*topology")
         self.assertEqual(self.look_of(rig_root).name, "winter")
         self.assertTrue(cmds.ls(cmds.listHistory("hero_game:ball_geo"), type="skinCluster"))
 
@@ -1085,18 +1096,14 @@ class AssetTools(unittest.TestCase):
         self.assertRegex("\n".join(logs.output), "not saved.*L_Blink.json")
         self.assertTrue(os.path.isfile(stale), "nothing is deleted")
 
-    def test_build_rig_passes_ignore_skeleton_hash_to_the_look(self):
-        cmds = self.cmds
+    def test_build_rig_with_stale_weights_builds_the_look(self):
         self.make_two_looks()
         weights = os.path.join(self.hero.folder, "looks", "default", "weights", "box_geo.json")
         data = self.read_json(weights)
         data["skeletonHash"] = "0000000000000000"
         with open(weights, "w", encoding="utf-8") as handle:
             json.dump(data, handle)
-        with self.assertRaisesRegex(RuntimeError, "saved from another skeleton"):
-            self.tools.build_rig(HERO, "game", "default")
-        cmds.file(new=True, force=True)
-        rig_root = self.tools.build_rig(HERO, "game", "default", ignore_skeleton_hash=True)
+        rig_root = self.tools.build_rig(HERO, "game", "default")
         self.assertEqual(self.look_of(rig_root).name, "default")
 
     def add_to_winter_model(self, marked):
@@ -1365,7 +1372,7 @@ class AssetTools(unittest.TestCase):
                            parent=bmaya.core.asset.RigRef("body"))
         self.tools.save_skeleton(HERO, "default", joints=self.make_joint_chain(("a", "b", "c"), (0, 2, 4)))
         self.cmds.file(new=True, force=True)
-        self.tools.save_skeleton(HERO, "face", joints=self.make_joint_chain(("n", "fA", "fB"), (2, 5, 6), chained=False))
+        self.tools.save_skeleton(HERO, "face", joints=self.make_joint_chain(("n", "fA", "fB"), (2, 5, 6)))
         self.cmds.file(new=True, force=True)
 
     def make_spanning_look(self):
