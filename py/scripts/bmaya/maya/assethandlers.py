@@ -1,8 +1,8 @@
 """Maya save and load handlers for asset file types (bmaya.core.asset.handlers).
 
 Only formats that exist get a handler: skeleton files, model files (meshes only), rig scenes, RigModules templates,
-shape files, skin weights, control poses and animations (ControlPose and ControlAnim files) and animation clips (FBX,
-RigModules D42). Other file types (textures, shaders, postops) have none yet, so saving or loading them raises
+shape files, skin weights, texture folders, control poses and animations (ControlPose and ControlAnim files) and
+animation clips (FBX, RigModules D42). Other file types (shaders, postops) have none yet, so saving or loading them raises
 NotImplementedError until one is written.
 
 A file belongs to a skeleton, a rig or a look of the asset (RigModules D54), named as the third argument.
@@ -81,7 +81,7 @@ class ModelHandler(MayaSceneHandler):
     def save(self, asset: Asset | None, path: str, meshes: list[str] | None = None, **context) -> None:
         """Exports meshes (mesh transforms, or every visible mesh in the scene) to path. Each is exported from its
         undeformed shape, so a posed rig doesn't matter, at the top level of the file under its own short name, with
-        its meshId and its shading. The scene is not saved, renamed or changed."""
+        its meshId and no shading (the look's textures file owns it). The scene is not saved, renamed or changed."""
         meshes = list(meshes) if meshes else get_scene_meshes()
         if not meshes:
             raise RuntimeError("There are no meshes to save as a model.")
@@ -97,8 +97,8 @@ def get_scene_meshes() -> list[str]:
 def export_meshes(meshes: list[str], path: str) -> None:
     """Writes mesh transforms to a Maya ASCII file as meshes only. Each mesh is copied into a scratch namespace, the
     copy takes the mesh's original (undeformed) geometry and loses its history, and the copies are exported at the
-    top level with that namespace left out of every name. Their materials are copied with them, so a material in a
-    rig's namespace doesn't drag that namespace into the file. The scratch namespace and everything in it is deleted
+    top level with that namespace left out of every name. They are on the default shading group: the look's textures
+    file builds the shading when the look is applied. The scratch namespace and everything in it is deleted
     afterwards, and the current namespace and the selection are restored."""
     names = [_short_name(mesh) for mesh in meshes]
     repeated = sorted({name for name in names if names.count(name) > 1})
@@ -114,11 +114,10 @@ def export_meshes(meshes: list[str], path: str) -> None:
     try:
         # A duplicate is made in the current namespace under its source's own name, which is what keeps the names.
         cmds.namespace(setNamespace=scratch)
-        engines: dict[str, str] = {}
-        copies = [_copy_mesh_for_export(mesh, engines) for mesh in meshes]
+        copies = [_copy_mesh_for_export(mesh) for mesh in meshes]
         cmds.select(copies, replace=True)
         cmds.file(path, exportSelected=True, type="mayaAscii", force=True, relativeNamespace=scratch,
-                  constructionHistory=False, channels=False, constraints=False, expressions=False, shader=True,
+                  constructionHistory=False, channels=False, constraints=False, expressions=False, shader=False,
                   preserveReferences=False)
     finally:
         cmds.namespace(setNamespace=current)
@@ -126,10 +125,10 @@ def export_meshes(meshes: list[str], path: str) -> None:
         cmds.select(cmds.ls(selection, long=True), replace=True)
 
 
-def _copy_mesh_for_export(mesh: str, engines: dict[str, str]) -> str:
+def _copy_mesh_for_export(mesh: str) -> str:
     """A copy of a mesh transform at the top level of the current namespace, with the mesh's original geometry, no
-    history, and copies of its materials (engines maps a shading engine to its copy, shared by the meshes of one
-    export). Returns the copy."""
+    history and no material: a look's shading is the textures file's (bmaya.maya.assettextures), so the model holds
+    meshes only. Returns the copy."""
     shapes = [shape for shape in cmds.listRelatives(mesh, shapes=True, fullPath=True) or []
               if cmds.nodeType(shape) == "mesh" and not cmds.getAttr(shape + ".intermediateObject")]
     if len(shapes) != 1:
@@ -151,30 +150,7 @@ def _copy_mesh_for_export(mesh: str, engines: dict[str, str]) -> str:
         cmds.polyEvaluate(copy_shape, vertex=True)   # pulls the geometry in, so it stays when the input goes
         cmds.disconnectAttr(original, copy_shape + ".inMesh")
 
-    for engine in sorted(set(cmds.listConnections(copy_shape, type="shadingEngine") or [])):
-        if engine == "initialShadingGroup":
-            continue   # a default node: it is in every scene under this name
-        members = [member for member in cmds.sets(engine, query=True) or []
-                   if cmds.ls(member, objectsOnly=True, long=True) == [copy_shape]]
-        if engine not in engines:
-            engines[engine] = _copy_shading_engine(engine)
-        if members:
-            cmds.sets(members, edit=True, forceElement=engines[engine])
-    return copy
-
-
-def _copy_shading_engine(engine: str) -> str:
-    """A copy of a shading engine in the current namespace, under its own short name, with a copy of each shader it
-    reads and of what feeds that shader. The engine is made new, not duplicated: its upstream nodes include every
-    mesh assigned to it, and through them the rig."""
-    copy = cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=_short_name(engine))
-    for attribute in ("surfaceShader", "volumeShader", "displacementShader"):
-        for source in cmds.listConnections(f"{engine}.{attribute}", source=True, destination=False, plugs=True) or []:
-            node, _, plug = source.partition(".")
-            if node in (cmds.ls(defaultNodes=True) or []):
-                cmds.connectAttr(source, f"{copy}.{attribute}")   # lambert1 and its kind are in every scene
-            else:
-                cmds.connectAttr(f"{cmds.duplicate(node, upstreamNodes=True)[0]}.{plug}", f"{copy}.{attribute}")
+    cmds.sets(copy_shape, edit=True, forceElement="initialShadingGroup")   # the copy keeps its material otherwise
     return copy
 
 
@@ -330,6 +306,28 @@ class RigSkinWeightsHandler(handlers.FileHandler):
         meshes[mesh_id] = mesh
         changed.append(f"{_short_name(mesh)} ({current or 'no id'} -> {mesh_id})")
         return mesh
+
+
+TEXTURE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".tga", ".exr", ".hdr", ".psd", ".bmp", ".tx")
+
+
+class TexturesHandler(handlers.FileHandler):
+    """A look's textures: a folder of image files the artist puts there. Nothing is written in a format of ours, so Save
+    only makes the folder (handlers.save has already made it) and Load returns the texture files in it, as paths."""
+
+    @staticmethod
+    def files(folder: str) -> list[str]:
+        """The texture files directly in a textures folder, sorted. Other files and subfolders are not listed."""
+        if not os.path.isdir(folder):
+            return []
+        return sorted(os.path.join(folder, name) for name in os.listdir(folder)
+                      if name.lower().endswith(TEXTURE_EXTENSIONS) and os.path.isfile(os.path.join(folder, name)))
+
+    def save(self, asset: Asset | None, path: str, **context) -> None:
+        os.makedirs(path, exist_ok=True)
+
+    def load(self, asset: Asset | None, path: str, **context) -> list[str]:
+        return self.files(path)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -653,6 +651,7 @@ def register() -> None:
     handlers.register("rig", MayaSceneHandler())
     handlers.register("shapes", RigShapesHandler())
     handlers.register("weights", RigSkinWeightsHandler())
+    handlers.register("textures", TexturesHandler())
     handlers.register("template", RigTemplateHandler())
     handlers.register("exports", AnimClipHandler())
     handlers.register("sources", SourceClipHandler())

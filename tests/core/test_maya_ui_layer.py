@@ -364,7 +364,8 @@ class ThemeTest(MayaUiTest):
     def test_every_icon_draws_something(self):
         import bmaya.maya_ui.theme as theme
         for name in ("chevron_down", "chevron_right", "chevron_up", "check", "dot", "plus", "minus", "mirror",
-                     "rotate", "scale", "translate", "key", "pose", "module"):
+                     "rotate", "scale", "translate", "key", "pose", "module",
+                     "save", "load", "folder"):
             image = theme.icon(name).pixmap(16, 16).toImage()
             opaque = [image.pixelColor(x, y).alpha() for x in range(16) for y in range(16)]
             self.assertTrue(any(opaque), name)

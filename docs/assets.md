@@ -97,7 +97,7 @@ A file type's `path` is relative to the asset folder. `{name}` is the asset's na
 | `controlanims` | `rigs/{rig}/controlanims` | rig | Yes | Control anim |
 | `lookinfo` | `looks/{look}/look.json` | look | | None (`Asset.look`) |
 | `model` | `looks/{look}/model/{name}_{look}_model.ma` | look | | Model (meshes only) |
-| `textures` | `looks/{look}/textures` | look | Yes | None yet |
+| `textures` | `looks/{look}/textures` | look | Yes | Textures (a folder of images) |
 | `shaders` | `looks/{look}/shaders` | look | Yes | None yet |
 | `weights` | `looks/{look}/weights` | look | Yes | Skin weights |
 | `lookpublish` | `looks/{look}/publish` | look | Yes | None (see Publishes) |
@@ -262,7 +262,7 @@ The Maya handlers are registered by `bmaya.maya.assethandlers.register()`:
 |---|---|---|---|
 | `skeleton` | `RigSkeletonHandler` | `joints=` (save), `namespace=` (load) | A skeleton is its `skeleton.json` and nothing else (RigModules D54). Save is `cmds.saveRigSkeleton` on `joints`. Load is `cmds.loadRigSkeleton`: it creates the joints at rest and marked in the namespace (the current one when left out) and returns them. It fails when a name is taken, where a scene import would merge |
 | `rig` | `MayaSceneHandler` | `namespace=` (load) | Save renames the open scene to the path and saves it as Maya ASCII. Load imports into a namespace (`namespace=`, else the asset's name), merging into it if it exists, and returns the new nodes. Never references |
-| `model` | `ModelHandler` | `meshes=` (save), `namespace=` (load) | A model file is only meshes: no joints, no skinCluster, no history. Save exports `meshes` (every visible mesh when left out), each from its undeformed shape under its own short name at the top level, with its `meshId` and a copy of its materials, and leaves the scene saved, renamed and posed as it was. It fails when two meshes share a short name. Load imports like a scene |
+| `model` | `ModelHandler` | `meshes=` (save), `namespace=` (load) | A model file is only meshes: no joints, no skinCluster, no history. Save exports `meshes` (every visible mesh when left out), each from its undeformed shape under its own short name at the top level, with its `meshId` and no material (it is on the default shading group: the look's textures file owns the shading), and leaves the scene saved, renamed and posed as it was. It fails when two meshes share a short name. Load imports like a scene |
 | `template` | `RigTemplateHandler` | `source=` (save) | Save writes the template file passed as `source=` into the rig's folder with its `rigName` set to the rig's name, because templates are shared between assets. It is written again as JSON: key order and indent are kept, other hand formatting is not. Load returns the template's path |
 | `shapes` | `RigShapesHandler` | `rig_root=` | RigModules `saveRigControlShapes` and `loadRigControlShapes` |
 | `weights` | `RigSkinWeightsHandler` | `namespace=` | One RigModules weight file per skinned mesh in the namespace, named after the mesh (`box_geo.json`). Save fails on a skinned mesh without a `meshId`, and removes a file left from a mesh's old name. Load matches each file to a mesh by the `meshId` inside it, never by name, skips a file whose mesh isn't in the scene with a warning, fails if two files name one `meshId`, and is one undo step |
@@ -291,7 +291,7 @@ cmds.animateRigFromJointClip("hero_game:rigRootModule1", jointClip=clip.joint_cl
 
 A pose, an animation or a clip should be saved through `assethandlers.save_control_file` or `assethandlers.save_anim_clip`, not `handlers.save`. `handlers.save` versions the path it is given, which for a folder type is the whole folder. The two helpers version only the one file (or the one clip's FBX), and tell source control about it.
 
-Textures, shaders and postops have no handler yet. The weight, shape and rig tools read and write through these handlers, and the tools that sit on top are in [`tools.md`](tools.md).
+The textures handler makes the folder on save and lists its image files on load (`.png`, `.jpg`, `.tif`, `.tga`, `.exr` and a few more). What each image is for is the look's textures file, below. Shaders and postops have no handler yet. The weight, shape and rig tools read and write through these handlers, and the tools that sit on top are in [`tools.md`](tools.md).
 
 ## Library
 
@@ -361,6 +361,28 @@ A rig whose `rig.json` has a `parent` follows that rig (RigModules D55, `docs/at
 
 The attachment builds into `{asset name}_{rig}` as ever, with `parentRig` set. RigModules checks the template's `parent:` ids against the parent and lists every missing socket. A failed attachment build leaves the parent in the scene, since it is a valid rig on its own, and the error says so. The shapes, look and active rig run per rig, and the attachment's root is the one returned and made active.
 
+### Textures: which image is on which mesh
+
+A model file holds meshes and no shading, so the images a look uses are described by a sidecar in its textures folder, as the weight files describe the skinning: `looks/{look}/textures/textures.json` (`bmaya.core.asset.textures`). It is keyed by `meshId`, so a renamed mesh keeps its textures.
+
+```json
+{ "formatVersion": 1,
+  "materials": { "gun_mat": { "shader": "standardSurface",
+      "slots": { "baseColor": "gun_albedo.png", "normal": "gun_normal.png", "roughness": "gun_rough.png" } } },
+  "meshes": { "3f2a...": { "meshName": "gun_geo", "material": "gun_mat" } } }
+```
+
+| Key | Meaning |
+|---|---|
+| `materials` | Shaders by name. Several meshes can name one |
+| `shader` | `standardSurface`, the only one built. Its slots are `baseColor`, `emission` (read as sRGB), `normal`, `roughness`, `metalness` and `opacity` (read as raw values) |
+| `slots` | Slot to image file, a path relative to the textures folder written with `/`. A normal map is built through a `bump2d` in tangent space |
+| `meshes` | `meshId` to the mesh's name (for people reading the file) and its material |
+
+`assettools.save_textures(rig_root, look=None, copy_in=False)` records the shading of every marked mesh in the rig's namespace: the standardSurface it wears and the image file on each slot. A slot with anything but one image file in it is warned about and left out, and a mesh with no textured slot gets no entry. It refuses an image outside the textures folder, naming it, unless `copy_in=True` copies it in (an existing file of that name is never overwritten). The old file is kept as a local version.
+
+`assettools.load_textures(rig_root, look=None)` builds the shading from the file, and `apply_look` does the same after the meshes are in, so a look is always shaded by what the file says. It removes the shaders it built before and the material a mesh in the file currently wears (an engine another mesh still wears is kept), then builds each material and assigns it by `meshId`. A mesh with no entry keeps what it has, and the log lists it, the entries with no mesh, and image files that are not in the folder. A bad file is a warning when a look goes on, and the look is still applied. The constant colours of a shader are not recorded: only images are.
+
 ### Putting a rig in a look
 
 `bmaya.maya.assettools.apply_look(node, look)` swaps the look of the rig that `node` belongs to (RigModules D54 phase 5, `docs/looks.md` there). A look that isn't synced is synced first. It checks that the asset has the look, that its `look.json` names the rig's skeleton, and that it has a model. Then, as one undo step, it imports the model into the rig's namespace and calls `cmds.setRigLook`. RigModules matches each mesh to its file by `meshId`, deletes the previous look's meshes, names the new ones after their files and records the look on the rig. The new meshes then join the rig's mesh layer and group. A failed swap deletes everything the model import created.
@@ -375,6 +397,8 @@ The attachment builds into `{asset name}_{rig}` as ever, with `parentRig` set. R
 | A weight file with no mesh in the model | Skips the file with a warning that points to Load Skin Weights by Name |
 
 A model with no marked mesh records no look, and `apply_look` returns `None`.
+
+After the meshes and weights are in, `apply_look` builds the look's shading from its textures file (above). Materials built from it carry a tag, so the next apply removes them instead of leaving the previous look's behind.
 
 **When meshIds change.** A `meshId` lives on the scene node. Marking a mesh in a scene that wasn't loaded from the model (a re-import, the art source) gives that node a new id, and the weights saved before no longer find it. `load_skin_weights(node, by_name=True)` (Load Skin Weights by Name) matches each file to the mesh with its `meshName` instead and gives the mesh the file's `meshId`. It logs the ids it changed. Save the model afterwards so the next build matches them by `meshId`.
 

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import dataclasses
 import os
+from collections.abc import Callable
 
 import maya.cmds as cmds
 import rigmodules.query
@@ -21,6 +22,7 @@ import rigmodules.query
 import bmaya.core.asset
 import bmaya.core.asset.context
 import bmaya.core.asset.handlers
+import bmaya.core.asset.textures
 import bmaya.core.asset.versions
 import bmaya.core.log
 import bmaya.core.observable
@@ -49,6 +51,10 @@ class FileRow:
     save_blocked: str = ""
     load_blocked: str = ""
     loads_by_name: bool = False   # Load by Name is offered (skin weights, RigModules D68); load_blocked applies to it
+    opens_folder: bool = False    # a folder the artist fills (textures): Open Folder makes it and shows it, no Save or Load
+    file_count: int | None = None   # for such a folder: the files in it (None when it is not there yet)
+    open_blocked: str = ""
+    note: str = ""   # said after the file count: how the folder's sidecar stands
 
 
 @dataclasses.dataclass(frozen=True)
@@ -69,6 +75,20 @@ class FileAction:
     loads = False
     loads_by_name = False   # has load_by_name, offered on the row's right-click menu
     save_hint = ""   # what Save writes, shown in the button's tool tip
+    opens_folder = False   # a folder of files the artist adds by hand: the row's menu has Open Folder
+
+    def open_blocked(self, model: AssetFilesModel) -> str:
+        return ""
+
+    def list_files(self, model: AssetFilesModel) -> list[str]:
+        return []
+
+    def note(self, model: AssetFilesModel) -> str:
+        return ""
+
+    def path(self, model: AssetFilesModel, owner: str | None) -> str:
+        """The row's file: the asset's path for the file type. A folder type with a sidecar says the sidecar's."""
+        return model.asset.path(self.key, owner)
 
     def save_blocked(self, model: AssetFilesModel) -> str:
         return ""
@@ -150,6 +170,47 @@ class WeightsAction(FileAction):
         bmaya.maya.assettools.load_skin_weights(model.rig_root, model.context.look, by_name=True)
 
 
+class TexturesAction(FileAction):
+    """A look's textures: the folder of images the artist copies in (right-click: Open Folder, which makes it when it is
+    missing) and its sidecar, textures.json, which says what each image is for and which mesh wears it. The row is
+    the sidecar: Save records the rig's shading into it, and Load builds the shading from it."""
+
+    key, label, owner_kind, saves, loads, opens_folder = "textures", "Textures", "look", True, True, True
+    save_hint = "The shading of every marked mesh in the rig's namespace: its images and what they are for"
+
+    def path(self, model, owner):
+        return bmaya.core.asset.textures.get_path(model.asset.path(self.key, owner))
+
+    def open_blocked(self, model):
+        return "" if model.context.look is not None else "The asset has no look. Add one with New > Look."
+
+    def list_files(self, model):
+        return bmaya.maya.assethandlers.TexturesHandler.files(model.asset.path(self.key, model.context.look))
+
+    def note(self, model):
+        path = self.path(model, model.context.look) if model.context.look is not None else ""
+        if not os.path.isfile(path):
+            return "not mapped to meshes yet"
+        try:
+            return f"{len(bmaya.core.asset.textures.read(path).meshes)} meshes mapped"
+        except bmaya.core.asset.textures.TexturesError:
+            return "textures.json is not valid"
+
+    def save_blocked(self, model):
+        if model.context.look is None:
+            return "The asset has no look. Add one with New > Look."
+        return model.rig_blocked()
+
+    def save(self, model):
+        return bmaya.maya.assettools.save_textures(model.rig_root, model.context.look)
+
+    def load_blocked(self, model):
+        return self.save_blocked(model) or ("" if model.file_exists(self) else "The textures are not saved yet.")
+
+    def load(self, model):
+        bmaya.maya.assettools.load_textures(model.rig_root, model.context.look)
+
+
 class RigSceneAction(FileAction):
     key, label, owner_kind, saves = "rig", "Rig scene", "rig", True
     save_hint = "Saves the open scene as the rig's file and renames it. Build Rig loads it again"
@@ -184,8 +245,8 @@ class TemplateAction(FileAction):
     key, label, owner_kind = "template", "Template", "rig"
 
 
-ACTIONS: tuple[FileAction, ...] = (SkeletonAction(), ModelAction(), WeightsAction(), RigSceneAction(), ShapesAction(),
-                                   TemplateAction())
+ACTIONS: tuple[FileAction, ...] = (SkeletonAction(), ModelAction(), WeightsAction(), TexturesAction(), RigSceneAction(),
+                                   ShapesAction(), TemplateAction())
 
 
 class AssetFilesModel:
@@ -201,6 +262,7 @@ class AssetFilesModel:
         self.rows: list[FileRow] = []
         self.message = ""
         self.rig_root: str | None = None
+        self.opener: Callable[[str], object] = getattr(os, "startfile", lambda path: None)   # Windows: Explorer
         self.refresh()
 
     # ---- what the actions read -------------------------------------------------------------
@@ -222,7 +284,7 @@ class AssetFilesModel:
 
     def file_exists(self, action: FileAction) -> bool:
         owner = self.owner(action)
-        return (owner is not None or action.owner_kind is None) and self.asset.file_exists(action.key, owner)
+        return (owner is not None or action.owner_kind is None) and os.path.exists(action.path(self, owner))
 
     def joints(self) -> list[str]:
         """Every joint in the scene. The selection is not used: a stray selection once saved a skeleton of one joint
@@ -285,17 +347,21 @@ class AssetFilesModel:
     def _row(self, action: FileAction) -> FileRow:
         owner = self.owner(action)
         has_owner = owner is not None or action.owner_kind is None   # a look or rig the asset lacks has no file yet
-        path = self.asset.path(action.key, owner) if has_owner else ""
+        path = action.path(self, owner) if has_owner else ""
         exists = has_owner and os.path.exists(path)
         try:
-            count = len(bmaya.core.asset.versions.list_versions(path, self.asset.root))
+            # A sidecar's versions can't be restored from the row (the file type is the folder), so none are offered.
+            count = 0 if action.opens_folder else len(bmaya.core.asset.versions.list_versions(path, self.asset.root))
         except ValueError:
             count = 0
         return FileRow(
             key=action.key, label=action.label, owner_kind=action.owner_kind, owner=owner, path=path, exists=exists,
             modified=os.path.getmtime(path) if exists else None, versions=count, saves=action.saves, loads=action.loads,
             save_blocked=action.save_blocked(self) if action.saves else "",
-            load_blocked=action.load_blocked(self) if action.loads else "", loads_by_name=action.loads_by_name)
+            load_blocked=action.load_blocked(self) if action.loads else "", loads_by_name=action.loads_by_name,
+            opens_folder=action.opens_folder, open_blocked=action.open_blocked(self) if action.opens_folder else "",
+            file_count=len(action.list_files(self)) if action.opens_folder and os.path.isdir(os.path.dirname(path)) else None,
+            note=action.note(self) if action.opens_folder and has_owner else "")
 
     # ---- commands --------------------------------------------------------------------------
 
@@ -345,6 +411,20 @@ class AssetFilesModel:
             raise RuntimeError(row.load_blocked)
         action.load(self)
         self.refresh()
+
+    def open_folder(self, key: str) -> str:
+        """Makes the row's folder when it is missing (a textures folder is made when the artist first needs it) and
+        shows it in the file browser. Returns its path. self.opener is what shows it: os.startfile, and tests replace it."""
+        action, row = self._action(key), self.row(key)
+        if not action.opens_folder:
+            raise RuntimeError(f"{row.label} has no folder to open.")
+        if row.open_blocked:
+            raise RuntimeError(row.open_blocked)
+        folder = os.path.dirname(row.path)
+        os.makedirs(folder, exist_ok=True)
+        self.opener(folder)
+        self.refresh()
+        return folder
 
     def load_by_name(self, key: str) -> None:
         """Loads the row's file matched by mesh name (skin weights: RigModules D68), giving each mesh its file's

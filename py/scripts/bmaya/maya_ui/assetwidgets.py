@@ -11,6 +11,7 @@ import datetime
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from bmaya.core.fieldset import FieldSpec, FieldState
+from bmaya.maya_ui import theme
 from bmaya.maya_ui.widgets import ListModel, menu_action
 
 FILE, NAME, STATUS, VERSIONS, SAVE, LOAD = range(6)
@@ -84,6 +85,9 @@ class OwnerCombo(QtWidgets.QComboBox):
 
 
 def _status(row) -> str:
+    if row.opens_folder:
+        files = "No folder" if row.file_count is None else f"{row.file_count} file" + ("" if row.file_count == 1 else "s")
+        return f"{files}, {row.note}" if row.note else files
     if not row.exists:
         return "Not saved"
     return datetime.datetime.fromtimestamp(row.modified).strftime("%Y-%m-%d %H:%M")
@@ -100,6 +104,7 @@ class FileStatusTable(QtWidgets.QTableView):
     load_requested = QtCore.Signal(str)
     load_by_name_requested = QtCore.Signal(str)
     restore_requested = QtCore.Signal(str)
+    open_requested = QtCore.Signal(str)   # a folder row's Open Folder menu item
 
     def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
@@ -126,13 +131,20 @@ class FileStatusTable(QtWidgets.QTableView):
         self.customContextMenuRequested.connect(self._on_context_menu)
 
     def row_menu(self, key: str) -> QtWidgets.QMenu | None:
-        """A row's right-click menu: Restore Version... when it has local versions, and Load by Name (off, with the
-        reason as its tool tip, when Load is blocked) when its file type has it. None when it has neither."""
+        """A row's right-click menu: Open Folder for a row with a folder the artist fills, Restore Version... when it
+        has local versions, and Load by Name (off, with the reason as its tool tip, when Load is blocked) when its file
+        type has it. None when it has none."""
         row = next((row for row in self.row_model.items if row.key == key), None)
-        if row is None or not (row.versions or row.loads_by_name):
+        if row is None or not (row.versions or row.loads_by_name or row.opens_folder):
             return None
         menu = QtWidgets.QMenu(self)
         menu.setToolTipsVisible(True)
+        if row.opens_folder:
+            action = menu_action(menu, "Open Folder")
+            action.setEnabled(not row.open_blocked)
+            action.setToolTip(row.open_blocked or "Make the folder if it is missing and show it. Copy the images in "
+                                                  "by hand.")
+            action.triggered.connect(lambda checked=False: self.open_requested.emit(key))
         if row.versions:
             action = menu_action(menu, "Restore Version...")
             action.setToolTip("Copies a local version over the file. The file it replaces is kept as a new version.")
@@ -165,7 +177,9 @@ class FileStatusTable(QtWidgets.QTableView):
                     signal: QtCore.SignalInstance) -> None:
         if not has:
             return
-        button = QtWidgets.QPushButton(name.capitalize())
+        button = QtWidgets.QPushButton()
+        button.setIcon(theme.icon(name))
+        button.setAccessibleName(name.capitalize())
         button.setEnabled(not blocked)
         button.setToolTip(blocked or ("Replaces the saved file. The old one is kept as a local version."
                                       if name == "save" and row.exists else f"{name.capitalize()} the {row.label.lower()}"))

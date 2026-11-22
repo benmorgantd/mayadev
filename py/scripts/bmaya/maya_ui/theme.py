@@ -627,6 +627,14 @@ _ICONS = {
     # a module: a cube, three faces meeting at the centre
     "module": ("text", _strokes(((8, 2), (13.5, 5), (13.5, 11), (8, 14), (2.5, 11), (2.5, 5), (8, 2)),
                                 ((2.5, 5), (8, 8), (13.5, 5)), ((8, 8), (8, 14)))),
+    # a floppy disk: the body with a cut corner, the shutter and the label
+    "save": ("text", _strokes(((2.5, 2.5), (11.5, 2.5), (13.5, 4.5), (13.5, 13.5), (2.5, 13.5), (2.5, 2.5)),
+                              ((5, 2.5), (5, 6), (10, 6), (10, 2.5)), ((5, 13.5), (5, 9.5), (11, 9.5), (11, 13.5)))),
+    # an arrow up out of a tray
+    "load": ("text", _strokes(((8, 10), (8, 2)), ((4.5, 5.5), (8, 2), (11.5, 5.5)),
+                              ((2.5, 10.5), (2.5, 13.5), (13.5, 13.5), (13.5, 10.5)))),
+    # a folder with its tab
+    "folder": ("text", _strokes(((2, 4.5), (6.5, 4.5), (8, 6.5), (14, 6.5), (14, 13), (2, 13), (2, 4.5)))),
 }
 
 
@@ -647,7 +655,7 @@ def icon_folder(palette: Palette = DARK) -> pathlib.Path:
 def icon(name: str, palette: Palette = DARK) -> QtGui.QIcon:
     """A theme icon for widgets that set one in code (button.setIcon(theme.icon("key"))). The names are the keys of
     _ICONS: chevron_down, chevron_right, chevron_up, check, dot (the last two are white, for the accent colour), and,
-    in the text colour, plus, minus, mirror, rotate, scale, translate, key, pose and module."""
+    in the text colour, plus, minus, mirror, rotate, scale, translate, key, pose, module, save, load and folder."""
     return QtGui.QIcon(str(icon_folder(palette) / f"{name}.png"))
 
 

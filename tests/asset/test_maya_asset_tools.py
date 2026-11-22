@@ -77,7 +77,7 @@ class AssetTools(unittest.TestCase):
         bmaya.core.asset.Project.create(os.path.join(self.root, "shooter", "main"))
         self.hero = bmaya.core.asset.Asset.create(HERO, "Character")
         self.template = self.write_template(TEMPLATE)
-        for file_type in ("skeleton", "model", "rig", "shapes", "template", "weights"):
+        for file_type in ("skeleton", "model", "rig", "shapes", "template", "weights", "textures"):
             self.addCleanup(bmaya.core.asset.handlers.unregister, file_type)
         cmds.file(new=True, force=True)
 
@@ -708,8 +708,9 @@ class AssetTools(unittest.TestCase):
         self.assertEqual(cmds.getAttr("look:box_geo.meshId"), mesh_id)
         # The box is 1 wide and 2 tall, standing on the origin: vertex 2 is a top corner, at its bind position.
         self.assertEqual(cmds.xform("look:box_geo.vtx[2]", query=True, worldSpace=True, translation=True), [-0.5, 2.0, 0.5])
-        self.assertEqual(cmds.listConnections("look:box_geoShape", type="shadingEngine"), ["look:red_matSG"])
-        self.assertEqual(cmds.listConnections("look:red_matSG.surfaceShader"), ["look:red_mat"])
+        self.assertEqual(cmds.listConnections("look:box_geoShape", type="shadingEngine"), ["initialShadingGroup"],
+                         "no material: the look's textures file owns the shading")
+        self.assertEqual(cmds.ls("look:*", materials=True), [])
         self.assertFalse(cmds.namespace(exists=":hero"), "the rig's namespace is not in the file")
         self.assertEqual(sorted(cmds.nodeType(node) for node in new_nodes if cmds.nodeType(node) in ("joint", "skinCluster", "rigRootModule")), [])
 
@@ -865,7 +866,8 @@ class AssetTools(unittest.TestCase):
         cluster = cmds.ls(cmds.listHistory("hero_game:box_geo"), type="skinCluster")
         self.assertEqual(cmds.skinCluster(cluster[0], query=True, influence=True), ["hero_game:spine1_00_M_JNT"],
                          "a marked mesh with no weight file yet is bound to the top skin joint (RigModules D68)")
-        self.assertEqual(cmds.listConnections("hero_game:box_geoShape", type="shadingEngine"), ["hero_game:red_matSG"])
+        self.assertEqual(cmds.listConnections("hero_game:box_geoShape", type="shadingEngine"), ["initialShadingGroup"],
+                         "a model carries no material, and a look with no textures file leaves meshes unshaded")
         self.skin_box("hero_game:box_geo", namespace="hero_game")
         saved = self.spine2_weights("hero_game:box_geo", namespace="hero_game")
         self.tools.save_skin_weights(rig_root)
@@ -875,8 +877,6 @@ class AssetTools(unittest.TestCase):
         cmds.file(new=True, force=True)
         self.tools.build_rig(HERO, "game")
         self.assertEqual(self.spine2_weights("hero_game:box_geo", namespace="hero_game"), saved)
-        self.assertEqual(cmds.listConnections("hero_game:box_geoShape", type="shadingEngine"), ["hero_game:red_matSG"],
-                         "the material keeps its name through a save from the rig scene")
         self.assertEqual(len(cmds.ls(type="skinCluster")), 1)
 
     def test_build_rig_with_a_named_look_and_with_none(self):
@@ -1535,6 +1535,170 @@ class AssetTools(unittest.TestCase):
         self.cmds.file(new=True, force=True)
         rig_root = self.tools.build_rig(HERO, "game")
         self.assertEqual(self.look_of(rig_root).name, "default")
+
+
+    # ---- textures ----
+
+    def textured_material(self, mesh, files, name="box_mat", namespace=""):
+        """Assigns a standardSurface to the mesh with a file node per slot of files (slot -> path), wired as an artist
+        wires them: colour straight in, roughness by alpha, the normal map through a bump2d."""
+        cmds = self.cmds
+        prefix = f":{namespace}:" if namespace else ""
+        shader = cmds.shadingNode("standardSurface", asShader=True, name=prefix + name)
+        engine = cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=prefix + name + "SG")
+        cmds.connectAttr(shader + ".outColor", engine + ".surfaceShader")
+        for slot, path in files.items():
+            node = cmds.shadingNode("file", asTexture=True, name=f"{prefix}{name}_{slot}")
+            cmds.setAttr(node + ".fileTextureName", path.replace("\\", "/"), type="string")
+            if slot == "baseColor":
+                cmds.connectAttr(node + ".outColor", shader + ".baseColor")
+            elif slot == "roughness":
+                cmds.connectAttr(node + ".outAlpha", shader + ".specularRoughness")
+            elif slot == "normal":
+                bump = cmds.shadingNode("bump2d", asUtility=True, name=f"{prefix}{name}_bump")
+                cmds.connectAttr(node + ".outAlpha", bump + ".bumpValue")
+                cmds.connectAttr(bump + ".outNormal", shader + ".normalCamera")
+        cmds.sets(mesh, edit=True, forceElement=engine)
+        return shader
+
+    def make_textures(self, *names, look="default"):
+        """The look's textures folder with an (empty) image file for each name. Returns the folder."""
+        folder = self.hero.path("textures", look)
+        os.makedirs(folder, exist_ok=True)
+        for name in names:
+            with open(os.path.join(folder, name), "wb"):
+                pass
+        return folder
+
+    def built_textured_rig(self):
+        """A rig wearing the default look, its box shaded with three images, and the textures saved. Returns the
+        rig root and the textures folder."""
+        self.make_buildable_asset()
+        self.make_look()
+        folder = self.make_textures("box_albedo.png", "box_normal.png", "box_rough.png")
+        rig_root = self.tools.build_rig(HERO, "game")
+        self.textured_material("hero_game:box_geo", {"baseColor": os.path.join(folder, "box_albedo.png"),
+                                                     "normal": os.path.join(folder, "box_normal.png"),
+                                                     "roughness": os.path.join(folder, "box_rough.png")},
+                               namespace="hero_game")
+        self.tools.save_textures(rig_root)
+        return rig_root, folder
+
+    def test_save_textures_records_each_mesh_image_and_what_it_is_for(self):
+        cmds = self.cmds
+        rig_root, folder = self.built_textured_rig()
+        mesh_id = cmds.getAttr("hero_game:box_geo.meshId")
+        self.assertEqual(self.read_json(os.path.join(folder, "textures.json")), {
+            "formatVersion": 1,
+            "materials": {"box_mat": {"shader": "standardSurface", "slots": {
+                "baseColor": "box_albedo.png", "normal": "box_normal.png", "roughness": "box_rough.png"}}},
+            "meshes": {mesh_id: {"meshName": "box_geo", "material": "box_mat"}}})
+
+    def test_a_look_builds_its_shading_from_the_textures_file(self):
+        cmds = self.cmds
+        rig_root, folder = self.built_textured_rig()
+        cmds.file(new=True, force=True)
+        self.tools.build_rig(HERO, "game")
+        engines = cmds.listConnections("hero_game:box_geoShape", type="shadingEngine")
+        self.assertEqual(engines, ["hero_game:box_matSG"])
+        shader = cmds.listConnections(engines[0] + ".surfaceShader")[0]
+        self.assertEqual(cmds.nodeType(shader), "standardSurface")
+
+        def image(plug):
+            node = cmds.listConnections(plug, source=True, destination=False)[0]
+            if cmds.nodeType(node) == "bump2d":
+                node = cmds.listConnections(node + ".bumpValue")[0]
+            return node, cmds.getAttr(node + ".fileTextureName"), cmds.getAttr(node + ".colorSpace")
+
+        base = folder.replace("\\", "/")
+        self.assertEqual(image(shader + ".baseColor")[1:], (base + "/box_albedo.png", "sRGB"))
+        self.assertEqual(image(shader + ".normalCamera")[1:], (base + "/box_normal.png", "Raw"))
+        self.assertEqual(cmds.getAttr(cmds.listConnections(shader + ".normalCamera")[0] + ".bumpInterp"), 1)
+        rough = image(shader + ".specularRoughness")
+        self.assertEqual(rough[2], "Raw")
+        self.assertTrue(cmds.getAttr(rough[0] + ".alphaIsLuminance"))
+
+    def test_load_textures_replaces_what_the_scene_has_with_what_the_file_says(self):
+        cmds = self.cmds
+        rig_root, folder = self.built_textured_rig()
+        cmds.setAttr("hero_game:box_mat_baseColor.fileTextureName", "C:/elsewhere/other.png", type="string")
+        report = self.tools.load_textures(rig_root)
+        self.assertEqual([cmds.ls(mesh)[0] for mesh in report.applied], ["hero_game:box_geo"])
+        node = cmds.listConnections("hero_game:box_mat.baseColor")[0]
+        self.assertEqual(cmds.getAttr(node + ".fileTextureName"), folder.replace("\\", "/") + "/box_albedo.png",
+                         "the hand-edited path is back to what the file says")
+
+    def test_load_textures_leaves_one_shading_engine_built_from_the_file(self):
+        cmds = self.cmds
+        rig_root, folder = self.built_textured_rig()
+        self.tools.load_textures(rig_root)
+        self.tools.load_textures(rig_root)
+        self.assertEqual(cmds.listConnections("hero_game:box_geoShape", type="shadingEngine"), ["hero_game:box_matSG"])
+        self.assertEqual(len(cmds.ls("hero_game:*", type="file")), 3, "the second load removed the first one's nodes")
+        node = cmds.listConnections("hero_game:box_mat.baseColor")[0]
+        self.assertEqual(cmds.getAttr(node + ".fileTextureName"), folder.replace("\\", "/") + "/box_albedo.png")
+
+    def test_load_textures_reports_missing_images_and_meshes_without_an_entry(self):
+        cmds = self.cmds
+        rig_root, folder = self.built_textured_rig()
+        os.remove(os.path.join(folder, "box_rough.png"))
+        other = cmds.polyCube(name="hero_game:other_geo", constructionHistory=False)[0]
+        cmds.setRigMeshId(other)
+        report = self.tools.load_textures(rig_root)
+        self.assertEqual(report.missing_files, ["box_rough.png"])
+        self.assertEqual(report.unlisted, ["other_geo"])
+        self.assertEqual(cmds.listConnections("hero_game:other_geoShape", type="shadingEngine"), ["initialShadingGroup"])
+
+    def test_save_textures_refuses_an_image_outside_the_folder_and_copies_it_in_on_request(self):
+        self.make_buildable_asset()
+        self.make_look()
+        rig_root = self.tools.build_rig(HERO, "game")
+        outside = os.path.join(self.temp, "scans", "skin.png")
+        os.makedirs(os.path.dirname(outside))
+        with open(outside, "wb"):
+            pass
+        self.textured_material("hero_game:box_geo", {"baseColor": outside}, namespace="hero_game")
+        with self.assertRaisesRegex(RuntimeError, "outside"):
+            self.tools.save_textures(rig_root)
+        self.assertFalse(os.path.exists(os.path.join(self.hero.path("textures", "default"), "textures.json")))
+        self.tools.save_textures(rig_root, copy_in=True)
+        folder = self.hero.path("textures", "default")
+        self.assertTrue(os.path.isfile(os.path.join(folder, "skin.png")))
+        self.assertEqual(self.read_json(os.path.join(folder, "textures.json"))["materials"]["box_mat"]["slots"],
+                         {"baseColor": "skin.png"})
+
+    def test_save_textures_keeps_the_old_file_as_a_local_version(self):
+        import bmaya.core.asset.versions
+        rig_root, folder = self.built_textured_rig()
+        self.tools.save_textures(rig_root)
+        path = os.path.join(folder, "textures.json")
+        self.assertEqual(len(bmaya.core.asset.versions.list_versions(path, self.hero.root)), 1)
+
+    def test_a_mesh_on_another_shader_type_is_not_recorded(self):
+        self.make_buildable_asset()
+        self.make_look()
+        rig_root = self.tools.build_rig(HERO, "game")
+        self.red_material("hero_game:box_geo", "hero_game")
+        with self.assertRaisesRegex(RuntimeError, "nothing to record"):
+            self.tools.save_textures(rig_root)
+
+    def test_load_textures_without_a_textures_file_says_to_save_first(self):
+        self.make_buildable_asset()
+        self.make_look()
+        rig_root = self.tools.build_rig(HERO, "game")
+        with self.assertRaisesRegex(RuntimeError, "Save Textures first"):
+            self.tools.load_textures(rig_root)
+
+    def test_a_broken_textures_file_is_a_warning_and_the_look_still_goes_on(self):
+        cmds = self.cmds
+        rig_root, folder = self.built_textured_rig()
+        with open(os.path.join(folder, "textures.json"), "w", encoding="utf-8") as handle:
+            handle.write("{not json")
+        cmds.file(new=True, force=True)
+        with mock.patch("bmaya.core.log.warning") as warning:
+            self.tools.build_rig(HERO, "game")
+        self.assertTrue(any("were not applied" in call.args[0] for call in warning.call_args_list))
+        self.assertTrue(cmds.objExists("hero_game:box_geo"))
 
 
 class MirrorJoints(unittest.TestCase):

@@ -38,10 +38,12 @@ import bmaya.core.asset.animproperties
 import bmaya.core.asset.context
 import bmaya.core.asset.handlers
 import bmaya.core.asset.library
+import bmaya.core.asset.textures
 import bmaya.core.log
 import bmaya.core.prompts
 import bmaya.maya.activerig
 import bmaya.maya.assethandlers
+import bmaya.maya.assettextures
 import bmaya.maya.posetools
 import bmaya.maya.skinbrush
 
@@ -387,12 +389,75 @@ def apply_look(node: str, look: str, ignore_skeleton_hash: bool = False) -> str 
         new_meshes += unmarked + bare
         rigmodules.displaylayers.add_meshes(info.rig_root, new_meshes)
         rigmodules.groups.parent_meshes(info.rig_root, new_meshes)
+        _apply_textures(asset, look, info.namespace)
         cmds.select(clear=True)   # inside the chunk, so an undo takes the whole apply and not just the selection
     finally:
         cmds.undoInfo(closeChunk=True)
     if look_root is not None:
         bmaya.core.log.info(f"Put the rig {info.rig_name!r} of {asset.id} in the look {look!r}.")
     return look_root
+
+
+def _apply_textures(asset: bmaya.core.asset.Asset, look: str, namespace: str) -> None:
+    """Builds the look's shading from its textures.json, when it has one (bmaya.maya.assettextures). A problem with
+    the file is a warning: the look still goes on, with the meshes unshaded."""
+    folder = asset.path("textures", look)
+    path = bmaya.core.asset.textures.get_path(folder)
+    if not os.path.isfile(path):
+        return
+    try:
+        report = bmaya.maya.assettextures.apply(bmaya.core.asset.textures.read(path),
+                                                rigmodules.skinweights.get_meshes(namespace), folder, namespace)
+    except bmaya.core.asset.textures.TexturesError as error:
+        bmaya.core.log.warning(f"The textures of the look {look!r} were not applied: {error}")
+        return
+    _log_texture_report(look, report)
+
+
+def _log_texture_report(look: str, report: bmaya.maya.assettextures.ApplyReport) -> None:
+    if report.unlisted:
+        bmaya.core.log.warning(f"The textures file of the look {look!r} has no entry for: {', '.join(report.unlisted)}. "
+                               f"Save Textures from a rig that has them.")
+    if report.orphans:
+        bmaya.core.log.warning(f"The textures file of the look {look!r} has entries for meshes the rig doesn't have: "
+                               f"{', '.join(report.orphans)}.")
+    if report.missing_files:
+        bmaya.core.log.warning(f"The look {look!r} names texture files that are not in its textures folder: "
+                               f"{', '.join(report.missing_files)}.")
+
+
+def save_textures(node: str, look: str | None = None, copy_in: bool = False) -> str:
+    """Records the shading of the rig's meshes as the look's textures.json: which image goes on which mesh (by meshId)
+    and what it is for. look is as in save_skin_weights. An image outside the look's textures folder is an error
+    unless copy_in=True copies it in. Returns the file."""
+    info = rigmodules.query.get_rig_info(node)
+    asset = require_asset(info.asset_id)
+    look = _require_look(asset, info.rig_name, look, _worn_look(info))
+    folder = asset.path("textures", look)
+    texture_map = bmaya.maya.assettextures.read_scene(rigmodules.skinweights.get_meshes(info.namespace), folder, copy_in)
+    path = bmaya.maya.assettextures.save_file(asset, look, texture_map)
+    bmaya.core.log.info(f"Saved the textures of {asset.id} look {look!r}: {path}")
+    return path
+
+
+def load_textures(node: str, look: str | None = None) -> bmaya.maya.assettextures.ApplyReport:
+    """Builds the rig's shading from the look's textures.json again, replacing what an earlier load built. Returns what
+    it did. Raises AssetError when the look has no textures file."""
+    info = rigmodules.query.get_rig_info(node)
+    asset = require_asset(info.asset_id)
+    look = _require_look(asset, info.rig_name, look, _worn_look(info))
+    folder = asset.path("textures", look)
+    path = bmaya.core.asset.textures.get_path(folder)
+    if not os.path.isfile(path):
+        raise bmaya.core.asset.AssetError(f"The look {look!r} of {asset.id} has no textures file. Save Textures first.")
+    cmds.undoInfo(openChunk=True, chunkName="Load Textures")
+    try:
+        report = bmaya.maya.assettextures.apply(bmaya.core.asset.textures.read(path),
+                                                rigmodules.skinweights.get_meshes(info.namespace), folder, info.namespace)
+    finally:
+        cmds.undoInfo(closeChunk=True)
+    _log_texture_report(look, report)
+    return report
 
 
 def _check_weight_skeleton(asset: bmaya.core.asset.Asset, look: str, info: rigmodules.query.RigInfo,

@@ -93,6 +93,7 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `core/asset/assetid.py` | Id rules: `is_valid`, `check`, `tokens`, `name`, `key`, `equals`, `to_relative_path`, `from_relative_path`, `SEPARATOR` |
 | `core/asset/project.py` | `Project`, `FileType`, `DEFAULT_PROJECT`, `projects_root`, `read_json`, `write_json` |
 | `core/asset/asset.py` | `Asset`: paths by owner, `skeletons`, `rigs`, `looks`, `rig`, `look`, `skeleton_of`, `add_rig`, `add_look`, `create`, `from_path`; the nesting check |
+| `core/asset/textures.py` | `textures.json`, a look's texture sidecar: `TextureMap`, `Material`, `MeshEntry`, the slots of each shader, `read`, `write`, `check` |
 | `core/asset/records.py` | `rig.json` and `look.json`: `SkeletonRef`, `RigRef`, `RigRecord`, `LookRecord` and their readers and writers |
 | `core/asset/registry.py` | `Registry`: the in-memory index of a project |
 | `core/asset/context.py` | `AssetContext`: the asset id and the chosen skeleton, rig and look the Asset Editor works on, with a `changed` event. `current()` is `None` unless the editor is open |
@@ -118,6 +119,7 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `maya/startup.py` | `register()`: the Maya layer's registration pass |
 | `maya/constants.py` | `MAYADEV_ROOT`, the toolset paths, `MenuSpec`, `MENUS` and `menu_layout_paths`, `RIGMODULES_PLUGIN`, `IS_BATCH` |
 | `maya/assethandlers.py` | The Maya handlers (`RigSkeletonHandler`, `ModelHandler` with `export_meshes`) and `register()`, `AnimClip`, `save_control_file`, `save_anim_clip`, `save_skeleton_export` |
+| `maya/assettextures.py` | Reads a rig scene's standardSurface shading into a `TextureMap` and builds it again from one: `read_scene`, `save_file`, `apply`, `remove_materials` |
 | `maya/assettools.py` | The asset, pose, clip and weight tools: plain functions, then the `*_interactive` menu entry points, which ask through a `Prompter`, and `ClipSettings` |
 | `maya/posetools.py` | Zero, mirror, flip, key, load pose and load animation tools on the selection or the active rig: plain functions with a scope, and the `*_interactive` entry points |
 | `maya/activerig.py` | `get_active_rig`, `ActiveRigTracker` and its `changed` event |

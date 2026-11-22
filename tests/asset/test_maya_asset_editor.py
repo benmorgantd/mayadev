@@ -86,7 +86,7 @@ class EditorBase(unittest.TestCase):
         self.template = os.path.join(temp, "template.json")
         with open(self.template, "w", encoding="utf-8") as handle:
             json.dump(TEMPLATE, handle)
-        for file_type in ("skeleton", "model", "rig", "shapes", "template", "weights"):
+        for file_type in ("skeleton", "model", "rig", "shapes", "template", "weights", "textures"):
             self.addCleanup(bmaya.core.asset.handlers.unregister, file_type)
         cmds.optionVar(remove=self.editor.LAST_ASSET_OPTION)
         cmds.file(new=True, force=True)
@@ -294,7 +294,7 @@ class FileRows(EditorBase):
     def test_the_rows_of_an_asset_with_a_rig_and_no_skeleton_file(self):
         self.tools.new_rig(HERO, self.template)
         files = self.session(HERO).files
-        self.assertEqual([row.key for row in files.rows], ["skeleton", "model", "weights", "rig", "shapes", "template"])
+        self.assertEqual([row.key for row in files.rows], ["skeleton", "model", "weights", "textures", "rig", "shapes", "template"])
         skeleton = files.row("skeleton")
         self.assertEqual((skeleton.owner, skeleton.exists, skeleton.versions), ("default", False, 0))
         self.assertTrue(files.row("template").exists)
@@ -327,6 +327,73 @@ class FileRows(EditorBase):
         files = self.session(HERO).files
         with self.assertRaisesRegex(RuntimeError, "no joints"):
             files.save("skeleton", self.answers())
+
+    def test_the_textures_row_makes_and_opens_the_folder_and_counts_the_images(self):
+        self.tools.new_look(HERO)
+        files = self.session(HERO).files
+        opened = []
+        files.opener = opened.append
+        row = files.row("textures")
+        self.assertEqual((row.opens_folder, row.saves, row.loads, row.exists, row.file_count), (True, True, True, False, None))
+        self.assertEqual((row.open_blocked, row.note, row.versions), ("", "not mapped to meshes yet", 0))
+        self.assertTrue(row.path.endswith(os.path.join("textures", "textures.json")))
+        path = files.open_folder("textures")
+        self.assertEqual(opened, [path])
+        self.assertTrue(os.path.isdir(path))
+        self.assertEqual(files.row("textures").file_count, 0)
+        for name in ("skin_albedo.PNG", "skin_normal.tga", "notes.txt"):
+            with open(os.path.join(path, name), "wb"):
+                pass
+        os.makedirs(os.path.join(path, "old.png"))   # a folder with an image's name is not an image
+        files.refresh()
+        self.assertEqual(files.row("textures").file_count, 2)
+        self.assertEqual(files.open_folder("textures"), path)   # an existing folder is kept as it is
+        self.assertEqual(files.row("textures").file_count, 2)
+
+    def test_the_textures_row_is_the_sidecar_and_says_how_many_meshes_it_maps(self):
+        import bmaya.core.asset.textures
+        self.tools.new_look(HERO)
+        files = self.session(HERO).files
+        folder = self.hero.path("textures", "default")
+        os.makedirs(folder)
+        texture_map = bmaya.core.asset.textures.TextureMap(
+            {"mat": bmaya.core.asset.textures.Material(slots={"baseColor": "a.png"})},
+            {"id1": bmaya.core.asset.textures.MeshEntry("box_geo", "mat")})
+        bmaya.core.asset.textures.write(bmaya.core.asset.textures.get_path(folder), texture_map)
+        files.refresh()
+        row = files.row("textures")
+        self.assertEqual((row.exists, row.note), (True, "1 meshes mapped"))
+        self.assertIsNotNone(row.modified)
+
+    def test_textures_save_and_load_need_a_rig_in_the_scene(self):
+        self.tools.new_look(HERO)
+        row = self.session(HERO).files.row("textures")
+        self.assertIn("no rig", row.save_blocked)
+        self.assertIn("no rig", row.load_blocked)
+
+    def test_the_textures_row_is_blocked_without_a_look(self):
+        files = self.session(HERO).files
+        self.assertIn("no look", files.row("textures").open_blocked)
+        with self.assertRaisesRegex(RuntimeError, "no look"):
+            files.open_folder("textures")
+
+    def test_only_a_folder_row_opens(self):
+        files = self.session(HERO).files
+        with self.assertRaisesRegex(RuntimeError, "no folder to open"):
+            files.open_folder("template")
+
+    def test_the_textures_handler_saves_a_folder_and_loads_its_images(self):
+        self.tools.new_look(HERO)
+        import bmaya.maya.assethandlers
+        bmaya.maya.assethandlers.register()
+        self.addCleanup(self.asset_module.handlers.unregister, "textures")
+        hero = self.asset_module.Asset(HERO)
+        look = self.session(HERO).context.look
+        path = self.asset_module.handlers.save(hero, "textures", look)
+        self.assertTrue(os.path.isdir(path))
+        with open(os.path.join(path, "a.png"), "wb"):
+            pass
+        self.assertEqual(self.asset_module.handlers.load(hero, "textures", look), [os.path.join(path, "a.png")])
 
     def test_a_template_has_no_save_or_load(self):
         self.tools.new_rig(HERO, self.template)

@@ -76,6 +76,10 @@ class FakeFiles:
     def load_by_name(self, key):
         self._record("load_by_name", key)
 
+    def open_folder(self, key):
+        self._record("open_folder", key)
+        return f"C:/projects/{key}"
+
     def build_rig(self):
         self._record("build_rig")
         return "hero_game:rigRootModule1"
@@ -297,11 +301,37 @@ class EditorView(unittest.TestCase):
         self.assertRegex(text(0, 2), r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$")   # local time, so the zone varies
         self.assertEqual([text(1, c) for c in range(4)], ["Model", "default", "Not saved", ""])
 
+    def test_a_folder_row_has_an_open_folder_menu_item_and_counts_its_files(self):
+        import dataclasses
+        window = self.window()
+        textures = dataclasses.replace(row("textures", "Textures", "look", "default"), opens_folder=True, file_count=3,
+                                       note="2 meshes mapped", versions=0)
+        missing = dataclasses.replace(textures, key="more", file_count=None, exists=False, note="",
+                                      open_blocked="The asset has no look.")
+        window.files_table.set_rows([textures, missing])
+        model = window.files_table.row_model
+        self.assertEqual([model.data(model.index(r, 2)) for r in (0, 1)], ["3 files, 2 meshes mapped", "No folder"])
+        self.assertIn(("textures", "save"), window.files_table.buttons)
+        menu = window.files_table.row_menu("textures")
+        self.assertEqual([action.text() for action in menu.actions()], ["Open Folder"])
+        menu.actions()[0].trigger()
+        self.assertEqual(window.session.files.calls[-1], ("open_folder", "textures"))
+        blocked = window.files_table.row_menu("more").actions()[0]
+        self.assertFalse(blocked.isEnabled())
+        self.assertEqual(blocked.toolTip(), "The asset has no look.")
+
     def test_a_file_without_save_or_load_has_no_buttons(self):
         window = self.window()
         self.assertNotIn(("template", "save"), window.files_table.buttons)
         self.assertNotIn(("template", "load"), window.files_table.buttons)
         self.assertIn(("skeleton", "save"), window.files_table.buttons)
+
+    def test_save_load_and_open_folder_buttons_show_an_icon_and_no_text(self):
+        window = self.window()
+        buttons = list(window.files_table.buttons.values()) + [window.save_shapes_button, window.load_shapes_button]
+        for button in buttons:
+            self.assertEqual(button.text(), "")
+            self.assertFalse(button.icon().isNull())
 
     def test_a_blocked_button_is_disabled_and_its_tool_tip_is_the_reason(self):
         window = self.window()
