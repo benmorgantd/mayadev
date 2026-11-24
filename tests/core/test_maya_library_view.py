@@ -110,9 +110,14 @@ class FakeSession:
         self.changed.emit()
 
     # commands
-    def apply(self, mirror=False, start_frame=None):
-        self._record("apply", self.selected.name if self.selected else None, mirror, start_frame)
+    def apply(self, mirror=False, start_frame=None, blend=1.0):
+        call = ("apply", self.selected.name if self.selected else None, mirror, start_frame)
+        self._record(*call, *(() if blend == 1.0 else (blend,)))
         return ["a", "b", "c"]
+
+    def begin_blend(self, mirror=False):
+        self._record("begin_blend", self.selected.name if self.selected else None, mirror)
+        return FakeBlend(self)
 
     def save(self, name, tags=(), description="", replace=False, start_frame=None, end_frame=None):
         self._record("save", name, tags, replace)
@@ -129,6 +134,20 @@ class FakeSession:
         import bmaya.core.asset.library as library
         self._record("mask_from_selection", name)
         return library.Mask(name, (library.MaskItem(side="Left"),), "user")
+
+
+class FakeBlend:
+    """posetools.PoseBlend's surface: records set and end on its session."""
+
+    def __init__(self, session):
+        self.session, self.file, self.weight = session, "C:/lib/user/fist.json", 0.0
+
+    def set(self, weight):
+        self.weight = weight
+        self.session._record("blend_set", weight)
+
+    def end(self, cancel=False):
+        self.session._record("blend_end", cancel)
 
 
 class BrowserTest(unittest.TestCase):
@@ -494,13 +513,33 @@ class Menu(BrowserTest):
         entry = self.entries()[0]
         actions = self.actions(self.browser(FakeSession([entry])), entry)
         self.assertEqual({text: action.isEnabled() for text, action in actions.items()},
-                         {"Apply": True, "Copy to My Library": False, "Rename...": True,
+                         {"Apply": True, "Blend": True, "Copy to My Library": False, "Rename...": True,
                           "Edit Tags and Description...": True, "Delete": True})
 
     def test_an_approved_or_shared_file_can_only_be_applied_and_copied(self):
         for entry in self.entries()[1:]:
             actions = self.actions(self.browser(FakeSession([entry])), entry)
-            self.assertEqual({text for text, action in actions.items() if action.isEnabled()}, {"Apply", "Copy to My Library"})
+            self.assertEqual({text for text, action in actions.items() if action.isEnabled()},
+                             {"Apply", "Blend", "Copy to My Library"})
+
+    def test_a_pose_has_a_blend_submenu_that_adds_or_subtracts_from_the_current_pose(self):
+        session = FakeSession(self.entries())
+        browser = self.browser(session)
+        entry = self.entries()[0]
+        self.select_row(browser, 0)
+        actions = self.actions(browser, entry)
+        self.assertEqual(list(actions)[:2], ["Apply", "Blend"])
+        blend = {action.text(): action for action in actions["Blend"].menu().actions()}
+        self.assertEqual(list(blend), ["Add 25%", "Add 50%", "Add 75%", "Subtract 25%", "Subtract 50%", "Subtract 75%"])
+        blend["Subtract 25%"].trigger()
+        blend["Add 75%"].trigger()
+        self.assertEqual([call for call in session.calls if call[0] == "apply"],
+                         [("apply", "fist", False, None, -0.25), ("apply", "fist", False, None, 0.75)])
+
+    def test_an_animation_has_no_blend_submenu(self):
+        entry = make_entry("walk", kind="animation")
+        self.assertNotIn("Blend", self.actions(self.browser(FakeSession([entry], kind="animation")), entry))
+
 
     def test_each_item_calls_its_session_command(self):
         session = FakeSession(self.entries())
@@ -655,3 +694,72 @@ class TagsEditTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Blending(BrowserTest):
+
+    def test_the_slider_is_for_poses_and_needs_a_usable_selection(self):
+        browser = self.browser(FakeSession(self.entries() + [make_entry("bad", error="broken")]))
+        self.assertTrue(browser.blend_slider.isVisible())
+        self.assertFalse(browser.blend_slider.isEnabled())
+        self.select_row(browser, 0)   # bad
+        self.assertFalse(browser.blend_slider.isEnabled())
+        self.select_row(browser, 1)
+        self.assertTrue(browser.blend_slider.isEnabled())
+        animation = self.browser(FakeSession([make_entry("walk", kind="animation")], kind="animation"))
+        self.assertFalse(animation.blend_slider.isVisible())
+
+    def test_a_drag_begins_on_press_sets_each_move_and_ends_and_springs_back_on_release(self):
+        session = FakeSession(self.entries())
+        browser = self.browser(session)
+        self.select_row(browser, 0)
+        browser.mirror_box.setChecked(True)
+        slider = browser.blend_slider
+        slider.sliderPressed.emit()
+        slider.sliderMoved.emit(50)
+        slider.sliderMoved.emit(-100)
+        slider.sliderMoved.emit(130)
+        self.assertEqual(browser.blend_value_label.text(), "130%")
+        slider.sliderReleased.emit()
+        self.assertEqual(session.calls[-5:], [("begin_blend", "fist", True), ("blend_set", 0.5), ("blend_set", -1.0),
+                                              ("blend_set", 1.3), ("blend_end", False)])
+        self.assertEqual((slider.value(), browser.blend_value_label.text()), (0, "0%"))
+
+    def test_escape_cancels_the_drag_and_the_rest_of_it_does_nothing(self):
+        session = FakeSession(self.entries())
+        browser = self.browser(session)
+        self.select_row(browser, 0)
+        browser.blend_slider.sliderPressed.emit()
+        browser.blend_slider.sliderMoved.emit(80)
+        browser.blend_slider.cancelled.emit()
+        browser.blend_slider.sliderMoved.emit(90)
+        browser.blend_slider.sliderReleased.emit()
+        self.assertEqual([call for call in session.calls if call[0].startswith("blend")],
+                         [("blend_set", 0.8), ("blend_end", True)])
+        self.assertEqual(browser.blend_slider.value(), 0)
+
+    def test_a_failed_begin_leaves_no_blend(self):
+        session = FakeSession(self.entries())
+        browser = self.browser(session)
+        self.select_row(browser, 0)
+        session.error = "Select a pose to blend."
+        browser.blend_slider.sliderPressed.emit()
+        session.error = None
+        browser.blend_slider.sliderMoved.emit(50)
+        browser.blend_slider.sliderReleased.emit()
+        self.assertFalse([call for call in session.calls if call[0].startswith("blend")])
+        self.assertIn("Select a pose to blend.", browser.status_error_label.text())
+
+    def test_a_middle_drag_on_a_row_selects_it_and_blends_by_distance(self):
+        from PySide6 import QtCore, QtTest
+        session = FakeSession(self.entries())
+        browser = self.browser(session)
+        table = browser.table
+        center = table.visualRect(browser.proxy.index(2, 0)).center()
+        QtTest.QTest.mousePress(table.viewport(), QtCore.Qt.MouseButton.MiddleButton, pos=center)
+        self.assertEqual(session.selected.name, "wave")
+        table.blend_dragged.emit(100.0)    # half of BLEND_PIXELS
+        table.blend_dragged.emit(-1000.0)  # clamped to -100%
+        QtTest.QTest.mouseRelease(table.viewport(), QtCore.Qt.MouseButton.MiddleButton, pos=center)
+        self.assertEqual([call for call in session.calls if call[0] in ("begin_blend", "blend_set", "blend_end")],
+                         [("begin_blend", "wave", False), ("blend_set", 0.5), ("blend_set", -1.0), ("blend_end", False)])

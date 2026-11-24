@@ -327,10 +327,10 @@ class LibrarySession:
 
     # ---- commands -----------------------------------------------------------------------------------------
 
-    def apply(self, mirror: bool = False, start_frame: float | None = None) -> list[str]:
+    def apply(self, mirror: bool = False, start_frame: float | None = None, blend: float = 1.0) -> list[str]:
         """Loads the selected entry onto the scope, in one undo step. An animation's keys land on the frames they were
-        saved on, or start at start_frame. mirror puts the Left side on the Right and the Right on the Left. Returns the
-        controls it changed."""
+        saved on, or start at start_frame. mirror puts the Left side on the Right and the Right on the Left. blend, for a
+        pose only, blends from the current pose instead (posetools.load_pose). Returns the controls it changed."""
         entry = self.selected
         if entry is None:
             raise RuntimeError("Select a pose or an animation first.")
@@ -338,9 +338,19 @@ class LibrarySession:
             raise RuntimeError(entry.info.error)
         scope = self.scope_controls()
         if entry.kind == LIBRARY.POSE:
-            return bmaya.maya.posetools.load_pose(scope, entry.path, mirror)
+            return bmaya.maya.posetools.load_pose(scope, entry.path, mirror, blend)
         offset = 0 if start_frame is None else start_frame - entry.info.start_frame
         return bmaya.maya.posetools.load_animation(scope, entry.path, offset, mirror)
+
+    def begin_blend(self, mirror: bool = False) -> bmaya.maya.posetools.PoseBlend:
+        """Starts an interactive blend of the scope towards the selected pose (a slider drag). The caller sets the
+        weight and ends it."""
+        entry = self.selected
+        if entry is None or entry.kind != LIBRARY.POSE:
+            raise RuntimeError("Select a pose to blend.")
+        if entry.info.error:
+            raise RuntimeError(entry.info.error)
+        return bmaya.maya.posetools.PoseBlend.begin(self.scope_controls(), entry.path, mirror)
 
     def suggest_name(self) -> str:
         """A free name for the next save: pose_001, animation_001, ..."""

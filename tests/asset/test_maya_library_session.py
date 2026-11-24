@@ -355,6 +355,41 @@ class Applying(LibraryBase):
         self.cmds.undo()
         self.assertAlmostEqual(self.rotate_y(self.left), 3)
 
+    def test_apply_with_blend_goes_part_of_the_way_from_the_current_pose(self):
+        self.cmds.setAttr(self.left + ".rotateY", 20)
+        self.session.save("wave")
+        self.cmds.setAttr(self.left + ".rotateY", 10)
+        self.session.apply(blend=0.5)
+        self.assertAlmostEqual(self.rotate_y(self.left), 15)
+        self.session.apply(blend=-1)   # takes the pose's 20 off: rest is 0
+        self.assertAlmostEqual(self.rotate_y(self.left), -5)
+
+    def test_a_blend_drag_starts_every_weight_from_the_press_and_undoes_in_one_step(self):
+        self.cmds.setAttr(self.left + ".rotateY", 20)
+        self.session.save("wave")
+        self.cmds.setAttr(self.left + ".rotateY", 10)
+        blend = self.session.begin_blend()
+        for weight, expected in ((0.5, 15), (0.5, 15), (1.5, 30), (-1, -10), (0.25, 12.5)):
+            blend.set(weight)
+            self.assertAlmostEqual(self.rotate_y(self.left), expected, msg=weight)
+        blend.end()
+        self.cmds.undo()
+        self.assertAlmostEqual(self.rotate_y(self.left), 10)
+
+    def test_a_cancelled_blend_puts_the_start_pose_back(self):
+        self.cmds.setAttr(self.left + ".rotateY", 20)
+        self.session.save("wave")
+        self.cmds.setAttr(self.left + ".rotateY", 10)
+        blend = self.session.begin_blend()
+        blend.set(1.5)
+        blend.end(cancel=True)
+        blend.end()   # a second end does nothing
+        self.assertAlmostEqual(self.rotate_y(self.left), 10)
+
+    def test_blend_needs_a_selected_pose(self):
+        with self.assertRaisesRegex(RuntimeError, "Select a pose to blend"):
+            self.session.begin_blend()
+
     def test_apply_needs_a_selected_entry(self):
         with self.assertRaisesRegex(RuntimeError, "Select a pose"):
             self.session.apply()

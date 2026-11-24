@@ -9,6 +9,7 @@ session must not ask (replace, rename, delete). Qt only, no Maya (host.py docks 
 from __future__ import annotations
 
 import datetime
+import os
 from collections.abc import Callable
 
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -29,6 +30,9 @@ SCOPE_AUTO_TEXT = "Auto (selection, else rig)"
 NAME, TAGS, SOURCE, TEMPLATE, AUTHOR, DATE, FRAMES = range(7)
 LIST_COLUMNS = (NAME, SOURCE)   # List shows these, Details all of them
 SORT_ROLE = QtCore.Qt.ItemDataRole.UserRole
+BLEND_RANGE = (-100, 150)        # the blend slider's range in percent: -1 removes the pose, past 1 adds more (D72)
+BLEND_PIXELS = 200.0             # a middle-drag this many pixels to the right is a weight of 1
+BLEND_STEPS = (25, 50, 75)       # the context menu's Add and Subtract percentages
 
 
 def source_label(key: str) -> str:
@@ -80,14 +84,58 @@ class EntryTable(QtWidgets.QTableView):
     arrow key only selects (section 7)."""
 
     apply_requested = QtCore.Signal()
+    blend_started = QtCore.Signal()          # a middle press on a row, which selects it
+    blend_dragged = QtCore.Signal(float)     # pixels right of the press, negative to the left
+    blend_finished = QtCore.Signal(bool)     # True when Escape cancelled the drag
+
+    _blend_x: float | None = None
 
     def mouseDoubleClickEvent(self, event: QtGui.QMouseEvent) -> None:
         if self.indexAt(event.position().toPoint()).isValid():
             self.apply_requested.emit()
 
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        if event.button() == QtCore.Qt.MouseButton.MiddleButton:
+            index = self.indexAt(event.position().toPoint())
+            if index.isValid():
+                self.selectRow(index.row())
+                self._blend_x = event.position().x()
+                self.blend_started.emit()
+            return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
+        if self._blend_x is not None:
+            self.blend_dragged.emit(event.position().x() - self._blend_x)
+            return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
+        if event.button() == QtCore.Qt.MouseButton.MiddleButton and self._blend_x is not None:
+            self._blend_x = None
+            self.blend_finished.emit(False)
+            return
+        super().mouseReleaseEvent(event)
+
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        if event.key() == QtCore.Qt.Key.Key_Escape and self._blend_x is not None:
+            self._blend_x = None
+            self.blend_finished.emit(True)
+            return
         if event.key() in (QtCore.Qt.Key.Key_Return, QtCore.Qt.Key.Key_Enter) and self.currentIndex().isValid():
             self.apply_requested.emit()
+            return
+        super().keyPressEvent(event)
+
+
+class BlendSlider(QtWidgets.QSlider):
+    """The pose blend slider. Escape during a drag cancels it."""
+
+    cancelled = QtCore.Signal()
+
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        if event.key() == QtCore.Qt.Key.Key_Escape and self.isSliderDown():
+            self.cancelled.emit()
             return
         super().keyPressEvent(event)
 
@@ -294,7 +342,39 @@ class LibraryBrowser(QtWidgets.QWidget):
         column = QtWidgets.QVBoxLayout()
         column.addLayout(scope_row)
         column.addLayout(row)
+        column.addLayout(self._build_blend())
         return column
+
+    def _build_blend(self) -> QtWidgets.QHBoxLayout:
+        """The pose blend slider (D72). A drag blends the scope from its pose at the press towards the selected pose:
+        100% is the pose, -100% removes it, past 100% adds more. It springs back to 0 on release, one undo step."""
+        self._blend: bmaya.maya.posetools.PoseBlend | None = None
+        self.blend_label = QtWidgets.QLabel("Blend")
+        self.blend_slider = BlendSlider(QtCore.Qt.Orientation.Horizontal)
+        self.blend_slider.setRange(*BLEND_RANGE)
+        self.blend_slider.setPageStep(0)     # only a drag blends: a click on the groove or an arrow key does nothing
+        self.blend_slider.setSingleStep(0)
+        self.blend_slider.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
+        self.blend_slider.setTickInterval(50)
+        self.blend_slider.setToolTip("Drag to blend the scope towards the selected pose: 100% is the pose, -100% removes"
+                                     " it. Escape cancels. Middle-drag a pose in the list to do the same.")
+        self.blend_slider.sliderPressed.connect(self._begin_blend)
+        self.blend_slider.sliderMoved.connect(lambda value: self._set_blend(value / 100.0))
+        self.blend_slider.sliderReleased.connect(self._end_blend)
+        self.blend_slider.cancelled.connect(lambda: self._end_blend(cancel=True))
+        self.blend_value_label = QtWidgets.QLabel()
+        self.blend_value_label.setFixedWidth(40)
+        self.blend_value_label.setProperty("muted", True)
+        self.table.blend_started.connect(self._begin_blend)
+        self.table.blend_dragged.connect(
+            lambda pixels: self._set_blend(min(max(pixels / BLEND_PIXELS, BLEND_RANGE[0] / 100.0), BLEND_RANGE[1] / 100.0)))
+        self.table.blend_finished.connect(lambda cancel: self._end_blend(cancel))
+        self._show_blend(0.0)
+        row = QtWidgets.QHBoxLayout()
+        row.addWidget(self.blend_label)
+        row.addWidget(self.blend_slider, 1)
+        row.addWidget(self.blend_value_label)
+        return row
 
     def _build_save(self) -> QtWidgets.QVBoxLayout:
         column = QtWidgets.QVBoxLayout()
@@ -389,7 +469,7 @@ class LibraryBrowser(QtWidgets.QWidget):
         masks = [(mask.name, mask.source) for mask in self.session.masks]
         if masks != self._mask_keys:
             self.scope_combo.clear()
-            for text in (SCOPE_AUTO_TEXT, "Selection", "Whole rig"):
+            for text in ("Whole rig", "Selection", SCOPE_AUTO_TEXT):
                 self.scope_combo.addItem(text)
             self._scope_values = [None, SESSION.SCOPE_SELECTION, SESSION.SCOPE_RIG]
             for name, source in masks:
@@ -439,11 +519,14 @@ class LibraryBrowser(QtWidgets.QWidget):
         _show_text(self.origin_label, " ".join(origin))
         _show_text(self.description_label, entry.description if entry is not None else "")
         self.apply_button.setEnabled(entry is not None and not failed)
+        self.blend_slider.setEnabled(entry is not None and not failed and entry.kind == LIBRARY.POSE)
 
     def _reload_save(self, has_rig: bool) -> None:
         is_animation = self.session.kind == LIBRARY.ANIMATION
         for widget in (self.start_label, self.start_edit, self.now_button, self.range_label):
             widget.setVisible(is_animation)
+        for widget in (self.blend_label, self.blend_slider, self.blend_value_label):
+            widget.setVisible(not is_animation)
         self.tags_edit.set_tags_in_use(self.session.facets()["tag"] if has_rig else [])
         suggestion = ""
         if has_rig:
@@ -544,6 +627,45 @@ class LibraryBrowser(QtWidgets.QWidget):
         changed = self.session.apply(mirror=self.mirror_box.isChecked(), start_frame=self._start_frame())
         self.set_status(f"Applied {entry.name} to {len(changed)} controls.")
 
+    def _apply_blend(self, weight: float) -> None:
+        """One step from the current pose, for the context menu's Add and Subtract: repeated steps compound."""
+        entry = self.session.selected
+        changed = self.session.apply(mirror=self.mirror_box.isChecked(), blend=weight)
+        self.set_status(f"Blended {entry.name} by {weight:+.0%} on {len(changed)} controls.")
+
+    # ---- the blend drag (the slider, or a middle-drag in the list) -----------------------------------------
+
+    def _begin_blend(self) -> None:
+        self._end_blend()
+
+        def begin() -> None:
+            self._blend = self.session.begin_blend(self.mirror_box.isChecked())
+
+        self.run(begin)
+
+    def _set_blend(self, weight: float) -> None:
+        if self._blend is None:   # the press failed or Escape cancelled: the rest of the drag does nothing
+            self._show_blend(0.0)
+            return
+        self._show_blend(weight)
+        blend = self._blend
+        if not self.run(lambda: blend.set(weight)):
+            self._end_blend(cancel=True)
+
+    def _end_blend(self, cancel: bool = False) -> None:
+        blend, self._blend = self._blend, None
+        if blend is not None and self.run(lambda: blend.end(cancel)):
+            name = os.path.basename(blend.file)
+            self.set_status(f"Cancelled the blend of {name}." if cancel else f"Blended {name} by {blend.weight:.0%}.")
+        self._show_blend(0.0)
+
+    def _show_blend(self, weight: float) -> None:
+        """Puts the slider and its label at weight without starting a blend."""
+        self.blend_slider.blockSignals(True)
+        self.blend_slider.setValue(round(weight * 100))
+        self.blend_slider.blockSignals(False)
+        self.blend_value_label.setText(f"{weight:.0%}")
+
     def _save(self) -> None:
         session = self.session
         name = self.name_edit.text().strip()
@@ -597,6 +719,16 @@ class LibraryBrowser(QtWidgets.QWidget):
             action = menu_action(menu, text)
             action.setEnabled(enabled)
             action.triggered.connect(lambda checked=False, command=command: self.run(command))
+        if entry.kind == LIBRARY.POSE:
+            # A QMenu made here and inserted, not addMenu(text): that one is found deleted in a GUI Maya.
+            blend_menu = QtWidgets.QMenu("Blend", menu)
+            for sign, verb in ((1, "Add"), (-1, "Subtract")):
+                for percent in BLEND_STEPS:
+                    action = menu_action(blend_menu, f"{verb} {percent}%")
+                    action.setEnabled(not entry.info.error)
+                    weight = sign * percent / 100.0
+                    action.triggered.connect(lambda checked=False, weight=weight: self.run(lambda: self._apply_blend(weight)))
+            menu.insertMenu(menu.actions()[1], blend_menu)
         return menu
 
     def _rename(self, entry: LIBRARY.LibraryEntry) -> None:

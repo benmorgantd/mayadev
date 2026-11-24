@@ -8,6 +8,10 @@ nothing, so keying is a separate tool.
 
 from __future__ import annotations
 
+import os
+import shutil
+import tempfile
+
 import maya.cmds as cmds
 import rigmodules.pose
 import rigmodules.query
@@ -62,16 +66,68 @@ def flip_pose(scope: list[str]) -> int:
     return len(changed)
 
 
-def load_pose(scope: list[str], file: str, mirror: bool = False) -> list[str]:
+def load_pose(scope: list[str], file: str, mirror: bool = False, blend: float = 1.0) -> list[str]:
     """Loads a ControlPose file onto scope (a rig root, or controls of one rig) in one undo step. mirror puts the file's
-    Left side on the Right and its Right on the Left before it is written. Returns the controls it changed."""
+    Left side on the Right and its Right on the Left before it is written. blend other than 1 blends from the current
+    pose instead (RigModules D72): 0.25 goes a quarter of the way to the pose, -0.25 takes a quarter of the pose's
+    offset from rest off, 1.5 goes past it. Repeated blends compound. Returns the controls it changed."""
+    kwargs = {} if blend == 1.0 else {"blend": blend}
     cmds.undoInfo(openChunk=True, chunkName="Load pose")
     try:
-        changed = cmds.loadRigPose(*scope, file=file.replace("\\", "/"), mirror=mirror) or []
+        changed = cmds.loadRigPose(*scope, file=file.replace("\\", "/"), mirror=mirror, **kwargs) or []
     finally:
         cmds.undoInfo(closeChunk=True)
-    bmaya.core.log.info(f"Loaded the pose onto {len(changed)} control(s){' mirrored' if mirror else ''}: {file}")
+    blended = f" blended by {blend:g}" if kwargs else ""
+    bmaya.core.log.info(f"Loaded the pose onto {len(changed)} control(s){' mirrored' if mirror else ''}{blended}: {file}")
     return changed
+
+
+class PoseBlend:
+    """One interactive blend towards a ControlPose file, such as a slider drag (RigModules D72). begin saves the scope's
+    pose as the reference and opens an undo chunk. Every set blends from that same reference, so the weights of a drag
+    don't compound. end closes the chunk, so the whole drag is one undo step, and deletes the reference file."""
+
+    def __init__(self, scope: list[str], file: str, mirror: bool, folder: str) -> None:
+        self.scope = scope
+        self.file = file.replace("\\", "/")
+        self.mirror = mirror
+        self.weight = 0.0
+        self._folder = folder
+        self._reference = os.path.join(folder, "reference.controlpose.json").replace("\\", "/")
+        self._open = False
+
+    @classmethod
+    def begin(cls, scope: list[str], file: str, mirror: bool = False) -> PoseBlend:
+        blend = cls(scope, file, mirror, tempfile.mkdtemp(prefix="bmaya_poseblend_"))
+        try:
+            cmds.saveRigPose(*scope, file=blend._reference)
+        except RuntimeError:
+            shutil.rmtree(blend._folder, ignore_errors=True)
+            raise
+        cmds.undoInfo(openChunk=True, chunkName="Blend pose")
+        blend._open = True
+        return blend
+
+    def set(self, weight: float) -> list[str]:
+        """Blends the scope to weight: 0 is the reference, 1 the pose, -1 removes the pose, past 1 adds more of it.
+        Returns the controls it changed."""
+        self.weight = weight
+        return cmds.loadRigPose(*self.scope, file=self.file, mirror=self.mirror, blend=weight,
+                                blendReference=self._reference) or []
+
+    def end(self, cancel: bool = False) -> None:
+        """Finishes the blend. cancel puts the reference pose back first. Safe to call twice."""
+        if not self._open:
+            return
+        try:
+            if cancel:
+                self.set(0.0)
+        finally:
+            self._open = False
+            cmds.undoInfo(closeChunk=True)
+            shutil.rmtree(self._folder, ignore_errors=True)
+        if not cancel:
+            bmaya.core.log.info(f"Blended the pose by {self.weight:g}: {self.file}")
 
 
 def load_animation(scope: list[str], file: str, offset: float = 0, mirror: bool = False) -> list[str]:
