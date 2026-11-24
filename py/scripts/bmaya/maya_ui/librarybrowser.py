@@ -27,12 +27,15 @@ SESSION = bmaya.maya.librarybrowser
 OBJECT_NAME = "bmayaLibraryBrowser"
 KIND_TITLES = {LIBRARY.POSE: "Poses", LIBRARY.ANIMATION: "Animations"}
 SCOPE_AUTO_TEXT = "Auto (selection, else rig)"
+# The scope combo's fixed items, in order, each with the session scope it picks. Masks follow them.
+SCOPE_ITEMS = (("Whole rig", SESSION.SCOPE_RIG), ("Selection", SESSION.SCOPE_SELECTION), (SCOPE_AUTO_TEXT, None))
 NAME, TAGS, SOURCE, TEMPLATE, AUTHOR, DATE, FRAMES = range(7)
 LIST_COLUMNS = (NAME, SOURCE)   # List shows these, Details all of them
 SORT_ROLE = QtCore.Qt.ItemDataRole.UserRole
-BLEND_RANGE = (-100, 150)        # the blend slider's range in percent: -1 removes the pose, past 1 adds more (D72)
+BLEND_RANGE = (0, 150)           # the blend slider's range in percent: 100 is the pose, past it adds more (D72)
 BLEND_PIXELS = 200.0             # a middle-drag this many pixels to the right is a weight of 1
-BLEND_STEPS = (25, 50, 75)       # the context menu's Add and Subtract percentages
+BLEND_STEPS = (25, 50, 75)       # the context menu's Add percentages
+BLEND_DRAG_STEP = 5              # a drag snaps to this many percent, and blends only when the snapped value changes
 
 
 def source_label(key: str) -> str:
@@ -187,7 +190,7 @@ class LibraryBrowser(QtWidgets.QWidget):
         self._suggested = ""
         self._source_keys: list[str] = []
         self._mask_keys: list[tuple[str, str]] = []
-        self._scope_values: list[str | None] = [None, SESSION.SCOPE_SELECTION, SESSION.SCOPE_RIG]
+        self._scope_values: list[str | None] = [scope for _text, scope in SCOPE_ITEMS]
         self.source_buttons: dict[str, QtWidgets.QPushButton] = {}
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -347,7 +350,7 @@ class LibraryBrowser(QtWidgets.QWidget):
 
     def _build_blend(self) -> QtWidgets.QHBoxLayout:
         """The pose blend slider (D72). A drag blends the scope from its pose at the press towards the selected pose:
-        100% is the pose, -100% removes it, past 100% adds more. It springs back to 0 on release, one undo step."""
+        100% is the pose, past 100% adds more. It springs back to 0 on release, one undo step."""
         self._blend: bmaya.maya.posetools.PoseBlend | None = None
         self.blend_label = QtWidgets.QLabel("Blend")
         self.blend_slider = BlendSlider(QtCore.Qt.Orientation.Horizontal)
@@ -356,8 +359,8 @@ class LibraryBrowser(QtWidgets.QWidget):
         self.blend_slider.setSingleStep(0)
         self.blend_slider.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
         self.blend_slider.setTickInterval(50)
-        self.blend_slider.setToolTip("Drag to blend the scope towards the selected pose: 100% is the pose, -100% removes"
-                                     " it. Escape cancels. Middle-drag a pose in the list to do the same.")
+        self.blend_slider.setToolTip("Drag to blend the scope towards the selected pose: 100% is the pose, past it adds"
+                                     " more. Escape cancels. Middle-drag a pose in the list to do the same.")
         self.blend_slider.sliderPressed.connect(self._begin_blend)
         self.blend_slider.sliderMoved.connect(lambda value: self._set_blend(value / 100.0))
         self.blend_slider.sliderReleased.connect(self._end_blend)
@@ -367,7 +370,7 @@ class LibraryBrowser(QtWidgets.QWidget):
         self.blend_value_label.setProperty("muted", True)
         self.table.blend_started.connect(self._begin_blend)
         self.table.blend_dragged.connect(
-            lambda pixels: self._set_blend(min(max(pixels / BLEND_PIXELS, BLEND_RANGE[0] / 100.0), BLEND_RANGE[1] / 100.0)))
+            lambda pixels: self._set_blend(pixels / BLEND_PIXELS))
         self.table.blend_finished.connect(lambda cancel: self._end_blend(cancel))
         self._show_blend(0.0)
         row = QtWidgets.QHBoxLayout()
@@ -469,9 +472,9 @@ class LibraryBrowser(QtWidgets.QWidget):
         masks = [(mask.name, mask.source) for mask in self.session.masks]
         if masks != self._mask_keys:
             self.scope_combo.clear()
-            for text in ("Whole rig", "Selection", SCOPE_AUTO_TEXT):
+            for text, _scope in SCOPE_ITEMS:
                 self.scope_combo.addItem(text)
-            self._scope_values = [None, SESSION.SCOPE_SELECTION, SESSION.SCOPE_RIG]
+            self._scope_values = [scope for _text, scope in SCOPE_ITEMS]
             for name, source in masks:
                 suffix = {LIBRARY.TEAM: " (team)", LIBRARY.USER: " (mine)"}.get(source, "")
                 self.scope_combo.addItem(f"Mask: {name}{suffix}")
@@ -628,7 +631,7 @@ class LibraryBrowser(QtWidgets.QWidget):
         self.set_status(f"Applied {entry.name} to {len(changed)} controls.")
 
     def _apply_blend(self, weight: float) -> None:
-        """One step from the current pose, for the context menu's Add and Subtract: repeated steps compound."""
+        """One step from the current pose, for the context menu's Add: repeated steps compound."""
         entry = self.session.selected
         changed = self.session.apply(mirror=self.mirror_box.isChecked(), blend=weight)
         self.set_status(f"Blended {entry.name} by {weight:+.0%} on {len(changed)} controls.")
@@ -647,8 +650,14 @@ class LibraryBrowser(QtWidgets.QWidget):
         if self._blend is None:   # the press failed or Escape cancelled: the rest of the drag does nothing
             self._show_blend(0.0)
             return
+        # Clamped to the slider's range (a middle-drag has none of its own), then snapped: a pixel of drag that stays
+        # on the same step costs nothing.
+        percent = min(max(weight * 100.0, BLEND_RANGE[0]), BLEND_RANGE[1])
+        weight = round(percent / BLEND_DRAG_STEP) * BLEND_DRAG_STEP / 100.0
         self._show_blend(weight)
         blend = self._blend
+        if weight == blend.weight:
+            return
         if not self.run(lambda: blend.set(weight)):
             self._end_blend(cancel=True)
 
@@ -722,12 +731,11 @@ class LibraryBrowser(QtWidgets.QWidget):
         if entry.kind == LIBRARY.POSE:
             # A QMenu made here and inserted, not addMenu(text): that one is found deleted in a GUI Maya.
             blend_menu = QtWidgets.QMenu("Blend", menu)
-            for sign, verb in ((1, "Add"), (-1, "Subtract")):
-                for percent in BLEND_STEPS:
-                    action = menu_action(blend_menu, f"{verb} {percent}%")
-                    action.setEnabled(not entry.info.error)
-                    weight = sign * percent / 100.0
-                    action.triggered.connect(lambda checked=False, weight=weight: self.run(lambda: self._apply_blend(weight)))
+            for percent in BLEND_STEPS:
+                action = menu_action(blend_menu, f"Add {percent}%")
+                action.setEnabled(not entry.info.error)
+                weight = percent / 100.0
+                action.triggered.connect(lambda checked=False, weight=weight: self.run(lambda: self._apply_blend(weight)))
             menu.insertMenu(menu.actions()[1], blend_menu)
         return menu
 

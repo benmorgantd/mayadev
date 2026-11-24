@@ -69,8 +69,8 @@ def flip_pose(scope: list[str]) -> int:
 def load_pose(scope: list[str], file: str, mirror: bool = False, blend: float = 1.0) -> list[str]:
     """Loads a ControlPose file onto scope (a rig root, or controls of one rig) in one undo step. mirror puts the file's
     Left side on the Right and its Right on the Left before it is written. blend other than 1 blends from the current
-    pose instead (RigModules D72): 0.25 goes a quarter of the way to the pose, -0.25 takes a quarter of the pose's
-    offset from rest off, 1.5 goes past it. Repeated blends compound. Returns the controls it changed."""
+    pose instead (RigModules D72): 0.25 goes a quarter of the way to the pose, 1.5 goes past it. A weight below 0 is
+    an error. Repeated blends compound. Returns the controls it changed."""
     kwargs = {} if blend == 1.0 else {"blend": blend}
     cmds.undoInfo(openChunk=True, chunkName="Load pose")
     try:
@@ -109,7 +109,7 @@ class PoseBlend:
         return blend
 
     def set(self, weight: float) -> list[str]:
-        """Blends the scope to weight: 0 is the reference, 1 the pose, -1 removes the pose, past 1 adds more of it.
+        """Blends the scope to weight: 0 is the reference, 1 the pose, past 1 adds more of it.
         Returns the controls it changed."""
         self.weight = weight
         return cmds.loadRigPose(*self.scope, file=self.file, mirror=self.mirror, blend=weight,

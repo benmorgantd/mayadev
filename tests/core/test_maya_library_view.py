@@ -408,14 +408,18 @@ class Applying(BrowserTest):
         session = FakeSession(self.entries(), masks=masks)
         browser = self.browser(session)
         self.assertEqual([browser.scope_combo.itemText(i) for i in range(browser.scope_combo.count())],
-                         ["Auto (selection, else rig)", "Selection", "Whole rig", "Mask: Hands", "Mask: Upper (team)",
+                         ["Whole rig", "Selection", "Auto (selection, else rig)", "Mask: Hands", "Mask: Upper (team)",
                           "Mask: Mine (mine)"])
         browser.scope_combo.setCurrentIndex(4)
         self.assertEqual(session.calls, [("set_scope", "Upper")])
         session.calls.clear()
+        browser.scope_combo.setCurrentIndex(0)
+        import bmaya.maya.librarybrowser
+        self.assertEqual(session.calls, [("set_scope", bmaya.maya.librarybrowser.SCOPE_RIG)])
+        session.calls.clear()
         session.scope = None
         session.changed.emit()
-        self.assertEqual((browser.scope_combo.currentIndex(), session.calls), (0, []))
+        self.assertEqual((browser.scope_combo.currentIndex(), session.calls), (2, []))
 
     def test_save_mask_asks_a_name_saves_the_mask_and_makes_it_the_scope(self):
         session = FakeSession(self.entries())
@@ -530,11 +534,11 @@ class Menu(BrowserTest):
         actions = self.actions(browser, entry)
         self.assertEqual(list(actions)[:2], ["Apply", "Blend"])
         blend = {action.text(): action for action in actions["Blend"].menu().actions()}
-        self.assertEqual(list(blend), ["Add 25%", "Add 50%", "Add 75%", "Subtract 25%", "Subtract 50%", "Subtract 75%"])
-        blend["Subtract 25%"].trigger()
+        self.assertEqual(list(blend), ["Add 25%", "Add 50%", "Add 75%"])
+        blend["Add 25%"].trigger()
         blend["Add 75%"].trigger()
         self.assertEqual([call for call in session.calls if call[0] == "apply"],
-                         [("apply", "fist", False, None, -0.25), ("apply", "fist", False, None, 0.75)])
+                         [("apply", "fist", False, None, 0.25), ("apply", "fist", False, None, 0.75)])
 
     def test_an_animation_has_no_blend_submenu(self):
         entry = make_entry("walk", kind="animation")
@@ -717,13 +721,25 @@ class Blending(BrowserTest):
         slider = browser.blend_slider
         slider.sliderPressed.emit()
         slider.sliderMoved.emit(50)
-        slider.sliderMoved.emit(-100)
+        slider.sliderMoved.emit(10)
         slider.sliderMoved.emit(130)
         self.assertEqual(browser.blend_value_label.text(), "130%")
         slider.sliderReleased.emit()
-        self.assertEqual(session.calls[-5:], [("begin_blend", "fist", True), ("blend_set", 0.5), ("blend_set", -1.0),
+        self.assertEqual(session.calls[-5:], [("begin_blend", "fist", True), ("blend_set", 0.5), ("blend_set", 0.1),
                                               ("blend_set", 1.3), ("blend_end", False)])
         self.assertEqual((slider.value(), browser.blend_value_label.text()), (0, "0%"))
+
+    def test_a_drag_snaps_to_steps_and_blends_only_when_the_step_changes(self):
+        session = FakeSession(self.entries())
+        browser = self.browser(session)
+        self.select_row(browser, 0)
+        slider = browser.blend_slider
+        slider.sliderPressed.emit()
+        for value in (1, 2, 49, 51, 52, 53):   # 0, 0, 50, 50, 50, 55 in steps of BLEND_DRAG_STEP
+            slider.sliderMoved.emit(value)
+        self.assertEqual(browser.blend_value_label.text(), "55%")
+        slider.sliderReleased.emit()
+        self.assertEqual([call for call in session.calls if call[0] == "blend_set"], [("blend_set", 0.5), ("blend_set", 0.55)])
 
     def test_escape_cancels_the_drag_and_the_rest_of_it_does_nothing(self):
         session = FakeSession(self.entries())
@@ -759,7 +775,9 @@ class Blending(BrowserTest):
         QtTest.QTest.mousePress(table.viewport(), QtCore.Qt.MouseButton.MiddleButton, pos=center)
         self.assertEqual(session.selected.name, "wave")
         table.blend_dragged.emit(100.0)    # half of BLEND_PIXELS
-        table.blend_dragged.emit(-1000.0)  # clamped to -100%
+        table.blend_dragged.emit(-1000.0)  # clamped to 0
+        table.blend_dragged.emit(1000.0)   # clamped to 150%
         QtTest.QTest.mouseRelease(table.viewport(), QtCore.Qt.MouseButton.MiddleButton, pos=center)
         self.assertEqual([call for call in session.calls if call[0] in ("begin_blend", "blend_set", "blend_end")],
-                         [("begin_blend", "wave", False), ("blend_set", 0.5), ("blend_set", -1.0), ("blend_end", False)])
+                         [("begin_blend", "wave", False), ("blend_set", 0.5), ("blend_set", 0.0), ("blend_set", 1.5),
+                          ("blend_end", False)])

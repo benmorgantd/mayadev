@@ -361,15 +361,15 @@ class Applying(LibraryBase):
         self.cmds.setAttr(self.left + ".rotateY", 10)
         self.session.apply(blend=0.5)
         self.assertAlmostEqual(self.rotate_y(self.left), 15)
-        self.session.apply(blend=-1)   # takes the pose's 20 off: rest is 0
-        self.assertAlmostEqual(self.rotate_y(self.left), -5)
+        self.session.apply(blend=1.5)   # past the pose: 20 + 0.5 * 20, whatever the start
+        self.assertAlmostEqual(self.rotate_y(self.left), 30)
 
     def test_a_blend_drag_starts_every_weight_from_the_press_and_undoes_in_one_step(self):
         self.cmds.setAttr(self.left + ".rotateY", 20)
         self.session.save("wave")
         self.cmds.setAttr(self.left + ".rotateY", 10)
         blend = self.session.begin_blend()
-        for weight, expected in ((0.5, 15), (0.5, 15), (1.5, 30), (-1, -10), (0.25, 12.5)):
+        for weight, expected in ((0.5, 15), (0.5, 15), (1.5, 30), (0, 10), (0.25, 12.5)):
             blend.set(weight)
             self.assertAlmostEqual(self.rotate_y(self.left), expected, msg=weight)
         blend.end()
@@ -439,7 +439,13 @@ class Applying(LibraryBase):
         self.assertEqual(self.session.details(saved)[0], f"{count} controls, {saved.info.channel_count} channels, 0 unmatched.")
         self.assertGreater(saved.info.channel_count, count)
 
-    def test_selection_is_the_default_scope_when_something_is_selected(self):
+    def test_the_whole_rig_is_the_default_scope_even_with_a_selection(self):
+        self.assertEqual(self.session.scope, self.browser.SCOPE_RIG)
+        self.cmds.select(self.left, replace=True)
+        self.assertEqual(self.session.scope_controls(), [self.root_node])
+
+    def test_auto_scope_is_the_selection_when_something_is_selected(self):
+        self.session.set_scope(None)
         self.cmds.setAttr(self.left + ".rotateY", 20)
         self.cmds.setAttr(self.right + ".rotateY", 20)
         self.session.save("both")
@@ -458,6 +464,7 @@ class Applying(LibraryBase):
             self.session.scope_controls()
 
     def test_saving_a_selection_stores_only_those_controls(self):
+        self.session.set_scope(self.browser.SCOPE_SELECTION)
         self.cmds.select(self.left, replace=True)
         saved = self.session.save("left_only")
         self.assertEqual(saved.info.control_count, 1)

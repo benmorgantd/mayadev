@@ -72,7 +72,8 @@ class LibrarySession:
 
     kind          POSE or ANIMATION: which of the two libraries is listed.
     query         the search box. entries is the files of the enabled sources that match it, sorted by name.
-    scope         None (the selected controls, else the whole rig), SCOPE_SELECTION, SCOPE_RIG or a mask's name.
+    scope         SCOPE_RIG (the default), SCOPE_SELECTION, None (the selected controls, else the whole rig) or a
+                  mask's name.
     reason        why there is nothing to list, "" when there is.
     """
 
@@ -81,7 +82,7 @@ class LibrarySession:
         self._index = index or LIBRARY.Index(read_file_infos)
         self.kind = LIBRARY.POSE
         self.query = ""
-        self.scope: str | None = None
+        self.scope: str | None = SCOPE_RIG   # the browser opens on the whole rig
         self.reason = ""
         self.asset_id: str | None = None
         self.rig_name: str | None = None      # the library is the rig's: poses are keyed by a rig's control markup
