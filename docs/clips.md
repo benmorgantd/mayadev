@@ -6,14 +6,14 @@ How an asset holds animation that leaves the rig: FBX clips in a skeleton's `exp
 
 | Kind | Folder | File | Written by |
 |---|---|---|---|
-| Control pose | `controlposes/` | `<name>.controlpose.json` | `cmds.saveRigPose` |
-| Control animation | `controlanims/` | `<name>.controlanim.json` | `cmds.saveRigAnimation` |
+| Control pose | `rigs/<rig>/controlposes/` | `<name>.controlpose.json` | `cmds.saveRigPose` |
+| Control animation | `rigs/<rig>/controlanims/` | `<name>.controlanim.json` | `cmds.saveRigAnimation` |
 | Skeleton clip | `skeletons/<skeleton>/exports/<name>/` | `<name>.fbx` and files beside it | `rigmodules.jointclip` |
 | Skeleton data from outside | `sources/` | `<name>.fbx` (and `<name>.bonemap.json`) | Copied in by hand |
 
-Control data binds to a rig's controls by markup, so it survives renames and rebuilds, and it keeps what joints can't (IK/FK blend, spaces, the animator's keys and tangents). Skeleton data is for another rig or skeleton, mocap and the engine. All four folders belong to the asset, so every variant on its skeleton shares them.
+Control data binds to a rig's controls by markup, so it survives renames and rebuilds, and it keeps what joints can't (IK/FK blend, spaces, the animator's keys and tangents). Skeleton data is for another rig or skeleton, mocap and the engine. Control data belongs to a rig, because control markup is unique per rig. A clip belongs to its skeleton, so every rig on that skeleton shares its `exports`. `sources/` belongs to the asset.
 
-The ControlAnim file has one name everywhere: `<name>.controlanim.json`, in `controlanims/` and beside an exported clip. Files written before that (`<name>.json` in the control data folders, `<name>.anim.json` beside a clip) still load. Where control data is saved and listed is [`assets.md`](assets.md#library): saves go to the user's own library, not to `controlposes/` and `controlanims/` of the asset.
+The ControlAnim file has one name everywhere: `<name>.controlanim.json`, in `controlanims/` and beside an exported clip. Files written before that (`<name>.json` in the control data folders, `<name>.anim.json` beside a clip) still load. Where control data is saved and listed is [`assets.md`](assets.md#library): saves go to the user's own library, not to `controlposes/` and `controlanims/` of the rig.
 
 ## An export bundle
 
@@ -47,10 +47,10 @@ from bmaya.maya import assethandlers
 
 hero = Asset("shooter\\main\\characters\\hero")
 assethandlers.register()
-assethandlers.save_anim_clip(hero, "walk", rig_root="hero:rigRootModule1", start_frame=1, end_frame=48)
+assethandlers.save_anim_clip(hero, "game", "walk", rig_root="hero_game:rigRootModule1", start_frame=1, end_frame=48)
 ```
 
-`save_anim_clip` versions only that clip's FBX, checks it out, calls `AnimClipHandler.save`, and tells source control about a new file. `handlers.save(hero, "exports", ...)` would copy the whole `exports` folder, so use `save_anim_clip`.
+`save_anim_clip(asset, rig, name, ...)` writes into the `exports` folder of the rig's skeleton. It versions only that clip's FBX, checks it out, calls `AnimClipHandler.save`, and tells source control about a new file. `handlers.save(hero, "exports", ...)` would copy the whole `exports` folder, so use `save_anim_clip`.
 
 `AnimClipHandler.save(asset, path, name=, ...)`:
 
@@ -67,9 +67,9 @@ A clip captured from a rig also gets its ControlAnim beside it. An export folder
 ## Loading a clip
 
 ```python
-clip = bmaya.core.asset.handlers.load(hero, "exports", name="walk")
+clip = bmaya.core.asset.handlers.load(hero, "exports", "default", name="walk")   # "default" is the skeleton
 cmds.animateRigFromJointClip(
-    "hero:rigRootModule1", jointClip=clip.joint_clip,
+    "hero_game:rigRootModule1", jointClip=clip.joint_clip,
     **({"sidecar": clip.sidecar} if clip.sidecar else {}))
 ```
 
