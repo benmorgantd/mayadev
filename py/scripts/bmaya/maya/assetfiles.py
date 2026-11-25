@@ -38,6 +38,19 @@ DEFAULT_NAME = bmaya.core.asset.context.DEFAULT_NAME
 
 
 @dataclasses.dataclass(frozen=True)
+class RowTool:
+    """A command on a row's right-click menu that works on the scene for its file type, such as Add Foot Markers on
+    the Markers row. name is what run_tool takes. blocked is "" when it can run, else the reason, which the menu
+    shows as the item's tool tip; hint is the tool tip otherwise. A tool that needs a selection checks it when it
+    runs, because the rows are not read again when the selection changes."""
+
+    name: str
+    label: str
+    hint: str
+    blocked: str = ""
+
+
+@dataclasses.dataclass(frozen=True)
 class FileRow:
     """One file of the asset. save_blocked and load_blocked are "" when the command can run, else the reason, which
     the window shows as the button's tool tip. saves and loads say whether the file type has the command at all."""
@@ -60,6 +73,7 @@ class FileRow:
     open_blocked: str = ""
     imports_images: bool = False   # Import Textures... is on the row's menu (its blocked reason is save_blocked)
     note: str = ""   # said after the file count: how the folder's sidecar stands
+    tools: tuple[RowTool, ...] = ()   # first on the row's right-click menu
 
 
 @dataclasses.dataclass(frozen=True)
@@ -109,6 +123,13 @@ class FileAction:
     def load(self, model: AssetFilesModel) -> None:
         raise NotImplementedError
 
+    def tools(self, model: AssetFilesModel) -> tuple[RowTool, ...]:
+        """The row's scene tools, each with why it can't run now. A subclass that has some overrides run_tool too."""
+        return ()
+
+    def run_tool(self, model: AssetFilesModel, name: str) -> None:
+        raise NotImplementedError
+
 
 class SkeletonAction(FileAction):
     key, label, owner_kind, saves, loads = "skeleton", "Skeleton", "skeleton", True, True
@@ -131,7 +152,7 @@ class SkeletonAction(FileAction):
 class MarkersAction(FileAction):
     """The asset's markers (RigModules D73): points that follow its joints, such as a ReverseFoot's six pivots. One file
     per asset. Save writes every marker locator in the current namespace, and Load makes them on the skeleton there.
-    Add Foot Markers and Mirror Markers, in the RigModules menu, make and mirror the locators."""
+    The row's menu makes, mirrors and selects the locators (the same tools as the RigModules menu's markers submenu)."""
 
     key, label, saves, loads = "markers", "Markers", True, True
     save_hint = "Every marker locator in the current namespace, whatever is selected"
@@ -149,6 +170,27 @@ class MarkersAction(FileAction):
 
     def load(self, model):
         cmds.select(bmaya.maya.assettools.load_markers(model.asset_id), replace=True)
+
+    def tools(self, model):
+        no_joints = "" if model.joints() else "There are no joints in the scene. Load the skeleton first."
+        no_markers = "" if model.markers() else "There are no marker locators in the scene."
+        return (RowTool("add_foot_markers", "Add Foot Markers",
+                        "Select one joint with markup (the foot's ball joint is a good start). Makes the six markers a "
+                        "ReverseFoot needs, following it on its side, and selects them to move into place.", no_joints),
+                RowTool("mirror_markers", "Mirror Selected Markers",
+                        "Writes the other side's marker for each selected marker locator.", no_markers),
+                RowTool("select_markers", "Select Markers",
+                        "Selects every marker locator in the current namespace: what Save writes.", no_markers))
+
+    def run_tool(self, model, name):
+        if name == "add_foot_markers":
+            bmaya.maya.assettools.add_foot_markers_interactive()
+        elif name == "mirror_markers":
+            bmaya.maya.assettools.mirror_markers_interactive()
+        elif name == "select_markers":
+            cmds.select(model.markers(), replace=True)
+        else:
+            raise RuntimeError(f"The markers have no tool {name!r}.")
 
 
 class ModelAction(FileAction):
@@ -466,7 +508,7 @@ class AssetFilesModel:
             load_blocked=action.load_blocked(self) if action.loads else "", loads_by_name=action.loads_by_name,
             opens_folder=action.opens_folder, imports_images=action.imports_images, open_blocked=action.open_blocked(self) if action.opens_folder else "",
             file_count=len(action.list_files(self)) if action.opens_folder and os.path.isdir(os.path.dirname(path)) else None,
-            note=action.note(self) if action.opens_folder and has_owner else "")
+            note=action.note(self) if action.opens_folder and has_owner else "", tools=action.tools(self))
 
     # ---- commands --------------------------------------------------------------------------
 
@@ -553,6 +595,18 @@ class AssetFilesModel:
         if row.load_blocked:
             raise RuntimeError(row.load_blocked)
         action.load_by_name(self)
+        self.refresh()
+
+    def run_tool(self, key: str, name: str) -> None:
+        """Runs one of the row's scene tools (RowTool), such as Add Foot Markers on the Markers row, then reads the
+        rows again: a tool that makes locators unblocks Save."""
+        action, row = self._action(key), self.row(key)
+        tool = next((tool for tool in row.tools if tool.name == name), None)
+        if tool is None:
+            raise RuntimeError(f"{row.label} has no tool {name!r}.")
+        if tool.blocked:
+            raise RuntimeError(tool.blocked)
+        action.run_tool(self, name)
         self.refresh()
 
     def build_rig(self) -> str:

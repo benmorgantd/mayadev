@@ -107,6 +107,7 @@ class FileStatusTable(QtWidgets.QTableView):
     restore_requested = QtCore.Signal(str)
     open_requested = QtCore.Signal(str)   # a folder row's Open Folder menu item
     import_requested = QtCore.Signal(str)   # a folder row's Import Textures menu item
+    tool_requested = QtCore.Signal(str, str)   # a row's scene tool (RowTool): the row's key and the tool's name
 
     def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
@@ -133,14 +134,21 @@ class FileStatusTable(QtWidgets.QTableView):
         self.customContextMenuRequested.connect(self._on_context_menu)
 
     def row_menu(self, key: str) -> QtWidgets.QMenu | None:
-        """A row's right-click menu: Open Folder for a row with a folder the artist fills, Restore Version... when it
-        has local versions, and Load by Name (off, with the reason as its tool tip, when Load is blocked) when its file
-        type has it. None when it has none."""
+        """A row's right-click menu: its scene tools first (Add Foot Markers on the Markers row), then Open Folder for
+        a row with a folder the artist fills, Restore Version... when it has local versions, and Load by Name when its
+        file type has it. An item that can't run now is off, with the reason as its tool tip. None when it has none."""
         row = next((row for row in self.row_model.items if row.key == key), None)
-        if row is None or not (row.versions or row.loads_by_name or row.opens_folder or row.imports_images):
+        if row is None or not (row.tools or row.versions or row.loads_by_name or row.opens_folder or row.imports_images):
             return None
         menu = QtWidgets.QMenu(self)
         menu.setToolTipsVisible(True)
+        for tool in row.tools:
+            action = menu_action(menu, tool.label)
+            action.setEnabled(not tool.blocked)
+            action.setToolTip(tool.blocked or tool.hint)
+            action.triggered.connect(lambda checked=False, name=tool.name: self.tool_requested.emit(key, name))
+        if row.tools and (row.versions or row.loads_by_name or row.opens_folder or row.imports_images):
+            menu.addSeparator()
         if row.imports_images:
             action = menu_action(menu, "Import Textures...")
             action.setEnabled(not row.save_blocked)

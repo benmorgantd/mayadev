@@ -672,6 +672,58 @@ class MarkerFiles(EditorBase):
         files.load("markers")
         self.assertEqual(sorted(node.split("|")[-1] for node in self.cmds.ls(selection=True)), ["ball_00_M_MRK", "heel_00_M_MRK"])
 
+    def test_the_row_tools_are_off_until_the_scene_has_what_they_need(self):
+        self.tools.new_rig(HERO, self.template)
+        files = self.session(HERO).files
+        tools = {tool.name: tool for tool in files.row("markers").tools}
+        self.assertEqual(list(tools), ["add_foot_markers", "mirror_markers", "select_markers"])
+        self.assertIn("Load the skeleton first", tools["add_foot_markers"].blocked)
+        self.assertIn("no marker locators", tools["select_markers"].blocked)
+        with self.assertRaisesRegex(RuntimeError, "Load the skeleton first"):
+            files.run_tool("markers", "add_foot_markers")
+        with self.assertRaisesRegex(RuntimeError, "no tool 'nothing'"):
+            files.run_tool("markers", "nothing")
+        self.assertEqual(files.row("skeleton").tools, ())
+
+    def test_add_foot_markers_makes_the_six_on_the_selected_joint_and_unblocks_save(self):
+        joints = self.make_skeleton()
+        files = self.session(HERO).files
+        self.cmds.select(joints[1], replace=True)
+        files.run_tool("markers", "add_foot_markers")
+        made = sorted(node.split("|")[-1] for node in self.cmds.ls(selection=True))
+        self.assertEqual(made, sorted(f"{usage}_00_M_MRK" for usage in self.tools.FOOT_MARKERS))
+        self.assertEqual(files.row("markers").save_blocked, "", "the rows are read again after a tool")
+        self.cmds.select(clear=True)
+        files.run_tool("markers", "select_markers")
+        self.assertEqual(len(self.cmds.ls(selection=True)), 6)
+
+    def test_add_foot_markers_needs_one_selected_joint(self):
+        joints = self.make_skeleton()
+        files = self.session(HERO).files
+        self.cmds.select(clear=True)
+        with self.assertRaisesRegex(RuntimeError, "Select joints"):
+            files.run_tool("markers", "add_foot_markers")
+        self.cmds.select(joints, replace=True)
+        with self.assertRaisesRegex(RuntimeError, "Select one joint"):
+            files.run_tool("markers", "add_foot_markers")
+        self.assertEqual(files.row("markers").save_blocked[:12], "There are no", "nothing was made")
+
+    def test_mirror_selected_markers_writes_the_other_sides(self):
+        import rigmodules.markers
+        cmds = self.cmds
+        feet = {}
+        for side, letter, x in (("Left", "L", 1), ("Right", "R", -1)):
+            cmds.select(clear=True)
+            feet[side] = cmds.joint(name=f"foot_00_{letter}_JNT", position=(x, 1, 0))
+            cmds.rigJointMarkup(feet[side], usage="foot", side=side, export=True, skin=True)
+        cmds.select(clear=True)
+        files = self.session(HERO).files
+        made = rigmodules.markers.add_markers(feet["Left"], ["heel"], "Left")
+        files.refresh()
+        self.cmds.select(made, replace=True)
+        files.run_tool("markers", "mirror_markers")
+        self.assertEqual([node.split("|")[-1] for node in self.cmds.ls(selection=True)], ["heel_00_R_MRK"])
+
     def test_build_rig_passes_the_markers_once_they_are_saved(self):
         # The row's file is the one build_rig gives createRigFromTemplate (RigModules D73): the rig root carries its hash.
         import rigmodules.markers

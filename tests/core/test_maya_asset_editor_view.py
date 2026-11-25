@@ -86,6 +86,9 @@ class FakeFiles:
         self._record("open_folder", key)
         return f"C:/projects/{key}"
 
+    def run_tool(self, key, name):
+        self._record("run_tool", key, name)
+
     def publish_rig(self, prompter=None):
         self._record("publish_rig")
         return "C:/projects/publish/rig"
@@ -434,6 +437,24 @@ class EditorView(unittest.TestCase):
         self.assertEqual(window.session.files.calls[-1], ("load_by_name", "weights"))
         action = window.files_table.row_menu("other").actions()[0]
         self.assertEqual((action.isEnabled(), action.toolTip()), (False, "The rig is not in the scene."))
+
+    def test_a_rows_scene_tools_come_first_on_its_menu_and_run_through_the_files_model(self):
+        import dataclasses
+        import bmaya.maya.assetfiles
+        window = self.window()
+        tools = (bmaya.maya.assetfiles.RowTool("add_foot_markers", "Add Foot Markers", "Makes the six markers."),
+                 bmaya.maya.assetfiles.RowTool("select_markers", "Select Markers", "Selects them.",
+                                               blocked="There are no marker locators in the scene."))
+        markers = dataclasses.replace(row("markers", "Markers", None, None), tools=tools)
+        window.files_table.set_rows([markers])
+        menu = window.files_table.row_menu("markers")
+        self.assertEqual([action.text() for action in menu.actions()],
+                         ["Add Foot Markers", "Select Markers", "", "Restore Version..."])
+        add, select = menu.actions()[:2]
+        self.assertEqual((add.isEnabled(), add.toolTip()), (True, "Makes the six markers."))
+        self.assertEqual((select.isEnabled(), select.toolTip()), (False, "There are no marker locators in the scene."))
+        add.trigger()
+        self.assertEqual(window.session.files.calls[-1], ("run_tool", "markers", "add_foot_markers"))
 
     def test_build_rig_calls_the_files_model_and_is_disabled_with_no_rig(self):
         window = self.window()

@@ -128,7 +128,7 @@ None of the code that asks imports a UI, so every tool runs in mayapy with a `Sc
 | `maya/shapemodel.py` | `ShapeModel`, the Asset Editor's Shapes tab view-model with no Qt: the selected rig controls' shape fields as one value or mixed, Set and Adjust edits across all of them with `setAttr` (one undo step each), and mirroring the shapes of their rigs |
 | `maya/markupmodel.py` | `MarkupModel`, the Asset Editor's Markup tab view-model with no Qt: the selected joints' markup as mixed fields, edits across all of them (set, add, remove, one undo step each, side and usage kept unique per skeleton), and the selected rig controls' markup, read only |
 | `maya/namingmodel.py` | `NamingModel`, the Asset Editor's Naming tab view-model with no Qt: the selection's name root, side and start number (filled from its first node that is in the convention), renaming it in selection order (joints, controls, modules, constraints and meshes) and mirroring Left and Right names, all through RigModules' `renameRigNodes` |
-| `maya/assetfiles.py` | `AssetFilesModel`, `FileRow` and the `FileAction` table: one row per file of the chosen asset, with its status and Save, Load and Build Rig |
+| `maya/assetfiles.py` | `AssetFilesModel`, `FileRow`, `RowTool` and the `FileAction` table: one row per file of the chosen asset, with its status, Save, Load, its scene tools (the Markers row's Add Foot Markers) and Build Rig |
 | `maya/rigpanel.py` | `RigPanelSession`, `ControlGroup`, `SpaceState` and `LimbState`: the active rig panel's view-model, no Qt |
 | `maya/devreload.py` | Reload and unload RigModules, and the reload hooks slot |
 | `maya/eventsregistry.py` | `EventsRegistry`, `EventType`, `pause_callbacks` |

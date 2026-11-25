@@ -134,6 +134,8 @@ class AssetEditor(QtWidgets.QWidget):
         self.files_table.open_requested.connect(lambda key: self.run(lambda: self.session.files.open_folder(key)))
         self.files_table.restore_requested.connect(lambda key: self.run(lambda: self._restore(key)))
         self.files_table.load_by_name_requested.connect(lambda key: self.run(lambda: self.session.files.load_by_name(key)))
+        self.files_table.tool_requested.connect(
+            lambda key, name: self.run(lambda: self.session.files.run_tool(key, name)))
         layout.addWidget(self.files_table, 1)
         self.files_message = QtWidgets.QLabel()
         self.files_message.setWordWrap(True)
