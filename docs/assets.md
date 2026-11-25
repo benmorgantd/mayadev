@@ -75,7 +75,7 @@ All JSON is written with sorted keys and one item per line, so it diffs and merg
   },
   "rig": { "regions": ["lowerBody", "upperBody", "head", "hands"] },
   "library": { "statuses": ["scratch", "review", "final"] },
-  "formatVersion": 3
+  "formatVersion": 4
 }
 ```
 
@@ -87,6 +87,7 @@ A file type's `path` is relative to the asset folder. `{name}` is the asset's na
 |---|---|---|---|---|
 | `skeleton` | `skeletons/{skeleton}/skeleton.json` | skeleton | | Skeleton file |
 | `exports` | `skeletons/{skeleton}/exports` | skeleton | Yes | Anim clip |
+| `markers` | `markers/markers.json` | | | Markers (RigModules D73): one per asset, the points that follow its joints, such as a ReverseFoot's pivots. Added by the project's version 3 to 4 update |
 | `riginfo` | `rigs/{rig}/rig.json` | rig | | None (`Asset.rig`) |
 | `template` | `rigs/{rig}/template.json` | rig | | Template |
 | `shapes` | `rigs/{rig}/shapes.json` | rig | | Shapes |
@@ -105,7 +106,7 @@ A file type's `path` is relative to the asset folder. `{name}` is the asset's na
 
 Control data binds to a rig's controls by markup, which is unique per rig, so poses and animations are a rig's. A clip is skeleton data, so every rig on a skeleton shares its `exports` ([`clips.md`](clips.md)).
 
-An older `project.json` updates itself. `formatVersion` is 3. When a `Project` loads a file with an older version, it runs the steps in `PROJECT_UPDATES` in order, in memory, and then writes the file back at the current version (`update_project_data`). Version 1 to 2 adds the library file types and the `rig` and `library` vocabularies, only where they are missing. Version 2 to 3 (RigModules D54) moves every default path that was per variant under `rigs/{rig}` or `looks/{look}`, makes `skeleton` the `skeleton.json` and moves `exports`, `controlposes` and `controlanims` under their owner, splits `publish` into `rigpublish` and `lookpublish`, and adds `riginfo` and `lookinfo`. Only a path that still equals its version 2 default is replaced, so a studio's own edits stay. A path a studio edited that still uses `{variant}` is left alone and fails the load by name: where it should go is the studio's call. A file that can't be written back (read-only in source control) still loads, updated in memory, and is tried again on the next load. A `formatVersion` that is not a whole number from 1, or is newer than this mayadev reads, raises `ProjectError` naming the file.
+An older `project.json` updates itself. `formatVersion` is 4. When a `Project` loads a file with an older version, it runs the steps in `PROJECT_UPDATES` in order, in memory, and then writes the file back at the current version (`update_project_data`). Version 1 to 2 adds the library file types and the `rig` and `library` vocabularies, only where they are missing. Version 2 to 3 (RigModules D54) moves every default path that was per variant under `rigs/{rig}` or `looks/{look}`, makes `skeleton` the `skeleton.json` and moves `exports`, `controlposes` and `controlanims` under their owner, splits `publish` into `rigpublish` and `lookpublish`, and adds `riginfo` and `lookinfo`. Version 3 to 4 (RigModules D73) adds the asset's `markers` file, `markers/markers.json`, where a project has none. Only a path that still equals its version 2 default is replaced, so a studio's own edits stay. A path a studio edited that still uses `{variant}` is left alone and fails the load by name: where it should go is the studio's call. A file that can't be written back (read-only in source control) still loads, updated in memory, and is tried again on the next load. A `formatVersion` that is not a whole number from 1, or is newer than this mayadev reads, raises `ProjectError` naming the file.
 
 To change the format, bump `FORMAT_VERSION`, add the step as `PROJECT_UPDATES[old_version]` and add the new keys to `DEFAULT_PROJECT`. A step spells out its values and never reads `DEFAULT_PROJECT`, and it is not edited after it ships.
 
@@ -277,6 +278,7 @@ The Maya handlers are registered by `bmaya.maya.assethandlers.register()`:
 | `weights` | `RigSkinWeightsHandler` | `namespace=` | One RigModules weight file per skinned mesh in the namespace, named after the mesh (`box_geo.json`). Save fails on a skinned mesh without a `meshId`, and removes a file left from a mesh's old name. Load matches each file to a mesh by the `meshId` inside it, never by name, skips a file whose mesh isn't in the scene with a warning, fails if two files name one `meshId`, and is one undo step |
 | `controlposes` | `ControlPoseHandler` | `name=`, `scope=`, `meta=` (save), `mirror=` (load) | `<name>.controlpose.json` in the folder. `cmds.saveRigPose` and `loadRigPose`. A legacy `<name>.json` still loads |
 | `controlanims` | `ControlAnimHandler` | `name=`, `scope=`, `start_frame=`, `end_frame=`, `meta=` (save), `offset=`, `mirror=` (load) | `<name>.controlanim.json` in the folder. `cmds.saveRigAnimation` and `loadRigAnimation`. A legacy `<name>.json` still loads |
+| `markers` | `RigMarkersHandler` | `markers=` (save), `namespace=` (load) | The asset's markers file (RigModules D73). Save is `cmds.saveRigMarkers` on the `markers` locators, each stored as an offset from its joint, so the joints should be at rest. Load is `cmds.loadRigMarkers`: it creates a marker locator for each marker on the marked joints of the namespace (the current one when left out), in it, and returns them |
 | `exports` | `AnimClipHandler` | see [`clips.md`](clips.md) | One FBX clip per name, in a folder of its own |
 | `sources` | `SourceClipHandler` | see [`clips.md`](clips.md) | FBX files from other tools. Load only: save raises |
 
@@ -354,7 +356,7 @@ library.filter_entries(entries, library.parse_query("tag:fist hand"))
 3. Picks the namespace, `namespace` or `{asset name}_{rig}` (`hero_game`), RigModules' own default, and refuses one that already holds a rig (`rigmodules.query.get_rigs`). A namespace holds one rig (RigModules D54), so this fails before the skeleton is created rather than in the build.
 4. Finds the parent when the rig has one (below).
 5. Creates the skeleton's joints from its `skeleton.json` in the namespace (`cmds.loadRigSkeleton`).
-6. Builds: `cmds.createRigFromTemplate(*joints, template=..., asset=asset.id, namespace=..., parentRig=...)`, with `parentRig` only for an attachment.
+6. Builds: `cmds.createRigFromTemplate(*joints, template=..., asset=asset.id, namespace=..., parentRig=..., markers=...)`, with `parentRig` only for an attachment and `markers` only when the asset has its `markers` file (RigModules D73; a template whose modules select markers, such as a ReverseFoot, fails without it).
 7. Loads the rig's shape file when it has one. Then the look, through `apply_look` (below) when it has a model, with or without weight files, which records it on the rig when the model has a marked mesh.
 8. Clears the selection and returns the rig root.
 

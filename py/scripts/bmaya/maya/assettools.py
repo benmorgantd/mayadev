@@ -29,6 +29,7 @@ import maya.cmds as cmds
 import rigmodules.displaylayers
 import rigmodules.groups
 import rigmodules.jointclip
+import rigmodules.markers
 import rigmodules.query
 import rigmodules.skinweights
 import rigmodules.template
@@ -55,6 +56,8 @@ SCENE_FILTER = "Maya ASCII (*.ma)"
 SHAPES_FILTER = "Shape files (*.json)"
 TEMPLATE_FILTER = "Rig templates (*.json)"
 DEFAULT_NAME = "default"   # the name offered for an asset's first skeleton and first look (RigModules D54)
+# The six markers a RigModules ReverseFoot finds on its side (RigModules D74), which Add Foot Markers makes.
+FOOT_MARKERS = ("heel", "ball", "bankIn", "bankOut", "toeTip", "toe")
 POSE_FILTER = "Pose files (*.controlpose.json *.json)"
 ANIMATION_FILTER = "Animation files (*.controlanim.json *.json)"
 CLIP_FILTER = "FBX clips (*.fbx)"
@@ -151,6 +154,36 @@ def load_skeleton(asset_id: str, skeleton: str = DEFAULT_NAME, namespace: str | 
     return joints
 
 
+def save_markers(asset_id: str, markers: list[str] | None = None) -> str:
+    """Saves marker locators (every one in the current namespace when left out) as the asset's markers file,
+    markers/markers.json (RigModules D73): points that follow its joints, such as a foot's pivots. One file per asset.
+    Each marker is stored as an offset from its joint, so the joints should be at rest. Returns the file."""
+    asset = require_asset(asset_id)
+    markers = list(markers) if markers else rigmodules.markers.get_markers(cmds.namespaceInfo(currentNamespace=True, absoluteName=True))
+    if not markers:
+        raise RuntimeError("There are no marker locators to save. Add them with Add Foot Markers, or load the markers first.")
+    bmaya.maya.assethandlers.register()
+    path = bmaya.core.asset.handlers.save(asset, "markers", markers=markers)
+    bmaya.core.log.info(f"Saved {len(markers)} marker(s) of {asset.id}: {path}")
+    return path
+
+
+def load_markers(asset_id: str, namespace: str | None = None) -> list[str]:
+    """Creates a locator for each of the asset's markers, on the marked joints of namespace (the current one when left
+    out), to look at or edit them. The skeleton's joints must be in the scene. Returns the locators."""
+    asset = require_asset(asset_id)
+    bmaya.maya.assethandlers.register()
+    markers = bmaya.core.asset.handlers.load(asset, "markers", namespace=namespace)
+    bmaya.core.log.info(f"Loaded the markers of {asset.id}: {len(markers)} locator(s).")
+    return markers
+
+
+def add_foot_markers(joint: str, side: str) -> list[str]:
+    """Makes the six markers a ReverseFoot needs (FOOT_MARKERS) at the joint, following it, on the side. Move them into
+    place, then Save Markers. Returns them."""
+    return rigmodules.markers.add_markers(joint, list(FOOT_MARKERS), side)
+
+
 def save_model(asset_id: str, look: str, meshes: list[str] | None = None) -> str:
     """Saves meshes (every visible mesh in the scene when left out) as the look's model file. A model file is only
     meshes (RigModules D54): each is exported from its undeformed shape with no skinning, no history and no joints,
@@ -173,7 +206,8 @@ def save_model(asset_id: str, look: str, meshes: list[str] | None = None) -> str
 def build_rig(asset_id: str, rig: str, look: str | None = None, namespace: str | None = None,
               parent_rig_root: str | None = None) -> str:
     """Builds a rig of the asset in the open scene: creates its skeleton's joints from the skeleton file (the
-    skeleton may be another asset's), builds the rig's template on them, and loads the rig's shape file. Then it puts
+    skeleton may be another asset's), builds the rig's template on them with the asset's markers file
+    (markers/markers.json) when it has one, and loads the rig's shape file. Then it puts
     a look on the rig: the look's model is imported into the same namespace and its skin weights are loaded onto the
     rig's joints. look is the asset's "default" look when left out and it has one, else none. A look that is named and
     missing, or whose look.json doesn't name the rig's skeleton, fails before anything is created. Builds into
@@ -275,6 +309,8 @@ def _build_rig_nodes(asset: bmaya.core.asset.Asset, rig: str, look: str | None, 
     if not joints:
         raise RuntimeError(f"The skeleton {skeleton!r} of {skeleton_asset.id} has no joints.")
     flags = {"parentRig": parent_root} if parent_root is not None else {}
+    if asset.file_exists("markers"):
+        flags["markers"] = asset.path("markers").replace("\\", "/")
     cmds.createRigFromTemplate(*joints, template=template.replace("\\", "/"), asset=asset.id, namespace=namespace, **flags)
 
     (rig_info,) = rigmodules.query.get_rigs(namespace)
@@ -1032,6 +1068,47 @@ def load_skeleton_interactive(prompter: bmaya.core.prompts.Prompter | None = Non
     skeleton = _choose_owner(prompter, "Load Skeleton", asset_id, "skeleton")
     if skeleton:
         cmds.select(load_skeleton(asset_id, skeleton), replace=True)
+
+
+def save_markers_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
+    """Asks for the asset, then saves every marker locator in the current namespace as its markers file."""
+    prompter = _prompter(prompter)
+    asset_id = _ask_asset_id(prompter, "Save Markers")
+    if asset_id:
+        save_markers(asset_id)
+
+
+def load_markers_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:
+    """Asks for the asset, then creates its marker locators on the skeleton in the current namespace and selects them."""
+    prompter = _prompter(prompter)
+    asset_id = _ask_asset_id(prompter, "Load Markers")
+    if asset_id:
+        cmds.select(load_markers(asset_id), replace=True)
+
+
+def add_foot_markers_interactive() -> list[str]:
+    """Makes a ReverseFoot's six markers at the selected joint (the foot's ball joint is a good start), on the joint's
+    side, and selects them to move into place."""
+    joints = _get_selected_joints()
+    if len(joints) != 1:
+        raise RuntimeError("Select one joint: the markers follow it.")
+    side = cmds.rigJointMarkup(joints[0], query=True, side=True)[0]
+    if not side:
+        raise RuntimeError(f"{joints[0]} has no joint markup, so the markers would have no joint to follow.")
+    markers = add_foot_markers(joints[0], side)
+    cmds.select(markers, replace=True)
+    return markers
+
+
+def mirror_markers_interactive() -> list[str]:
+    """Writes the other side's marker for each selected marker locator (cmds.mirrorRigMarkers) and selects them."""
+    selected = cmds.ls(selection=True, long=True) or []
+    markers = [node for node in selected if node in set(rigmodules.markers.get_markers(cmds.ls(node, showNamespace=True)[1]))]
+    if not markers:
+        raise RuntimeError("Select marker locators to mirror.")
+    mirrored = cmds.mirrorRigMarkers(*markers)
+    cmds.select(mirrored, replace=True)
+    return mirrored
 
 
 def save_model_interactive(prompter: bmaya.core.prompts.Prompter | None = None) -> None:

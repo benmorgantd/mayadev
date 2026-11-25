@@ -224,7 +224,7 @@ class Projects(TempRoot):
         project = Project(root)
         expected = dict(DEFAULT_PROJECT["fileTypes"], anims={"folder": True, "path": "anims"})
         saved = json.loads(self.read(os.path.join(root, "project.json")))
-        self.assertEqual(saved["formatVersion"], 3)
+        self.assertEqual(saved["formatVersion"], 4)   # step 3 then adds the markers file, which is in the defaults too
         self.assertEqual(saved["fileTypes"], expected)
         self.assertNotIn("publish", project.file_types, "publishes are per rig and per look now")
         self.assertEqual(saved["rig"], {"regions": ["face"]})
@@ -247,6 +247,17 @@ class Projects(TempRoot):
         message = str(raised.exception)
         for text in ("project.json", "'shapes'", "variants/{variant}/control_shapes.json", "{rig}"):
             self.assertIn(text, message)
+
+    def test_a_version_3_project_gains_the_assets_markers_file(self):
+        # RigModules D73: one markers file per asset, markers/markers.json. A studio's own markers path is kept.
+        root = self.old_project({"formatVersion": 3, "assetTypes": ["Prop"], "fileTypes": {}})
+        project = Project(root)
+        self.assertEqual(project.file_type("markers").relative_path("hero"), os.path.join("markers", "markers.json"))
+        self.assertIsNone(project.file_type("markers").owner, "the markers file belongs to the asset, not to a rig")
+        self.assertEqual(json.loads(self.read(os.path.join(root, "project.json")))["formatVersion"], 4)
+
+        own = Project(self.old_project({"formatVersion": 3, "assetTypes": ["Prop"], "fileTypes": {"markers": {"path": "rigging/points.json"}}}))
+        self.assertEqual(own.file_type("markers").relative_path("hero"), os.path.join("rigging", "points.json"))
 
     def test_a_current_project_is_not_rewritten(self):
         path = os.path.join(self.project.root, "project.json")
@@ -300,6 +311,7 @@ class Projects(TempRoot):
             ("weights", "winter"): ("looks", "winter", "weights"),
             ("lookpublish", "winter"): ("looks", "winter", "publish"),
             ("sources", None): ("sources",),
+            ("markers", None): ("markers", "markers.json"),
         }
         self.assertEqual({key for key, _ in expected}, set(self.project.file_types))
         for (key, owner), parts in expected.items():

@@ -64,12 +64,20 @@ class MenuLayout(unittest.TestCase):
     def test_top_level_is_submenus_in_order(self):
         items = _layout().items
         self.assertEqual([type(i) for i in items], [tool_registry.Submenu] * len(items))
-        self.assertEqual([i.label for i in items], ["panels", "asset", "mesh", "joints", "weights", "shapes", "control", "pose", "clip"])
+        self.assertEqual([i.label for i in items],
+                         ["panels", "asset", "mesh", "joints", "markers", "weights", "shapes", "control", "pose", "clip"])
 
     def test_every_tool_is_in_the_menu_once(self):
         ids = [item.tool for item in _layout().tool_items()]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(len(ids), 50)
+        self.assertEqual(len(ids), 54)
+
+    def test_the_markers_submenu(self):
+        # RigModules D73: make a foot's six markers, mirror them, and save and load the asset's markers file.
+        markers = next(item for item in _layout().items if item.label == "markers")
+        self.assertEqual([item.tool for item in markers.items],
+                         ["rigmodules.markers.add_foot_markers", "rigmodules.markers.mirror_markers",
+                          "rigmodules.markers.save_markers", "rigmodules.markers.load_markers"])
 
     def test_the_asset_submenu_adds_rigs_looks_and_skeletons(self):
         # A variant became a rig and a look (RigModules D54), and a skeleton is saved and loaded as its skeleton file.
@@ -191,6 +199,25 @@ class MenuScripts(unittest.TestCase):
         self.run_tool("Mirror Joints (L to R)", ["arm_twist_00_L_JNT"])
         self.assertEqual(self.selected(), ["arm_twist_00_R_JNT"])
         self.assertEqual([round(v, 4) for v in self.cmds.xform("arm_twist_00_R_JNT", query=True, worldSpace=True, translation=True)], [-3, 10, 0])
+
+    def test_add_foot_markers_then_mirror_them(self):
+        # Add Foot Markers makes the six ReverseFoot markers at the selected joint on its side (RigModules D73, D74), and
+        # Mirror Markers writes the other side's. The arms are at x 2 and -2, so a mirrored marker lands on the right arm.
+        self.cmds.file(new=True, force=True)
+        self.make_skeleton()
+        self.run_tool("Add Foot Markers", ["skel:arm_00_L_JNT"])
+        left = self.selected()
+        self.assertEqual(sorted(left), sorted(f"skel:{usage}_00_L_MRK" for usage in ("heel", "ball", "bankIn", "bankOut", "toeTip", "toe")))
+        self.run_tool("Mirror Markers", left)
+        right = self.selected()
+        self.assertEqual(sorted(right), sorted(name.replace("_L_MRK", "_R_MRK") for name in left))
+        self.assertEqual([round(v, 4) for v in self.cmds.xform("skel:heel_00_R_MRK", query=True, worldSpace=True, translation=True)], [-2, 10, 0])
+
+    def test_marker_tools_need_a_joint_or_markers(self):
+        with self.assertRaises(RuntimeError):
+            self.run_tool("Add Foot Markers", [])
+        with self.assertRaises(RuntimeError):
+            self.run_tool("Mirror Markers", self.joints[:1])
 
     def test_remove_joint_markup(self):
         self.run_tool("Remove Joint Markup", self.joints[:1])

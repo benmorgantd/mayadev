@@ -300,6 +300,27 @@ class AssetTools(unittest.TestCase):
         self.tools.build_rig(HERO, "game")
         self.assertEqual(cmds.getAttr("hero_game:spine1_00_M_CTRL.shapeType", asString=True), "Sphere")
 
+    def test_build_rig_passes_the_assets_markers_file(self):
+        # RigModules D73: a template that selects markers needs createRigFromTemplate(markers=). The rig root carries the
+        # file's markersHash when it was given one, and an empty hash when it was not.
+        import os
+        import rigmodules.query
+        cmds = self.cmds
+        self.make_buildable_asset()
+        self.assertEqual(rigmodules.query.get_rig_info(self.tools.build_rig(HERO, "game")).markers_hash, "",
+                         "an asset with no markers file builds as before")
+
+        cmds.file(new=True, force=True)
+        joints = self.make_skeleton()
+        locator = cmds.createNode("transform", name="heel_00_M_MRK")
+        cmds.rigMarkerMarkup(locator, usage="heel", side="Center", joint=joints[0], export=False)
+        path = os.path.join(self.hero.folder, "markers", "markers.json")
+        os.makedirs(os.path.dirname(path))
+        cmds.saveRigMarkers(locator, file=path.replace("\\", "/"))
+        cmds.file(new=True, force=True)
+        info = rigmodules.query.get_rig_info(self.tools.build_rig(HERO, "game"))
+        self.assertEqual(info.markers_hash, self.read_json(path)["markersHash"])
+
     def test_build_rig_into_a_namespace_that_holds_a_rig_fails(self):
         self.make_buildable_asset()
         self.tools.build_rig(HERO, "game")

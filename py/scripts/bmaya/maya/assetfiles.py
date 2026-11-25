@@ -18,6 +18,7 @@ import os
 from collections.abc import Callable
 
 import maya.cmds as cmds
+import rigmodules.markers
 import rigmodules.query
 
 import bmaya.core.asset
@@ -125,6 +126,29 @@ class SkeletonAction(FileAction):
     def load(self, model):
         joints = bmaya.maya.assettools.load_skeleton(model.asset_id, model.owner(self))
         cmds.select(joints, replace=True)
+
+
+class MarkersAction(FileAction):
+    """The asset's markers (RigModules D73): points that follow its joints, such as a ReverseFoot's six pivots. One file
+    per asset. Save writes every marker locator in the current namespace, and Load makes them on the skeleton there.
+    Add Foot Markers and Mirror Markers, in the RigModules menu, make and mirror the locators."""
+
+    key, label, saves, loads = "markers", "Markers", True, True
+    save_hint = "Every marker locator in the current namespace, whatever is selected"
+
+    def save_blocked(self, model):
+        return "" if model.markers() else "There are no marker locators in the scene. Load them, or add them with Add Foot Markers."
+
+    def save(self, model):
+        return bmaya.maya.assettools.save_markers(model.asset_id, model.markers())
+
+    def load_blocked(self, model):
+        if not model.file_exists(self):
+            return "The markers are not saved yet."
+        return "" if model.joints() else "Load the skeleton first: the markers follow its joints."
+
+    def load(self, model):
+        cmds.select(bmaya.maya.assettools.load_markers(model.asset_id), replace=True)
 
 
 class ModelAction(FileAction):
@@ -286,8 +310,8 @@ class TemplateAction(FileAction):
         model.opener(path)
 
 
-ACTIONS: tuple[FileAction, ...] = (SkeletonAction(), ModelAction(), WeightsAction(), TexturesAction(), RigSceneAction(),
-                                   ShapesAction(), TemplateAction())
+ACTIONS: tuple[FileAction, ...] = (SkeletonAction(), MarkersAction(), ModelAction(), WeightsAction(), TexturesAction(),
+                                   RigSceneAction(), ShapesAction(), TemplateAction())
 
 
 class AssetFilesModel:
@@ -332,6 +356,10 @@ class AssetFilesModel:
         """Every joint in the scene. The selection is not used: a stray selection once saved a skeleton of one joint
         over the real one."""
         return cmds.ls(type="joint", long=True) or []
+
+    def markers(self) -> list[str]:
+        """Every marker locator in the current namespace, where Load puts them. The selection is not used, as for joints."""
+        return rigmodules.markers.get_markers(cmds.namespaceInfo(currentNamespace=True, absoluteName=True))
 
     def meshes(self) -> list[str]:
         """Every visible mesh in the scene. The selection is not used: a stray selection once saved a model of one

@@ -17,7 +17,7 @@ from . import assetid
 
 PROJECTS_ROOT_ENV = "RIGGING_PROJECT_DIR"
 PROJECT_FILE = "project.json"
-FORMAT_VERSION = 3
+FORMAT_VERSION = 4
 
 # The parts of an asset a file can belong to (RigModules D54). A file type's path names at most one of them as a
 # field: "rigs/{rig}/shapes.json" belongs to a rig. A path with none belongs to the asset.
@@ -32,6 +32,8 @@ DEFAULT_PROJECT = {
     "fileTypes": {
         "skeleton": {"path": "skeletons/{skeleton}/skeleton.json"},
         "exports": {"path": "skeletons/{skeleton}/exports", "folder": True},
+        # The asset's markers (RigModules D73): points that follow its joints, such as a foot's pivots. One per asset.
+        "markers": {"path": "markers/markers.json"},
         "riginfo": {"path": "rigs/{rig}/rig.json"},
         "template": {"path": "rigs/{rig}/template.json"},
         "shapes": {"path": "rigs/{rig}/shapes.json"},
@@ -226,9 +228,22 @@ def _split_variants_into_rigs_and_looks(data: dict) -> None:
     file_types.setdefault("lookinfo", {"path": "looks/{look}/look.json"})
 
 
+def _add_markers(data: dict) -> None:
+    """Version 3 to 4 (RigModules D73). Adds the asset's markers file, one per asset. A project that already has a
+    markers file type keeps its own path. Frozen, like every step."""
+    file_types = data.setdefault("fileTypes", {})
+    if not isinstance(file_types, dict):
+        raise ProjectError("fileTypes must be an object.")
+    file_types.setdefault("markers", {"path": "markers/markers.json"})
+
+
 # Step n turns a version n file into a version n + 1 file, in place. Bump FORMAT_VERSION and add a step
 # together, and add the new keys to DEFAULT_PROJECT. A step is never edited after it ships.
-PROJECT_UPDATES: dict[int, Callable[[dict], None]] = {1: _add_library_folders, 2: _split_variants_into_rigs_and_looks}
+PROJECT_UPDATES: dict[int, Callable[[dict], None]] = {
+    1: _add_library_folders,
+    2: _split_variants_into_rigs_and_looks,
+    3: _add_markers,
+}
 
 
 def update_project_data(data: dict) -> bool:

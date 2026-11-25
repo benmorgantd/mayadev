@@ -418,6 +418,54 @@
             "enabled": true
         },
         {
+            "id": "rigmodules.markers.add_foot_markers",
+            "name": "Add Foot Markers",
+            "short_name": "Foot Markers",
+            "call": {
+                "module": "bmaya.maya.assettools",
+                "function": "add_foot_markers_interactive",
+                "kwargs": {}
+            },
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "id": "rigmodules.markers.mirror_markers",
+            "name": "Mirror Markers",
+            "short_name": "Mirror Markers",
+            "call": {
+                "module": "bmaya.maya.assettools",
+                "function": "mirror_markers_interactive",
+                "kwargs": {}
+            },
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "id": "rigmodules.markers.save_markers",
+            "name": "Save Markers...",
+            "short_name": "Save Markers",
+            "call": {
+                "module": "bmaya.maya.assettools",
+                "function": "save_markers_interactive",
+                "kwargs": {}
+            },
+            "icon": null,
+            "enabled": true
+        },
+        {
+            "id": "rigmodules.markers.load_markers",
+            "name": "Load Markers...",
+            "short_name": "Load Markers",
+            "call": {
+                "module": "bmaya.maya.assettools",
+                "function": "load_markers_interactive",
+                "kwargs": {}
+            },
+            "icon": null,
+            "enabled": true
+        },
+        {
             "id": "rigmodules.asset.save_model",
             "name": "Save Model...",
             "short_name": "Save Model",

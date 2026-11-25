@@ -86,7 +86,7 @@ class EditorBase(unittest.TestCase):
         self.template = os.path.join(temp, "template.json")
         with open(self.template, "w", encoding="utf-8") as handle:
             json.dump(TEMPLATE, handle)
-        for file_type in ("skeleton", "model", "rig", "shapes", "template", "weights", "textures"):
+        for file_type in ("skeleton", "markers", "model", "rig", "shapes", "template", "weights", "textures"):
             self.addCleanup(bmaya.core.asset.handlers.unregister, file_type)
         cmds.optionVar(remove=self.editor.LAST_ASSET_OPTION)
         cmds.file(new=True, force=True)
@@ -320,7 +320,8 @@ class FileRows(EditorBase):
     def test_the_rows_of_an_asset_with_a_rig_and_no_skeleton_file(self):
         self.tools.new_rig(HERO, self.template)
         files = self.session(HERO).files
-        self.assertEqual([row.key for row in files.rows], ["skeleton", "model", "weights", "textures", "rig", "shapes", "template"])
+        self.assertEqual([row.key for row in files.rows],
+                         ["skeleton", "markers", "model", "weights", "textures", "rig", "shapes", "template"])
         skeleton = files.row("skeleton")
         self.assertEqual((skeleton.owner, skeleton.exists, skeleton.versions), ("default", False, 0))
         self.assertTrue(files.row("template").exists)
@@ -641,6 +642,50 @@ class SkeletonFiles(EditorBase):
         session.files.build_rig()
         with self.assertRaisesRegex(RuntimeError, "driven by a rig"):
             session.files.save("skeleton", self.answers(True))
+
+
+class MarkerFiles(EditorBase):
+    """The Markers row (RigModules D73): one file per asset, markers/markers.json, saved from the marker locators."""
+
+    def test_save_writes_the_markers_and_load_makes_them_again(self):
+        import rigmodules.markers
+        self.tools.new_rig(HERO, self.template)
+        joints = self.make_skeleton()
+        files = self.session(HERO).files
+        row = files.row("markers")
+        self.assertEqual((row.owner_kind, row.exists), (None, False))
+        self.assertIn("no marker locators", row.save_blocked)
+        self.assertEqual(row.load_blocked, "The markers are not saved yet.")
+
+        rigmodules.markers.add_markers(joints[1], ["heel", "ball"], "Center")
+        files.refresh()
+        path = files.save("markers", self.answers())
+        self.assertEqual(path, self.hero.path("markers"))
+        self.assertEqual(os.path.relpath(path, self.hero.folder), os.path.join("markers", "markers.json"))
+        self.assertTrue(files.row("markers").exists)
+
+        self.cmds.file(new=True, force=True)
+        files.refresh()
+        self.assertIn("Load the skeleton first", files.row("markers").load_blocked)
+        self.make_skeleton()
+        files.refresh()
+        files.load("markers")
+        self.assertEqual(sorted(node.split("|")[-1] for node in self.cmds.ls(selection=True)), ["ball_00_M_MRK", "heel_00_M_MRK"])
+
+    def test_build_rig_passes_the_markers_once_they_are_saved(self):
+        # The row's file is the one build_rig gives createRigFromTemplate (RigModules D73): the rig root carries its hash.
+        import rigmodules.markers
+        import rigmodules.query
+        self.tools.new_rig(HERO, self.template)
+        joints = self.make_skeleton()
+        self.tools.save_skeleton(HERO, joints=joints)
+        rigmodules.markers.add_markers(joints[0], ["heel"], "Center")
+        files = self.session(HERO).files
+        files.save("markers", self.answers())
+        self.cmds.file(new=True, force=True)
+        info = rigmodules.query.get_rig_info(self.tools.build_rig(HERO, "game"))
+        with open(self.hero.path("markers"), encoding="utf-8") as handle:
+            self.assertEqual(info.markers_hash, json.load(handle)["markersHash"])
 
 
 class RigFiles(EditorBase):

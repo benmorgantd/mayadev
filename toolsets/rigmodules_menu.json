@@ -118,6 +118,32 @@
         },
         {
             "type": "submenu",
+            "label": "markers",
+            "items": [
+                {
+                    "type": "tool",
+                    "tool": "rigmodules.markers.add_foot_markers",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "tool": "rigmodules.markers.mirror_markers",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "tool": "rigmodules.markers.save_markers",
+                    "enabled": true
+                },
+                {
+                    "type": "tool",
+                    "tool": "rigmodules.markers.load_markers",
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "type": "submenu",
             "label": "weights",
             "items": [
                 {

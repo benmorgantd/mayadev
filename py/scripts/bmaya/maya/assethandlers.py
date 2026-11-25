@@ -1,6 +1,6 @@
 """Maya save and load handlers for asset file types (bmaya.core.asset.handlers).
 
-Only formats that exist get a handler: skeleton files, model files (meshes only), rig scenes, RigModules templates,
+Only formats that exist get a handler: skeleton files, markers files, model files (meshes only), rig scenes, RigModules templates,
 shape files, skin weights, texture folders, control poses and animations (ControlPose and ControlAnim files) and
 animation clips (FBX, RigModules D42). Other file types (shaders, postops) have none yet, so saving or loading them raises
 NotImplementedError until one is written.
@@ -172,6 +172,24 @@ class RigSkeletonHandler(handlers.FileHandler):
         them."""
         flags = {"namespace": namespace} if namespace is not None else {}
         return cmds.loadRigSkeleton(file=path.replace("\\", "/"), **flags) or []
+
+
+class RigMarkersHandler(handlers.FileHandler):
+    """The asset's markers file, markers.json (RigModules D73): points that follow its joints, such as a foot's pivots.
+    One per asset. Saving writes marker locators and loading creates them on the skeleton, through RigModules' commands."""
+
+    def save(self, asset: Asset | None, path: str, markers: list[str] | None = None, **context) -> str:
+        """Writes the marker locators to path, as offsets from their joints, so the joints should be at rest. Returns the
+        markers hash."""
+        if not markers:
+            raise ValueError("Pass markers, the marker locators to save.")
+        return cmds.saveRigMarkers(*markers, file=path.replace("\\", "/"))
+
+    def load(self, asset: Asset | None, path: str, namespace: str | None = None, **context) -> list[str]:
+        """Creates a marked locator for each marker, on the marked joints of namespace (the current one when left out),
+        and in it. Returns them."""
+        flags = {"namespace": namespace} if namespace is not None else {}
+        return cmds.loadRigMarkers(file=path.replace("\\", "/"), **flags) or []
 
 
 class RigShapesHandler(handlers.FileHandler):
@@ -654,6 +672,7 @@ def _post_files_changed(file_type: str) -> None:
 def register() -> None:
     handlers.changed.connect(_post_files_changed)   # connecting twice is a no-op
     handlers.register("skeleton", RigSkeletonHandler())
+    handlers.register("markers", RigMarkersHandler())
     handlers.register("model", ModelHandler())
     handlers.register("rig", MayaSceneHandler())
     handlers.register("shapes", RigShapesHandler())
