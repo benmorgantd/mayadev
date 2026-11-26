@@ -672,6 +672,27 @@ class MarkerFiles(EditorBase):
         files.load("markers")
         self.assertEqual(sorted(node.split("|")[-1] for node in self.cmds.ls(selection=True)), ["ball_00_M_MRK", "heel_00_M_MRK"])
 
+    def test_with_the_rig_in_the_scene_load_uses_the_rigs_namespace(self):
+        # A built rig's joints are in its namespace, not the current one, and a marker follows joints of its own
+        # namespace (RigModules D73). So Load, Save and Select Markers all work in the rig's namespace.
+        import rigmodules.markers
+        self.tools.new_rig(HERO, self.template)
+        joints = self.make_skeleton()
+        self.tools.save_skeleton(HERO, joints=joints)
+        rigmodules.markers.add_markers(joints[0], ["heel"], "Center")
+        files = self.session(HERO).files
+        files.save("markers", self.answers())
+        self.cmds.file(new=True, force=True)
+
+        files.build_rig()
+        self.assertEqual(self.cmds.namespaceInfo(currentNamespace=True, absoluteName=True), ":", "the build leaves the root current")
+        self.assertEqual(files.marker_namespace(), ":" + files.rig_namespace)
+        files.load("markers")
+        loaded = self.cmds.ls(selection=True, long=True)
+        self.assertEqual([node.split("|")[-1] for node in loaded], [f"{files.rig_namespace}:heel_00_M_MRK"])
+        self.assertEqual(files.markers(), loaded, "Save and Select Markers find what Load made")
+        self.assertEqual(files.row("markers").save_blocked, "")
+
     def test_the_row_tools_are_off_until_the_scene_has_what_they_need(self):
         self.tools.new_rig(HERO, self.template)
         files = self.session(HERO).files

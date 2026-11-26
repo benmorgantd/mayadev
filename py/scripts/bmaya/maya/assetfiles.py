@@ -151,11 +151,11 @@ class SkeletonAction(FileAction):
 
 class MarkersAction(FileAction):
     """The asset's markers (RigModules D73): points that follow its joints, such as a ReverseFoot's six pivots. One file
-    per asset. Save writes every marker locator in the current namespace, and Load makes them on the skeleton there.
-    The row's menu makes, mirrors and selects the locators (the same tools as the RigModules menu's markers submenu)."""
+    per asset. Save writes every marker locator in the rig's namespace when the asset's rig is in the scene, else the
+    current namespace (AssetFilesModel.marker_namespace), and Load makes them on the skeleton there. The row's menu makes, mirrors and selects the locators (the same tools as the RigModules menu's markers submenu)."""
 
     key, label, saves, loads = "markers", "Markers", True, True
-    save_hint = "Every marker locator in the current namespace, whatever is selected"
+    save_hint = "Every marker locator in the rig's namespace (the current one with no rig), whatever is selected"
 
     def save_blocked(self, model):
         return "" if model.markers() else "There are no marker locators in the scene. Load them, or add them with Add Foot Markers."
@@ -169,7 +169,7 @@ class MarkersAction(FileAction):
         return "" if model.joints() else "Load the skeleton first: the markers follow its joints."
 
     def load(self, model):
-        cmds.select(bmaya.maya.assettools.load_markers(model.asset_id), replace=True)
+        cmds.select(bmaya.maya.assettools.load_markers(model.asset_id, model.marker_namespace()), replace=True)
 
     def tools(self, model):
         no_joints = "" if model.joints() else "There are no joints in the scene. Load the skeleton first."
@@ -180,7 +180,8 @@ class MarkersAction(FileAction):
                 RowTool("mirror_markers", "Mirror Selected Markers",
                         "Writes the other side's marker for each selected marker locator.", no_markers),
                 RowTool("select_markers", "Select Markers",
-                        "Selects every marker locator in the current namespace: what Save writes.", no_markers))
+                        "Selects every marker locator in the rig's namespace (the current one with no rig): what Save "
+                        "writes.", no_markers))
 
     def run_tool(self, model, name):
         if name == "add_foot_markers":
@@ -369,6 +370,7 @@ class AssetFilesModel:
         self.rows: list[FileRow] = []
         self.message = ""
         self.rig_root: str | None = None
+        self.rig_namespace: str | None = None   # the rig's namespace, without a leading ":", when rig_root is set
         self.breaking: dict[str, list[str]] = {}   # per rig of the asset: what the saved skeleton breaks of its last publish
         self.opener: Callable[[str], object] = getattr(os, "startfile", lambda path: None)   # Windows: Explorer
         self.refresh()
@@ -399,9 +401,17 @@ class AssetFilesModel:
         over the real one."""
         return cmds.ls(type="joint", long=True) or []
 
+    def marker_namespace(self) -> str:
+        """Where the markers row loads and looks for marker locators, as an absolute namespace: the rig's namespace
+        when the rig is in the scene, since its joints are there (a marker follows joints of its own namespace), else
+        the current namespace, for a skeleton loaded on its own."""
+        if self.rig_namespace is not None:
+            return ":" + self.rig_namespace
+        return cmds.namespaceInfo(currentNamespace=True, absoluteName=True)
+
     def markers(self) -> list[str]:
-        """Every marker locator in the current namespace, where Load puts them. The selection is not used, as for joints."""
-        return rigmodules.markers.get_markers(cmds.namespaceInfo(currentNamespace=True, absoluteName=True))
+        """Every marker locator in marker_namespace(), where Load puts them. The selection is not used, as for joints."""
+        return rigmodules.markers.get_markers(self.marker_namespace())
 
     def meshes(self) -> list[str]:
         """Every visible mesh in the scene. The selection is not used: a stray selection once saved a model of one
@@ -425,7 +435,9 @@ class AssetFilesModel:
 
     def refresh(self) -> None:
         """Reads the asset's files and the scene's rig again."""
-        self.rig_root = self._find_rig_root()
+        rig = self._find_rig()
+        self.rig_root = rig.rig_root if rig is not None else None
+        self.rig_namespace = rig.namespace if rig is not None else None
         self.rows, self.message, self.breaking = [], "", {}
         if self.context.asset_id is None:
             self.message = "Pick an asset."
@@ -478,8 +490,8 @@ class AssetFilesModel:
             self.message = str(error)
             return False
 
-    def _find_rig_root(self) -> str | None:
-        """The rig root in the scene that is this asset's chosen rig, else None. A rig of another asset is not it."""
+    def _find_rig(self) -> rigmodules.query.RigInfo | None:
+        """The rig in the scene that is this asset's chosen rig, else None. A rig of another asset is not it."""
         context = self.context
         if context.asset_id is None or context.rig is None:
             return None
@@ -488,8 +500,7 @@ class AssetFilesModel:
         except RuntimeError as error:
             bmaya.core.log.error(f"The Asset Editor could not read the scene's rigs: {error}")
             return None
-        return next((rig.rig_root for rig in rigs if rig.asset_id == context.asset_id and rig.rig_name == context.rig),
-                    None)
+        return next((rig for rig in rigs if rig.asset_id == context.asset_id and rig.rig_name == context.rig), None)
 
     def _row(self, action: FileAction) -> FileRow:
         owner = self.owner(action)
